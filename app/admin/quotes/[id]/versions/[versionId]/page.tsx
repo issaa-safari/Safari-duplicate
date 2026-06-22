@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import VersionEditorForm from './form'
+import QuoteItineraryBuilder from './quote-itinerary-builder'
 
 const STATUS_STYLES: Record<string, string> = {
   draft:      'bg-gray-100 text-gray-600',
@@ -29,51 +30,70 @@ export default async function VersionEditorPage({
 
   const admin = createAdminClient()
 
+  // Load all data in parallel
   const [
     { data: version },
     { data: quote },
     { data: travellers },
     { data: ageBands },
+    { data: quoteDays },
+    { data: destinations },
+    { data: accommodations },
+    { data: activities },
+    { data: vehicles },
+    { data: staffData },
   ] = await Promise.all([
-    admin
-      .from('quote_versions')
+    admin.from('quote_versions')
       .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until')
-      .eq('id', versionId)
-      .single(),
-    admin
-      .from('quotes')
-      .select('id, quote_number, status, mode, client_id')
-      .eq('id', id)
-      .single(),
-    admin
-      .from('quote_travellers')
+      .eq('id', versionId).single(),
+    admin.from('quotes')
+      .select('id, quote_number, status, mode, client_id, tour_id')
+      .eq('id', id).single(),
+    admin.from('quote_travellers')
       .select('id, display_name, age_on_travel_date, age_band_id, age_band_snapshot, traveller_category, room_category, is_paying, is_complimentary, sort_order')
-      .eq('quote_version_id', versionId)
-      .order('sort_order'),
-    admin
-      .from('traveller_age_bands')
+      .eq('quote_version_id', versionId).order('sort_order'),
+    admin.from('traveller_age_bands')
       .select('id, name, code, min_age, max_age, default_pricing_method, default_percentage, sort_order')
-      .eq('is_active', true)
-      .order('sort_order'),
+      .eq('is_active', true).order('sort_order'),
+    admin.from('quote_days')
+      .select('id, day_number, day_date, title, description_en, client_notes, destination_id, destination_snapshot, meals, sort_order')
+      .eq('quote_version_id', versionId).order('sort_order'),
+    admin.from('destinations')
+      .select('id, name').eq('is_active', true).order('name'),
+    admin.from('accommodations')
+      .select('id, name, destination_id, description_en').eq('is_active', true).order('name'),
+    admin.from('activities')
+      .select('id, name, destination_id, description_en').eq('is_active', true).order('name'),
+    admin.from('vehicles')
+      .select('id, name, type, seats').order('name'),
+    admin.from('tour_staff')
+      .select('id, name, role').order('name'),
   ])
 
   if (!version || !quote) notFound()
 
-  // Ensure version belongs to this quote
+  // Confirm this version belongs to this quote
   const { data: versionCheck } = await admin
-    .from('quote_versions')
-    .select('id')
-    .eq('id', versionId)
-    .eq('quote_id', id)
-    .single()
-
+    .from('quote_versions').select('id')
+    .eq('id', versionId).eq('quote_id', id).single()
   if (!versionCheck) notFound()
 
-  const { data: client } = await admin
-    .from('clients')
-    .select('first_name, last_name')
-    .eq('id', quote.client_id)
-    .single()
+  // Load items for existing days and optionally the tour template days
+  const dayIds = (quoteDays ?? []).map((d: any) => d.id)
+
+  const [{ data: dayItems }, { data: tourDays }, { data: client }] = await Promise.all([
+    dayIds.length
+      ? admin.from('quote_day_items')
+          .select('id, quote_day_id, item_type, accommodation_id, activity_id, vehicle_id, staff_id, title_snapshot, content_snapshot, sort_order')
+          .in('quote_day_id', dayIds).order('sort_order')
+      : Promise.resolve({ data: [] as any[] }),
+    quote.tour_id
+      ? admin.from('tour_days')
+          .select('day_number, day_number_end, title_en, destination_id, accommodation_id, activity_ids, meal_breakfast, meal_lunch, meal_dinner')
+          .eq('tour_id', quote.tour_id).order('day_number')
+      : Promise.resolve({ data: [] as any[] }),
+    admin.from('clients').select('first_name, last_name').eq('id', quote.client_id).single(),
+  ])
 
   const clientName = client
     ? `${client.first_name} ${client.last_name}`.trim()
@@ -82,7 +102,7 @@ export default async function VersionEditorPage({
   const isLocked = !['draft', 'ready'].includes(version.status)
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-5xl mx-auto">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-6 flex-wrap">
         <Link href="/admin/quotes" className="hover:text-gray-700">Quotes</Link>
@@ -113,20 +133,43 @@ export default async function VersionEditorPage({
             )}
           </div>
         </div>
-        <Link
-          href={`/admin/quotes/${id}`}
-          className="text-sm text-gray-500 hover:text-gray-700 shrink-0"
-        >
+        <Link href={`/admin/quotes/${id}`}
+          className="text-sm text-gray-500 hover:text-gray-700 shrink-0">
           ← Back to quote
         </Link>
       </div>
 
+      {/* Phase 2: Dates + Travellers */}
       <VersionEditorForm
         quoteId={id}
         version={version}
         travellers={travellers ?? []}
         ageBands={ageBands ?? []}
       />
+
+      {/* Phase 3: Itinerary */}
+      <div className="mt-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-gray-900">Itinerary</h2>
+          {(quoteDays ?? []).length > 0 && (
+            <span className="text-xs text-gray-400">{(quoteDays ?? []).length} day{(quoteDays ?? []).length !== 1 ? 's' : ''}</span>
+          )}
+        </div>
+        <QuoteItineraryBuilder
+          quoteId={id}
+          versionId={versionId}
+          travelStartDate={version.travel_start_date ?? null}
+          quoteDays={quoteDays ?? []}
+          dayItems={dayItems ?? []}
+          tourDays={tourDays ?? []}
+          destinations={destinations ?? []}
+          accommodations={accommodations ?? []}
+          activities={activities ?? []}
+          vehicles={vehicles ?? []}
+          staff={staffData ?? []}
+          isLocked={isLocked}
+        />
+      </div>
     </div>
   )
 }
