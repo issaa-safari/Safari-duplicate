@@ -114,9 +114,14 @@ export default async function ClientsPage({
                   </td>
                   <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">{client.total_bookings ?? 0}</td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{new Date(client.created_at).toLocaleDateString('en-GB')}</td>
-                  <td className="px-4 py-3">
-                    <Link href={"/admin/clients/" + client.id} className="text-xs text-[#7A9A4A] hover:underline">View</Link>
-                  </td>
+                 <td className="px-4 py-3">
+  <Link
+    href={"/admin/clients/" + client.id}
+    className="text-xs font-medium text-white rounded-md px-3 py-1.5"
+    style={{ backgroundColor: '#7A9A4A' }}>
+    View
+  </Link>
+</td>
                 </tr>
               ))}
             </tbody>
