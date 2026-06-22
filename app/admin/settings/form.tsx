@@ -4,117 +4,126 @@ import { useState } from 'react'
 import { saveSettings } from './actions'
 
 interface Settings {
+  id: string
   company_name: string
-  contact_email: string | null
+  brand_name: string | null
+  email: string | null
   phone: string | null
   whatsapp: string | null
-  default_deposit_pct: number
-  usd_to_kes_rate: number
+  website: string | null
+  address: string | null
+  country: string | null
+  currency_primary: string | null
+  currency_secondary: string | null
+  bank_account_name: string | null
+  bank_account_number: string | null
+  bank_name: string | null
+  bank_account_type: string | null
+  deposit_percent: number
+  balance_due_days: number
+  cancellation_61_plus: string | null
+  cancellation_42_60: string | null
+  cancellation_28_41: string | null
+  cancellation_0_27: string | null
+  invoice_prefix: string | null
+  quote_prefix: string | null
+  booking_prefix: string | null
+  default_markup_percent: number
+  logo_url: string | null
   updated_at: string
 }
 
 const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#7A9A4A]'
+const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
+
+function Field({ label, name, value, type = 'text', ...props }: {
+  label: string; name: string; value: string | number | null; type?: string; [key: string]: unknown
+}) {
+  return <div><label className={labelCls}>{label}</label><input type={type} name={name} defaultValue={value ?? ''} className={inputCls} {...props} /></div>
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return <section className="bg-white rounded-lg border border-gray-200 p-6 space-y-4"><h2 className="text-sm font-semibold text-gray-900">{title}</h2>{children}</section>
+}
 
 export default function SettingsForm({ settings }: { settings: Settings }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [saved, setSaved] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
     setError('')
-    setSaved(false)
     setLoading(true)
-    const formData = new FormData(e.currentTarget)
     try {
-      await saveSettings(formData)
-      setSaved(true)
-    } catch (err: any) {
-      setError(err.message ?? 'Something went wrong.')
-    } finally {
+      await saveSettings(new FormData(event.currentTarget))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.')
       setLoading(false)
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Company Info */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700">Company Information</h2>
+      <input type="hidden" name="id" value={settings.id} />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Company Name <span className="text-red-500">*</span></label>
-          <input type="text" name="companyName" required defaultValue={settings.company_name} className={inputCls} />
+      <Section title="Company Info">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="Company Name" name="companyName" value={settings.company_name} required />
+          <Field label="Brand Name" name="brandName" value={settings.brand_name} />
+          <Field label="Country" name="country" value={settings.country} />
+          <Field label="Website" name="website" value={settings.website} type="url" placeholder="https://example.com" />
+          <Field label="Primary Currency" name="currencyPrimary" value={settings.currency_primary} placeholder="USD" />
+          <Field label="Secondary Currency" name="currencySecondary" value={settings.currency_secondary} placeholder="KES" />
         </div>
+        <Field label="Logo URL" name="logoUrl" value={settings.logo_url} type="url" />
+        <div><label className={labelCls}>Address</label><textarea name="address" defaultValue={settings.address ?? ''} rows={3} className={inputCls} /></div>
+      </Section>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
-            <input type="email" name="contactEmail" defaultValue={settings.contact_email ?? ''} placeholder="info@example.com" className={inputCls} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-            <input type="tel" name="phone" defaultValue={settings.phone ?? ''} placeholder="+254…" className={inputCls} />
-          </div>
+      <Section title="Contact">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Field label="Email" name="email" value={settings.email} type="email" />
+          <Field label="Phone" name="phone" value={settings.phone} type="tel" />
+          <Field label="WhatsApp" name="whatsapp" value={settings.whatsapp} type="tel" />
         </div>
+      </Section>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
-          <input type="tel" name="whatsapp" defaultValue={settings.whatsapp ?? ''} placeholder="+254…" className={inputCls} />
-          <p className="text-xs text-gray-400 mt-1">Used for the WhatsApp chat button on the website.</p>
+      <Section title="Banking">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="Bank Name" name="bankName" value={settings.bank_name} />
+          <Field label="Account Name" name="bankAccountName" value={settings.bank_account_name} />
+          <Field label="Account Number" name="bankAccountNumber" value={settings.bank_account_number} />
+          <Field label="Account Type" name="bankAccountType" value={settings.bank_account_type} />
         </div>
-      </div>
+      </Section>
 
-      {/* Booking Defaults */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700">Booking Defaults</h2>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Default Deposit %</label>
-            <input
-              type="number"
-              name="defaultDepositPct"
-              min={1}
-              max={100}
-              defaultValue={settings.default_deposit_pct}
-              required
-              className={inputCls}
-            />
-            <p className="text-xs text-gray-400 mt-1">Applied to new tours unless overridden.</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">USD → KES Rate</label>
-            <input
-              type="number"
-              name="usdToKesRate"
-              min={1}
-              step="0.01"
-              defaultValue={Number(settings.usd_to_kes_rate)}
-              required
-              className={inputCls}
-            />
-            <p className="text-xs text-gray-400 mt-1">Used to display KES prices on quotes.</p>
-          </div>
+      <Section title="Booking & Cancellation Policy">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Field label="Deposit %" name="depositPercent" value={settings.deposit_percent} type="number" min={0} max={100} step="0.01" required />
+          <Field label="Balance Due (days)" name="balanceDueDays" value={settings.balance_due_days} type="number" min={0} step={1} required />
+          <Field label="Default Markup %" name="defaultMarkupPercent" value={settings.default_markup_percent} type="number" min={0} step="0.01" required />
         </div>
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="Cancellation: 61+ days" name="cancellation61Plus" value={settings.cancellation_61_plus} />
+          <Field label="Cancellation: 42–60 days" name="cancellation4260" value={settings.cancellation_42_60} />
+          <Field label="Cancellation: 28–41 days" name="cancellation2841" value={settings.cancellation_28_41} />
+          <Field label="Cancellation: 0–27 days" name="cancellation027" value={settings.cancellation_0_27} />
+        </div>
+      </Section>
+
+      <Section title="Document Prefixes">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Field label="Invoice Prefix" name="invoicePrefix" value={settings.invoice_prefix} />
+          <Field label="Quote Prefix" name="quotePrefix" value={settings.quote_prefix} />
+          <Field label="Booking Prefix" name="bookingPrefix" value={settings.booking_prefix} />
+        </div>
+      </Section>
 
       {error && <p className="text-sm text-red-600 bg-red-50 rounded-md px-4 py-3">{error}</p>}
-      {saved && <p className="text-sm text-green-700 bg-green-50 rounded-md px-4 py-3">Settings saved.</p>}
-
       <div className="flex items-center justify-between">
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-md px-6 py-2.5 text-sm font-medium text-white disabled:opacity-60"
-          style={{ backgroundColor: '#7A9A4A' }}>
+        <button type="submit" disabled={loading} className="rounded-md px-6 py-2.5 text-sm font-medium text-white disabled:opacity-60" style={{ backgroundColor: '#7A9A4A' }}>
           {loading ? 'Saving…' : 'Save Settings'}
         </button>
-        {settings.updated_at && (
-          <p className="text-xs text-gray-400">
-            Last saved {new Date(settings.updated_at).toLocaleString('en-GB')}
-          </p>
-        )}
+        {settings.updated_at && <p className="text-xs text-gray-400">Last saved {new Date(settings.updated_at).toLocaleString('en-GB')}</p>}
       </div>
     </form>
   )
