@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createAdminClient } from '@/lib/supabase/admin'
 
 export default function TourEditForm({ tour }: { tour: any }) {
   const router = useRouter()
