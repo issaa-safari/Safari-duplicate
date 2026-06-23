@@ -286,7 +286,6 @@ export default async function QuotePortalPage({
                 versionId={version.id}
                 quoteId={quote.id}
                 clientName={clientName}
-                onAccepted={() => window.location.reload()}
               />
             </div>
           </section>
