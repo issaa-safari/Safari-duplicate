@@ -4,6 +4,8 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import VersionEditorForm from './form'
 import QuoteItineraryBuilder from './quote-itinerary-builder'
+import PriceLinesEditor from './price-lines'
+import VersionStatusControls from './version-status-controls'
 
 const STATUS_STYLES: Record<string, string> = {
   draft:      'bg-gray-100 text-gray-600',
@@ -81,7 +83,7 @@ export default async function VersionEditorPage({
   // Load items for existing days and optionally the tour template days
   const dayIds = (quoteDays ?? []).map((d: any) => d.id)
 
-  const [{ data: dayItems }, { data: tourDays }, { data: client }] = await Promise.all([
+  const [{ data: dayItems }, { data: tourDays }, { data: client }, { data: priceLines }, { data: settings }] = await Promise.all([
     dayIds.length
       ? admin.from('quote_day_items')
           .select('id, quote_day_id, item_type, accommodation_id, activity_id, vehicle_id, staff_id, title_snapshot, content_snapshot, sort_order')
@@ -93,6 +95,10 @@ export default async function VersionEditorPage({
           .eq('tour_id', quote.tour_id).order('day_number')
       : Promise.resolve({ data: [] as any[] }),
     admin.from('clients').select('first_name, last_name').eq('id', quote.client_id).single(),
+    admin.from('quote_price_lines')
+      .select('id, description, cost_category, pricing_unit, quantity, unit_cost_usd, markup_percent_override, total_cost_usd, total_selling_usd, is_optional, sort_order')
+      .eq('quote_version_id', versionId).order('sort_order'),
+    admin.from('company_settings').select('default_markup_percent').limit(1).single(),
   ])
 
   const clientName = client
@@ -139,6 +145,11 @@ export default async function VersionEditorPage({
         </Link>
       </div>
 
+      {/* Status controls */}
+      <div className="mb-6">
+        <VersionStatusControls quoteId={id} versionId={versionId} status={version.status} />
+      </div>
+
       {/* Phase 2: Dates + Travellers */}
       <VersionEditorForm
         quoteId={id}
@@ -146,6 +157,17 @@ export default async function VersionEditorPage({
         travellers={travellers ?? []}
         ageBands={ageBands ?? []}
       />
+
+      {/* Pricing */}
+      <div className="mt-6">
+        <PriceLinesEditor
+          quoteId={id}
+          versionId={versionId}
+          priceLines={priceLines ?? []}
+          isLocked={isLocked}
+          defaultMarkup={settings?.default_markup_percent ?? 20}
+        />
+      </div>
 
       {/* Phase 3: Itinerary */}
       <div className="mt-6">

@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import StageSelector from './stage-selector'
 import CommunicationLog from './communication-log'
+import TaskManager from './task-manager'
 
 const STAGES = [
   { key: 'new', label: 'New' },
@@ -165,28 +166,7 @@ export default async function RequestDetailPage({
           )}
 
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">
-              Tasks
-              {tasks && tasks.length > 0 && (
-                <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                  {tasks.filter((t: any) => !t.is_done).length} open
-                </span>
-              )}
-            </h2>
-            {tasks && tasks.length > 0 ? (
-              <ul className="space-y-2">
-                {tasks.map((task: any) => (
-                  <li key={task.id} className="flex items-start gap-2 text-sm">
-                    <span>{task.is_done ? 'Done' : 'Open'}</span>
-                    <span className={task.is_done ? 'line-through text-gray-400' : 'text-gray-700'}>
-                      {task.title}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-xs text-gray-400">No tasks yet</p>
-            )}
+            <TaskManager requestId={id} tasks={tasks ?? []} />
           </div>
         </div>
 
