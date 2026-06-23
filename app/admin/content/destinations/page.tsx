@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import ContentShell from '../content-shell'
 
 export default async function DestinationsPage({
   searchParams,
@@ -27,7 +28,7 @@ export default async function DestinationsPage({
   const shown = activeTab === 'content' ? withContent : withoutContent
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <ContentShell active="destinations" title="Destinations" icon="✣">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-lg font-semibold text-gray-900">Destinations</h1>
@@ -122,6 +123,6 @@ export default async function DestinationsPage({
           </table>
         )}
       </div>
-    </div>
+    </ContentShell>
   )
 }

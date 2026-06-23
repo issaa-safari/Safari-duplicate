@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { label } from './constants'
+import ContentShell from '../content-shell'
 
 export default async function SupplierRatesPage() {
   const supabase = await createClient()
@@ -16,7 +17,7 @@ export default async function SupplierRatesPage() {
     .order('valid_from', { ascending: false })
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <ContentShell active="rates" title="Supplier Rates" icon="$">
       <div className="flex items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-lg font-semibold text-gray-900">Supplier Rates</h1>
@@ -67,6 +68,6 @@ export default async function SupplierRatesPage() {
           </div>
         )}
       </div>
-    </div>
+    </ContentShell>
   )
 }

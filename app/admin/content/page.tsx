@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import ContentShell from './content-shell'
 
 interface CardProps {
   href: string
@@ -54,10 +55,9 @@ export default async function ContentLibraryPage() {
   ])
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <ContentShell title="Your Content Library">
       <div className="mb-8">
-        <h1 className="text-lg font-semibold text-gray-900">Content Library</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Manage the reusable content that powers tour pages and itineraries</p>
+        <p className="text-sm text-gray-500">Manage the reusable content that powers tour pages and itineraries</p>
       </div>
 
       {/* Main Content */}
@@ -115,6 +115,6 @@ export default async function ContentLibraryPage() {
           />
         </div>
       </div>
-    </div>
+    </ContentShell>
   )
 }

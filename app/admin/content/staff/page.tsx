@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import ContentShell from '../content-shell'
 
 const ROLE_STYLES: Record<string, string> = {
   guide: 'bg-green-100 text-green-700',
@@ -22,7 +23,7 @@ export default async function TourStaffPage() {
     .order('name', { ascending: true })
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <ContentShell active="staff" title="Tour Staff" icon="♙">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-lg font-semibold text-gray-900">Tour Staff</h1>
@@ -88,6 +89,6 @@ export default async function TourStaffPage() {
           </table>
         )}
       </div>
-    </div>
+    </ContentShell>
   )
 }

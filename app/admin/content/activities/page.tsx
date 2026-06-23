@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import ContentShell from '../content-shell'
 
 export default async function ActivitiesPage({
   searchParams,
@@ -26,7 +27,7 @@ export default async function ActivitiesPage({
   const shown = activeTab === 'content' ? withContent : withoutContent
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <ContentShell active="activities" title="Activities" icon="□">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-lg font-semibold text-gray-900">Activities</h1>
@@ -114,6 +115,6 @@ export default async function ActivitiesPage({
           </table>
         )}
       </div>
-    </div>
+    </ContentShell>
   )
 }
