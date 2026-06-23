@@ -214,6 +214,7 @@ export default function PriceLinesEditor({
     vehicle: EntityList[]
     activity: EntityList[]
     staff: EntityList[]
+    park_fee: EntityList[]
   }
 }) {
   const [lines, setLines] = useState(initial)
