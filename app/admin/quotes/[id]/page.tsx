@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
+import { headers } from 'next/headers'
+import DeliveryPanel from './delivery-panel'
 
 const STATUS_STYLES: Record<string, string> = {
   draft:    'bg-gray-100 text-gray-600',
@@ -38,6 +40,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
     { data: tourRow },
     { data: departureRow },
     { data: versionRows },
+    { data: deliveryRows },
   ] = await Promise.all([
     admin.from('clients').select('first_name, last_name, email, phone, country').eq('id', quote.client_id).single(),
     quote.request_id
@@ -53,11 +56,21 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until, default_markup_percent, sharing_price_per_person_usd, single_price_per_person_usd, single_supplement_usd, total_cost_usd, total_selling_usd, gross_margin_percent, locked_at, sent_at, created_at')
       .eq('quote_id', id)
       .order('version_number', { ascending: false }),
+    admin.from('quote_deliveries')
+      .select('id, quote_version_id, channel, access_token, expires_at, sent_at, first_viewed_at, last_viewed_at, view_count, revoked_at, created_at')
+      .eq('quote_id', id)
+      .order('created_at', { ascending: false }),
   ])
 
   const client = clientRow ?? null
   const versions: any[] = versionRows ?? [] // already ordered desc
   const latestVersion = versions[0]
+  const deliveries: any[] = deliveryRows ?? []
+
+  const hdrs = await headers()
+  const host = hdrs.get('host') ?? 'localhost:3000'
+  const proto = host.startsWith('localhost') ? 'http' : 'https'
+  const baseUrl = `${proto}://${host}`
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -187,6 +200,14 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               </table>
             )}
           </div>
+
+          {/* Share links */}
+          <DeliveryPanel
+            quoteId={id}
+            versions={versions.map((v: any) => ({ id: v.id, version_number: v.version_number, status: v.status }))}
+            deliveries={deliveries}
+            baseUrl={baseUrl}
+          />
 
           {/* Pricing summary for latest version */}
           {latestVersion && (latestVersion.total_selling_usd > 0) && (
