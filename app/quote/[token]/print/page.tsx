@@ -20,6 +20,9 @@ function fmtDate(d: string | null) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 }
+function mapsUrl(name: string) {
+  return `https://maps.google.com/?q=${encodeURIComponent(name)}`
+}
 
 export default async function QuotePrintPage({
   params,
@@ -64,6 +67,23 @@ export default async function QuotePrintPage({
       .select('company_name, logo_url, email, phone, whatsapp, address')
       .limit(1).single(),
   ])
+
+  // Load accommodation items for each day so we can show map links
+  const dayIds = (quoteDays ?? []).map((d: any) => d.id)
+  const { data: dayItems } = dayIds.length
+    ? await admin.from('quote_day_items')
+        .select('quote_day_id, item_type, title_snapshot')
+        .in('quote_day_id', dayIds)
+        .eq('item_type', 'accommodation')
+        .order('sort_order')
+    : { data: [] as any[] }
+
+  // Group accommodation items by day
+  const accomByDay: Record<string, string[]> = {}
+  for (const item of dayItems ?? []) {
+    if (!accomByDay[item.quote_day_id]) accomByDay[item.quote_day_id] = []
+    if (item.title_snapshot) accomByDay[item.quote_day_id].push(item.title_snapshot)
+  }
 
   if (!version || !quote) notFound()
 
@@ -170,12 +190,25 @@ export default async function QuotePrintPage({
               {quoteDays.map((day: any) => {
                 const meals: string[] = day.meals ?? []
                 const dest = day.destination_snapshot as Record<string, string> | null
+                const accoms = accomByDay[day.id] ?? []
                 return (
                   <div key={day.id} className="border-l-2 pl-4" style={{ borderColor: '#d4e5b8' }}>
                     <p className="text-xs text-gray-400 font-medium">
                       Day {day.day_number}
                       {day.day_date ? ` · ${fmtDate(day.day_date)}` : ''}
-                      {dest?.name ? ` · ${dest.name}` : ''}
+                      {dest?.name && (
+                        <>
+                          {' · '}
+                          <a
+                            href={mapsUrl(dest.name)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#7A9A4A' }}
+                          >
+                            {dest.name}
+                          </a>
+                        </>
+                      )}
                       {meals.length > 0 && ` · ${meals.map((m: string) => MEAL_LABELS[m] ?? m).join(', ')}`}
                     </p>
                     <h3 className="font-semibold text-gray-900 mb-1">{day.title || `Day ${day.day_number}`}</h3>
@@ -184,6 +217,24 @@ export default async function QuotePrintPage({
                     )}
                     {day.client_notes && (
                       <p className="text-sm mt-1 italic text-gray-500">{day.client_notes}</p>
+                    )}
+                    {accoms.length > 0 && (
+                      <p className="text-xs mt-1.5 text-gray-400">
+                        🏕{' '}
+                        {accoms.map((name, i) => (
+                          <span key={i}>
+                            {i > 0 && ', '}
+                            <a
+                              href={mapsUrl(name)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: '#7A9A4A' }}
+                            >
+                              {name}
+                            </a>
+                          </span>
+                        ))}
+                      </p>
                     )}
                   </div>
                 )
