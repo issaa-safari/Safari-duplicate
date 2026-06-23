@@ -34,6 +34,8 @@ type Day = {
 type TourDay = {
   day_number: number
   title_en: string | null
+  title_ar: string | null
+  description_en: string | null
   destination_id: string | null
   accommodation_id: string | null
   activity_ids: string[] | null
@@ -103,9 +105,9 @@ function fromTourDays(
       dayNumber: td.day_number,
       dayDate: '',
       title: td.title_en ?? '',
-      descriptionEn: '',
+      descriptionEn: td.description_en ?? '',
       clientNotes: '',
-      titleAr: '',
+      titleAr: td.title_ar ?? '',
       descriptionAr: '',
       clientNotesAr: '',
       destinationId: dest?.id ?? null,
@@ -154,6 +156,7 @@ export default function QuoteItineraryBuilder({
   quoteId,
   versionId,
   travelStartDate,
+  travelEndDate,
   quoteDays: initialQuoteDays,
   dayItems: initialDayItems,
   tourDays,
@@ -167,6 +170,7 @@ export default function QuoteItineraryBuilder({
   quoteId: string
   versionId: string
   travelStartDate: string | null
+  travelEndDate: string | null
   quoteDays: any[]
   dayItems: any[]
   tourDays: any[]
@@ -192,6 +196,12 @@ export default function QuoteItineraryBuilder({
         .filter((i: number) => i >= 0)
     )
   )
+  const [genCount, setGenCount] = useState<string>('')
+
+  // Calculate trip duration from dates (inclusive)
+  const tripDays = travelStartDate && travelEndDate
+    ? Math.max(1, Math.round((new Date(travelEndDate).getTime() - new Date(travelStartDate).getTime()) / 86_400_000) + 1)
+    : null
 
   // ── Day mutations ───────────────────────────────────────────────────────
 
@@ -210,6 +220,18 @@ export default function QuoteItineraryBuilder({
       titleAr: '', descriptionAr: '', clientNotesAr: '',
       destinationId: null, destinationSnapshot: {}, meals: [], items: [],
     }])
+    setSaved(false)
+  }
+
+  function generateBlankDays(count: number) {
+    if (count < 1 || count > 60) return
+    setDays(Array.from({ length: count }, (_, i) => ({
+      _key: uid(), id: null,
+      dayNumber: i + 1, dayDate: '', title: '',
+      descriptionEn: '', clientNotes: '',
+      titleAr: '', descriptionAr: '', clientNotesAr: '',
+      destinationId: null, destinationSnapshot: {}, meals: [], items: [],
+    })))
     setSaved(false)
   }
 
@@ -326,9 +348,9 @@ export default function QuoteItineraryBuilder({
 
   if (days.length === 0) {
     return (
-      <section className="bg-white rounded-lg border border-gray-200 p-10 text-center">
+      <section className="bg-white rounded-lg border border-gray-200 p-8 text-center">
         <p className="text-sm text-gray-500 mb-5">No itinerary days yet.</p>
-        <div className="flex items-center justify-center gap-3 flex-wrap">
+        <div className="flex flex-col items-center gap-3">
           {tourDays.length > 0 && (
             <button
               type="button"
@@ -339,13 +361,33 @@ export default function QuoteItineraryBuilder({
               Pre-fill from tour template ({tourDays.length} days)
             </button>
           )}
-          <button
-            type="button"
-            onClick={addBlankDay}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Start with one blank day
-          </button>
+          {tripDays && (
+            <button
+              type="button"
+              onClick={() => generateBlankDays(tripDays)}
+              className="rounded-md px-4 py-2 text-sm font-medium text-white"
+              style={{ backgroundColor: '#C9A84C' }}
+            >
+              Generate {tripDays} blank days (from trip dates)
+            </button>
+          )}
+          <div className="flex items-center gap-2">
+            <input
+              type="number" min={1} max={60}
+              placeholder="Days"
+              value={genCount}
+              onChange={e => setGenCount(e.target.value)}
+              className="w-20 rounded-md border border-gray-300 px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#7A9A4A]"
+            />
+            <button
+              type="button"
+              onClick={() => { const n = parseInt(genCount); if (n > 0) generateBlankDays(n) }}
+              disabled={!genCount || parseInt(genCount) < 1}
+              className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+            >
+              Generate blank days
+            </button>
+          </div>
         </div>
       </section>
     )
@@ -357,21 +399,21 @@ export default function QuoteItineraryBuilder({
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex items-center gap-2 flex-wrap">
-        {tourDays.length > 0 && days.every(d => !d.id) === false && (
+        {tourDays.length > 0 && (
           <button type="button" onClick={prefillFromTour}
             className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
-            Re-fill from template
+            Re-fill from template ({tourDays.length} days)
           </button>
         )}
         {travelStartDate && (
           <button type="button" onClick={autoComputeDates}
             className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
-            Auto-set dates from {new Date(travelStartDate).toLocaleDateString('en-GB')}
+            Auto-set dates
           </button>
         )}
         <button type="button" onClick={renumber}
           className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
-          Renumber 1→{days.length}
+          Renumber
         </button>
       </div>
 

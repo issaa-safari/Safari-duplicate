@@ -101,7 +101,8 @@ export default function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
                 ) : (
                   <div className="pt-3">
                     {row.payments.length > 0 ? (
-                      <table className="w-full text-sm mb-3">
+                      <div className="overflow-x-auto">
+                      <table className="w-full text-sm mb-3 min-w-[420px]">
                         <thead>
                           <tr className="text-xs text-gray-400 text-left border-b border-gray-100">
                             <th className="pb-1 font-medium">Date</th>
@@ -127,6 +128,7 @@ export default function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
                           ))}
                         </tbody>
                       </table>
+                      </div>
                     ) : (
                       <p className="text-xs text-gray-400 mb-3">No payments recorded yet.</p>
                     )}
