@@ -128,7 +128,17 @@ export default async function QuotePortalPage({
             )}
             <span className="font-semibold text-gray-900 text-sm">{companyName}</span>
           </div>
-          <span className="font-mono text-xs text-gray-400">{quote.quote_number}</span>
+          <div className="flex items-center gap-3">
+            <a
+              href={`/quote/${token}/print`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-500 hover:border-[#7A9A4A] hover:text-[#4C5E2A] transition"
+            >
+              Download PDF
+            </a>
+            <span className="font-mono text-xs text-gray-400">{quote.quote_number}</span>
+          </div>
         </div>
       </header>
 
