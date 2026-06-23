@@ -42,6 +42,7 @@ export default async function ContentLibraryPage() {
     { count: destCount },
     { count: accomCount },
     { count: actCount },
+    { count: parksCount },
     { count: vehicleCount },
     { count: staffCount },
     { count: rateCardCount },
@@ -49,6 +50,7 @@ export default async function ContentLibraryPage() {
     admin.from('destinations').select('*', { count: 'exact', head: true }),
     admin.from('accommodations').select('*', { count: 'exact', head: true }),
     admin.from('activities').select('*', { count: 'exact', head: true }),
+    admin.from('parks').select('*', { count: 'exact', head: true }),
     admin.from('vehicles').select('*', { count: 'exact', head: true }),
     admin.from('tour_staff').select('*', { count: 'exact', head: true }),
     admin.from('supplier_rate_cards').select('*', { count: 'exact', head: true }),
@@ -84,6 +86,13 @@ export default async function ContentLibraryPage() {
             description="Game drives, bush walks, balloon rides, and more"
             count={actCount}
             icon="🦁"
+          />
+          <ContentCard
+            href="/admin/content/parks"
+            title="Parks & Reserves"
+            description="National parks, game reserves, and conservancies with entrance fees"
+            count={parksCount}
+            icon="⛰️"
           />
         </div>
       </div>

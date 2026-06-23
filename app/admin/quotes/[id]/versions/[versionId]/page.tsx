@@ -44,6 +44,7 @@ export default async function VersionEditorPage({
     { data: activities },
     { data: vehicles },
     { data: staffData },
+    { data: parksData },
   ] = await Promise.all([
     admin.from('quote_versions')
       .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until')
@@ -70,6 +71,8 @@ export default async function VersionEditorPage({
       .select('id, name, type, seats').order('name'),
     admin.from('tour_staff')
       .select('id, name, role').order('name'),
+    admin.from('parks')
+      .select('id, name, country').eq('is_active', true).order('name'),
   ])
 
   if (!version || !quote) notFound()
@@ -171,6 +174,7 @@ export default async function VersionEditorPage({
             vehicle: (vehicles ?? []).map((v: any) => ({ id: v.id, name: v.name })),
             activity: (activities ?? []).map((a: any) => ({ id: a.id, name: a.name })),
             staff: (staffData ?? []).map((s: any) => ({ id: s.id, name: s.name })),
+            park_fee: (parksData ?? []).map((p: any) => ({ id: p.id, name: p.name })),
           }}
         />
       </div>

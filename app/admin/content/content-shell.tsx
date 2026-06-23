@@ -4,6 +4,7 @@ const MAIN_CONTENT = [
   { key: 'destinations', href: '/admin/content/destinations', label: 'Destinations', icon: '✣' },
   { key: 'accommodations', href: '/admin/content/accommodations', label: 'Accommodations', icon: '⌂' },
   { key: 'activities', href: '/admin/content/activities', label: 'Activities', icon: '□' },
+  { key: 'parks', href: '/admin/content/parks', label: 'Parks & Reserves', icon: '⛰' },
 ]
 
 const COMPANY_CONTENT = [

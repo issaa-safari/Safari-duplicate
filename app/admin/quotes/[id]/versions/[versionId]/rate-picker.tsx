@@ -38,6 +38,7 @@ export default function RatePicker({
     vehicle: EntityList[]
     activity: EntityList[]
     staff: EntityList[]
+    park_fee: EntityList[]
   }
   onAdded: () => void
   onCancel: () => void
