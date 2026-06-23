@@ -88,7 +88,8 @@ BEGIN
     'James', 'Thornton',
     'james.thornton.sample@example.com', '+447700900123', 'United Kingdom',
     'en', 'en'
-  ) RETURNING id INTO v_client_en_id;
+  ) ON CONFLICT (email) DO UPDATE SET first_name = EXCLUDED.first_name
+  RETURNING id INTO v_client_en_id;
 
   INSERT INTO clients (
     first_name, last_name, email, phone, country,
@@ -97,7 +98,8 @@ BEGIN
     'محمد', 'الرشيدي',
     'mohammed.alrashidi.sample@example.com', '+966501234567', 'Saudi Arabia',
     'ar', 'ar'
-  ) RETURNING id INTO v_client_ar_id;
+  ) ON CONFLICT (email) DO UPDATE SET first_name = EXCLUDED.first_name
+  RETURNING id INTO v_client_ar_id;
 
   -- ── Requests ──────────────────────────────────────────────────────────────
   INSERT INTO requests (
