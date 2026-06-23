@@ -11,6 +11,7 @@ interface AgeBand {
   max_age: number | null
   default_pricing_method: string
   default_percentage: number | null
+  default_fixed_amount_usd: number | null
   sort_order: number
 }
 
@@ -20,6 +21,7 @@ interface Traveller {
   age_on_travel_date: number | null
   age_band_id: string | null
   age_band_snapshot: Record<string, unknown>
+  pricing_fixed_amount_usd: number | null
   traveller_category: string
   room_category: string
   is_paying: boolean
@@ -65,7 +67,11 @@ function blankTravellerForm(ageBands: AgeBand[]) {
     isPaying: true,
     isComplimentary: false,
     pricingMethod: adultBand?.default_pricing_method ?? 'percentage',
-    pricingPercent: String(adultBand?.default_percentage ?? 100),
+    pricingPercent: String(
+      adultBand?.default_pricing_method === 'fixed'
+        ? (adultBand.default_fixed_amount_usd ?? 0)
+        : (adultBand?.default_percentage ?? 100)
+    ),
   }
 }
 
@@ -133,7 +139,11 @@ export default function VersionEditorForm({
       ageBandId: band.id,
       travellerCategory: band.code,
       pricingMethod: band.default_pricing_method,
-      pricingPercent: String(band.default_percentage ?? 100),
+      pricingPercent: String(
+        band.default_pricing_method === 'fixed'
+          ? (band.default_fixed_amount_usd ?? 0)
+          : (band.default_percentage ?? 100)
+      ),
     }
   }
 
@@ -148,7 +158,11 @@ export default function VersionEditorForm({
       ageBandId: bandId,
       travellerCategory: band.code,
       pricingMethod: band.default_pricing_method,
-      pricingPercent: String(band.default_percentage ?? 100),
+      pricingPercent: String(
+        band.default_pricing_method === 'fixed'
+          ? (band.default_fixed_amount_usd ?? 0)
+          : (band.default_percentage ?? 100)
+      ),
     }
   }
 
@@ -192,7 +206,9 @@ export default function VersionEditorForm({
       isPaying: t.is_paying,
       isComplimentary: t.is_complimentary,
       pricingMethod: (snap.default_pricing_method as string) ?? 'percentage',
-      pricingPercent: snap.default_percentage != null ? String(snap.default_percentage) : '100',
+      pricingPercent: (snap.default_pricing_method as string) === 'fixed'
+        ? String(t.pricing_fixed_amount_usd ?? snap.default_fixed_amount_usd ?? 0)
+        : String(snap.default_percentage ?? 100),
     })
     setEditingId(t.id)
     setEditError('')

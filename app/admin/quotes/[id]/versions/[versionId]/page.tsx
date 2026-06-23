@@ -50,10 +50,10 @@ export default async function VersionEditorPage({
       .select('id, quote_number, status, mode, client_id, tour_id')
       .eq('id', id).single(),
     admin.from('quote_travellers')
-      .select('id, display_name, age_on_travel_date, age_band_id, age_band_snapshot, traveller_category, room_category, is_paying, is_complimentary, sort_order')
+      .select('id, display_name, age_on_travel_date, age_band_id, age_band_snapshot, pricing_fixed_amount_usd, traveller_category, room_category, is_paying, is_complimentary, sort_order')
       .eq('quote_version_id', versionId).order('sort_order'),
     admin.from('traveller_age_bands')
-      .select('id, name, code, min_age, max_age, default_pricing_method, default_percentage, sort_order')
+      .select('id, name, code, min_age, max_age, default_pricing_method, default_percentage, default_fixed_amount_usd, sort_order')
       .eq('is_active', true).order('sort_order'),
     admin.from('quote_days')
       .select('id, day_number, day_date, title, description_en, client_notes, destination_id, destination_snapshot, meals, sort_order')

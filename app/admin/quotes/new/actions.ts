@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import { assertAdminAccess } from '@/lib/auth/admin-access'
 
 export async function createQuote(formData: FormData) {
   const supabase = await createClient()
@@ -25,81 +26,21 @@ export async function createQuote(formData: FormData) {
   }
 
   const admin = createAdminClient()
+  await assertAdminAccess(admin, user.email)
+  const { data: newQuoteId, error } = await admin.rpc('create_quote_with_version', {
+    p_client_id: clientId,
+    p_request_id: requestId,
+    p_mode: mode,
+    p_tour_id: tourId,
+    p_departure_id: departureId,
+    p_title: title,
+    p_created_by: user.id,
+  })
 
-  // Snapshot company settings for this version
-  const { data: settings } = await admin
-    .from('company_settings')
-    .select('company_name, brand_name, email, phone, whatsapp, default_markup_percent, deposit_percent, balance_due_days, cancellation_61_plus, cancellation_42_60, cancellation_28_41, cancellation_0_27, currency_primary')
-    .limit(1)
-    .single()
+  if (error) throw new Error(error.message)
+  if (!newQuoteId) throw new Error('Quote was not created.')
 
-  // Snapshot client
-  const { data: client } = await admin
-    .from('clients')
-    .select('first_name, last_name, email, phone, country, language')
-    .eq('id', clientId)
-    .single()
-
-  if (!client) throw new Error('Client not found.')
-
-  // If fixed departure, pull tour_id from the departure
-  let resolvedTourId = tourId
-  if (mode === 'fixed_departure' && departureId) {
-    const { data: dep } = await admin
-      .from('departures')
-      .select('tour_id')
-      .eq('id', departureId)
-      .single()
-    if (dep) resolvedTourId = dep.tour_id
-  }
-
-  // Create the quote
-  const { data: quote, error: quoteError } = await admin
-    .from('quotes')
-    .insert({
-      client_id: clientId,
-      request_id: requestId || null,
-      mode,
-      tour_id: resolvedTourId || null,
-      departure_id: departureId || null,
-      status: 'draft',
-      created_by: user.id,
-    })
-    .select('id, quote_number')
-    .single()
-
-  if (quoteError) throw new Error(quoteError.message)
-
-  const defaultMarkup = settings?.default_markup_percent ?? 0
-
-  // Create version 1
-  const { data: version, error: versionError } = await admin
-    .from('quote_versions')
-    .insert({
-      quote_id: quote.id,
-      version_number: 1,
-      status: 'draft',
-      title: title || null,
-      default_markup_percent: defaultMarkup,
-      valid_until: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      company_snapshot: settings ?? {},
-      client_snapshot: client ?? {},
-      policy_snapshot: settings
-        ? {
-            deposit_percent: settings.deposit_percent,
-            balance_due_days: settings.balance_due_days,
-            cancellation_61_plus: settings.cancellation_61_plus,
-            cancellation_42_60: settings.cancellation_42_60,
-            cancellation_28_41: settings.cancellation_28_41,
-            cancellation_0_27: settings.cancellation_0_27,
-          }
-        : {},
-      created_by: user.id,
-    })
-    .select('id')
-    .single()
-
-  if (versionError) throw new Error(versionError.message)
-
-  redirect(`/admin/quotes/${quote.id}`)
+  // redirect() outside try/catch — Next.js throws NEXT_REDIRECT internally
+  // and it must not be caught
+  redirect(`/admin/quotes/${newQuoteId}`)
 }

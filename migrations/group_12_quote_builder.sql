@@ -20,6 +20,7 @@ create table if not exists traveller_age_bands (
   default_pricing_method text not null default 'percentage'
     check (default_pricing_method in ('fixed', 'percentage', 'free')),
   default_percentage numeric(7,2),
+  default_fixed_amount_usd numeric(14,2) check (default_fixed_amount_usd is null or default_fixed_amount_usd >= 0),
   allowed_room_categories text[] not null default array['sharing', 'single', 'extra_bed', 'no_bed'],
   is_active boolean not null default true,
   sort_order integer not null default 0,
@@ -94,10 +95,7 @@ $$;
 
 -- The permanent quote identity. All editable and sent snapshots live in
 -- quote_versions so history never changes when content or settings change.
--- Drop and recreate if partially created by a previous failed run.
-drop table if exists quote_acceptances, quote_deliveries, quote_price_lines,
-  quote_day_items, quote_days, quote_travellers, quote_versions, quotes cascade;
-create table quotes (
+create table if not exists quotes (
   id uuid primary key default gen_random_uuid(),
   quote_number text not null unique default generate_quote_number(),
   request_id uuid references requests(id) on delete set null,
@@ -117,7 +115,7 @@ create table quotes (
   updated_at timestamptz not null default now()
 );
 
-create table quote_versions (
+create table if not exists quote_versions (
   id uuid primary key default gen_random_uuid(),
   quote_id uuid not null references quotes(id) on delete cascade,
   version_number integer not null check (version_number > 0),
@@ -168,13 +166,14 @@ alter table quotes
   add constraint quotes_accepted_version_id_fkey
   foreign key (accepted_version_id) references quote_versions(id) on delete set null;
 
-create table quote_travellers (
+create table if not exists quote_travellers (
   id uuid primary key default gen_random_uuid(),
   quote_version_id uuid not null references quote_versions(id) on delete cascade,
   display_name text,
   age_on_travel_date integer check (age_on_travel_date is null or age_on_travel_date >= 0),
   age_band_id uuid references traveller_age_bands(id) on delete set null,
   age_band_snapshot jsonb not null default '{}'::jsonb,
+  pricing_fixed_amount_usd numeric(14,2) check (pricing_fixed_amount_usd is null or pricing_fixed_amount_usd >= 0),
   traveller_category text not null,
   room_category text not null default 'sharing'
     check (room_category in ('sharing', 'single', 'triple', 'extra_bed', 'no_bed')),
@@ -185,7 +184,7 @@ create table quote_travellers (
   updated_at timestamptz not null default now()
 );
 
-create table quote_days (
+create table if not exists quote_days (
   id uuid primary key default gen_random_uuid(),
   quote_version_id uuid not null references quote_versions(id) on delete cascade,
   day_number integer not null check (day_number > 0),
@@ -204,7 +203,7 @@ create table quote_days (
   unique (quote_version_id, day_number)
 );
 
-create table quote_day_items (
+create table if not exists quote_day_items (
   id uuid primary key default gen_random_uuid(),
   quote_day_id uuid not null references quote_days(id) on delete cascade,
   item_type text not null
@@ -227,7 +226,7 @@ create table quote_day_items (
 
 -- Each row is an auditable cost/selling-price component. It preserves the
 -- selected reusable rate as well as any manual override and its reason.
-create table quote_price_lines (
+create table if not exists quote_price_lines (
   id uuid primary key default gen_random_uuid(),
   quote_version_id uuid not null references quote_versions(id) on delete cascade,
   quote_day_id uuid references quote_days(id) on delete cascade,
@@ -263,7 +262,7 @@ create table quote_price_lines (
   check (not is_manual_override or override_reason is not null)
 );
 
-create table quote_deliveries (
+create table if not exists quote_deliveries (
   id uuid primary key default gen_random_uuid(),
   quote_id uuid not null references quotes(id) on delete cascade,
   quote_version_id uuid not null references quote_versions(id) on delete cascade,
@@ -281,7 +280,7 @@ create table quote_deliveries (
   created_at timestamptz not null default now()
 );
 
-create table quote_acceptances (
+create table if not exists quote_acceptances (
   id uuid primary key default gen_random_uuid(),
   quote_id uuid not null references quotes(id) on delete cascade,
   quote_version_id uuid not null unique references quote_versions(id) on delete restrict,
