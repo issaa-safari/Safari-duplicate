@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { addCommunicationLog } from './communication-actions'
 
 const LOG_TYPES = [
   { key: 'whatsapp', label: '💬 WhatsApp' },
@@ -20,28 +20,32 @@ export default function CommunicationLog({
   logs: any[]
 }) {
   const router = useRouter()
-  const supabase = createClient()
 
   const [summary, setSummary] = useState('')
   const [type, setType] = useState('whatsapp')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleAddLog(e: React.FormEvent) {
     e.preventDefault()
     if (!summary.trim()) return
     setSaving(true)
+    setError('')
 
-    await supabase
-      .from('communication_logs')
-      .insert({
-        request_id: requestId,
-        type,
-        summary: summary.trim(),
-      })
+    const formData = new FormData()
+    formData.set('requestId', requestId)
+    formData.set('type', type)
+    formData.set('summary', summary)
 
-    setSummary('')
-    setSaving(false)
-    router.refresh()
+    try {
+      await addCommunicationLog(formData)
+      setSummary('')
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save communication log.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -79,6 +83,7 @@ export default function CommunicationLog({
         >
           {saving ? 'Saving...' : 'Add Log Entry'}
         </button>
+        {error && <p className="text-sm text-red-600">{error}</p>}
       </form>
 
       {/* Log history */}
