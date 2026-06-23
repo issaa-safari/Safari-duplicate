@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { assertAdminAccess } from '@/lib/auth/admin-access'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -12,6 +13,11 @@ export async function POST(request: Request) {
   if (!cleanName) return NextResponse.json({ error: 'Name required' }, { status: 400 })
 
   const admin = createAdminClient()
+  try {
+    await assertAdminAccess(admin, user.email)
+  } catch {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   if (kind === 'destination') {
     const { data, error } = await admin

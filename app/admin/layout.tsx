@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getAdminProfile } from '@/lib/auth/admin-access'
 import AdminSidebar from './sidebar'
 
 export default async function AdminLayout({
@@ -9,13 +10,11 @@ export default async function AdminLayout({
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/admin/login')
+  if (!user) return <>{children}</>
 
-  const { data: adminProfile } = await supabase
-    .from('admin_users')
-    .select('full_name, role')
-    .eq('email', user.email)
-    .single()
+  const admin = createAdminClient()
+  const adminProfile = await getAdminProfile(admin, user.email)
+  if (!adminProfile) return <>{children}</>
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

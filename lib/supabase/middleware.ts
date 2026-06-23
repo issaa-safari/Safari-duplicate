@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
@@ -27,14 +28,30 @@ export async function updateSession(request: NextRequest) {
 
   const isLoginPage = request.nextUrl.pathname === '/admin/login'
   const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
+  let isAdmin = false
 
-  if (isAdminRoute && !isLoginPage && !user) {
+  if (user?.email) {
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+    const { data } = await admin
+      .from('admin_users')
+      .select('email')
+      .eq('email', user.email)
+      .maybeSingle()
+    isAdmin = !!data
+  }
+
+  if (isAdminRoute && !isLoginPage && (!user || !isAdmin)) {
     const url = request.nextUrl.clone()
     url.pathname = '/admin/login'
+    if (user && !isAdmin) url.searchParams.set('error', 'unauthorized')
     return NextResponse.redirect(url)
   }
 
-  if (isLoginPage && user) {
+  if (isLoginPage && user && isAdmin) {
     const url = request.nextUrl.clone()
     url.pathname = '/admin/dashboard'
     return NextResponse.redirect(url)
