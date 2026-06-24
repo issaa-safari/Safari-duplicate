@@ -150,9 +150,9 @@ export default async function QuotePrintPage({
         </button>
       </div>
 
-      <div className="max-w-[780px] mx-auto p-8 text-gray-900" dir={isArabic ? 'rtl' : 'ltr'}>
+      <div className="max-w-[780px] mx-auto p-4 sm:p-8 text-gray-900" dir={isArabic ? 'rtl' : 'ltr'}>
         {/* Header */}
-        <div className="flex items-start justify-between border-b-2 pb-6 mb-6" style={{ borderColor: '#7A9A4A' }}>
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b-2 pb-6 mb-6" style={{ borderColor: '#7A9A4A' }}>
           <div>
             {settings?.logo_url ? (
               <img src={settings.logo_url} alt={companyName} className="h-12 w-auto mb-2" />

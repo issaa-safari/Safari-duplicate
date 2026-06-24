@@ -94,7 +94,7 @@ export default async function VersionEditorPage({
       : Promise.resolve({ data: [] as any[] }),
     quote.tour_id
       ? admin.from('tour_days')
-          .select('day_number, day_number_end, title_en, destination_id, accommodation_id, activity_ids, meal_breakfast, meal_lunch, meal_dinner')
+          .select('day_number, day_number_end, title_en, title_ar, description_en, destination_id, accommodation_id, activity_ids, meal_breakfast, meal_lunch, meal_dinner')
           .eq('tour_id', quote.tour_id).order('day_number')
       : Promise.resolve({ data: [] as any[] }),
     admin.from('clients').select('first_name, last_name').eq('id', quote.client_id).single(),
@@ -230,6 +230,7 @@ export default async function VersionEditorPage({
           quoteId={id}
           versionId={versionId}
           travelStartDate={version.travel_start_date ?? null}
+          travelEndDate={version.travel_end_date ?? null}
           quoteDays={quoteDays ?? []}
           dayItems={dayItems ?? []}
           tourDays={tourDays ?? []}

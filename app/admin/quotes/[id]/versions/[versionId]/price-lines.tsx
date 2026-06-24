@@ -268,6 +268,10 @@ export default function PriceLinesEditor({
         )}
       </div>
 
+      {/* Column headers + rows — horizontally scrollable on mobile */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[620px]">
+
       {/* Column headers */}
       {lines.length > 0 && (
         <div className="grid px-4 py-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-wide border-b border-gray-100"
@@ -439,6 +443,9 @@ export default function PriceLinesEditor({
           )
         })}
       </div>
+
+        </div>{/* /min-w-[620px] */}
+      </div>{/* /overflow-x-auto */}
 
       {/* ── Add form ───────────────────────────────────────────────────── */}
       {addingCategory && !isLocked && (

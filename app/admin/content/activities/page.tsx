@@ -77,40 +77,56 @@ export default async function ActivitiesPage({
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium hidden sm:table-cell">Destination</th>
-                <th className="px-4 py-3 font-medium hidden md:table-cell">Cover Image</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium"></th>
+              <tr className="border-b border-gray-200 text-left text-gray-500 text-xs">
+                <th className="px-4 py-3 font-medium">Activity</th>
+                <th className="px-4 py-3 font-medium hidden sm:table-cell">Location</th>
+                <th className="px-4 py-3 font-medium text-center hidden md:table-cell">Description</th>
+                <th className="px-4 py-3 font-medium text-center hidden md:table-cell">Image</th>
+                <th className="px-4 py-3 font-medium text-center hidden md:table-cell">Video</th>
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
-              {shown.map((act: any) => (
-                <tr key={act.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{act.name}</td>
-                  <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{act.destinations?.name ?? '—'}</td>
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    {act.cover_image_url
-                      ? <span className="text-xs text-green-600 font-medium">✓ Set</span>
-                      : <span className="text-xs text-gray-400">—</span>}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={'text-xs px-2 py-0.5 rounded-full font-medium ' +
-                      (act.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
-                      {act.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      href={'/admin/content/activities/' + act.id}
-                      className="text-xs font-medium text-white rounded-md px-3 py-1.5"
-                      style={{ backgroundColor: '#7A9A4A' }}>
-                      Edit
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+              {shown.map((act: any) => {
+                const hasDesc = act.has_content ? 1 : 0
+                const hasImg  = act.cover_image_url ? 1 : 0
+                return (
+                  <tr key={act.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <span className="font-medium text-gray-900">{act.name}</span>
+                      {!act.is_active && (
+                        <span className="ml-2 text-xs text-gray-400">(inactive)</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">
+                      {act.destinations?.name ?? <span className="text-gray-300">No specific location</span>}
+                    </td>
+                    <td className="px-4 py-3 text-center hidden md:table-cell">
+                      <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium ${
+                        hasDesc ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                        {hasDesc}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center hidden md:table-cell">
+                      <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium ${
+                        hasImg ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                        {hasImg}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center hidden md:table-cell">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium bg-gray-100 text-gray-400">
+                        0
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link href={'/admin/content/activities/' + act.id}
+                        className="text-gray-400 hover:text-gray-700">
+                        →
+                      </Link>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}

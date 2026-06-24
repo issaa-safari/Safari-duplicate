@@ -231,6 +231,7 @@ export default function AdminSidebar({
                 <Link
                   key={item.label}
                   href={item.href}
+                  title={item.label}
                   className={`flex h-full shrink-0 items-center gap-1.5 border-b-2 px-3 text-sm font-medium transition-colors ${
                     isActive
                       ? 'border-[#7A9A4A] text-[#3D5229]'
@@ -238,8 +239,8 @@ export default function AdminSidebar({
                   }`}
                   style={isActive ? { backgroundColor: 'rgba(122,154,74,0.09)' } : {}}
                 >
-                  <span className="text-xs opacity-50">{item.icon}</span>
-                  <span>{item.label}</span>
+                  <span className="text-xs opacity-60">{item.icon}</span>
+                  <span className="hidden sm:block">{item.label}</span>
                 </Link>
               )
             })}
