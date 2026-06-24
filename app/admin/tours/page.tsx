@@ -2,6 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
+const TYPE_LABEL: Record<string, string> = {
+  bike:    'Bike Tour',
+  private: 'Private Safari',
+  group:   'Group Safari',
+}
+
 export default async function ToursPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -16,13 +22,13 @@ export default async function ToursPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Tours</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Manage your tour templates and itineraries</p>
+          <h1 className="text-lg font-semibold text-gray-900">Tour Templates</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Manage your bilingual tour templates and itineraries</p>
         </div>
         <Link href="/admin/tours/new"
           className="rounded-md px-4 py-2 text-sm font-medium text-white"
           style={{ backgroundColor: '#7A9A4A' }}>
-          + New Tour
+          Create Your Template
         </Link>
       </div>
 
@@ -32,56 +38,79 @@ export default async function ToursPage() {
           <Link href="/admin/tours/new"
             className="mt-4 inline-block rounded-md px-4 py-2 text-sm font-medium text-white"
             style={{ backgroundColor: '#7A9A4A' }}>
-            Create First Tour
+            Create First Template
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {tours.map((tour: any) => (
             <div key={tour.id}
-              className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-[#7A9A4A] hover:shadow-sm transition">
-              <div className="h-32 bg-gradient-to-br from-[#4C5E2A] to-[#7A9A4A] flex items-end p-4">
-                <div>
-                  <span className={"text-xs px-2 py-0.5 rounded-full font-medium " +
-                    (tour.type === 'bike' ? 'bg-amber-100 text-amber-800' :
-                     tour.type === 'private' ? 'bg-blue-100 text-blue-800' :
-                     'bg-green-100 text-green-800')}>
-                    {tour.type === 'bike' ? '🏍️ Bike Tour' :
-                     tour.type === 'private' ? '🦁 Private Safari' : '👥 Group Safari'}
+              className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-[#7A9A4A] hover:shadow-sm transition flex flex-col">
+
+              {/* Card image / colour band */}
+              <div className="h-28 bg-gradient-to-br from-[#4C5E2A] to-[#7A9A4A] relative flex items-start justify-between p-3">
+                <span className="text-xs font-medium bg-white/20 text-white px-2 py-0.5 rounded-full">
+                  {TYPE_LABEL[tour.type] ?? tour.type}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    tour.status === 'active' ? 'bg-green-500 text-white' :
+                    tour.status === 'draft'  ? 'bg-amber-400 text-white' :
+                    'bg-gray-400 text-white'
+                  }`}>
+                    {tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
                   </span>
                 </div>
               </div>
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h2 className="font-semibold text-gray-900">{tour.title_en}</h2>
-                  <span className={"text-xs px-2 py-0.5 rounded-full font-medium shrink-0 " +
-                    (tour.status === 'active' ? 'bg-green-100 text-green-700' :
-                     tour.status === 'draft' ? 'bg-amber-100 text-amber-700' :
-                     'bg-gray-100 text-gray-600')}>
-                    {tour.status}
-                  </span>
+
+              {/* Card body */}
+              <div className="p-4 flex flex-col flex-1">
+                <h2 className="font-semibold text-gray-900 text-sm leading-snug mb-3">
+                  {tour.title_en}
+                </h2>
+
+                <div className="space-y-1.5 text-xs text-gray-500 flex-1">
+                  <div className="flex gap-2">
+                    <span className="text-gray-400 w-32 shrink-0">Tour Type</span>
+                    <span className="text-gray-700 capitalize">{TYPE_LABEL[tour.type] ?? tour.type}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-gray-400 w-32 shrink-0">Tour Length</span>
+                    <span className="text-gray-700">
+                      {tour.duration_days} Days / {tour.duration_nights} Nights
+                    </span>
+                  </div>
+                  {tour.countries_visited && (
+                    <div className="flex gap-2">
+                      <span className="text-gray-400 w-32 shrink-0">Countries Visited</span>
+                      <span className="text-gray-700">{tour.countries_visited}</span>
+                    </div>
+                  )}
+                  {tour.start_destination && (
+                    <div className="flex gap-2">
+                      <span className="text-gray-400 w-32 shrink-0">Start Destination</span>
+                      <span className="text-gray-700">{tour.start_destination}</span>
+                    </div>
+                  )}
+                  {tour.end_destination && (
+                    <div className="flex gap-2">
+                      <span className="text-gray-400 w-32 shrink-0">End Destination</span>
+                      <span className="text-gray-700">{tour.end_destination}</span>
+                    </div>
+                  )}
                 </div>
-                {tour.subtitle_en && (
-                  <p className="text-sm text-gray-500 mb-3">{tour.subtitle_en}</p>
-                )}
-                <div className="flex items-center gap-4 text-xs text-gray-400 mb-4">
-                  <span>{tour.duration_days} days / {tour.duration_nights} nights</span>
-                  {tour.distance_km && <span>{tour.distance_km}km</span>}
-                  <span>Max {tour.max_group_size} people</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Link href={"/admin/tours/" + tour.id}
-                    className="flex-1 rounded-md px-3 py-2 text-sm font-medium text-white text-center"
+
+                {/* Actions */}
+                <div className="mt-4 flex items-center gap-2">
+                  <Link href={`/admin/tours/${tour.id}`}
+                    className="flex-1 rounded-md px-3 py-1.5 text-xs font-medium text-white text-center"
                     style={{ backgroundColor: '#7A9A4A' }}>
                     Edit Tour
                   </Link>
-                  <Link href={"/admin/tours/" + tour.id + "/days"}
-                    className="rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
-                    Itinerary
+                  <Link href={`/admin/tours/${tour.id}/days`}
+                    className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
+                    Share Tour
                   </Link>
-                  {tour.featured && (
-                    <span className="text-xs text-amber-600">⭐ Featured</span>
-                  )}
                 </div>
               </div>
             </div>

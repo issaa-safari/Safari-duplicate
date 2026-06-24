@@ -15,14 +15,16 @@ const LOG_TYPES = [
 export default function CommunicationLog({
   requestId,
   logs,
+  noteOnly = false,
 }: {
   requestId: string
   logs: any[]
+  noteOnly?: boolean
 }) {
   const router = useRouter()
 
   const [summary, setSummary] = useState('')
-  const [type, setType] = useState('whatsapp')
+  const [type, setType] = useState(noteOnly ? 'note' : 'whatsapp')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -52,22 +54,24 @@ export default function CommunicationLog({
     <div className="space-y-4">
       {/* Add new log */}
       <form onSubmit={handleAddLog} className="space-y-3">
-        <div className="flex gap-2 flex-wrap">
-          {LOG_TYPES.map(t => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setType(t.key)}
-              className={`rounded-full px-3 py-1 text-xs font-medium border transition ${
-                type === t.key
-                  ? 'bg-[#7A9A4A] text-white border-[#7A9A4A]'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        {!noteOnly && (
+          <div className="flex gap-2 flex-wrap">
+            {LOG_TYPES.map(t => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setType(t.key)}
+                className={`rounded-full px-3 py-1 text-xs font-medium border transition ${
+                  type === t.key
+                    ? 'bg-[#7A9A4A] text-white border-[#7A9A4A]'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
         <textarea
           value={summary}
           onChange={e => setSummary(e.target.value)}

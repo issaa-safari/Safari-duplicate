@@ -13,6 +13,9 @@ export default function TourEditForm({ tour }: { tour: any }) {
   const [titleAr, setTitleAr] = useState(tour.title_ar ?? '')
   const [subtitleEn, setSubtitleEn] = useState(tour.subtitle_en ?? '')
   const [overviewEn, setOverviewEn] = useState(tour.overview_en ?? '')
+  const [countriesVisited, setCountriesVisited] = useState(tour.countries_visited ?? '')
+  const [startDestination, setStartDestination] = useState(tour.start_destination ?? '')
+  const [endDestination, setEndDestination] = useState(tour.end_destination ?? '')
   const [status, setStatus] = useState(tour.status ?? 'draft')
   const [featured, setFeatured] = useState(tour.featured ?? false)
   const [showOnWebsite, setShowOnWebsite] = useState(tour.show_on_website ?? true)
@@ -38,6 +41,9 @@ export default function TourEditForm({ tour }: { tour: any }) {
           title_ar: titleAr,
           subtitle_en: subtitleEn,
           overview_en: overviewEn,
+          countries_visited: countriesVisited || null,
+          start_destination: startDestination || null,
+          end_destination: endDestination || null,
           status,
           featured,
           show_on_website: showOnWebsite,
@@ -81,6 +87,27 @@ export default function TourEditForm({ tour }: { tour: any }) {
           <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle (English)</label>
           <input type="text" value={subtitleEn} onChange={e => setSubtitleEn(e.target.value)}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#7A9A4A]" />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Countries Visited</label>
+            <input type="text" value={countriesVisited} onChange={e => setCountriesVisited(e.target.value)}
+              placeholder="e.g. Kenya, Tanzania"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#7A9A4A]" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Start Destination</label>
+            <input type="text" value={startDestination} onChange={e => setStartDestination(e.target.value)}
+              placeholder="e.g. Nairobi"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#7A9A4A]" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">End Destination</label>
+            <input type="text" value={endDestination} onChange={e => setEndDestination(e.target.value)}
+              placeholder="e.g. Nairobi"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#7A9A4A]" />
+          </div>
         </div>
 
         <div>
