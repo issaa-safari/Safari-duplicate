@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import TourEditForm from './tour-edit-form'
@@ -13,8 +14,9 @@ export default async function TourDetailPage({
   if (!user) redirect('/admin/login')
 
   const { id } = await params
+  const admin = createAdminClient()
 
-  const { data: tour } = await supabase
+  const { data: tour } = await admin
     .from('tours')
     .select('*')
     .eq('id', id)
@@ -22,7 +24,7 @@ export default async function TourDetailPage({
 
   if (!tour) notFound()
 
-  const { data: days } = await supabase
+  const { data: days } = await admin
     .from('tour_days')
     .select('*, destinations(name), accommodations(name)')
     .eq('tour_id', id)
