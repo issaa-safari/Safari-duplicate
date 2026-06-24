@@ -101,7 +101,7 @@ export default async function QuotePrintPage({
     { data: settings },
   ] = await Promise.all([
     admin.from('quote_versions')
-      .select('id, version_number, title, language, travel_start_date, travel_end_date, valid_until, total_selling_usd, sharing_price_per_person_usd, single_price_per_person_usd')
+      .select('id, version_number, title, language, travel_start_date, travel_end_date, valid_until, total_selling_usd, sharing_price_per_person_usd, single_price_per_person_usd, cost_base_usd, default_markup_percent')
       .eq('id', delivery.quote_version_id).single(),
     admin.from('quotes')
       .select('id, quote_number, mode, client_id')
@@ -156,6 +156,9 @@ export default async function QuotePrintPage({
   const totalSelling = Number(version.total_selling_usd ?? 0)
   const sharingPp = Number(version.sharing_price_per_person_usd ?? 0)
   const singlePp = Number(version.single_price_per_person_usd ?? 0)
+  const costBase = Number(version.cost_base_usd ?? 0)
+  const markupPercent = Number(version.default_markup_percent ?? 0)
+  const hasQuoteLevelPricing = costBase > 0
   const tourTitle = version.title || 'Safari Quotation'
   const numDays = (quoteDays ?? []).length
   const numNights = Math.max(0, numDays - 1)
@@ -501,31 +504,66 @@ export default async function QuotePrintPage({
 
           <h3 style={{ fontSize: 17 }}>{t.breakdown}</h3>
 
-          <table className="cost-tbl nb">
-            <tbody>
-              {sharingPp > 0 && (
+          {hasQuoteLevelPricing && (
+            <table className="cost-tbl nb" style={{ marginBottom: 24 }}>
+              <tbody>
                 <tr>
-                  <td>{t.perSharing}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 600 }}>${fmt(sharingPp)}</td>
+                  <td>Total Cost Base</td>
+                  <td style={{ textAlign: 'right', fontWeight: 600 }}>${fmt(costBase)}</td>
                   <td />
                 </tr>
-              )}
-              {singlePp > 0 && (
-                <tr>
-                  <td>{t.perSingle}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 600 }}>${fmt(singlePp)}</td>
-                  <td />
-                </tr>
-              )}
-              {totalSelling > 0 && (
-                <tr>
-                  <td>{t.total}</td>
-                  <td />
-                  <td style={{ textAlign: 'right' }}>${fmt(totalSelling)}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                {markupPercent > 0 && (
+                  <>
+                    <tr>
+                      <td>Markup ({markupPercent}%)</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>${fmt(costBase * markupPercent / 100)}</td>
+                      <td />
+                    </tr>
+                    <tr>
+                      <td><strong>Total Client Price</strong></td>
+                      <td />
+                      <td style={{ textAlign: 'right', fontWeight: 700 }}>${fmt(costBase * (1 + markupPercent / 100))}</td>
+                    </tr>
+                  </>
+                )}
+                {markupPercent === 0 && (
+                  <tr>
+                    <td><strong>Total Client Price</strong></td>
+                    <td />
+                    <td style={{ textAlign: 'right', fontWeight: 700 }}>${fmt(costBase)}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+
+          {!hasQuoteLevelPricing && (
+            <table className="cost-tbl nb">
+              <tbody>
+                {sharingPp > 0 && (
+                  <tr>
+                    <td>{t.perSharing}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>${fmt(sharingPp)}</td>
+                    <td />
+                  </tr>
+                )}
+                {singlePp > 0 && (
+                  <tr>
+                    <td>{t.perSingle}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>${fmt(singlePp)}</td>
+                    <td />
+                  </tr>
+                )}
+                {totalSelling > 0 && (
+                  <tr>
+                    <td>{t.total}</td>
+                    <td />
+                    <td style={{ textAlign: 'right' }}>${fmt(totalSelling)}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
 
           {optionalLines.length > 0 && (
             <div style={{ marginTop: 28 }}>

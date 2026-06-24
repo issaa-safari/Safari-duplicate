@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { saveDates, saveLanguage, addTraveller, deleteTraveller, updateTraveller } from './actions'
+import { saveDates, saveLanguage, savePricing, addTraveller, deleteTraveller, updateTraveller } from './actions'
 
 interface AgeBand {
   id: string
@@ -36,6 +36,8 @@ interface Version {
   travel_start_date: string | null
   travel_end_date: string | null
   language?: string | null
+  cost_base_usd: number | null
+  default_markup_percent: number
 }
 
 const ROOM_OPTIONS = [
@@ -133,6 +135,37 @@ export default function VersionEditorForm({
       } catch { /* ignore */ }
     })
   }
+
+  // ── Pricing ─────────────────────────────────────────────────────────────
+  const [costBase, setCostBase] = useState(version.cost_base_usd ? String(version.cost_base_usd) : '')
+  const [markupPercent, setMarkupPercent] = useState(String(version.default_markup_percent ?? 0))
+  const [pricingPending, startPricingTransition] = useTransition()
+  const [pricingError, setPricingError] = useState('')
+  const [pricingSaved, setPricingSaved] = useState(false)
+
+  function handleSavePricing() {
+    setPricingError('')
+    setPricingSaved(false)
+    const fd = new FormData()
+    fd.set('versionId', version.id)
+    fd.set('quoteId', quoteId)
+    fd.set('costBase', costBase)
+    fd.set('markupPercent', markupPercent)
+    startPricingTransition(async () => {
+      try {
+        await savePricing(fd)
+        setPricingSaved(true)
+      } catch (err: unknown) {
+        setPricingError(err instanceof Error ? err.message : 'Failed to save pricing.')
+      }
+    })
+  }
+
+  // Calculate client price for preview
+  const costBaseNum = costBase ? parseFloat(costBase) : 0
+  const markupNum = markupPercent ? parseFloat(markupPercent) : 0
+  const clientPrice = costBaseNum > 0 ? costBaseNum * (1 + markupNum / 100) : 0
+  const markup = clientPrice - costBaseNum
 
   // ── Add traveller ───────────────────────────────────────────────────────
   const [showAdd, setShowAdd] = useState(false)
@@ -637,6 +670,71 @@ export default function VersionEditorForm({
                 Cancel
               </button>
             </div>
+          </div>
+        )}
+      </section>
+
+      {/* ── Pricing ─────────────────────────────────────────────────────────── */}
+      <section className="bg-white rounded-lg border border-gray-200 p-6">
+        <h2 className="text-sm font-semibold text-gray-900 mb-4">Quote-Level Pricing</h2>
+        <p className="text-sm text-gray-500 mb-4">Set a cost base and markup percentage to calculate the client price.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className={labelCls}>Cost Base (USD)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              className={inputCls}
+              value={costBase}
+              onChange={e => { setCostBase(e.target.value); setPricingSaved(false) }}
+              disabled={isLocked}
+              placeholder="0.00"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Markup (%)</label>
+            <input
+              type="number"
+              min="0"
+              max="500"
+              step="0.1"
+              className={inputCls}
+              value={markupPercent}
+              onChange={e => { setMarkupPercent(e.target.value); setPricingSaved(false) }}
+              disabled={isLocked}
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Client Price (USD)</label>
+            <div className={inputCls.replace('focus:outline-none focus:ring-2 focus:ring-[#7A9A4A]', '').replace('text-gray-900', 'text-gray-700').replace('bg-white', 'bg-gray-50').replace('border-gray-300', 'border-gray-200')} style={{ display: 'flex', alignItems: 'center' }}>
+              <span className="font-semibold">${clientPrice.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+        {costBaseNum > 0 && markupNum > 0 && (
+          <div className="text-sm text-gray-600 mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+            ${costBaseNum.toFixed(2)} + ${markup.toFixed(2)} (markup) = ${clientPrice.toFixed(2)} (client price)
+          </div>
+        )}
+        {pricingError && (
+          <p className="text-sm text-red-600 bg-red-50 rounded-md px-3 py-2 mb-3">{pricingError}</p>
+        )}
+        {!isLocked && (
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={handleSavePricing}
+              disabled={pricingPending}
+              className="rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+              style={{ backgroundColor: '#7A9A4A' }}
+            >
+              {pricingPending ? 'Saving…' : 'Save Pricing'}
+            </button>
+            {pricingSaved && !pricingPending && (
+              <span className="text-sm text-green-600">Saved</span>
+            )}
           </div>
         )}
       </section>

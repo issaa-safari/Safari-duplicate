@@ -233,3 +233,37 @@ export async function updateTraveller(formData: FormData) {
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
 }
+
+export async function savePricing(formData: FormData) {
+  const { admin } = await authGuard()
+
+  const versionId = formData.get('versionId') as string
+  const quoteId = formData.get('quoteId') as string
+  const costBaseStr = (formData.get('costBase') as string) || ''
+  const markupPercentStr = (formData.get('markupPercent') as string) || ''
+
+  if (!versionId || !quoteId) throw new Error('Missing version or quote ID.')
+
+  const costBase = costBaseStr !== '' ? parseFloat(costBaseStr) : null
+  const markupPercent = markupPercentStr !== '' ? parseFloat(markupPercentStr) : 0
+
+  if (costBase !== null && (!Number.isFinite(costBase) || costBase < 0)) {
+    throw new Error('Cost base must be zero or greater.')
+  }
+  if (!Number.isFinite(markupPercent) || markupPercent < 0 || markupPercent > 500) {
+    throw new Error('Markup percent must be between 0 and 500.')
+  }
+
+  await requireMutableVersion(admin, versionId, quoteId)
+
+  const { error } = await admin
+    .from('quote_versions')
+    .update({
+      cost_base_usd: costBase,
+      default_markup_percent: markupPercent,
+    })
+    .eq('id', versionId)
+
+  if (error) throw new Error(error.message)
+  revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
+}

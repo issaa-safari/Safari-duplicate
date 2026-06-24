@@ -47,7 +47,7 @@ export default async function VersionEditorPage({
     { data: parksData },
   ] = await Promise.all([
     admin.from('quote_versions')
-      .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until, language')
+      .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until, language, cost_base_usd, default_markup_percent')
       .eq('id', versionId).single(),
     admin.from('quotes')
       .select('id, quote_number, status, mode, client_id, tour_id')
