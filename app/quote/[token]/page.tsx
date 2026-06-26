@@ -87,7 +87,7 @@ export default async function QuotePortalPage({
       .eq('id', delivery.quote_version_id)
       .single(),
     admin.from('quotes')
-      .select('id, quote_number, mode, client_id')
+      .select('id, quote_number, mode, client_id, tour_id')
       .eq('id', delivery.quote_id)
       .single(),
     admin.from('quote_days')
@@ -124,7 +124,7 @@ export default async function QuotePortalPage({
       .eq('id', (quote as any).client_id)
       .single(),
     admin.from('quote_travellers')
-      .select('id, traveller_category, age_band_snapshot, room_category, is_paying')
+      .select('id, traveller_category, age_band_snapshot, room_category, is_paying, is_complimentary')
       .eq('quote_version_id', delivery.quote_version_id)
       .order('sort_order'),
   ])
@@ -143,23 +143,68 @@ export default async function QuotePortalPage({
   const markupPercent = Number((version as any).default_markup_percent ?? 0)
   const hasQuoteLevelPricing = costBase > 0
 
+  const companyName = settings?.company_name ?? 'Safari Adventures'
+
+  // Load tour hero image if needed
+  const { data: tourData } = (quote as any)?.tour_id
+    ? await admin.from('tours').select('image_url, hero_image_url').eq('id', (quote as any).tour_id).single()
+    : { data: null as any }
+  const heroImage = (tourData as any)?.image_url ?? (tourData as any)?.hero_image_url ?? null
+
+  // Load accommodation and activity items by day
+  const dayIds = (quoteDays ?? []).map((d: any) => d.id)
+  const { data: dayItems } = dayIds.length
+    ? await admin.from('quote_day_items')
+        .select('quote_day_id, item_type, title_snapshot')
+        .in('quote_day_id', dayIds)
+        .in('item_type', ['accommodation', 'activity'])
+        .order('sort_order')
+    : { data: [] as any[] }
+
+  const accomByDay: Record<string, string[]> = {}
+  const actsByDay: Record<string, string[]> = {}
+  for (const item of dayItems ?? []) {
+    if (item.item_type === 'accommodation') {
+      if (!accomByDay[item.quote_day_id]) accomByDay[item.quote_day_id] = []
+      if (item.title_snapshot) accomByDay[item.quote_day_id].push(item.title_snapshot)
+    } else if (item.item_type === 'activity') {
+      if (!actsByDay[item.quote_day_id]) actsByDay[item.quote_day_id] = []
+      if (item.title_snapshot) actsByDay[item.quote_day_id].push(item.title_snapshot)
+    }
+  }
+
   // Group travellers by age band for per-type breakdown
   type TGroup = { name: string; count: number; perPerson: number; total: number }
+  const payingTravellers = (quoteTravellers ?? []).filter((t: any) => t.is_paying && !t.is_complimentary)
+
+  // Derive per-person base if not explicitly stored
+  let effectiveSharingPp = sharingPp
+  const totalSellingDerived = costBase > 0
+    ? (markupPercent > 0 ? costBase * (1 + markupPercent / 100) : costBase)
+    : totalSelling
+  if (effectiveSharingPp === 0 && totalSellingDerived > 0 && payingTravellers.length > 0) {
+    const weightedSum = (payingTravellers as any[]).reduce((s: number, t: any) => {
+      const pct = ((t.age_band_snapshot as any)?.default_percentage ?? 100) / 100
+      return s + pct
+    }, 0)
+    effectiveSharingPp = weightedSum > 0
+      ? totalSellingDerived / weightedSum
+      : totalSellingDerived / payingTravellers.length
+  }
+
   const tGroupMap: Record<string, TGroup> = {}
-  for (const t of (quoteTravellers ?? []) as any[]) {
-    if (!t.is_paying) continue
+  for (const t of payingTravellers as any[]) {
     const band = t.age_band_snapshot as any
     const key = band?.code ?? t.traveller_category ?? 'adult'
     const bandName = band?.name ?? (t.traveller_category === 'adult' ? 'Adult' : 'Child')
-    const basePp = t.room_category === 'sharing' ? sharingPp : singlePp
-    const pp = basePp > 0 ? basePp * ((band?.default_percentage ?? 100) / 100) : 0
+    const bandPct = (band?.default_percentage ?? 100) / 100
+    const pp = effectiveSharingPp > 0 ? effectiveSharingPp * bandPct : 0
     if (!tGroupMap[key]) tGroupMap[key] = { name: bandName, count: 0, perPerson: pp, total: 0 }
     tGroupMap[key].count++
     tGroupMap[key].total += pp
   }
   const travellerGroups = Object.values(tGroupMap)
-
-  const companyName = settings?.company_name ?? 'Safari Adventures'
+  const grandTotal = travellerGroups.reduce((s, g) => s + g.total, 0) || totalSellingDerived
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -192,21 +237,34 @@ export default async function QuotePortalPage({
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6" dir={isArabic ? 'rtl' : 'ltr'}>
-        {/* Hero */}
+        {/* Hero with title + thumbnail */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <p className="text-sm text-gray-500 mb-1">{isArabic ? AR.hello : 'Hello,'} {clientName}</p>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            {version.title || (isArabic ? 'عرض سعر رحلتك' : 'Your Safari Quote')}
-          </h1>
-          <p className="text-sm text-gray-500">
-            {fmtDate(version.travel_start_date)}
-            {version.travel_end_date && version.travel_end_date !== version.travel_start_date
-              ? ` – ${fmtDate(version.travel_end_date)}`
-              : ''}
-          </p>
+          <p className="text-sm text-gray-500 mb-2">{isArabic ? AR.hello : 'Hello,'} {clientName}</p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                {version.title || (isArabic ? 'عرض سعر رحلتك' : 'Your Safari Quote')}
+              </h1>
+              <p className="text-sm text-gray-600">
+                {fmtDate(version.travel_start_date)}
+                {version.travel_end_date && version.travel_end_date !== version.travel_start_date
+                  ? ` – ${fmtDate(version.travel_end_date)}`
+                  : ''}
+              </p>
+            </div>
+            {heroImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={heroImage} alt={version.title} className="w-24 h-16 object-cover rounded-lg flex-shrink-0" />
+            ) : (
+              <div className="w-24 h-16 rounded-lg flex-shrink-0 bg-gradient-to-br from-green-900 via-[#7A9A4A] to-green-100 flex items-center justify-center text-white text-2xl">
+                🦁
+              </div>
+            )}
+          </div>
+
           {version.valid_until && (
-            <p className="text-xs text-amber-600 mt-2">
-              Quote valid until {fmtDate(version.valid_until)}
+            <p className="text-xs text-amber-600 mt-3">
+              {isArabic ? AR.validUntil : 'Quote valid until'} {fmtDate(version.valid_until)}
             </p>
           )}
 
@@ -224,6 +282,57 @@ export default async function QuotePortalPage({
             </div>
           )}
         </div>
+
+        {/* Summary Table */}
+        {quoteDays && quoteDays.length > 0 && (
+          <section>
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              {isArabic ? 'يوم بيوم' : 'Day by Day'}
+            </h2>
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200" style={{ backgroundColor: '#7A9A4A' }}>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-white uppercase tracking-wide" style={{ width: '16%' }}>
+                      {isArabic ? 'اليوم' : 'Days'}
+                    </th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-white uppercase tracking-wide" style={{ width: '22%' }}>
+                      {isArabic ? 'الوجهة التالية' : 'Next Destination'}
+                    </th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-white uppercase tracking-wide" style={{ width: '36%' }}>
+                      {isArabic ? 'الإقامة' : 'Accommodation'}
+                    </th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-white uppercase tracking-wide" style={{ width: '26%' }}>
+                      {isArabic ? 'خطة الوجبات' : 'Meal Plan'}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {quoteDays.map((day: any, i: number) => {
+                    const dest = (day.destination_snapshot as any)?.name ?? '—'
+                    const accoms = accomByDay[day.id] ?? []
+                    const dayMeals: string[] = day.meals ?? []
+                    const mealLabels = isArabic ? MEAL_LABELS_AR : MEAL_LABELS
+                    const mealStr = dayMeals.map((m: string) => mealLabels[m] ?? m).join(', ') || '—'
+                    const dayLabel = day.day_number_end && day.day_number_end !== day.day_number
+                      ? `${isArabic ? AR.day : 'Day'} ${day.day_number}–${day.day_number_end}`
+                      : `${isArabic ? AR.day : 'Day'} ${day.day_number}`
+                    return (
+                      <tr key={day.id} style={{ backgroundColor: i % 2 === 0 ? '#fafff5' : '#fff' }}>
+                        <td className="px-4 py-3 font-medium text-gray-900">{dayLabel}</td>
+                        <td className="px-4 py-3 font-medium text-gray-800">{dest}</td>
+                        <td className="px-4 py-3 text-gray-700">
+                          {accoms.length > 0 ? accoms[0] : <span className="text-gray-400 text-xs italic">{isArabic ? 'بدون إقامة' : 'No accommodation'}</span>}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700 text-xs">{mealStr}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
 
         {/* Itinerary */}
         {quoteDays && quoteDays.length > 0 && (
@@ -315,60 +424,32 @@ export default async function QuotePortalPage({
           </section>
         )}
 
-        {/* Price summary */}
-        {(hasQuoteLevelPricing || totalSelling > 0) && (
+        {/* Pricing Section */}
+        {(hasQuoteLevelPricing || grandTotal > 0) && (
           <section>
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
               {isArabic ? AR.pricing : 'Pricing'}
             </h2>
 
-            {/* Cost base + markup breakdown */}
-            {hasQuoteLevelPricing && (
+            {/* Traveller-type breakdown (connected to cost base) */}
+            {travellerGroups.length > 0 ? (
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="divide-y divide-gray-50">
-                  <div className="flex justify-between items-center px-5 py-3 text-sm">
-                    <span className="text-gray-600">{isArabic ? 'التكلفة الأساسية' : 'Total Cost Base'}</span>
-                    <span className="font-semibold text-gray-900">${fmt(costBase)}</span>
-                  </div>
-                  {markupPercent > 0 && (
-                    <div className="flex justify-between items-center px-5 py-3 text-sm">
-                      <span className="text-gray-600">
-                        {isArabic ? `نسبة الربح (${markupPercent}%)` : `Markup (${markupPercent}%)`}
-                      </span>
-                      <span className="font-semibold text-gray-900">${fmt(costBase * markupPercent / 100)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center px-5 py-4 bg-[#f8fdf0]">
-                    <span className="text-base font-bold text-gray-900">
-                      {isArabic ? AR.total : 'Total in USD'}
-                    </span>
-                    <span className="text-base font-bold text-gray-900">
-                      ${fmt(costBase * (1 + markupPercent / 100))} USD
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Per-traveller-type breakdown */}
-            {!hasQuoteLevelPricing && travellerGroups.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="grid grid-cols-3 px-5 py-2 border-b border-gray-100 bg-gray-50">
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                <div className="grid grid-cols-3 px-5 py-3 border-b border-gray-200" style={{ backgroundColor: '#7A9A4A' }}>
+                  <span className="text-xs font-semibold text-white uppercase tracking-wide">
                     {isArabic ? 'المسافر' : 'Traveller'}
                   </span>
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">
+                  <span className="text-xs font-semibold text-white uppercase tracking-wide text-right">
                     {isArabic ? 'للشخص' : 'Per Person'}
                   </span>
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">
+                  <span className="text-xs font-semibold text-white uppercase tracking-wide text-right">
                     {isArabic ? 'الإجمالي' : 'Total'}
                   </span>
                 </div>
-                <div className="divide-y divide-gray-50">
+                <div className="divide-y divide-gray-100">
                   {travellerGroups.map((g, i) => (
-                    <div key={i} className="grid grid-cols-3 items-center px-5 py-3 text-sm">
-                      <span className="text-gray-700 font-medium">{g.count}x {g.name}</span>
-                      <span className="text-gray-600 text-right">
+                    <div key={i} className="grid grid-cols-3 items-center px-5 py-3 text-sm" style={{ backgroundColor: i % 2 === 0 ? '#fafff5' : '#fff' }}>
+                      <span className="text-gray-800 font-medium">{g.count}x {g.name}</span>
+                      <span className="text-gray-700 text-right">
                         {g.perPerson > 0 ? `$${fmt(g.perPerson)}` : '—'}
                       </span>
                       <span className="font-semibold text-gray-900 text-right">
@@ -376,40 +457,23 @@ export default async function QuotePortalPage({
                       </span>
                     </div>
                   ))}
-                  <div className="grid grid-cols-3 items-center px-5 py-4 bg-[#f8fdf0]">
-                    <span className="text-base font-bold text-gray-900">
+                  <div className="grid grid-cols-3 items-center px-5 py-3 font-bold text-base" style={{ backgroundColor: '#f8fdf0', borderTop: '2px solid #7A9A4A' }}>
+                    <span className="text-gray-900">
                       {isArabic ? AR.total : 'Total in USD'}
                     </span>
                     <span />
-                    <span className="text-base font-bold text-gray-900 text-right">
-                      ${fmt(totalSelling)} USD
-                    </span>
+                    <span className="text-gray-900 text-right">${fmt(grandTotal)} USD</span>
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* Fallback: simple total */}
-            {!hasQuoteLevelPricing && travellerGroups.length === 0 && totalSelling > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
-                {sharingPp > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">{isArabic ? AR.sharingPp : 'Per person (sharing)'}</span>
-                    <span className="font-semibold text-gray-900">${fmt(sharingPp)}</span>
-                  </div>
-                )}
-                {singlePp > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">{isArabic ? AR.singlePp : 'Per person (single room)'}</span>
-                    <span className="font-semibold text-gray-900">${fmt(singlePp)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-base font-semibold border-t border-gray-100 pt-3">
-                  <span className="text-gray-900">{isArabic ? AR.total : 'Total'}</span>
-                  <span className="text-gray-900">${fmt(totalSelling)} USD</span>
+            ) : grandTotal > 0 ? (
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <div className="flex justify-between items-center text-base font-bold">
+                  <span className="text-gray-900">{isArabic ? AR.total : 'Total in USD'}</span>
+                  <span className="text-gray-900">${fmt(grandTotal)} USD</span>
                 </div>
               </div>
-            )}
+            ) : null}
           </section>
         )}
 
