@@ -6,6 +6,7 @@ import VersionEditorForm from './form'
 import QuoteItineraryBuilder from './quote-itinerary-builder'
 import PriceLinesEditor from './price-lines'
 import VersionStatusControls from './version-status-controls'
+import CostSheetEditor, { CS_UNITS, type CostLine } from './cost-sheet'
 
 const STATUS_STYLES: Record<string, string> = {
   draft:      'bg-gray-100 text-gray-600',
@@ -99,7 +100,7 @@ export default async function VersionEditorPage({
       : Promise.resolve({ data: [] as any[] }),
     admin.from('clients').select('first_name, last_name').eq('id', quote.client_id).single(),
     admin.from('quote_price_lines')
-      .select('id, description, cost_category, pricing_unit, quantity, unit_cost_usd, markup_percent_override, total_cost_usd, total_selling_usd, is_optional, sort_order')
+      .select('id, description, cost_category, pricing_unit, quantity, unit_cost_usd, markup_percent_override, total_cost_usd, total_selling_usd, is_optional, is_client_visible, sort_order')
       .eq('quote_version_id', versionId).order('sort_order'),
     admin.from('company_settings').select('default_markup_percent').limit(1).single(),
   ])
@@ -109,6 +110,21 @@ export default async function VersionEditorPage({
     : 'Quote'
 
   const isLocked = !['draft', 'ready'].includes(version.status)
+
+  // Separate cost-sheet (internal) lines from client-visible price lines
+  const csUnitValues = Object.values(CS_UNITS)
+  const allPriceLines = priceLines ?? []
+  const costSheetRaw = allPriceLines.filter((l: any) => csUnitValues.includes(l.pricing_unit))
+  const clientPriceLines = allPriceLines.filter((l: any) => !csUnitValues.includes(l.pricing_unit))
+
+  const costSheetLines: CostLine[] = costSheetRaw.map((l: any) => ({
+    id: l.id,
+    description: l.description ?? '',
+    unitCost: l.unit_cost_usd != null ? String(l.unit_cost_usd) : '',
+    quantity: l.quantity != null ? String(l.quantity) : '',
+    actual: l.total_selling_usd != null ? String(l.total_selling_usd) : '',
+    unit: l.pricing_unit as any,
+  }))
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -162,11 +178,11 @@ export default async function VersionEditorPage({
       />
 
       {/* Live pricing summary */}
-      {(priceLines ?? []).length > 0 && (() => {
+      {clientPriceLines.length > 0 && (() => {
         const payingPax = (travellers ?? []).filter((t: any) => t.is_paying && !t.is_complimentary).length
-        const totalSelling = (priceLines ?? []).filter((l: any) => !l.is_optional)
+        const totalSelling = clientPriceLines.filter((l: any) => !l.is_optional)
           .reduce((s: number, l: any) => s + Number(l.total_selling_usd), 0)
-        const totalCost = (priceLines ?? []).filter((l: any) => !l.is_optional)
+        const totalCost = clientPriceLines.filter((l: any) => !l.is_optional)
           .reduce((s: number, l: any) => s + Number(l.total_cost_usd), 0)
         const perPerson = payingPax > 0 ? totalSelling / payingPax : 0
         const marginPct = totalSelling > 0 ? ((totalSelling - totalCost) / totalSelling) * 100 : 0
@@ -200,12 +216,22 @@ export default async function VersionEditorPage({
         )
       })()}
 
-      {/* Pricing */}
+      {/* Cost Sheet */}
+      <CostSheetEditor
+        quoteId={id}
+        versionId={versionId}
+        initialLines={costSheetLines}
+        isLocked={isLocked}
+        currentCostBase={version.cost_base_usd ?? null}
+        currentMarkup={version.default_markup_percent ?? 0}
+      />
+
+      {/* Price Lines (client-visible) */}
       <div className="mt-2">
         <PriceLinesEditor
           quoteId={id}
           versionId={versionId}
-          priceLines={priceLines ?? []}
+          priceLines={clientPriceLines}
           isLocked={isLocked}
           defaultMarkup={settings?.default_markup_percent ?? 20}
           entities={{

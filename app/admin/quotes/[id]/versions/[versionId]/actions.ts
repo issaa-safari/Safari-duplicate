@@ -234,6 +234,83 @@ export async function updateTraveller(formData: FormData) {
   revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
 }
 
+export async function saveCostSheet(formData: FormData) {
+  const { admin } = await authGuard()
+  const versionId = formData.get('versionId') as string
+  const quoteId = formData.get('quoteId') as string
+  const linesRaw = formData.get('lines') as string
+  const deletedIdsRaw = formData.get('deletedIds') as string
+
+  if (!versionId || !quoteId) throw new Error('Missing IDs.')
+  await requireMutableVersion(admin, versionId, quoteId)
+
+  const lines: Array<{
+    id?: string; description: string; unitCost: string; quantity: string; actual: string; unit: string
+  }> = JSON.parse(linesRaw)
+  const deletedIds: string[] = JSON.parse(deletedIdsRaw)
+
+  // Delete removed lines
+  if (deletedIds.length > 0) {
+    await admin.from('quote_price_lines').delete().in('id', deletedIds).eq('quote_version_id', versionId)
+  }
+
+  // Upsert each line
+  const { data: existing } = await admin
+    .from('quote_price_lines')
+    .select('id')
+    .eq('quote_version_id', versionId)
+    .like('pricing_unit', 'cs_%')
+
+  const existingIds = new Set((existing ?? []).map((r: any) => r.id))
+
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i]
+    const uc = parseFloat(l.unitCost) || 0
+    const q  = parseFloat(l.quantity)  || 0
+    const ac = parseFloat(l.actual)    || 0
+    let totalCost = 0
+    if (l.unit === 'cs_night' || l.unit === 'cs_transport') {
+      totalCost = q > 0 ? uc * q : uc
+    } else {
+      totalCost = uc
+    }
+    const payload = {
+      description: l.description || '',
+      cost_category: l.unit === 'cs_night' ? 'accommodation' : l.unit === 'cs_fee' ? 'park_fees' : l.unit === 'cs_transport' ? 'transport' : 'other',
+      pricing_unit: l.unit,
+      unit_cost_usd: uc,
+      quantity: q || null,
+      total_cost_usd: totalCost,
+      total_selling_usd: ac || null,
+      is_optional: false,
+      is_client_visible: false,
+      sort_order: i,
+    }
+    if (l.id && existingIds.has(l.id)) {
+      await admin.from('quote_price_lines').update(payload).eq('id', l.id).eq('quote_version_id', versionId)
+    } else {
+      await admin.from('quote_price_lines').insert({ ...payload, quote_version_id: versionId })
+    }
+  }
+
+  revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
+}
+
+export async function applyCostBaseFromSheet(formData: FormData) {
+  const { admin } = await authGuard()
+  const versionId = formData.get('versionId') as string
+  const quoteId = formData.get('quoteId') as string
+  const costBase = parseFloat(formData.get('costBase') as string)
+
+  if (!versionId || !quoteId) throw new Error('Missing IDs.')
+  if (!Number.isFinite(costBase) || costBase < 0) throw new Error('Invalid cost base.')
+  await requireMutableVersion(admin, versionId, quoteId)
+
+  const { error } = await admin.from('quote_versions').update({ cost_base_usd: costBase }).eq('id', versionId)
+  if (error) throw new Error(error.message)
+  revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
+}
+
 export async function savePricing(formData: FormData) {
   const { admin } = await authGuard()
 
