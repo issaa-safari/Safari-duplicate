@@ -4,26 +4,34 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || ''
   const pathname = request.nextUrl.pathname
-  const searchParams = request.nextUrl.search
 
-  // Extract subdomain
+  // Only apply subdomain routing on production domains, not localhost
+  const isLocalhost = hostname.includes('localhost') || hostname.includes('127.0.0.1')
+  if (isLocalhost) return NextResponse.next()
+
+  // Extract subdomain (everything before the first dot)
   const parts = hostname.replace('www.', '').split('.')
-  const isLocalhost = hostname.includes('localhost')
-  const isIp = /^\d+\.\d+\.\d+\.\d+/.test(hostname)
-  const subdomain = isLocalhost || isIp ? '' : parts.length > 2 ? parts[0] : ''
+  const subdomain = parts.length > 2 ? parts[0] : ''
 
-  // Route admin subdomain to admin app
+  // If admin subdomain, rewrite to /admin paths
   if (subdomain === 'admin') {
-    const adminPath = `/admin${pathname}${searchParams}`
-    return NextResponse.rewrite(new URL(adminPath, request.url))
+    request.nextUrl.pathname = `/admin${pathname}`
+    return NextResponse.rewrite(request.nextUrl)
   }
 
-  // Public routes - continue normally (will serve from /app/(public))
+  // All other requests go through normally
   return NextResponse.next()
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|static/|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.svg|.*\\.webp).*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
