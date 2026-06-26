@@ -13,7 +13,7 @@ export default function HomePage() {
         <section className="relative bg-gradient-to-b from-gray-900 to-gray-800 text-white py-20 md:py-32">
           <div className="max-w-6xl mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-              Experience Africa's Greatest Safaris
+              Experience Africa&apos;s Greatest Safaris
             </h1>
             <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
               Discover the untamed beauty of East Africa with expert guides, luxury accommodations, and unforgettable wildlife encounters.
