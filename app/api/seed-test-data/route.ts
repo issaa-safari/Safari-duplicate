@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
           },
         ])
         .select()
-      tourId = newTourData[0].id
+      tourId = newTourData![0].id
     } else {
       tourId = tourData[0].id
     }
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
       .order('version_number', { ascending: false })
       .limit(1)
 
-    const versionId = versionData[0].id
+    const versionId = versionData![0].id
     console.log('✓ Step 5: Got quote version', versionId)
 
     // Step 6: Update quote version with pricing
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
       .eq('code', 'adult')
       .limit(1)
 
-    const ageBandId = ageBandData[0].id
+    const ageBandId = ageBandData![0].id
 
     const travellers = [
       { name: 'John Test', age: 35, room: 'sharing' },
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
           },
         ])
         .select()
-      destinationId = newDest[0].id
+      destinationId = newDest![0].id
     } else {
       destinationId = destData[0].id
     }

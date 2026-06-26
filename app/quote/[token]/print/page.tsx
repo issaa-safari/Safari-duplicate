@@ -52,8 +52,11 @@ body.ar { font-family: 'Noto Sans Arabic', Arial, sans-serif; }
 .summary-tbl tr:nth-child(even) td { background: #fafafa; }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${G}; margin-right: 6px; vertical-align: middle; }
 .cost-tbl { width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid #e8e8e8; border-radius: 8px; overflow: hidden; }
+.cost-tbl th { text-align: left; padding: 8px 14px; font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid #c8e0a0; background: #f8fdf0; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.cost-tbl th:last-child { text-align: right; }
 .cost-tbl td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
-.cost-tbl tr:last-child td { border-bottom: none; font-weight: 700; font-size: 14px; background: #f8fdf0; }
+.cost-tbl tr.cost-total td { border-bottom: none; font-weight: 700; font-size: 14px; background: #f8fdf0; }
+.cost-tbl tr:last-child td { border-bottom: none; }
 .incl-excl { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
 .incl { border: 1px solid #c8e0a0; border-radius: 8px; padding: 14px; }
 .excl { border: 1px solid #f5c0c0; border-radius: 8px; padding: 14px; }
@@ -64,6 +67,9 @@ body.ar { font-family: 'Noto Sans Arabic', Arial, sans-serif; }
 .contact-row { display: flex; gap: 12px; margin-bottom: 6px; font-size: 12px; }
 .contact-lbl { font-weight: 700; color: #555; min-width: 70px; flex-shrink: 0; }
 .ft { display: flex; justify-content: space-between; border-top: 1px solid #eee; margin-top: 36px; padding-top: 8px; font-size: 10px; color: #aaa; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.hero-img { width: 100%; height: 200px; object-fit: cover; border-radius: 10px; margin-bottom: 22px; }
+.hero-placeholder { width: 100%; height: 180px; border-radius: 10px; margin-bottom: 22px; background: linear-gradient(135deg, #3a6b1a 0%, #7A9A4A 40%, #c8e0a0 100%); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 32px; }
+.confirm-btn { display: inline-block; background: ${G}; color: #fff; padding: 11px 28px; border-radius: 7px; font-weight: 700; text-decoration: none; font-size: 14px; margin-top: 20px; font-family: 'Helvetica Neue', Arial, sans-serif; }
 h1 { font-size: 30px; font-weight: 800; margin: 0 0 6px; line-height: 1.2; }
 h2 { font-size: 22px; font-weight: 700; margin: 0 0 14px; }
 h3 { font-size: 15px; font-weight: 700; margin: 0 0 12px; }
@@ -73,6 +79,7 @@ h3 { font-size: 15px; font-weight: 700; margin: 0 0 12px; }
   .pb { break-after: page; page-break-after: always; }
   .nb { break-inside: avoid; page-break-inside: avoid; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .confirm-btn { display: none !important; }
 }
 `
 
@@ -104,7 +111,7 @@ export default async function QuotePrintPage({
       .select('id, version_number, title, language, travel_start_date, travel_end_date, valid_until, total_selling_usd, sharing_price_per_person_usd, single_price_per_person_usd, cost_base_usd, default_markup_percent')
       .eq('id', delivery.quote_version_id).single(),
     admin.from('quotes')
-      .select('id, quote_number, mode, client_id')
+      .select('id, quote_number, mode, client_id, tour_id')
       .eq('id', delivery.quote_id).single(),
     admin.from('quote_days')
       .select('id, day_number, day_number_end, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_snapshot, meals')
@@ -122,11 +129,23 @@ export default async function QuotePrintPage({
 
   if (!version || !quote) notFound()
 
-  const { data: client } = await admin
-    .from('clients')
-    .select('first_name, last_name, email')
-    .eq('id', quote.client_id)
-    .single()
+  const [
+    { data: client },
+    { data: quoteTravellers },
+  ] = await Promise.all([
+    admin.from('clients')
+      .select('first_name, last_name, email')
+      .eq('id', (quote as any).client_id)
+      .single(),
+    admin.from('quote_travellers')
+      .select('id, display_name, traveller_category, age_band_snapshot, room_category, is_paying')
+      .eq('quote_version_id', delivery.quote_version_id)
+      .order('sort_order'),
+  ])
+
+  const { data: tourData } = (quote as any)?.tour_id
+    ? await admin.from('tours').select('title_en, image_url, hero_image_url').eq('id', (quote as any).tour_id).single()
+    : { data: null as any }
 
   const dayIds = (quoteDays ?? []).map((d: any) => d.id)
   const { data: dayItems } = dayIds.length
@@ -166,6 +185,29 @@ export default async function QuotePrintPage({
 
   const includedLines = (priceLines ?? []).filter((l: any) => !l.is_optional)
   const optionalLines = (priceLines ?? []).filter((l: any) => l.is_optional)
+  const optionalAccomLines = optionalLines.filter((l: any) => l.cost_category === 'accommodation')
+  const otherOptionalLines = optionalLines.filter((l: any) => l.cost_category !== 'accommodation')
+
+  // Build traveller groups for pricing breakdown
+  type TravellerGroup = { name: string; count: number; perPerson: number; total: number }
+  const travellerGroupMap: Record<string, TravellerGroup> = {}
+  for (const t of (quoteTravellers ?? []) as any[]) {
+    if (!t.is_paying) continue
+    const band = t.age_band_snapshot as any
+    const bandKey = band?.code ?? t.traveller_category ?? 'adult'
+    const bandName = band?.name ?? (t.traveller_category === 'adult' ? 'Adult' : 'Child')
+    const isSharing = t.room_category === 'sharing'
+    const basePp = isSharing ? sharingPp : singlePp
+    const bandPct = (band?.default_percentage ?? 100) / 100
+    const pp = basePp > 0 ? basePp * bandPct : 0
+    if (!travellerGroupMap[bandKey]) {
+      travellerGroupMap[bandKey] = { name: bandName, count: 0, perPerson: pp, total: 0 }
+    }
+    travellerGroupMap[bandKey].count++
+    travellerGroupMap[bandKey].total += pp
+  }
+  const travellerGroups = Object.values(travellerGroupMap)
+  const heroImage = (tourData as any)?.image_url ?? (tourData as any)?.hero_image_url ?? null
 
   const days = quoteDays ?? []
   const startDest = (days[0]?.destination_snapshot as any)?.name ?? ''
@@ -319,14 +361,24 @@ export default async function QuotePrintPage({
               <div className="sec-line" />
             </div>
 
+            {heroImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={heroImage} alt={tourTitle} className="hero-img" />
+            ) : (
+              <div className="hero-placeholder">🦁</div>
+            )}
+
             <h2>{tourTitle}</h2>
             <h3 style={{ fontSize: 17 }}>{t.dayByDay}</h3>
 
             {startDest && (
-              <p style={{ fontSize: 12, color: '#555', marginBottom: 6, marginTop: 0 }}>
+              <p style={{ fontSize: 12, color: '#555', marginBottom: 4, marginTop: 0 }}>
                 ✈ {t.arrival}: {startDest}, Airport transfer included
               </p>
             )}
+            <p style={{ fontSize: 11, color: '#888', marginBottom: 10, marginTop: 0 }}>
+              {isArabic ? `انظر البرنامج التفصيلي في صفحة ${3}–${2 + days.length}` : `See your full itinerary on Page ${3}–${2 + days.length}`}
+            </p>
             <p style={{ fontSize: 12, color: '#555', marginBottom: 14, marginTop: 0 }}>
               📍 <strong>{t.startDest}</strong> {startDest || '—'}
             </p>
@@ -537,7 +589,37 @@ export default async function QuotePrintPage({
             </table>
           )}
 
-          {!hasQuoteLevelPricing && (
+          {!hasQuoteLevelPricing && travellerGroups.length > 0 && (
+            <table className="cost-tbl nb">
+              <thead>
+                <tr>
+                  <th>{isArabic ? 'المسافر' : 'Traveller'}</th>
+                  <th style={{ textAlign: 'right' }}>{isArabic ? 'للشخص' : 'Per Person'}</th>
+                  <th style={{ textAlign: 'right' }}>{isArabic ? 'الإجمالي' : 'Total'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {travellerGroups.map((g, i) => (
+                  <tr key={i}>
+                    <td>{g.count}x {g.name}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                      {g.perPerson > 0 ? `$${fmt(g.perPerson)}` : '—'}
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                      {g.total > 0 ? `$${fmt(g.total)}` : '—'}
+                    </td>
+                  </tr>
+                ))}
+                <tr className="cost-total">
+                  <td>{t.total}</td>
+                  <td />
+                  <td style={{ textAlign: 'right' }}>${fmt(totalSelling)}</td>
+                </tr>
+              </tbody>
+            </table>
+          )}
+
+          {!hasQuoteLevelPricing && travellerGroups.length === 0 && (
             <table className="cost-tbl nb">
               <tbody>
                 {sharingPp > 0 && (
@@ -555,7 +637,7 @@ export default async function QuotePrintPage({
                   </tr>
                 )}
                 {totalSelling > 0 && (
-                  <tr>
+                  <tr className="cost-total">
                     <td>{t.total}</td>
                     <td />
                     <td style={{ textAlign: 'right' }}>${fmt(totalSelling)}</td>
@@ -565,12 +647,47 @@ export default async function QuotePrintPage({
             </table>
           )}
 
-          {optionalLines.length > 0 && (
+          {/* Confirm Booking button */}
+          <a
+            href={`mailto:${settings?.email ?? ''}?subject=Booking Confirmation - ${quote.quote_number}&body=I would like to confirm my booking for ${tourTitle}.`}
+            className="confirm-btn no-print"
+          >
+            {isArabic ? 'تأكيد الحجز' : 'Confirm Booking'}
+          </a>
+
+          {/* Accommodation Packages section */}
+          {optionalAccomLines.length > 0 && (
+            <div style={{ marginTop: 28 }}>
+              <h3 style={{ fontSize: 15 }}>{isArabic ? 'باقات الإقامة' : 'Accommodation Packages'}</h3>
+              <p style={{ fontSize: 11, color: '#888', marginTop: -8, marginBottom: 12 }}>
+                {isArabic ? 'يمكن إضافتها بسعر إضافي' : 'For more details see page 3-11'}
+              </p>
+              <table className="cost-tbl nb">
+                <thead>
+                  <tr>
+                    <th>{isArabic ? 'الباقة' : 'Package'}</th>
+                    <th style={{ textAlign: 'right' }}>{isArabic ? 'السعر الإضافي' : 'Additional Price'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {optionalAccomLines.map((line: any) => (
+                    <tr key={line.id}>
+                      <td>{line.description}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>${fmt(Number(line.total_selling_usd))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Other optional add-ons */}
+          {otherOptionalLines.length > 0 && (
             <div style={{ marginTop: 28 }}>
               <h3 style={{ fontSize: 15 }}>{t.optional}</h3>
               <table className="cost-tbl nb">
                 <tbody>
-                  {optionalLines.map((line: any) => (
+                  {otherOptionalLines.map((line: any) => (
                     <tr key={line.id}>
                       <td>{line.description}</td>
                       <td style={{ color: '#888', fontSize: 11 }}>
