@@ -1,5 +1,6 @@
 -- Group 21: Departures and Bookings
 -- Tables for managing tour departures and customer bookings
+-- Matches existing admin interface schema
 
 -- Departures table: specific scheduled instances of tours
 create table if not exists departures (
@@ -7,11 +8,12 @@ create table if not exists departures (
   tour_id uuid not null references tours(id) on delete cascade,
   start_date date not null,
   end_date date not null,
-  total_spots integer not null check (total_spots > 0),
-  available_spots integer not null check (available_spots >= 0),
-  price_per_person_usd numeric(14,2) not null check (price_per_person_usd >= 0),
-  status text not null default 'open' check (status in ('open', 'closed', 'cancelled')),
-  notes text,
+  max_seats integer not null check (max_seats > 0),
+  booked_seats integer not null default 0 check (booked_seats >= 0),
+  price_usd numeric(14,2) not null check (price_usd >= 0),
+  status text not null default 'available' check (status in ('available', 'full', 'closed', 'cancelled')),
+  internal_notes text,
+  is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -62,17 +64,3 @@ create trigger update_bookings_updated_at before update on bookings
 
 create trigger update_booking_travellers_updated_at before update on booking_travellers
   for each row execute function update_updated_at_column();
-
--- Seed sample departures for testing
-insert into departures (tour_id, start_date, end_date, total_spots, available_spots, price_per_person_usd)
-select
-  t.id,
-  (now() + interval '7 days')::date,
-  (now() + interval '14 days')::date,
-  8,
-  8,
-  3500
-from tours t
-where t.is_active = true
-limit 5
-on conflict do nothing;

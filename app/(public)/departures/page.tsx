@@ -13,9 +13,10 @@ interface Departure {
   tour_id: string
   start_date: string
   end_date: string
-  available_spots: number
-  total_spots: number
-  price_per_person_usd: number
+  max_seats: number
+  booked_seats: number
+  price_usd: number
+  status: string
   tour?: { title_en: string; title_ar: string; description_en: string; destination_id: string }
 }
 
@@ -48,9 +49,10 @@ export default async function DeparturesPage({
   const { data: departures } = await admin
     .from('departures')
     .select(
-      `id, tour_id, start_date, end_date, available_spots, total_spots, price_per_person_usd,
+      `id, tour_id, start_date, end_date, max_seats, booked_seats, price_usd, status,
        tour:tours(title_en, title_ar, description_en, destination_id)`
     )
+    .eq('is_active', true)
     .gte('start_date', new Date().toISOString().split('T')[0])
     .order('start_date')
 
@@ -124,7 +126,8 @@ export default async function DeparturesPage({
                 {(departures as any[]).map((dep: Departure) => {
                   const tour = dep.tour as any
                   const daysCount = getDaysCount(dep.start_date, dep.end_date)
-                  const isAvailable = dep.available_spots > 0
+                  const availableSpots = dep.max_seats - dep.booked_seats
+                  const isAvailable = availableSpots > 0
                   const title = locale === 'ar' ? tour?.title_ar : tour?.title_en
                   const desc = locale === 'ar' ? '...' : tour?.description_en
 
@@ -162,7 +165,7 @@ export default async function DeparturesPage({
                         <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: `${G}15` }}>
                           <div className="text-sm text-gray-600">{t.price}</div>
                           <div className="text-2xl font-bold" style={{ color: G }}>
-                            ${dep.price_per_person_usd?.toLocaleString() || '—'}
+                            ${dep.price_usd?.toLocaleString() || '—'}
                           </div>
                         </div>
 
@@ -171,7 +174,7 @@ export default async function DeparturesPage({
                           <div className="text-sm text-gray-600">{t.availableSpots}</div>
                           <div className="text-lg font-bold text-gray-900">
                             {isAvailable ? (
-                              <span>{dep.available_spots} / {dep.total_spots}</span>
+                              <span>{availableSpots} / {dep.max_seats}</span>
                             ) : (
                               <span className="text-red-600">{t.fullyBooked}</span>
                             )}
@@ -181,7 +184,7 @@ export default async function DeparturesPage({
                               <div
                                 className="bg-green-500 h-2 rounded-full transition"
                                 style={{
-                                  width: `${((dep.total_spots - dep.available_spots) / dep.total_spots) * 100}%`,
+                                  width: `${(dep.booked_seats / dep.max_seats) * 100}%`,
                                 }}
                               />
                             </div>
@@ -190,7 +193,7 @@ export default async function DeparturesPage({
 
                         {/* Book Button */}
                         <Link
-                          href={isAvailable ? `/departures/${dep.id}/book?lang=${locale}&tour=${encodeURIComponent(title)}&price=${dep.price_per_person_usd}` : '#'}
+                          href={isAvailable ? `/departures/${dep.id}/book?lang=${locale}&tour=${encodeURIComponent(title)}&price=${dep.price_usd}` : '#'}
                           className={`block text-center px-4 py-3 rounded-lg font-semibold transition ${
                             isAvailable
                               ? 'text-white hover:opacity-90'

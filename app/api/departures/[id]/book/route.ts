@@ -21,7 +21,7 @@ export async function POST(
     // Check current availability
     const { data: departure, error: fetchError } = await admin
       .from('departures')
-      .select('id, available_spots, total_spots')
+      .select('id, max_seats, booked_seats')
       .eq('id', id)
       .single()
 
@@ -33,8 +33,9 @@ export async function POST(
     }
 
     const groupSize = travellers.length
+    const availableSpots = departure.max_seats - departure.booked_seats
 
-    if (groupSize > departure.available_spots) {
+    if (groupSize > availableSpots) {
       return NextResponse.json(
         { error: 'Not enough available spots for this group size' },
         { status: 400 }
@@ -84,11 +85,11 @@ export async function POST(
       )
     }
 
-    // Update available spots in departure
-    const newAvailableSpots = departure.available_spots - groupSize
+    // Update booked seats in departure
+    const newBookedSeats = departure.booked_seats + groupSize
     const { error: updateError } = await admin
       .from('departures')
-      .update({ available_spots: newAvailableSpots })
+      .update({ booked_seats: newBookedSeats })
       .eq('id', id)
 
     if (updateError) {
