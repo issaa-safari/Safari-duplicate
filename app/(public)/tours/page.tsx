@@ -5,6 +5,8 @@ import PublicFooter from '@/components/public/footer'
 
 const G = '#7A9A4A'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ToursPage() {
   const admin = createAdminClient()
 
