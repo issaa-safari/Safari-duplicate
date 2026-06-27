@@ -83,17 +83,33 @@ export default function VersionEditorForm({
   version,
   travellers: initialTravellers,
   ageBands,
+  quoteRequest,
 }: {
   quoteId: string
   version: Version
   travellers: Traveller[]
   ageBands: AgeBand[]
+  quoteRequest?: { start_date: string | null; duration_days: number | null } | null
 }) {
   const isLocked = !['draft', 'ready'].includes(version.status)
 
+  // Calculate end date from start date + duration if available
+  const calculateEndDate = (start: string, duration: number | null) => {
+    if (!start || !duration) return ''
+    const d = new Date(start)
+    d.setDate(d.getDate() + duration - 1)
+    return d.toISOString().split('T')[0]
+  }
+
   // ── Dates ──────────────────────────────────────────────────────────────
-  const [startDate, setStartDate] = useState(version.travel_start_date ?? '')
-  const [endDate, setEndDate] = useState(version.travel_end_date ?? '')
+  const defaultStartDate = version.travel_start_date || quoteRequest?.start_date || ''
+  const defaultEndDate = version.travel_end_date ||
+    (quoteRequest?.start_date && quoteRequest?.duration_days
+      ? calculateEndDate(quoteRequest.start_date, quoteRequest.duration_days)
+      : '')
+
+  const [startDate, setStartDate] = useState(defaultStartDate)
+  const [endDate, setEndDate] = useState(defaultEndDate)
   const [datesPending, startDateTransition] = useTransition()
   const [datesError, setDatesError] = useState('')
   const [datesSaved, setDatesSaved] = useState(false)

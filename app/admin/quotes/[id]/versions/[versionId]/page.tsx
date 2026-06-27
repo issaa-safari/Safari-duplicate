@@ -46,6 +46,7 @@ export default async function VersionEditorPage({
     { data: vehicles },
     { data: staffData },
     { data: parksData },
+    { data: quoteRequest },
   ] = await Promise.all([
     admin.from('quote_versions')
       .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until, language, cost_base_usd, default_markup_percent')
@@ -74,6 +75,9 @@ export default async function VersionEditorPage({
       .select('id, name, role').order('name'),
     admin.from('parks')
       .select('id, name, country').eq('is_active', true).order('name'),
+    admin.from('quote_requests')
+      .select('start_date, duration_days, group_size')
+      .eq('quote_id', id).single(),
   ])
 
   if (!version || !quote) notFound()
@@ -175,6 +179,7 @@ export default async function VersionEditorPage({
         version={version}
         travellers={travellers ?? []}
         ageBands={ageBands ?? []}
+        quoteRequest={quoteRequest as any}
       />
 
       {/* Live pricing summary */}
