@@ -19,8 +19,8 @@ interface Departure {
     id: string
     title_en: string
     title_ar: string
-    description_en: string
-    description_ar: string
+    subtitle_en: string | null
+    overview_en: string | null
     type: string | null
   } | null
 }
@@ -63,7 +63,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
           </p>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
             <p className="font-medium text-blue-900 mb-2">Frontend Preview</p>
-            <p className="text-blue-800 text-xs mb-3">{departure.tours.description_en}</p>
+            <p className="text-blue-800 text-xs mb-3">{departure.tours.overview_en || departure.tours.subtitle_en}</p>
             <p className="text-xs text-blue-700">
               ✓ When published, clients will see the full itinerary with {tourDays.length} day{tourDays.length !== 1 ? 's' : ''}
             </p>

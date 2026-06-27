@@ -78,8 +78,8 @@ export default async function DepartureDetailPage({
         id,
         title_en,
         title_ar,
-        description_en,
-        description_ar,
+        subtitle_en,
+        overview_en,
         type,
         countries_visited,
         start_destination,
@@ -111,7 +111,8 @@ export default async function DepartureDetailPage({
   const availableSpots = departure.max_seats - departure.booked_seats
   const isAvailable = availableSpots > 0 && departure.status === 'available'
   const title = isAr ? (tour?.title_ar || tour?.title_en) : tour?.title_en
-  const description = isAr ? (tour?.description_ar || tour?.description_en) : tour?.description_en
+  // tours stores its long description in overview_en (no tour-level Arabic field yet)
+  const description = tour?.overview_en || tour?.subtitle_en || ''
 
   const t = isAr ? {
     bookNow: 'احجز الآن',

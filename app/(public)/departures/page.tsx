@@ -50,7 +50,7 @@ export default async function DeparturesPage({
     .from('departures')
     .select(
       `id, tour_id, start_date, end_date, max_seats, booked_seats, price_usd, status,
-       tour:tours(title_en, title_ar, description_en, destination_id)`
+       tour:tours(title_en, title_ar, subtitle_en, type)`
     )
     .eq('is_active', true)
     .gte('end_date', new Date().toISOString().split('T')[0])

@@ -19,8 +19,8 @@ export default async function DepartureEditPage({ params }: { params: Promise<{ 
         id,
         title_en,
         title_ar,
-        description_en,
-        description_ar,
+        subtitle_en,
+        overview_en,
         type
       )
     `)

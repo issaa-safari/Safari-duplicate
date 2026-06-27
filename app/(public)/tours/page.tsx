@@ -23,7 +23,7 @@ export default async function ToursPage({
   // and carry duration_days / countries_visited (not country/min_days/max_days).
   const { data: tours } = await admin
     .from('tours')
-    .select('id, title_en, title_ar, description_en, description_ar, type, duration_days, duration_nights, countries_visited, status')
+    .select('id, title_en, title_ar, subtitle_en, overview_en, type, duration_days, duration_nights, countries_visited, status')
     .eq('status', 'active')
     .order('title_en')
 
@@ -66,7 +66,7 @@ export default async function ToursPage({
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {tours.map((tour: any) => {
                   const title = isAr ? (tour.title_ar || tour.title_en) : tour.title_en
-                  const desc = isAr ? (tour.description_ar || tour.description_en) : tour.description_en
+                  const desc = tour.overview_en || tour.subtitle_en || ''
                   return (
                     <div key={tour.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition">
                       <div className="w-full h-48 flex items-center justify-center text-6xl text-white" style={{ backgroundColor: G }}>
