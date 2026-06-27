@@ -198,10 +198,11 @@ export default function CostSheetEditor({
                           className={inp}
                           type={c.field === 'description' ? 'text' : 'number'}
                           min={c.field !== 'description' ? 0 : undefined}
-                          step={c.field !== 'description' ? 'any' : undefined}
+                          step={c.field !== 'description' ? '0.01' : undefined}
                           placeholder={c.field === 'description' ? 'Description' : '0'}
                           value={row[c.field as keyof CostLine] ?? ''}
                           onChange={e => updateRow(setter, i, c.field as keyof CostLine, e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
                         />
                       )}
                     </td>
