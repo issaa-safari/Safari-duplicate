@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { label: 'Content',        href: '/admin/content',     icon: '▧' },
   { label: 'Quotes',         href: '/admin/quotes',      icon: '✦' },
   { label: 'Departures',     href: '/admin/departures',  icon: '◉' },
+  { label: 'Bookings',       href: '/admin/bookings',    icon: '✓' },
   { label: 'Clients',        href: '/admin/clients',     icon: '◯' },
   { label: 'Finance',        href: '/admin/finance',     icon: '$' },
   { label: 'Analytics',      href: '/admin/analytics',   icon: '↗' },

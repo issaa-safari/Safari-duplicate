@@ -2,15 +2,58 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { useSearchParams, usePathname } from 'next/navigation'
+import { useSearchParams, usePathname, useRouter } from 'next/navigation'
 
 const G = '#7A9A4A'
 
 export default function PublicHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const searchParams = useSearchParams()
   const pathname = usePathname()
-  const currentLang = searchParams.get('lang') || 'en'
+  const router = useRouter()
+  const [currentLang, setCurrentLang] = useState('en')
+
+  useEffect(() => {
+    setMounted(true)
+    const urlLang = searchParams.get('lang')
+
+    if (urlLang === 'ar' || urlLang === 'en') {
+      setCurrentLang(urlLang)
+      return
+    }
+
+    // Auto-detect language from browser or geolocation
+    const browserLang = navigator.language.split('-')[0]
+    const detectedLang = browserLang === 'ar' ? 'ar' : 'en'
+
+    // Check for Saudi Arabia or other Arabic-speaking countries
+    if (typeof navigator !== 'undefined') {
+      try {
+        // Try to detect timezone for KSA
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+        if (timezone.includes('Mecca') || timezone.includes('Riyadh')) {
+          setCurrentLang('ar')
+          // Redirect to Arabic version if on home page
+          if (pathname === '/' || pathname === '') {
+            setTimeout(() => router.push('/?lang=ar'), 100)
+          }
+          return
+        }
+      } catch (e) {
+        // Fallback to browser language
+      }
+    }
+
+    if (detectedLang === 'ar' && !urlLang) {
+      setCurrentLang('ar')
+      if (pathname === '/' || pathname === '') {
+        setTimeout(() => router.push('/?lang=ar'), 100)
+      }
+    } else {
+      setCurrentLang(urlLang || detectedLang || 'en')
+    }
+  }, [searchParams, pathname, router])
 
   const getLangUrl = (lang: 'en' | 'ar') => {
     const params = new URLSearchParams(searchParams.toString())
@@ -23,6 +66,8 @@ export default function PublicHeader() {
     const lang = params.get('lang') || 'en'
     return `${href}?lang=${lang}`
   }
+
+  if (!mounted) return null
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
@@ -42,6 +87,9 @@ export default function PublicHeader() {
         <nav className="hidden md:flex items-center gap-6">
           <Link href={getNavLink('/tours')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
             {currentLang === 'ar' ? 'الجولات' : 'Tours'}
+          </Link>
+          <Link href={getNavLink('/departures')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+            {currentLang === 'ar' ? 'الرحلات' : 'Departures'}
           </Link>
           <Link href={getNavLink('/about')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
             {currentLang === 'ar' ? 'نبذة عنا' : 'About'}
@@ -98,6 +146,9 @@ export default function PublicHeader() {
         <div className="md:hidden border-t border-gray-200 px-4 py-4 space-y-3">
           <Link href={getNavLink('/tours')} className="block text-gray-600 hover:text-gray-900 text-sm font-medium py-2">
             {currentLang === 'ar' ? 'الجولات' : 'Tours'}
+          </Link>
+          <Link href={getNavLink('/departures')} className="block text-gray-600 hover:text-gray-900 text-sm font-medium py-2">
+            {currentLang === 'ar' ? 'الرحلات' : 'Departures'}
           </Link>
           <Link href={getNavLink('/about')} className="block text-gray-600 hover:text-gray-900 text-sm font-medium py-2">
             {currentLang === 'ar' ? 'نبذة عنا' : 'About'}
