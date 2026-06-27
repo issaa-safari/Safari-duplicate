@@ -97,6 +97,9 @@ export default function PublicHeader() {
           <Link href={getNavLink('/contact')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
             {currentLang === 'ar' ? 'اتصل بنا' : 'Contact'}
           </Link>
+          <Link href={getNavLink('/login')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+            {currentLang === 'ar' ? 'تسجيل الدخول' : 'Sign In'}
+          </Link>
           <Link
             href={getNavLink('/quote-request')}
             className="px-5 py-2 rounded-lg font-medium text-white transition"

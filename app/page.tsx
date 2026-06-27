@@ -5,6 +5,7 @@ import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
+import FeaturedDepartures from '@/components/public/featured-departures'
 
 const G = '#7A9A4A'
 
@@ -119,6 +120,9 @@ function HomeContent() {
           </div>
         </div>
       </section>
+
+      {/* Upcoming Departures */}
+      <FeaturedDepartures lang={currentLang} />
 
       {/* Why Choose Us */}
       <section className="py-16 md:py-20 bg-gray-50">
