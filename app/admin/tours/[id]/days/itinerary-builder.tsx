@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ImageUpload } from '@/components/admin/image-upload'
 
 type Lookup = { id: string; name: string; destination_id?: string | null }
 
@@ -22,6 +23,7 @@ type Day = {
   meal_lunch: boolean
   meal_dinner: boolean
   distance_km: number | null
+  image_url: string | null
 }
 
 const GRID_COLS = '90px 1fr 1.2fr 1.4fr 120px 70px'
@@ -44,6 +46,7 @@ function blankDay(n: number): Day {
     meal_lunch: false,
     meal_dinner: false,
     distance_km: null,
+    image_url: null,
   }
 }
 
@@ -82,6 +85,7 @@ export default function ItineraryBuilder({
       meal_lunch: d.meal_lunch ?? false,
       meal_dinner: d.meal_dinner ?? false,
       distance_km: d.distance_km,
+      image_url: d.image_url ?? null,
     }))
   )
 
@@ -374,6 +378,10 @@ export default function ItineraryBuilder({
                           className={inputCls + ' resize-none text-right'} />
                       </div>
                     )}
+                    <div className="pt-1">
+                      <span className="block text-[10px] text-gray-400 mb-1">Day photo</span>
+                      <ImageUpload value={day.image_url} onChange={(url) => update(i, { image_url: url })} folder="tour-days" label="Day photo" />
+                    </div>
                   </div>
 
                   <div className="flex gap-1 pt-1">

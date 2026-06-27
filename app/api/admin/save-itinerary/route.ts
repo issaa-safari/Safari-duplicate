@@ -45,6 +45,7 @@ export async function POST(request: Request) {
       meal_lunch: !!d.meal_lunch,
       meal_dinner: !!d.meal_dinner,
       distance_km: d.distance_km ?? null,
+      image_url: d.image_url ?? null,
       updated_at: new Date().toISOString(),
     }
     if (d.id) {

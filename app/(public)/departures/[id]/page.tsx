@@ -91,12 +91,37 @@ export default async function DepartureDetailPage({
 
   if (!departure) notFound()
 
-  // Get tour days for itinerary (real schema columns)
-  const { data: tourDays } = await admin
-    .from('tour_days')
-    .select('id, day_number, day_number_end, title_en, title_ar, description_en, description_ar, accommodation_id, meal_breakfast, meal_lunch, meal_dinner, distance_km')
-    .eq('tour_id', departure.tour_id)
-    .order('day_number')
+  // Rich tour content (group_23). Fetched separately and fault-tolerantly so the
+  // page still renders if the migration hasn't been applied yet.
+  let rich: any = {}
+  {
+    const { data } = await admin
+      .from('tours')
+      .select('subtitle_ar, overview_ar, hero_image_url, gallery_urls, route_map_url, highlights_en, highlights_ar, included_en, included_ar, excluded_en, excluded_ar, terrain, vehicle, accommodation_level, total_distance_km, difficulty_rating, max_group_size, faqs')
+      .eq('id', departure.tour_id)
+      .maybeSingle()
+    if (data) rich = data
+  }
+
+  // Get tour days for itinerary. image_url is in group_23; select it tolerantly.
+  let tourDays: any[] | null = null
+  {
+    const withImage = await admin
+      .from('tour_days')
+      .select('id, day_number, day_number_end, title_en, title_ar, description_en, description_ar, accommodation_id, meal_breakfast, meal_lunch, meal_dinner, distance_km, image_url')
+      .eq('tour_id', departure.tour_id)
+      .order('day_number')
+    if (withImage.error) {
+      const fallback = await admin
+        .from('tour_days')
+        .select('id, day_number, day_number_end, title_en, title_ar, description_en, description_ar, accommodation_id, meal_breakfast, meal_lunch, meal_dinner, distance_km')
+        .eq('tour_id', departure.tour_id)
+        .order('day_number')
+      tourDays = fallback.data
+    } else {
+      tourDays = withImage.data
+    }
+  }
 
   // Resolve accommodation names for the days that have them
   const accomIds = [...new Set((tourDays ?? []).map((d: any) => d.accommodation_id).filter(Boolean))]
@@ -111,8 +136,23 @@ export default async function DepartureDetailPage({
   const availableSpots = departure.max_seats - departure.booked_seats
   const isAvailable = availableSpots > 0 && departure.status === 'available'
   const title = isAr ? (tour?.title_ar || tour?.title_en) : tour?.title_en
-  // tours stores its long description in overview_en (no tour-level Arabic field yet)
-  const description = tour?.overview_en || tour?.subtitle_en || ''
+  const description = isAr
+    ? (rich.overview_ar || tour?.overview_en || rich.subtitle_ar || tour?.subtitle_en || '')
+    : (tour?.overview_en || tour?.subtitle_en || '')
+
+  // Pick the localized list (fall back to the other language if one is empty)
+  const pickList = (en?: string[], ar?: string[]): string[] => {
+    const a = Array.isArray(ar) ? ar.filter(Boolean) : []
+    const e = Array.isArray(en) ? en.filter(Boolean) : []
+    return isAr ? (a.length ? a : e) : (e.length ? e : a)
+  }
+  const highlights = pickList(rich.highlights_en, rich.highlights_ar)
+  const included = pickList(rich.included_en, rich.included_ar)
+  const excluded = pickList(rich.excluded_en, rich.excluded_ar)
+  const gallery: string[] = Array.isArray(rich.gallery_urls) ? rich.gallery_urls.filter(Boolean) : []
+  const faqs: any[] = Array.isArray(rich.faqs) ? rich.faqs : []
+  const heroImage: string | null = rich.hero_image_url || null
+  const routeMap: string | null = rich.route_map_url || null
 
   const t = isAr ? {
     bookNow: 'احجز الآن',
@@ -139,6 +179,18 @@ export default async function DepartureDetailPage({
     fullMessage: 'هذه الرحلة مكتملة حالياً، لكن تحقق قريباً من تواريخ جديدة!',
     noItinerary: 'لا تتوفر تفاصيل البرنامج لهذه الرحلة بعد.',
     guidedSupported: 'رحلة مصحوبة بمرشد',
+    highlights: 'أبرز ما في الرحلة',
+    included: 'ما يشمله السعر',
+    excluded: 'ما لا يشمله السعر',
+    gallery: 'معرض الصور',
+    routeMap: 'خريطة المسار',
+    faqs: 'الأسئلة الشائعة',
+    terrain: 'التضاريس',
+    vehicle: 'المركبة',
+    accommodationLevel: 'مستوى الإقامة',
+    totalDistance: 'إجمالي المسافة',
+    difficulty: 'مستوى الصعوبة',
+    groupSize: 'حجم المجموعة',
   } : {
     bookNow: 'Book Now',
     askQuestion: 'Ask a Question',
@@ -164,6 +216,18 @@ export default async function DepartureDetailPage({
     fullMessage: 'This departure is currently full, but check back soon for new dates!',
     noItinerary: 'No itinerary details available for this tour yet.',
     guidedSupported: 'Guided & Supported',
+    highlights: 'Tour Highlights',
+    included: "What's Included",
+    excluded: "What's Excluded",
+    gallery: 'Photo Gallery',
+    routeMap: 'Route Map',
+    faqs: 'Frequently Asked Questions',
+    terrain: 'Terrain',
+    vehicle: 'Vehicle',
+    accommodationLevel: 'Accommodation',
+    totalDistance: 'Total Distance',
+    difficulty: 'Difficulty',
+    groupSize: 'Group Size',
   }
 
   const bookHref = `/departures/${id}/book?lang=${locale}`
@@ -179,7 +243,10 @@ export default async function DepartureDetailPage({
         <section className="relative bg-gradient-to-b from-gray-900 to-gray-800 text-white py-8 md:py-12">
           <div className="max-w-6xl mx-auto px-4">
             <div className="bg-gradient-to-b from-gray-700 to-gray-800 rounded-xl h-72 md:h-[420px] flex items-center justify-center text-8xl mb-8 overflow-hidden">
-              🦁
+              {heroImage
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={heroImage} alt={title} className="w-full h-full object-cover" />
+                : '🦁'}
             </div>
 
             <div>
@@ -235,6 +302,12 @@ export default async function DepartureDetailPage({
               <SnapshotCard label={`💺 ${t.availableSpots}`} value={`${availableSpots}/${departure.max_seats}`} />
               <SnapshotCard label={`💰 ${t.price}`} value={`$${departure.price_usd?.toLocaleString()}`} highlight />
               <SnapshotCard label={`📍 ${t.keyInfo}`} value={departure.status} />
+              {rich.terrain && <SnapshotCard label={`🏞️ ${t.terrain}`} value={rich.terrain} />}
+              {rich.vehicle && <SnapshotCard label={`🚙 ${t.vehicle}`} value={rich.vehicle} />}
+              {rich.accommodation_level && <SnapshotCard label={`🏨 ${t.accommodationLevel}`} value={rich.accommodation_level} />}
+              {rich.total_distance_km && <SnapshotCard label={`📏 ${t.totalDistance}`} value={`${rich.total_distance_km} km`} />}
+              {rich.difficulty_rating && <SnapshotCard label={`⚡ ${t.difficulty}`} value={`${rich.difficulty_rating}/10`} />}
+              {rich.max_group_size && <SnapshotCard label={`👥 ${t.groupSize}`} value={`${isAr ? 'حتى' : 'Max'} ${rich.max_group_size}`} />}
             </div>
           </div>
         </section>
@@ -246,7 +319,26 @@ export default async function DepartureDetailPage({
               <div className="bg-orange-50 border-l-4 border-orange-500 px-6 py-4 mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{t.tourOverview}</h2>
               </div>
-              <p className="text-lg leading-relaxed text-gray-700 max-w-3xl">{description}</p>
+              <p className="text-lg leading-relaxed text-gray-700 max-w-3xl whitespace-pre-line">{description}</p>
+            </div>
+          </section>
+        )}
+
+        {/* Highlights */}
+        {highlights.length > 0 && (
+          <section className="py-10 md:py-14 bg-gray-50">
+            <div className="max-w-6xl mx-auto px-4">
+              <div className="bg-orange-50 border-l-4 border-orange-500 px-6 py-4 mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{t.highlights}</h2>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {highlights.map((h, i) => (
+                  <div key={i} className="flex items-start gap-3 bg-white rounded-lg border border-gray-200 px-5 py-4">
+                    <span className="text-xl" style={{ color: G }}>✦</span>
+                    <span className="text-gray-700">{h}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         )}
@@ -277,9 +369,14 @@ export default async function DepartureDetailPage({
                         </div>
                       </div>
 
+                      {day.image_url && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={day.image_url} alt={dayTitle} className="w-full h-56 object-cover" />
+                      )}
+
                       <div className="px-6 py-6">
                         {day.description_en && (
-                          <p className="text-gray-700 leading-relaxed mb-5">
+                          <p className="text-gray-700 leading-relaxed mb-5 whitespace-pre-line">
                             {isAr ? (day.description_ar || day.description_en) : day.description_en}
                           </p>
                         )}
@@ -314,6 +411,96 @@ export default async function DepartureDetailPage({
             </div>
           </div>
         </section>
+
+        {/* Included / Excluded */}
+        {(included.length > 0 || excluded.length > 0) && (
+          <section className="py-10 md:py-14 bg-white">
+            <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-8">
+              {included.length > 0 && (
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span className="text-green-600">✓</span> {t.included}
+                  </h2>
+                  <ul className="space-y-2">
+                    {included.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-gray-700">
+                        <span className="text-green-600 mt-0.5">✓</span><span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {excluded.length > 0 && (
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span className="text-red-500">✕</span> {t.excluded}
+                  </h2>
+                  <ul className="space-y-2">
+                    {excluded.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-gray-700">
+                        <span className="text-red-500 mt-0.5">✕</span><span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Route Map */}
+        {routeMap && (
+          <section className="py-10 md:py-14 bg-gray-50">
+            <div className="max-w-6xl mx-auto px-4">
+              <div className="bg-orange-50 border-l-4 border-orange-500 px-6 py-4 mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{t.routeMap}</h2>
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={routeMap} alt={t.routeMap} className="w-full rounded-xl border border-gray-200" />
+            </div>
+          </section>
+        )}
+
+        {/* Gallery */}
+        {gallery.length > 0 && (
+          <section className="py-10 md:py-14 bg-white">
+            <div className="max-w-6xl mx-auto px-4">
+              <div className="bg-orange-50 border-l-4 border-orange-500 px-6 py-4 mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{t.gallery}</h2>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {gallery.map((url, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={url} alt="" className="h-48 w-full object-cover rounded-lg border border-gray-200" />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* FAQs */}
+        {faqs.length > 0 && (
+          <section className="py-10 md:py-14 bg-gray-50">
+            <div className="max-w-4xl mx-auto px-4">
+              <div className="bg-orange-50 border-l-4 border-orange-500 px-6 py-4 mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{t.faqs}</h2>
+              </div>
+              <div className="space-y-4">
+                {faqs.map((f, i) => {
+                  const q = isAr ? (f.q_ar || f.q_en) : (f.q_en || f.q_ar)
+                  const a = isAr ? (f.a_ar || f.a_en) : (f.a_en || f.a_ar)
+                  if (!q) return null
+                  return (
+                    <details key={i} className="bg-white rounded-lg border border-gray-200 px-5 py-4">
+                      <summary className="font-semibold text-gray-900 cursor-pointer">{q}</summary>
+                      {a && <p className="text-gray-700 mt-3 whitespace-pre-line">{a}</p>}
+                    </details>
+                  )
+                })}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* CTA */}
         <section className="py-12 md:py-16" style={{ backgroundColor: G }}>
