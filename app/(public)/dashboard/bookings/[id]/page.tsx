@@ -43,10 +43,16 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       )
     `)
     .eq('id', id)
-    .eq('user_id', user.id)
     .single()
 
   if (!booking) notFound()
+
+  // Authorise: the booking must include a traveller whose email matches the account.
+  const userEmail = (user.email ?? '').toLowerCase()
+  const ownsBooking = (booking.booking_travellers as any[])?.some(
+    (t) => (t.email ?? '').toLowerCase() === userEmail
+  )
+  if (!ownsBooking) notFound()
 
   const departure = booking.departures as any
   const tour = departure?.tours as any

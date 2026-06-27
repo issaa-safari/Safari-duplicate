@@ -59,6 +59,155 @@ const SECTION_COLORS = {
   misc:          { bg: '#1A4A8A', light: '#f0f6ff' },
 }
 
+const inp = 'w-full bg-transparent border-0 border-b border-gray-200 px-1 py-0.5 text-sm focus:outline-none focus:border-gray-500 placeholder-gray-300'
+const th = 'px-3 py-2 text-xs font-bold text-white text-left whitespace-nowrap'
+const td = 'px-2 py-1'
+const totalRow = 'bg-gray-50 font-semibold text-sm'
+
+type ColField = keyof CostLine | 'total' | 'check' | 'diff' | 'actual'
+type Col = { label: string; field: ColField; width?: string }
+
+// IMPORTANT: SectionTable is defined at module scope (not inside CostSheetEditor).
+// If it were nested, every keystroke would recreate the component function, and
+// React would unmount/remount the <input>, dropping focus after one character.
+function SectionTable({
+  title, color, cols, rows, unit, setter, isLocked, setDeletedIds,
+}: {
+  title: string
+  color: { bg: string; light: string }
+  cols: Col[]
+  rows: CostLine[]
+  unit: CSUnit
+  setter: React.Dispatch<React.SetStateAction<CostLine[]>>
+  isLocked: boolean
+  setDeletedIds: React.Dispatch<React.SetStateAction<string[]>>
+}) {
+  const totals = {
+    unitCost: rows.reduce((s, r) => s + (parseFloat(r.unitCost) || 0), 0),
+    quantity: rows.reduce((s, r) => s + (parseFloat(r.quantity) || 0), 0),
+    actual:   rows.reduce((s, r) => s + (parseFloat(r.actual)   || 0), 0),
+    total:    sectionTotal(rows, unit),
+  }
+
+  function updateRow(idx: number, field: keyof CostLine, value: string) {
+    setter(rs => rs.map((r, i) => i === idx ? { ...r, [field]: value } : r))
+  }
+
+  function removeRow(idx: number) {
+    const row = rows[idx]
+    if (row.id) setDeletedIds(prev => [...prev, row.id!])
+    setter(rs => rs.filter((_, i) => i !== idx))
+  }
+
+  function addRow() {
+    setter(rs => [...rs, newLine(unit)])
+  }
+
+  return (
+    <div className="mb-6 rounded-lg overflow-hidden border border-gray-200">
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr style={{ backgroundColor: color.bg }}>
+            <th className={th} style={{ width: '35%' }}>{title}</th>
+            {cols.slice(1).map(c => (
+              <th key={c.label} className={th} style={{ width: c.width }}>{c.label}</th>
+            ))}
+            {!isLocked && <th className={th} style={{ width: 32 }} />}
+          </tr>
+        </thead>
+        <tbody style={{ backgroundColor: color.light }}>
+          {rows.map((row, i) => {
+            const total = lineTotal(row, unit)
+            const diff  = (parseFloat(row.actual) || 0) - (parseFloat(row.unitCost) || 0)
+            return (
+              <tr key={row.id ?? `new-${i}`} className="border-b border-gray-100">
+                {cols.map(c => (
+                  <td key={c.label} className={td}>
+                    {c.field === 'total' ? (
+                      <div className="flex items-center gap-1 text-right px-1">
+                        <span className="flex-1 font-medium">
+                          {total > 0 ? fmt(total) : '0'}
+                        </span>
+                        {total > 0 && <span className="text-green-600 text-xs">✓</span>}
+                      </div>
+                    ) : c.field === 'diff' ? (
+                      <span className={`px-1 ${diff !== 0 ? (diff > 0 ? 'text-green-700' : 'text-red-600') : 'text-gray-400'}`}>
+                        {diff !== 0 ? fmt(diff) : '0.0'}
+                      </span>
+                    ) : isLocked ? (
+                      <span className="px-1 text-gray-700">{row[c.field as keyof CostLine] || '—'}</span>
+                    ) : (
+                      <input
+                        className={inp}
+                        type={c.field === 'description' ? 'text' : 'text'}
+                        inputMode={c.field === 'description' ? undefined : 'decimal'}
+                        placeholder={c.field === 'description' ? 'Description' : '0'}
+                        value={row[c.field as keyof CostLine] ?? ''}
+                        onChange={e => {
+                          const v = e.target.value
+                          if (c.field === 'description') {
+                            updateRow(i, c.field as keyof CostLine, v)
+                          } else {
+                            // allow only numbers and a single decimal point
+                            if (v === '' || /^\d*\.?\d*$/.test(v)) {
+                              updateRow(i, c.field as keyof CostLine, v)
+                            }
+                          }
+                        }}
+                        onKeyDown={e => { if (e.key === 'Enter') e.preventDefault() }}
+                      />
+                    )}
+                  </td>
+                ))}
+                {!isLocked && (
+                  <td className={td}>
+                    <button
+                      type="button"
+                      onClick={() => removeRow(i)}
+                      className="text-gray-300 hover:text-red-500 text-lg leading-none"
+                      title="Remove row"
+                    >×</button>
+                  </td>
+                )}
+              </tr>
+            )
+          })}
+        </tbody>
+        <tfoot>
+          {!isLocked && (
+            <tr style={{ backgroundColor: color.light }}>
+              <td colSpan={cols.length + 1} className="px-3 py-1.5">
+                <button
+                  type="button"
+                  onClick={addRow}
+                  className="text-xs font-medium hover:underline"
+                  style={{ color: color.bg }}
+                >
+                  + Add row
+                </button>
+              </td>
+            </tr>
+          )}
+          <tr className={totalRow} style={{ borderTop: `2px solid ${color.bg}` }}>
+            <td className="px-3 py-2 font-bold">Total</td>
+            {cols.slice(1).map(c => (
+              <td key={c.label} className="px-3 py-2 text-right font-bold">
+                {c.field === 'unitCost' ? (totals.unitCost > 0 ? fmt(totals.unitCost) : '') :
+                 c.field === 'quantity' ? (totals.quantity > 0 ? totals.quantity : '') :
+                 c.field === 'actual'   ? (totals.actual > 0   ? fmt(totals.actual) : fmt(0)) :
+                 c.field === 'total'    ? fmt(totals.total) :
+                 c.field === 'diff'     ? fmt(totals.actual - totals.unitCost) :
+                 ''}
+              </td>
+            ))}
+            {!isLocked && <td />}
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  )
+}
+
 export default function CostSheetEditor({
   quoteId, versionId, initialLines, isLocked, currentCostBase, currentMarkup,
 }: Props) {
@@ -73,6 +222,7 @@ export default function CostSheetEditor({
   const [saving, startSave] = useTransition()
   const [applying, startApply] = useTransition()
   const [saved, setSaved] = useState(false)
+  const [applied, setApplied] = useState(false)
   const [error, setError] = useState('')
 
   const grandTotal =
@@ -80,29 +230,6 @@ export default function CostSheetEditor({
     sectionTotal(fees, CS_UNITS.fees) +
     sectionTotal(transport, CS_UNITS.transport) +
     sectionTotal(misc, CS_UNITS.misc)
-
-  function updateRow(
-    setter: React.Dispatch<React.SetStateAction<CostLine[]>>,
-    idx: number,
-    field: keyof CostLine,
-    value: string
-  ) {
-    setter(rows => rows.map((r, i) => i === idx ? { ...r, [field]: value } : r))
-  }
-
-  function removeRow(
-    setter: React.Dispatch<React.SetStateAction<CostLine[]>>,
-    rows: CostLine[],
-    idx: number
-  ) {
-    const row = rows[idx]
-    if (row.id) setDeletedIds(prev => [...prev, row.id!])
-    setter(rows.filter((_, i) => i !== idx))
-  }
-
-  function addRow(setter: React.Dispatch<React.SetStateAction<CostLine[]>>, unit: CSUnit) {
-    setter(rows => [...rows, newLine(unit)])
-  }
 
   function handleSave() {
     setError('')
@@ -125,135 +252,31 @@ export default function CostSheetEditor({
   }
 
   function handleApply() {
-    const fd = new FormData()
-    fd.set('versionId', versionId)
-    fd.set('quoteId', quoteId)
-    fd.set('costBase', String(grandTotal))
+    setError('')
+    // Save first so the cost base reflects the latest edits, then apply.
+    const allLines = [...accom, ...fees, ...transport, ...misc]
+    const saveFd = new FormData()
+    saveFd.set('versionId', versionId)
+    saveFd.set('quoteId', quoteId)
+    saveFd.set('lines', JSON.stringify(allLines))
+    saveFd.set('deletedIds', JSON.stringify(deletedIds))
+
+    const applyFd = new FormData()
+    applyFd.set('versionId', versionId)
+    applyFd.set('quoteId', quoteId)
+    applyFd.set('costBase', String(grandTotal))
+
     startApply(async () => {
       try {
-        await applyCostBaseFromSheet(fd)
+        await saveCostSheet(saveFd)
+        setDeletedIds([])
+        await applyCostBaseFromSheet(applyFd)
+        setApplied(true)
+        setTimeout(() => setApplied(false), 2500)
       } catch (e: any) {
         setError(e.message ?? 'Failed to apply')
       }
     })
-  }
-
-  const inp = 'w-full bg-transparent border-0 border-b border-gray-200 px-1 py-0.5 text-sm focus:outline-none focus:border-gray-500 placeholder-gray-300'
-  const th = 'px-3 py-2 text-xs font-bold text-white text-left whitespace-nowrap'
-  const td = 'px-2 py-1'
-  const totalRow = 'bg-gray-50 font-semibold text-sm'
-
-  function SectionTable({
-    title, color, cols, rows, unit, setter,
-  }: {
-    title: string
-    color: { bg: string; light: string }
-    cols: { label: string; field: keyof CostLine | 'total' | 'check' | 'diff' | 'actual'; width?: string }[]
-    rows: CostLine[]
-    unit: CSUnit
-    setter: React.Dispatch<React.SetStateAction<CostLine[]>>
-  }) {
-    const totals = {
-      unitCost: rows.reduce((s, r) => s + (parseFloat(r.unitCost) || 0), 0),
-      quantity: rows.reduce((s, r) => s + (parseFloat(r.quantity) || 0), 0),
-      actual:   rows.reduce((s, r) => s + (parseFloat(r.actual)   || 0), 0),
-      total:    sectionTotal(rows, unit),
-    }
-
-    return (
-      <div className="mb-6 rounded-lg overflow-hidden border border-gray-200">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr style={{ backgroundColor: color.bg }}>
-              <th className={th} style={{ width: '35%' }}>{title}</th>
-              {cols.slice(1).map(c => (
-                <th key={c.label} className={th} style={{ width: c.width }}>{c.label}</th>
-              ))}
-              {!isLocked && <th className={th} style={{ width: 32 }} />}
-            </tr>
-          </thead>
-          <tbody style={{ backgroundColor: color.light }}>
-            {rows.map((row, i) => {
-              const total = lineTotal(row, unit)
-              const diff  = (parseFloat(row.actual) || 0) - (parseFloat(row.unitCost) || 0)
-              return (
-                <tr key={i} className="border-b border-gray-100">
-                  {cols.map(c => (
-                    <td key={c.label} className={td}>
-                      {c.field === 'total' ? (
-                        <div className="flex items-center gap-1 text-right px-1">
-                          <span className="flex-1 font-medium">
-                            {total > 0 ? fmt(total) : '0'}
-                          </span>
-                          {total > 0 && <span className="text-green-600 text-xs">✓</span>}
-                        </div>
-                      ) : c.field === 'diff' ? (
-                        <span className={`px-1 ${diff !== 0 ? (diff > 0 ? 'text-green-700' : 'text-red-600') : 'text-gray-400'}`}>
-                          {diff !== 0 ? fmt(diff) : '0.0'}
-                        </span>
-                      ) : isLocked ? (
-                        <span className="px-1 text-gray-700">{row[c.field as keyof CostLine] || '—'}</span>
-                      ) : (
-                        <input
-                          className={inp}
-                          type={c.field === 'description' ? 'text' : 'number'}
-                          min={c.field !== 'description' ? 0 : undefined}
-                          step={c.field !== 'description' ? '0.01' : undefined}
-                          placeholder={c.field === 'description' ? 'Description' : '0'}
-                          value={row[c.field as keyof CostLine] ?? ''}
-                          onChange={e => updateRow(setter, i, c.field as keyof CostLine, e.target.value)}
-                          onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
-                        />
-                      )}
-                    </td>
-                  ))}
-                  {!isLocked && (
-                    <td className={td}>
-                      <button
-                        type="button"
-                        onClick={() => removeRow(setter, rows, i)}
-                        className="text-gray-300 hover:text-red-500 text-lg leading-none"
-                        title="Remove row"
-                      >×</button>
-                    </td>
-                  )}
-                </tr>
-              )
-            })}
-          </tbody>
-          <tfoot>
-            {!isLocked && (
-              <tr style={{ backgroundColor: color.light }}>
-                <td colSpan={cols.length + 1} className="px-3 py-1.5">
-                  <button
-                    type="button"
-                    onClick={() => addRow(setter, unit)}
-                    className="text-xs font-medium hover:underline"
-                    style={{ color: color.bg }}
-                  >
-                    + Add row
-                  </button>
-                </td>
-              </tr>
-            )}
-            <tr className={totalRow} style={{ borderTop: `2px solid ${color.bg}` }}>
-              <td className="px-3 py-2 font-bold">Total</td>
-              {cols.slice(1).map(c => (
-                <td key={c.label} className="px-3 py-2 text-right font-bold">
-                  {c.field === 'unitCost' ? (totals.unitCost > 0 ? fmt(totals.unitCost) : '') :
-                   c.field === 'quantity' ? (totals.quantity > 0 ? totals.quantity : '') :
-                   c.field === 'actual'   ? (totals.actual > 0   ? fmt(totals.actual) : fmt(0)) :
-                   c.field === 'total'    ? fmt(totals.total) :
-                   c.field === 'diff'     ? fmt(totals.actual - totals.unitCost) :
-                   ''}
-                </td>
-              ))}
-              {!isLocked && <td />}
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    )
   }
 
   return (
@@ -270,6 +293,8 @@ export default function CostSheetEditor({
         unit={CS_UNITS.accommodation}
         rows={accom}
         setter={setAccom}
+        isLocked={isLocked}
+        setDeletedIds={setDeletedIds}
         cols={[
           { label: 'ACCOMMODATION', field: 'description' },
           { label: 'Unit Cost ($/night)', field: 'unitCost', width: '18%' },
@@ -285,6 +310,8 @@ export default function CostSheetEditor({
         unit={CS_UNITS.fees}
         rows={fees}
         setter={setFees}
+        isLocked={isLocked}
+        setDeletedIds={setDeletedIds}
         cols={[
           { label: 'ENTRY FEES & ACTIVITIES', field: 'description' },
           { label: 'Budget', field: 'unitCost', width: '16%' },
@@ -300,6 +327,8 @@ export default function CostSheetEditor({
         unit={CS_UNITS.transport}
         rows={transport}
         setter={setTransport}
+        isLocked={isLocked}
+        setDeletedIds={setDeletedIds}
         cols={[
           { label: 'TRANSPORT', field: 'description' },
           { label: 'Count', field: 'quantity', width: '10%' },
@@ -315,6 +344,8 @@ export default function CostSheetEditor({
         unit={CS_UNITS.misc}
         rows={misc}
         setter={setMisc}
+        isLocked={isLocked}
+        setDeletedIds={setDeletedIds}
         cols={[
           { label: 'MISCELLANEOUS', field: 'description' },
           { label: 'Budget', field: 'unitCost', width: '16%' },
@@ -343,7 +374,7 @@ export default function CostSheetEditor({
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={saving}
+                disabled={saving || applying}
                 className="px-4 py-2 rounded-md text-sm font-semibold text-white disabled:opacity-50"
                 style={{ backgroundColor: '#7A9A4A' }}
               >
@@ -353,10 +384,10 @@ export default function CostSheetEditor({
                 <button
                   type="button"
                   onClick={handleApply}
-                  disabled={applying}
+                  disabled={applying || saving}
                   className="px-4 py-2 rounded-md text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
-                  {applying ? 'Applying…' : `Apply $${fmt(grandTotal)} as Cost Base`}
+                  {applying ? 'Applying…' : applied ? '✓ Applied to pricing' : `Apply $${fmt(grandTotal)} as Cost Base`}
                 </button>
               )}
             </div>

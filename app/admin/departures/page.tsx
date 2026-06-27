@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { toggleDeparturePublished } from './[id]/actions'
 
 const STATUS_STYLES: Record<string, string> = {
   available: 'bg-green-100 text-green-700',
@@ -87,6 +88,7 @@ export default async function DeparturesPage({
                 <th className="px-4 py-3 font-medium">Seats</th>
                 <th className="px-4 py-3 font-medium hidden md:table-cell">Price</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Website</th>
                 <th className="px-4 py-3 font-medium"></th>
               </tr>
             </thead>
@@ -119,6 +121,23 @@ export default async function DeparturesPage({
                         (STATUS_STYLES[dep.status] ?? 'bg-gray-100 text-gray-600')}>
                         {dep.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <form action={async () => { 'use server'; await toggleDeparturePublished(dep.id) }}>
+                        {dep.is_active ? (
+                          <button type="submit"
+                            className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-100 text-green-700 hover:bg-green-200"
+                            title="Live on website — click to unpublish">
+                            ● Published
+                          </button>
+                        ) : (
+                          <button type="submit"
+                            className="text-xs px-2.5 py-1 rounded-full font-medium bg-gray-100 text-gray-500 hover:bg-green-100 hover:text-green-700"
+                            title="Hidden from website — click to publish">
+                            ○ Publish
+                          </button>
+                        )}
+                      </form>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link href={"/admin/departures/" + dep.id}

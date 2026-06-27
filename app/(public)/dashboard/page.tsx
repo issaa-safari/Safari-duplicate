@@ -15,28 +15,41 @@ export default async function DashboardPage() {
 
   const admin = createAdminClient()
 
-  // Get user's bookings
-  const { data: bookings } = await admin
-    .from('bookings')
-    .select(`
-      id,
-      status,
-      number_of_travellers,
-      total_price_usd,
-      created_at,
-      departures (
-        id,
-        start_date,
-        end_date,
-        tours (
+  // Bookings are linked to the signed-in user by matching the traveller email
+  // captured at booking time against the account email (works for Google and
+  // email/password logins alike, with no schema change required).
+  const userEmail = (user.email ?? '').toLowerCase()
+
+  const { data: matchedTravellers } = await admin
+    .from('booking_travellers')
+    .select('booking_id')
+    .ilike('email', userEmail)
+
+  const bookingIds = [...new Set((matchedTravellers ?? []).map((t: any) => t.booking_id).filter(Boolean))]
+
+  const { data: bookings } = bookingIds.length > 0
+    ? await admin
+        .from('bookings')
+        .select(`
           id,
-          title_en,
-          title_ar
-        )
-      )
-    `)
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
+          status,
+          number_of_travellers,
+          total_price_usd,
+          created_at,
+          departures (
+            id,
+            start_date,
+            end_date,
+            tours (
+              id,
+              title_en,
+              title_ar
+            )
+          )
+        `)
+        .in('id', bookingIds)
+        .order('created_at', { ascending: false })
+    : { data: [] as any[] }
 
   const upcomingBookings = bookings?.filter(b => {
     const departure = b.departures as any
