@@ -137,7 +137,7 @@ export default async function QuotePrintPage({
   ])
 
   const { data: tourData } = (quote as any)?.tour_id
-    ? await admin.from('tours').select('title_en, image_url, hero_image_url').eq('id', (quote as any).tour_id).single()
+    ? await admin.from('tours').select('title_en').eq('id', (quote as any).tour_id).single()
     : { data: null as any }
 
   const dayIds = (quoteDays ?? []).map((d: any) => d.id)

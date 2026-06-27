@@ -108,7 +108,7 @@ function fromTourDays(
       descriptionEn: td.description_en ?? '',
       clientNotes: '',
       titleAr: td.title_ar ?? '',
-      descriptionAr: '',
+      descriptionAr: (td as any).description_ar ?? '',
       clientNotesAr: '',
       destinationId: dest?.id ?? null,
       destinationSnapshot: dest ? { id: dest.id, name: dest.name } : {},
