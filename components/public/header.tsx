@@ -55,6 +55,14 @@ export default function PublicHeader() {
     }
   }, [searchParams, pathname, router])
 
+  // Persist the resolved language so server-rendered pages (about, tours, footer,
+  // dashboard…) render in the same language and direction.
+  useEffect(() => {
+    if (mounted) {
+      document.cookie = `locale=${currentLang};path=/;max-age=31536000;samesite=lax`
+    }
+  }, [currentLang, mounted])
+
   const getLangUrl = (lang: 'en' | 'ar') => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('lang', lang)

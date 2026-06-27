@@ -3,6 +3,7 @@
 import { useState, useTransition, Suspense } from 'react'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
+import { useLocale } from '@/lib/use-locale'
 
 const G = '#7A9A4A'
 
@@ -25,6 +26,16 @@ async function submitContactForm(formData: ContactFormData) {
 }
 
 export default function ContactPage() {
+  return (
+    <Suspense>
+      <ContactInner />
+    </Suspense>
+  )
+}
+
+function ContactInner() {
+  const locale = useLocale()
+  const isAr = locale === 'ar'
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -35,6 +46,26 @@ export default function ContactPage() {
     subject: '',
     message: '',
   })
+
+  const t = isAr ? {
+    title: 'تواصل معنا', subtitle: 'هل لديك أسئلة؟ يسعدنا أن نسمع منك. تواصل مع فريقنا في أي وقت.',
+    contactInfo: 'معلومات الاتصال', email: 'البريد الإلكتروني', respond: 'نرد خلال 24 ساعة',
+    phone: 'الهاتف', hours: 'الاثنين–الجمعة، 8 صباحاً–6 مساءً بتوقيت شرق أفريقيا',
+    whatsapp: 'واتساب', quickMsg: 'رسائل وعروض سريعة', office: 'موقع المكتب',
+    officeAddr: 'نيروبي، كينيا\nشرق أفريقيا',
+    sent: 'تم إرسال الرسالة!', thanks: 'شكراً لتواصلك معنا. سنعود إليك في أقرب وقت ممكن.',
+    name: 'الاسم', subject: 'الموضوع', message: 'الرسالة', sending: 'جارٍ الإرسال...', send: 'إرسال الرسالة',
+    failed: 'فشل إرسال الرسالة. حاول مرة أخرى.',
+  } : {
+    title: 'Get in Touch', subtitle: "Have questions? We'd love to hear from you. Reach out to our team anytime.",
+    contactInfo: 'Contact Information', email: 'Email', respond: 'We respond within 24 hours',
+    phone: 'Phone', hours: 'Monday–Friday, 8am–6pm EAT',
+    whatsapp: 'WhatsApp', quickMsg: 'Quick messages & quotes', office: 'Office Location',
+    officeAddr: 'Nairobi, Kenya\nEast Africa',
+    sent: 'Message Sent!', thanks: "Thank you for contacting us. We'll get back to you as soon as possible.",
+    name: 'Name', subject: 'Subject', message: 'Message', sending: 'Sending...', send: 'Send Message',
+    failed: 'Failed to send message. Please try again.',
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({
@@ -51,13 +82,13 @@ export default function ContactPage() {
         await submitContactForm(formData)
         setSubmitted(true)
       } catch (err: any) {
-        setError(err.message || 'Failed to send message. Please try again.')
+        setError(err.message || t.failed)
       }
     })
   }
 
   return (
-    <>
+    <div dir={isAr ? 'rtl' : 'ltr'}>
       <Suspense>
         <PublicHeader />
       </Suspense>
@@ -65,10 +96,8 @@ export default function ContactPage() {
         {/* Page Header */}
         <section className="bg-gradient-to-b from-gray-900 to-gray-800 text-white py-12 md:py-16">
           <div className="max-w-4xl mx-auto px-4 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Get in Touch</h1>
-            <p className="text-lg text-gray-300">
-              Have questions? We'd love to hear from you. Reach out to our team anytime.
-            </p>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">{t.title}</h1>
+            <p className="text-lg text-gray-300">{t.subtitle}</p>
           </div>
         </section>
 
@@ -78,10 +107,10 @@ export default function ContactPage() {
             <div className="grid md:grid-cols-2 gap-12">
               {/* Contact Info */}
               <div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-8">Contact Information</h2>
+                <h2 className="text-3xl font-bold text-gray-900 mb-8">{t.contactInfo}</h2>
                 <div className="space-y-8">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Email</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.email}</h3>
                     <a
                       href="mailto:info@safariadventure.com"
                       className="text-lg hover:underline"
@@ -89,11 +118,11 @@ export default function ContactPage() {
                     >
                       info@safariadventure.com
                     </a>
-                    <p className="text-gray-600 text-sm mt-1">We respond within 24 hours</p>
+                    <p className="text-gray-600 text-sm mt-1">{t.respond}</p>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Phone</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.phone}</h3>
                     <a
                       href="tel:+254123456789"
                       className="text-lg hover:underline"
@@ -101,11 +130,11 @@ export default function ContactPage() {
                     >
                       +254 (123) 456-789
                     </a>
-                    <p className="text-gray-600 text-sm mt-1">Monday–Friday, 8am–6pm EAT</p>
+                    <p className="text-gray-600 text-sm mt-1">{t.hours}</p>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">WhatsApp</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.whatsapp}</h3>
                     <a
                       href="https://wa.me/254123456789"
                       className="text-lg hover:underline"
@@ -115,16 +144,12 @@ export default function ContactPage() {
                     >
                       +254 (123) 456-789
                     </a>
-                    <p className="text-gray-600 text-sm mt-1">Quick messages & quotes</p>
+                    <p className="text-gray-600 text-sm mt-1">{t.quickMsg}</p>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Office Location</h3>
-                    <p className="text-gray-600">
-                      Nairobi, Kenya
-                      <br />
-                      East Africa
-                    </p>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.office}</h3>
+                    <p className="text-gray-600 whitespace-pre-line">{t.officeAddr}</p>
                   </div>
                 </div>
               </div>
@@ -134,15 +159,13 @@ export default function ContactPage() {
                 {submitted ? (
                   <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
                     <div className="text-5xl mb-4">✓</div>
-                    <h3 className="text-2xl font-bold text-green-900 mb-3">Message Sent!</h3>
-                    <p className="text-green-700">
-                      Thank you for contacting us. We'll get back to you as soon as possible.
-                    </p>
+                    <h3 className="text-2xl font-bold text-green-900 mb-3">{t.sent}</h3>
+                    <p className="text-green-700">{t.thanks}</p>
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="bg-gray-50 rounded-xl p-8 border border-gray-200">
                     <div className="mb-6">
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">Name *</label>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">{t.name} *</label>
                       <input
                         type="text"
                         name="name"
@@ -154,7 +177,7 @@ export default function ContactPage() {
                     </div>
 
                     <div className="mb-6">
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">Email *</label>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">{t.email} *</label>
                       <input
                         type="email"
                         name="email"
@@ -166,7 +189,7 @@ export default function ContactPage() {
                     </div>
 
                     <div className="mb-6">
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">Phone</label>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">{t.phone}</label>
                       <input
                         type="tel"
                         name="phone"
@@ -177,7 +200,7 @@ export default function ContactPage() {
                     </div>
 
                     <div className="mb-6">
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">Subject *</label>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">{t.subject} *</label>
                       <input
                         type="text"
                         name="subject"
@@ -189,7 +212,7 @@ export default function ContactPage() {
                     </div>
 
                     <div className="mb-6">
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">Message *</label>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">{t.message} *</label>
                       <textarea
                         name="message"
                         value={formData.message}
@@ -212,7 +235,7 @@ export default function ContactPage() {
                       className="w-full px-6 py-3 rounded-lg font-semibold text-white transition disabled:opacity-50"
                       style={{ backgroundColor: G }}
                     >
-                      {isPending ? 'Sending...' : 'Send Message'}
+                      {isPending ? t.sending : t.send}
                     </button>
                   </form>
                 )}
@@ -222,6 +245,6 @@ export default function ContactPage() {
         </section>
       </main>
       <PublicFooter />
-    </>
+    </div>
   )
 }
