@@ -283,6 +283,30 @@ export default async function QuotePortalPage({
           )}
         </div>
 
+        {/* Cover letter intro */}
+        <div className="bg-gray-900 text-gray-200 rounded-xl p-6">
+          <p className="font-semibold text-white mb-3">
+            {isArabic ? `عزيزي/عزيزتي ${client?.first_name ?? clientName}،` : `Dear ${client?.first_name ?? clientName},`}
+          </p>
+          <p className="text-sm leading-relaxed mb-3">
+            {isArabic ? 'شكراً على اهتمامكم.' : 'Thank you for your inquiry.'}
+          </p>
+          <p className="text-sm leading-relaxed mb-3">
+            {isArabic
+              ? `يسعدنا تقديم هذا العرض المخصص لرحلة "${version.title || 'السفاري'}" بناءً على طلبكم.`
+              : `It is our pleasure to send you this custom-made quote for ${version.title || 'your safari'} as per your request.`}
+          </p>
+          <p className="text-sm leading-relaxed mb-4">
+            {isArabic
+              ? 'لا تترددوا في التواصل معنا لأي استفسار. نتطلع لمساعدتكم في تخطيط رحلة العمر.'
+              : 'Please do not hesitate to contact us with any questions. We look forward to helping you plan your safari trip of a lifetime.'}
+          </p>
+          <div className="border-t border-gray-700 pt-3 text-sm">
+            <p className="text-gray-400">{isArabic ? 'مع خالص التحية' : 'Best regards'}</p>
+            <p className="font-semibold text-white">{companyName}</p>
+          </div>
+        </div>
+
         {/* Summary Table */}
         {quoteDays && quoteDays.length > 0 && (
           <section>
@@ -423,6 +447,20 @@ export default async function QuotePortalPage({
             )}
           </section>
         )}
+
+        {/* What's excluded (static) */}
+        <section>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            {isArabic ? 'ما لا يشمله السعر' : "What's Excluded"}
+          </h2>
+          <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+            <p className="text-sm text-gray-600 leading-relaxed">
+              {isArabic
+                ? 'المواد الشخصية (الهدايا التذكارية، تأمين السفر، رسوم التأشيرة، الإنترنت، المشروبات الخاصة). الإقامة الإضافية قبل وبعد الرحلة. الإكراميات (إرشادياً 50 دولار للشخص يومياً). الرحلات الجوية الدولية.'
+                : 'Personal items (souvenirs, travel insurance, visa fees, internet, unusual beverages). Additional accommodation before and after the tour. Tips & gratuities (guideline $50.00 per person per day). International flights.'}
+            </p>
+          </div>
+        </section>
 
         {/* Pricing Section */}
         {(hasQuoteLevelPricing || grandTotal > 0) && (
