@@ -56,11 +56,15 @@ create index if not exists idx_booking_travellers_booking_id on booking_travelle
 create index if not exists idx_booking_travellers_email on booking_travellers(email);
 
 -- Trigger to update updated_at timestamp
+-- (drop-if-exists guards make this migration safely re-runnable, matching groups 10–13/20)
+drop trigger if exists update_departures_updated_at on departures;
 create trigger update_departures_updated_at before update on departures
   for each row execute function update_updated_at_column();
 
+drop trigger if exists update_bookings_updated_at on bookings;
 create trigger update_bookings_updated_at before update on bookings
   for each row execute function update_updated_at_column();
 
+drop trigger if exists update_booking_travellers_updated_at on booking_travellers;
 create trigger update_booking_travellers_updated_at before update on booking_travellers
   for each row execute function update_updated_at_column();

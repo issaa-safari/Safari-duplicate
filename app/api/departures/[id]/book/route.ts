@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(
   request: NextRequest,
@@ -83,6 +84,19 @@ export async function POST(
         { error: 'Failed to save traveller information' },
         { status: 500 }
       )
+    }
+
+    // If a client is signed in, link this booking to their account.
+    // Wrapped defensively: if the user_id column hasn't been added yet
+    // (migration group_22), the booking still succeeds via email matching.
+    try {
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await admin.from('bookings').update({ user_id: user.id }).eq('id', booking.id)
+      }
+    } catch {
+      // ignore — booking is already created; dashboard falls back to email match
     }
 
     // Update booked seats in departure
