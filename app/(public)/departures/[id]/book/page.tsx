@@ -120,7 +120,7 @@ function BookingFormContent() {
   }
 
   return (
-    <main>
+    <main dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       {/* Page Header */}
       <section className="bg-gradient-to-b from-gray-900 to-gray-800 text-white py-12 md:py-16">
         <div className="max-w-2xl mx-auto px-4 text-center">
