@@ -306,7 +306,34 @@ export async function applyCostBaseFromSheet(formData: FormData) {
   if (!Number.isFinite(costBase) || costBase < 0) throw new Error('Invalid cost base.')
   await requireMutableVersion(admin, versionId, quoteId)
 
-  const { error } = await admin.from('quote_versions').update({ cost_base_usd: costBase }).eq('id', versionId)
+  // Get current markup and traveller count to calculate selling price and per-person rate
+  const { data: version } = await admin
+    .from('quote_versions')
+    .select('default_markup_percent')
+    .eq('id', versionId)
+    .single()
+
+  const { count: payingTravellerCount } = await admin
+    .from('quote_travellers')
+    .select('*', { count: 'exact', head: true })
+    .eq('quote_version_id', versionId)
+    .eq('is_paying', true)
+    .eq('is_complimentary', false)
+
+  const markupPercent = version?.default_markup_percent ?? 0
+  const totalSelling = costBase > 0 ? costBase * (1 + markupPercent / 100) : 0
+  const payingCount = payingTravellerCount ?? 0
+  const perPersonSelling = payingCount > 0 ? totalSelling / payingCount : 0
+
+  const { error } = await admin
+    .from('quote_versions')
+    .update({
+      cost_base_usd: costBase,
+      total_selling_usd: totalSelling,
+      sharing_price_per_person_usd: perPersonSelling,
+      single_price_per_person_usd: perPersonSelling,
+    })
+    .eq('id', versionId)
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
 }

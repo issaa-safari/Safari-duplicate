@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 
@@ -7,7 +8,9 @@ const G = '#7A9A4A'
 export default function AboutPage() {
   return (
     <>
-      <PublicHeader />
+      <Suspense>
+        <PublicHeader />
+      </Suspense>
       <main>
         {/* Page Header */}
         <section className="bg-gradient-to-b from-gray-900 to-gray-800 text-white py-12 md:py-16">

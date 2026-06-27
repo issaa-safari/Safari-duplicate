@@ -474,15 +474,20 @@ export default function QuoteItineraryBuilder({
                 </select>
               </div>
 
-              {/* Title + Notes */}
+              {/* Title + Description + Notes */}
               <div className="space-y-1.5">
                 <input type="text" value={day.title}
                   onChange={e => update(i, { title: e.target.value })}
                   placeholder="Day title (English)"
                   className={inputCls} disabled={isLocked} />
+                <textarea value={day.descriptionEn}
+                  onChange={e => update(i, { descriptionEn: e.target.value })}
+                  placeholder="Day description (English, optional)"
+                  rows={2}
+                  className={inputCls + ' resize-none'} disabled={isLocked} />
                 <textarea value={day.clientNotes}
                   onChange={e => update(i, { clientNotes: e.target.value })}
-                  placeholder="Notes (English, optional)"
+                  placeholder="Client notes (English, optional)"
                   rows={2}
                   className={inputCls + ' resize-none'} disabled={isLocked} />
                 {/* Arabic toggle */}
@@ -503,6 +508,11 @@ export default function QuoteItineraryBuilder({
                       onChange={e => update(i, { titleAr: e.target.value })}
                       placeholder="عنوان اليوم"
                       className={inputCls + ' text-right'} disabled={isLocked} />
+                    <textarea value={day.descriptionAr}
+                      onChange={e => update(i, { descriptionAr: e.target.value })}
+                      placeholder="وصف اليوم"
+                      rows={2}
+                      className={inputCls + ' resize-none text-right'} disabled={isLocked} />
                     <textarea value={day.clientNotesAr}
                       onChange={e => update(i, { clientNotesAr: e.target.value })}
                       placeholder="ملاحظات (اختياري)"

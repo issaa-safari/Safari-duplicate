@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import './globals.css'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
@@ -16,7 +17,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-white">
-        <PublicHeader />
+        <Suspense>
+          <PublicHeader />
+        </Suspense>
         <main>{children}</main>
         <PublicFooter />
       </body>

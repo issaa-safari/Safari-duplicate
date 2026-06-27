@@ -276,7 +276,9 @@ function QuoteRequestFormContent() {
 export default function QuoteRequestPage() {
   return (
     <>
-      <PublicHeader />
+      <Suspense>
+        <PublicHeader />
+      </Suspense>
       <Suspense fallback={<div className="h-screen flex items-center justify-center">Loading...</div>}>
         <QuoteRequestFormContent />
       </Suspense>

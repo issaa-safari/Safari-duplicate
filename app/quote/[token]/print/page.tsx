@@ -120,7 +120,7 @@ export default async function QuotePrintPage({
       .order('sort_order'),
     admin.from('company_settings')
       .select('company_name, logo_url, email, phone, whatsapp, address')
-      .limit(1).single(),
+      .limit(1).maybeSingle(),
   ])
 
   if (!version || !quote) notFound()
@@ -436,7 +436,7 @@ export default async function QuotePrintPage({
                   const accoms = accomByDay[day.id] ?? []
                   const accomDescs = accomDescByDay[day.id] ?? []
                   const dayMeals: string[] = day.meals ?? []
-                  const mealStr = dayMeals.map((m: string) => MEAL_LABELS[m] ?? m).join(', ') || '—'
+                  const mealStr = dayMeals.map((m: string) => ml[m] ?? m).join(', ') || '—'
                   const dl = dayLabel(day)
                   return (
                     <tr key={day.id}>
