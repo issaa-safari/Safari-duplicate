@@ -2,6 +2,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
+import SafariImage from '@/components/public/safari-image'
+import WhatsAppButton from '@/components/public/whatsapp-button'
+import { STOCK_HERO_IMAGE } from '@/lib/stock-images'
 
 const G = '#7A9A4A'
 
@@ -50,7 +53,7 @@ export default async function DeparturesPage({
     .from('departures')
     .select(
       `id, tour_id, start_date, end_date, max_seats, booked_seats, price_usd, status,
-       tour:tours(title_en, title_ar, subtitle_en, type)`
+       tour:tours(title_en, title_ar, subtitle_en, type, hero_image_url, gallery_urls)`
     )
     .eq('is_active', true)
     .gte('end_date', new Date().toISOString().split('T')[0])
@@ -101,7 +104,10 @@ export default async function DeparturesPage({
       <PublicHeader />
       <main>
         {/* Page Header */}
-        <section className="bg-gradient-to-b from-gray-900 to-gray-800 text-white py-12 md:py-16">
+        <section
+          className="bg-gray-900 text-white py-16 md:py-24 bg-cover bg-center"
+          style={{ backgroundImage: `linear-gradient(rgba(17,24,39,0.62), rgba(17,24,39,0.72)), url(${STOCK_HERO_IMAGE})` }}
+        >
           <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
             <div>
               <h1 className="text-4xl md:text-5xl font-bold mb-4">{t.departures}</h1>
@@ -154,13 +160,13 @@ export default async function DeparturesPage({
                       key={dep.id}
                       className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition flex flex-col"
                     >
-                      {/* Tour Image Placeholder */}
-                      <div
-                        className="w-full h-48 flex items-center justify-center text-6xl text-white"
-                        style={{ backgroundColor: G }}
-                      >
-                        🦁
-                      </div>
+                      {/* Tour Image */}
+                      <SafariImage
+                        src={tour?.hero_image_url || tour?.gallery_urls?.[0]}
+                        seed={dep.tour_id || dep.id}
+                        alt={title || 'Safari departure'}
+                        className="w-full h-48"
+                      />
 
                       {/* Departure Info */}
                       <div className="p-6 flex flex-col flex-grow">
@@ -254,6 +260,7 @@ export default async function DeparturesPage({
         </section>
       </main>
       <PublicFooter />
+      <WhatsAppButton lang={locale} />
     </>
   )
 }

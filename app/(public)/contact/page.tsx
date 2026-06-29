@@ -4,6 +4,8 @@ import { useState, useTransition, Suspense } from 'react'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import { useLocale } from '@/lib/use-locale'
+import WhatsAppButton from '@/components/public/whatsapp-button'
+import { site, whatsappLink } from '@/lib/site'
 
 const G = '#7A9A4A'
 
@@ -112,11 +114,11 @@ function ContactInner() {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.email}</h3>
                     <a
-                      href="mailto:info@safariadventure.com"
+                      href={`mailto:${site.email}`}
                       className="text-lg hover:underline"
                       style={{ color: G }}
                     >
-                      info@safariadventure.com
+                      {site.email}
                     </a>
                     <p className="text-gray-600 text-sm mt-1">{t.respond}</p>
                   </div>
@@ -124,11 +126,11 @@ function ContactInner() {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.phone}</h3>
                     <a
-                      href="tel:+254123456789"
+                      href={`tel:${site.phoneE164}`}
                       className="text-lg hover:underline"
                       style={{ color: G }}
                     >
-                      +254 (123) 456-789
+                      {site.phoneDisplay}
                     </a>
                     <p className="text-gray-600 text-sm mt-1">{t.hours}</p>
                   </div>
@@ -136,13 +138,13 @@ function ContactInner() {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.whatsapp}</h3>
                     <a
-                      href="https://wa.me/254123456789"
+                      href={whatsappLink()}
                       className="text-lg hover:underline"
                       style={{ color: G }}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      +254 (123) 456-789
+                      {site.phoneDisplay}
                     </a>
                     <p className="text-gray-600 text-sm mt-1">{t.quickMsg}</p>
                   </div>
@@ -245,6 +247,7 @@ function ContactInner() {
         </section>
       </main>
       <PublicFooter />
+      <WhatsAppButton lang={locale} />
     </div>
   )
 }

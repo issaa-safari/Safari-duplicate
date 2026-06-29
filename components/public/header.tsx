@@ -38,42 +38,35 @@ export default function PublicHeader() {
     setMounted(true)
     const urlLang = searchParams.get('lang')
 
+    // 1. Explicit ?lang= in the URL always wins (manual language switch).
     if (urlLang === 'ar' || urlLang === 'en') {
       setCurrentLang(urlLang)
       return
     }
 
-    // Auto-detect language from browser or geolocation
-    const browserLang = navigator.language.split('-')[0]
-    const detectedLang = browserLang === 'ar' ? 'ar' : 'en'
-
-    // Check for Saudi Arabia or other Arabic-speaking countries
-    if (typeof navigator !== 'undefined') {
-      try {
-        // Try to detect timezone for KSA
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-        if (timezone.includes('Mecca') || timezone.includes('Riyadh')) {
-          setCurrentLang('ar')
-          // Redirect to Arabic version if on home page
-          if (pathname === '/' || pathname === '') {
-            setTimeout(() => router.push('/?lang=ar'), 100)
-          }
-          return
-        }
-      } catch (e) {
-        // Fallback to browser language
-      }
+    // 2. The locale cookie is the source of truth for a returning visitor.
+    //    No redirect — just render in the remembered language to avoid the flash.
+    const cookieLang = document.cookie
+      .split('; ')
+      .find((c) => c.startsWith('locale='))
+      ?.split('=')[1]
+    if (cookieLang === 'ar' || cookieLang === 'en') {
+      setCurrentLang(cookieLang)
+      return
     }
 
-    if (detectedLang === 'ar' && !urlLang) {
-      setCurrentLang('ar')
-      if (pathname === '/' || pathname === '') {
-        setTimeout(() => router.push('/?lang=ar'), 100)
-      }
-    } else {
-      setCurrentLang(urlLang || detectedLang || 'en')
+    // 3. First visit with no preference yet: auto-detect from browser/timezone
+    //    and set state only. We never router.push here, so there is no flash
+    //    or redirect loop; the cookie effect below persists the choice.
+    let detected: 'en' | 'ar' = navigator.language.split('-')[0] === 'ar' ? 'ar' : 'en'
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+      if (tz.includes('Mecca') || tz.includes('Riyadh') || tz.includes('Jeddah')) detected = 'ar'
+    } catch {
+      // ignore — keep browser-language detection
     }
-  }, [searchParams, pathname, router])
+    setCurrentLang(detected)
+  }, [searchParams])
 
   // Persist the resolved language so server-rendered pages (about, tours, footer,
   // dashboard…) render in the same language and direction.
@@ -118,6 +111,9 @@ export default function PublicHeader() {
           </Link>
           <Link href={getNavLink('/departures')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
             {currentLang === 'ar' ? 'الرحلات' : 'Departures'}
+          </Link>
+          <Link href={getNavLink('/gallery')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+            {currentLang === 'ar' ? 'المعرض' : 'Gallery'}
           </Link>
           <Link href={getNavLink('/about')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
             {currentLang === 'ar' ? 'نبذة عنا' : 'About'}
@@ -191,6 +187,9 @@ export default function PublicHeader() {
           </Link>
           <Link href={getNavLink('/departures')} className="block text-gray-600 hover:text-gray-900 text-sm font-medium py-2">
             {currentLang === 'ar' ? 'الرحلات' : 'Departures'}
+          </Link>
+          <Link href={getNavLink('/gallery')} className="block text-gray-600 hover:text-gray-900 text-sm font-medium py-2">
+            {currentLang === 'ar' ? 'المعرض' : 'Gallery'}
           </Link>
           <Link href={getNavLink('/about')} className="block text-gray-600 hover:text-gray-900 text-sm font-medium py-2">
             {currentLang === 'ar' ? 'نبذة عنا' : 'About'}

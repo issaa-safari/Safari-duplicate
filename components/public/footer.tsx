@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { useLocale } from '@/lib/use-locale'
+import { site, whatsappLink } from '@/lib/site'
 
 const G = '#7A9A4A'
 
@@ -23,6 +24,7 @@ function FooterInner() {
     tagline: 'اختبر البرية. رحلات سفاري بقيادة خبراء عبر أكثر وجهات شرق أفريقيا شهرة.',
     explore: 'استكشف',
     browseTours: 'تصفح الجولات',
+    gallery: 'معرض الصور',
     getQuote: 'احصل على عرض سعر',
     ourStory: 'قصتنا',
     company: 'الشركة',
@@ -38,6 +40,7 @@ function FooterInner() {
     tagline: "Experience the wild. Expert-led safaris across East Africa's most iconic destinations.",
     explore: 'Explore',
     browseTours: 'Browse Tours',
+    gallery: 'Gallery',
     getQuote: 'Get a Quote',
     ourStory: 'Our Story',
     company: 'Company',
@@ -74,6 +77,7 @@ function FooterInner() {
             <h3 className="font-semibold text-white mb-4">{t.explore}</h3>
             <ul className="space-y-2 text-sm">
               <li><Link href={withLang('/tours')} className="hover:text-white transition">{t.browseTours}</Link></li>
+              <li><Link href={withLang('/gallery')} className="hover:text-white transition">{t.gallery}</Link></li>
               <li><Link href={withLang('/quote-request')} className="hover:text-white transition">{t.getQuote}</Link></li>
               <li><Link href={withLang('/about')} className="hover:text-white transition">{t.ourStory}</Link></li>
             </ul>
@@ -95,20 +99,20 @@ function FooterInner() {
             <div className="space-y-2 text-sm">
               <p>
                 {t.email}:{' '}
-                <a href="mailto:info@safariadventure.com" className="hover:text-white transition">
-                  info@safariadventure.com
+                <a href={`mailto:${site.email}`} className="hover:text-white transition">
+                  {site.email}
                 </a>
               </p>
               <p>
                 {t.phone}:{' '}
-                <a href="tel:+254123456789" className="hover:text-white transition">
-                  +254 123 456 789
+                <a href={`tel:${site.phoneE164}`} className="hover:text-white transition">
+                  {site.phoneDisplay}
                 </a>
               </p>
               <p>
                 {t.whatsapp}:{' '}
-                <a href="https://wa.me/254123456789" className="hover:text-white transition" target="_blank" rel="noopener noreferrer">
-                  +254 123 456 789
+                <a href={whatsappLink()} className="hover:text-white transition" target="_blank" rel="noopener noreferrer">
+                  {site.phoneDisplay}
                 </a>
               </p>
             </div>
@@ -116,7 +120,7 @@ function FooterInner() {
         </div>
 
         <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
-          <p>&copy; 2024 Safari Adventure Riders. {t.rights}</p>
+          <p>&copy; {new Date().getFullYear()} {site.name}. {t.rights}</p>
         </div>
       </div>
     </footer>

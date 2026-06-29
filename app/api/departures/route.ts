@@ -10,7 +10,7 @@ export async function GET() {
     .from('departures')
     .select(`
       id, start_date, end_date, max_seats, booked_seats, price_usd, status,
-      tours ( title_en, title_ar, type )
+      tours ( title_en, title_ar, type, hero_image_url, gallery_urls )
     `)
     .eq('is_active', true)
     .gte('end_date', today)

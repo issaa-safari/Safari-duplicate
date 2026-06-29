@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useTransition, Suspense } from 'react'
+import { useState, useTransition, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
+import WhatsAppButton from '@/components/public/whatsapp-button'
 import { useLocale } from '@/lib/use-locale'
 
 const G = '#7A9A4A'
@@ -41,6 +42,17 @@ function QuoteRequestFormContent() {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
+  const [tours, setTours] = useState<{ id: string; title_en: string; title_ar: string | null }[]>([])
+
+  // Load real tours so the dropdown matches the actual catalogue, not static strings.
+  useEffect(() => {
+    let active = true
+    fetch('/api/tours')
+      .then((r) => r.json())
+      .then((d) => { if (active) setTours(d.tours ?? []) })
+      .catch(() => { if (active) setTours([]) })
+    return () => { active = false }
+  }, [])
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
@@ -197,10 +209,12 @@ function QuoteRequestFormContent() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
                     <option value="">{t.selectTour}</option>
+                    {tours.map((tour) => (
+                      <option key={tour.id} value={tour.id}>
+                        {isAr ? (tour.title_ar || tour.title_en) : tour.title_en}
+                      </option>
+                    ))}
                     <option value="custom">{t.custom}</option>
-                    <option value="guided">{t.guided}</option>
-                    <option value="luxury">{t.luxury}</option>
-                    <option value="adventure">{t.adventure}</option>
                   </select>
                 </div>
               </div>
@@ -306,6 +320,7 @@ export default function QuoteRequestPage() {
         <QuoteRequestFormContent />
       </Suspense>
       <PublicFooter />
+      <WhatsAppButton />
     </>
   )
 }

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import SafariImage from '@/components/public/safari-image'
 
 const G = '#7A9A4A'
 
@@ -87,9 +88,12 @@ export default function FeaturedDepartures({ lang }: { lang: string }) {
                 href={`/departures/${dep.id}?lang=${lang}`}
                 className="block bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition"
               >
-                <div className="h-40 flex items-center justify-center text-5xl text-white" style={{ backgroundColor: G }}>
-                  🦁
-                </div>
+                <SafariImage
+                  src={tour?.hero_image_url || tour?.gallery_urls?.[0]}
+                  seed={dep.id}
+                  alt={title || 'Safari departure'}
+                  className="h-40 w-full"
+                />
                 <div className="p-5">
                   <h3 className="font-bold text-gray-900 mb-2 line-clamp-2">{title}</h3>
                   <p className="text-sm text-gray-500 mb-3">

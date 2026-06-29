@@ -2,7 +2,10 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
+import Testimonials from '@/components/public/testimonials'
+import WhatsAppButton from '@/components/public/whatsapp-button'
 import { getServerLocale } from '@/lib/i18n'
+import { STOCK_HERO_IMAGE } from '@/lib/stock-images'
 
 const G = '#7A9A4A'
 
@@ -68,7 +71,10 @@ export default async function AboutPage({
       </Suspense>
       <main>
         {/* Page Header */}
-        <section className="bg-gradient-to-b from-gray-900 to-gray-800 text-white py-12 md:py-16">
+        <section
+          className="bg-gray-900 text-white py-16 md:py-24 bg-cover bg-center"
+          style={{ backgroundImage: `linear-gradient(rgba(17,24,39,0.62), rgba(17,24,39,0.72)), url(${STOCK_HERO_IMAGE})` }}
+        >
           <div className="max-w-4xl mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">{t.title}</h1>
             <p className="text-lg text-gray-300">{t.subtitle}</p>
@@ -148,8 +154,11 @@ export default async function AboutPage({
             </Link>
           </div>
         </section>
+        {/* Testimonials */}
+        <Testimonials lang={locale} />
       </main>
       <PublicFooter />
+      <WhatsAppButton lang={locale} />
     </div>
   )
 }

@@ -6,6 +6,9 @@ import { useSearchParams } from 'next/navigation'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import FeaturedDepartures from '@/components/public/featured-departures'
+import Testimonials from '@/components/public/testimonials'
+import WhatsAppButton from '@/components/public/whatsapp-button'
+import { STOCK_HERO_IMAGE } from '@/lib/stock-images'
 
 const G = '#7A9A4A'
 
@@ -63,7 +66,12 @@ function HomeContent() {
   return (
     <main>
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-gray-900 to-gray-800 text-white py-20 md:py-32">
+      <section
+        className="relative bg-gray-900 text-white py-24 md:py-40 bg-cover bg-center"
+        style={{
+          backgroundImage: `linear-gradient(rgba(17,24,39,0.62), rgba(17,24,39,0.72)), url(${STOCK_HERO_IMAGE})`,
+        }}
+      >
         <div className="max-w-6xl mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
             {t.experienceAfricasSafaris}
@@ -156,6 +164,9 @@ function HomeContent() {
           </div>
         </section>
 
+        {/* Testimonials */}
+        <Testimonials lang={currentLang} />
+
         {/* CTA Section */}
         <section className="py-16 md:py-20" style={{ backgroundColor: G }}>
           <div className="max-w-4xl mx-auto px-4 text-center text-white">
@@ -187,6 +198,7 @@ export default function HomePage() {
         <HomeContent />
       </Suspense>
       <PublicFooter />
+      <WhatsAppButton />
     </>
   )
 }
