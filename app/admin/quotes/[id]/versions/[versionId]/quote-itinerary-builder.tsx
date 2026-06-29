@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import ActivitiesModal, { DayActivity } from '@/components/admin/activities-modal'
 
 type ContentItem = { id: string; name: string; [key: string]: unknown }
 
@@ -201,6 +202,36 @@ export default function QuoteItineraryBuilder({
         )
   )
   const [genCount, setGenCount] = useState<string>('')
+  const [activityModal, setActivityModal] = useState<number | null>(null)
+
+  // Bridge the shared ActivitiesModal <-> the quote's activity items.
+  function dayActivitiesFor(day: Day): DayActivity[] {
+    return day.items
+      .filter(it => it.itemType === 'activity')
+      .map(it => ({
+        activity_id: it.entityId ?? '',
+        moment: ((it.contentSnapshot?.moment as any) ?? '') as DayActivity['moment'],
+        optional: !!it.contentSnapshot?.optional,
+        destination_id: (it.contentSnapshot?.destination_id as any) ?? null,
+      }))
+  }
+
+  function applyActivities(i: number, rows: DayActivity[]) {
+    setDays(prev => prev.map((d, idx) => {
+      if (idx !== i) return d
+      const nonActivity = d.items.filter(it => it.itemType !== 'activity')
+      const activityItems: DayItem[] = rows.map(r => {
+        const act = activities.find(a => a.id === r.activity_id)
+        return {
+          _key: uid(), id: null, itemType: 'activity', entityId: r.activity_id,
+          titleSnapshot: (act?.name as string) ?? 'Activity',
+          contentSnapshot: { moment: r.moment || null, optional: !!r.optional, destination_id: r.destination_id ?? null },
+        }
+      })
+      return { ...d, items: [...nonActivity, ...activityItems] }
+    }))
+    setSaved(false)
+  }
 
   // Calculate trip duration from dates (inclusive)
   const tripDays = travelStartDate && travelEndDate
@@ -567,12 +598,11 @@ export default function QuoteItineraryBuilder({
                       <option value="">+ Accommodation…</option>
                       {accommodations.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                     </select>
-                    {/* Activity */}
-                    <select value="" className={smallSelectCls}
-                      onChange={e => { addItem(i, 'activity', e.target.value, activities); (e.target as HTMLSelectElement).value = '' }}>
-                      <option value="">+ Activity…</option>
-                      {activities.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                    </select>
+                    {/* Activities (modal, connected to the Content library) */}
+                    <button type="button" onClick={() => setActivityModal(i)}
+                      className="w-full rounded-md border border-dashed border-[#7A9A4A] text-[#4C5E2A] px-2 py-1 text-xs font-medium hover:bg-[#7A9A4A]/5">
+                      + Add Activities
+                    </button>
                     {/* Vehicle */}
                     <select value="" className={smallSelectCls}
                       onChange={e => { addItem(i, 'vehicle', e.target.value, vehicles); (e.target as HTMLSelectElement).value = '' }}>
@@ -613,6 +643,18 @@ export default function QuoteItineraryBuilder({
             + Add Day
           </button>
         </div>
+      )}
+
+      {activityModal !== null && days[activityModal] && (
+        <ActivitiesModal
+          dayLabel={`Day ${days[activityModal].dayNumber}`}
+          value={dayActivitiesFor(days[activityModal])}
+          activities={activities as any}
+          destinations={destinations as any}
+          dayDestinationId={days[activityModal].destinationId}
+          onChange={(rows) => applyActivities(activityModal, rows)}
+          onClose={() => setActivityModal(null)}
+        />
       )}
 
       {error && <p className="text-sm text-red-600 bg-red-50 rounded-md px-4 py-3">{error}</p>}

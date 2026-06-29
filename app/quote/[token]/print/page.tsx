@@ -15,6 +15,10 @@ function fmtDate(d: string | null) {
 
 const G = '#7A9A4A'
 
+function momentAr(m: string) {
+  return ({ morning: 'صباحاً', afternoon: 'بعد الظهر', evening: 'مساءً', night: 'ليلاً' } as Record<string, string>)[m] ?? m
+}
+
 const CSS = `
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: #fff; }
@@ -155,15 +159,16 @@ export default async function QuotePrintPage({
   const dayIds = (quoteDays ?? []).map((d: any) => d.id)
   const { data: dayItems } = dayIds.length
     ? await admin.from('quote_day_items')
-        .select('quote_day_id, item_type, title_snapshot, content_snapshot, sort_order')
+        .select('quote_day_id, item_type, activity_id, title_snapshot, content_snapshot, sort_order')
         .in('quote_day_id', dayIds)
         .in('item_type', ['accommodation', 'activity'])
         .order('sort_order')
     : { data: [] as any[] }
 
+  type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean }
   const accomByDay: Record<string, string[]> = {}
   const accomDescByDay: Record<string, string[]> = {}
-  const actsByDay: Record<string, string[]> = {}
+  const actsByDay: Record<string, ActItem[]> = {}
   for (const item of dayItems ?? []) {
     if (item.item_type === 'accommodation') {
       if (!accomByDay[item.quote_day_id]) accomByDay[item.quote_day_id] = []
@@ -172,8 +177,20 @@ export default async function QuotePrintPage({
       if (item.content_snapshot) accomDescByDay[item.quote_day_id].push(item.content_snapshot)
     } else if (item.item_type === 'activity') {
       if (!actsByDay[item.quote_day_id]) actsByDay[item.quote_day_id] = []
-      if (item.title_snapshot) actsByDay[item.quote_day_id].push(item.title_snapshot)
+      const cs = (item.content_snapshot ?? {}) as any
+      actsByDay[item.quote_day_id].push({
+        name: item.title_snapshot, activity_id: item.activity_id ?? null,
+        moment: cs.moment ?? '', optional: !!cs.optional,
+      })
     }
+  }
+
+  // Activity descriptions (EN/AR) pulled live from the Content library.
+  const actIds = [...new Set(Object.values(actsByDay).flat().map(a => a.activity_id).filter(Boolean))] as string[]
+  const actDescMap: Record<string, { en: string | null; ar: string | null }> = {}
+  if (actIds.length > 0) {
+    const { data: acts } = await admin.from('activities').select('id, description_en, description_ar').in('id', actIds)
+    for (const a of acts ?? []) actDescMap[a.id] = { en: a.description_en, ar: a.description_ar }
   }
 
   // Day descriptions are pulled from the selected destination in the Content library.
@@ -528,7 +545,23 @@ export default async function QuotePrintPage({
                     <p className="day-line"><span className="day-ico">🏠</span><strong>{T.dayCols[2]}:</strong> {accoms.join(' · ')}</p>
                   )}
                   {acts.length > 0 && (
-                    <p className="day-line"><span className="day-ico">→</span><strong>{actLabel}:</strong> {acts.join(' · ')}</p>
+                    <div className="day-line">
+                      <strong>{actLabel}:</strong>
+                      {acts.map((a, ai) => {
+                        const dd = a.activity_id ? actDescMap[a.activity_id] : null
+                        const adesc = dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : null
+                        const mom = a.moment ? (isArabic ? momentAr(a.moment) : a.moment) : ''
+                        return (
+                          <div key={ai} style={{ marginTop: 3 }}>
+                            <span className="day-ico">→</span>
+                            <strong>{a.name}</strong>
+                            {mom ? <span style={{ color: '#999' }}> · {mom}</span> : null}
+                            {a.optional ? <span style={{ color: '#C97A1A' }}> · {isArabic ? 'اختياري' : 'optional'}</span> : null}
+                            {adesc ? <div style={{ color: '#666', fontSize: 11 }}>{adesc}</div> : null}
+                          </div>
+                        )
+                      })}
+                    </div>
                   )}
                   {notes && <p className="day-notes">{notes}</p>}
                 </div>

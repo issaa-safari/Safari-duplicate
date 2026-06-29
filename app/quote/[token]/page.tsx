@@ -166,23 +166,39 @@ export default async function QuotePortalPage({
   const dayIds = (quoteDays ?? []).map((d: any) => d.id)
   const { data: dayItems } = dayIds.length
     ? await admin.from('quote_day_items')
-        .select('quote_day_id, item_type, title_snapshot')
+        .select('quote_day_id, item_type, activity_id, title_snapshot, content_snapshot')
         .in('quote_day_id', dayIds)
         .in('item_type', ['accommodation', 'activity'])
         .order('sort_order')
     : { data: [] as any[] }
 
+  type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean }
   const accomByDay: Record<string, string[]> = {}
-  const actsByDay: Record<string, string[]> = {}
+  const actsByDay: Record<string, ActItem[]> = {}
   for (const item of dayItems ?? []) {
     if (item.item_type === 'accommodation') {
       if (!accomByDay[item.quote_day_id]) accomByDay[item.quote_day_id] = []
       if (item.title_snapshot) accomByDay[item.quote_day_id].push(item.title_snapshot)
     } else if (item.item_type === 'activity') {
       if (!actsByDay[item.quote_day_id]) actsByDay[item.quote_day_id] = []
-      if (item.title_snapshot) actsByDay[item.quote_day_id].push(item.title_snapshot)
+      const cs = (item.content_snapshot ?? {}) as any
+      actsByDay[item.quote_day_id].push({
+        name: item.title_snapshot, activity_id: item.activity_id ?? null,
+        moment: cs.moment ?? '', optional: !!cs.optional,
+      })
     }
   }
+
+  // Activity descriptions (EN/AR) pulled live from the Content library.
+  const actIds = [...new Set(Object.values(actsByDay).flat().map(a => a.activity_id).filter(Boolean))] as string[]
+  const actDescMap: Record<string, { en: string | null; ar: string | null }> = {}
+  if (actIds.length > 0) {
+    const { data: acts } = await admin.from('activities').select('id, description_en, description_ar').in('id', actIds)
+    for (const a of acts ?? []) actDescMap[a.id] = { en: a.description_en, ar: a.description_ar }
+  }
+  const momentLbl = (m: string) => (isArabic
+    ? ({ morning: 'صباحاً', afternoon: 'بعد الظهر', evening: 'مساءً', night: 'ليلاً' } as Record<string, string>)[m]
+    : ({ morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening', night: 'Night' } as Record<string, string>)[m]) ?? m
 
   // Group travellers by age band for per-type breakdown
   type TGroup = { name: string; count: number; perPerson: number; total: number }
@@ -384,6 +400,7 @@ export default async function QuotePortalPage({
                 const dd = dest?.id ? destDescMap[dest.id] : null
                 const dayDesc = dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : null
                 const dayNotes = isArabic && day.client_notes_ar ? day.client_notes_ar : day.client_notes
+                const dayActs = actsByDay[day.id] ?? []
                 return (
                   <div key={day.id} className="bg-white rounded-xl border border-gray-200 p-5">
                     <div className="flex items-start justify-between gap-2">
@@ -407,6 +424,27 @@ export default async function QuotePortalPage({
                     </div>
                     {dayDesc && (
                       <p className="text-sm text-gray-600 mt-2 leading-relaxed">{dayDesc}</p>
+                    )}
+                    {dayActs.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {dayActs.map((a, ai) => {
+                          const adm = a.activity_id ? actDescMap[a.activity_id] : null
+                          const adesc = adm ? (isArabic ? (adm.ar || adm.en) : adm.en) : null
+                          return (
+                            <div key={ai} className="flex items-start gap-2">
+                              <span style={{ color: '#7A9A4A' }}>→</span>
+                              <div>
+                                <p className="text-sm font-medium text-gray-800">
+                                  {a.name}
+                                  {a.moment && <span className="text-xs text-gray-400 font-normal"> · {momentLbl(a.moment)}</span>}
+                                  {a.optional && <span className="text-xs text-amber-600 font-normal"> · {isArabic ? 'اختياري' : 'optional'}</span>}
+                                </p>
+                                {adesc && <p className="text-sm text-gray-600">{adesc}</p>}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
                     )}
                     {dayNotes && (
                       <p className="text-sm text-[#4C5E2A] mt-2 bg-[#7A9A4A]/5 rounded-lg px-3 py-2">{dayNotes}</p>
