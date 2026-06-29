@@ -147,9 +147,20 @@ export default async function QuotePortalPage({
 
   // Load tour hero image if needed
   const { data: tourData } = (quote as any)?.tour_id
-    ? await admin.from('tours').select('image_url, hero_image_url').eq('id', (quote as any).tour_id).single()
+    ? await admin.from('tours').select('hero_image_url').eq('id', (quote as any).tour_id).maybeSingle()
     : { data: null as any }
-  const heroImage = (tourData as any)?.image_url ?? (tourData as any)?.hero_image_url ?? null
+  const heroImage = (tourData as any)?.hero_image_url ?? null
+
+  // Day descriptions are pulled from the selected destination in the Content library.
+  const destIds = [...new Set((quoteDays ?? []).map((d: any) => (d.destination_snapshot as any)?.id).filter(Boolean))]
+  const destDescMap: Record<string, { en: string | null; ar: string | null }> = {}
+  if (destIds.length > 0) {
+    const { data: dests } = await admin
+      .from('destinations')
+      .select('id, description_en, description_ar')
+      .in('id', destIds)
+    for (const d of dests ?? []) destDescMap[d.id] = { en: d.description_en, ar: d.description_ar }
+  }
 
   // Load accommodation and activity items by day
   const dayIds = (quoteDays ?? []).map((d: any) => d.id)
@@ -370,7 +381,8 @@ export default async function QuotePortalPage({
                 const dest = day.destination_snapshot as Record<string, string> | null
                 const mealLabels = isArabic ? MEAL_LABELS_AR : MEAL_LABELS
                 const dayTitle = isArabic && day.title_ar ? day.title_ar : (day.title || `${isArabic ? AR.day : 'Day'} ${day.day_number}`)
-                const dayDesc = isArabic && day.description_ar ? day.description_ar : day.description_en
+                const dd = dest?.id ? destDescMap[dest.id] : null
+                const dayDesc = dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : null
                 const dayNotes = isArabic && day.client_notes_ar ? day.client_notes_ar : day.client_notes
                 return (
                   <div key={day.id} className="bg-white rounded-xl border border-gray-200 p-5">

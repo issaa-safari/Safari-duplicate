@@ -480,11 +480,10 @@ export default function QuoteItineraryBuilder({
                   onChange={e => update(i, { title: e.target.value })}
                   placeholder="Day title (English)"
                   className={inputCls} disabled={isLocked} />
-                <textarea value={day.descriptionEn}
-                  onChange={e => update(i, { descriptionEn: e.target.value })}
-                  placeholder="Day description (English, optional)"
-                  rows={2}
-                  className={inputCls + ' resize-none'} disabled={isLocked} />
+                <p className="text-[10px] text-gray-400 leading-snug">
+                  The day description is pulled automatically from the selected destination
+                  in the Content library (English or Arabic, based on the client&apos;s language).
+                </p>
                 <textarea value={day.clientNotes}
                   onChange={e => update(i, { clientNotes: e.target.value })}
                   placeholder="Client notes (English, optional)"
@@ -508,11 +507,6 @@ export default function QuoteItineraryBuilder({
                       onChange={e => update(i, { titleAr: e.target.value })}
                       placeholder="عنوان اليوم"
                       className={inputCls + ' text-right'} disabled={isLocked} />
-                    <textarea value={day.descriptionAr}
-                      onChange={e => update(i, { descriptionAr: e.target.value })}
-                      placeholder="وصف اليوم"
-                      rows={2}
-                      className={inputCls + ' resize-none text-right'} disabled={isLocked} />
                     <textarea value={day.clientNotesAr}
                       onChange={e => update(i, { clientNotesAr: e.target.value })}
                       placeholder="ملاحظات (اختياري)"

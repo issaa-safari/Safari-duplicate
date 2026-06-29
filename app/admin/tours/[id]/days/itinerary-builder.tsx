@@ -354,10 +354,10 @@ export default function ItineraryBuilder({
                     <input type="text" value={day.title_en}
                       onChange={(e) => update(i, { title_en: e.target.value })}
                       placeholder="Day title (required)" className={inputCls} />
-                    <textarea value={day.description_en}
-                      onChange={(e) => update(i, { description_en: e.target.value })}
-                      placeholder="Day description (English)" rows={3}
-                      className={inputCls + ' resize-none'} />
+                    <p className="text-[10px] text-gray-400 leading-snug">
+                      Day description is pulled automatically from the selected destination
+                      in the Content library (English/Arabic by client language).
+                    </p>
                     <button type="button"
                       onClick={() => setArOpen(prev => {
                         const next = new Set(prev)
@@ -365,17 +365,13 @@ export default function ItineraryBuilder({
                         return next
                       })}
                       className="text-[10px] text-gray-400 hover:text-[#7A9A4A] transition">
-                      {arOpen.has(i) ? '▲ Hide Arabic' : '🇸🇦 + Arabic'}
+                      {arOpen.has(i) ? '▲ Hide Arabic' : '🇸🇦 + Arabic title'}
                     </button>
                     {arOpen.has(i) && (
                       <div className="mt-1 pt-1 border-t border-amber-100 space-y-1.5" dir="rtl">
                         <input type="text" value={day.title_ar}
                           onChange={(e) => update(i, { title_ar: e.target.value })}
                           placeholder="عنوان اليوم" className={inputCls + ' text-right'} />
-                        <textarea value={day.description_ar}
-                          onChange={(e) => update(i, { description_ar: e.target.value })}
-                          placeholder="وصف اليوم بالعربية" rows={3}
-                          className={inputCls + ' resize-none text-right'} />
                       </div>
                     )}
                     <div className="pt-1">

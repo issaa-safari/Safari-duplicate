@@ -176,6 +176,17 @@ export default async function QuotePrintPage({
     }
   }
 
+  // Day descriptions are pulled from the selected destination in the Content library.
+  const destIds = [...new Set((quoteDays ?? []).map((d: any) => (d.destination_snapshot as any)?.id).filter(Boolean))]
+  const destDescMap: Record<string, { en: string | null; ar: string | null }> = {}
+  if (destIds.length > 0) {
+    const { data: dests } = await admin
+      .from('destinations')
+      .select('id, description_en, description_ar')
+      .in('id', destIds)
+    for (const d of dests ?? []) destDescMap[d.id] = { en: d.description_en, ar: d.description_ar }
+  }
+
   const isArabic = (version as any)?.language === 'ar'
   const clientName = client ? `${client.first_name} ${client.last_name}`.trim() : 'Guest'
   const clientFirst = client?.first_name ?? clientName
@@ -488,6 +499,7 @@ export default async function QuotePrintPage({
             </div>
 
             {days.map((day: any, idx: number) => {
+              const destId = (day.destination_snapshot as any)?.id
               const dest = (day.destination_snapshot as any)?.name ?? ''
               const accoms = accomByDay[day.id] ?? []
               const acts = actsByDay[day.id] ?? []
@@ -496,7 +508,8 @@ export default async function QuotePrintPage({
               const dl = dayLabel(day)
               const title = (isArabic && day.title_ar ? day.title_ar : day.title)
                 || (isLast ? (isArabic ? 'اليوم الأخير معنا' : 'The last day with us') : (dest || `Day ${day.day_number}`))
-              const desc = isArabic && day.description_ar ? day.description_ar : day.description_en
+              const dd = destId ? destDescMap[destId] : null
+              const desc = dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : null
               const notes = isArabic && day.client_notes_ar ? day.client_notes_ar : day.client_notes
               const actLabel = acts.length > 1 ? (isArabic ? 'أنشطة' : 'Activities') : (isArabic ? 'نشاط' : 'Activity')
 

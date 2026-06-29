@@ -108,19 +108,30 @@ export default async function DepartureDetailPage({
   {
     const withImage = await admin
       .from('tour_days')
-      .select('id, day_number, day_number_end, title_en, title_ar, description_en, description_ar, accommodation_id, meal_breakfast, meal_lunch, meal_dinner, distance_km, image_url')
+      .select('id, day_number, day_number_end, title_en, title_ar, destination_id, accommodation_id, meal_breakfast, meal_lunch, meal_dinner, distance_km, image_url')
       .eq('tour_id', departure.tour_id)
       .order('day_number')
     if (withImage.error) {
       const fallback = await admin
         .from('tour_days')
-        .select('id, day_number, day_number_end, title_en, title_ar, description_en, description_ar, accommodation_id, meal_breakfast, meal_lunch, meal_dinner, distance_km')
+        .select('id, day_number, day_number_end, title_en, title_ar, destination_id, accommodation_id, meal_breakfast, meal_lunch, meal_dinner, distance_km')
         .eq('tour_id', departure.tour_id)
         .order('day_number')
       tourDays = fallback.data
     } else {
       tourDays = withImage.data
     }
+  }
+
+  // Day descriptions come from the selected destination in the Content library.
+  const destIds = [...new Set((tourDays ?? []).map((d: any) => d.destination_id).filter(Boolean))]
+  const destDescMap: Record<string, { en: string | null; ar: string | null }> = {}
+  if (destIds.length > 0) {
+    const { data: dests } = await admin
+      .from('destinations')
+      .select('id, description_en, description_ar')
+      .in('id', destIds)
+    for (const d of dests ?? []) destDescMap[d.id] = { en: d.description_en, ar: d.description_ar }
   }
 
   // Resolve accommodation names for the days that have them
@@ -355,6 +366,8 @@ export default async function DepartureDetailPage({
                 tourDays.map((day: any) => {
                   const dayTitle = isAr ? (day.title_ar || day.title_en) : day.title_en
                   const accomName = day.accommodation_id ? accomMap[day.accommodation_id] : null
+                  const dd = day.destination_id ? destDescMap[day.destination_id] : null
+                  const dayDesc = dd ? (isAr ? (dd.ar || dd.en) : dd.en) : null
                   return (
                     <div key={day.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
                       <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-4">
@@ -375,9 +388,9 @@ export default async function DepartureDetailPage({
                       )}
 
                       <div className="px-6 py-6">
-                        {day.description_en && (
+                        {dayDesc && (
                           <p className="text-gray-700 leading-relaxed mb-5 whitespace-pre-line">
-                            {isAr ? (day.description_ar || day.description_en) : day.description_en}
+                            {dayDesc}
                           </p>
                         )}
 
