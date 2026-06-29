@@ -45,7 +45,7 @@ type TourDay = {
   meal_dinner: boolean
 }
 
-const GRID_COLS = '90px 160px 1fr 80px 1.6fr 46px'
+const GRID_COLS = '84px 150px 160px 1fr 76px 40px'
 
 const ITEM_LABELS: Record<string, string> = {
   accommodation: 'Stay', activity: 'Activity', vehicle: 'Vehicle', staff: 'Staff',
@@ -214,6 +214,28 @@ export default function QuoteItineraryBuilder({
         optional: !!it.contentSnapshot?.optional,
         destination_id: (it.contentSnapshot?.destination_id as any) ?? null,
       }))
+  }
+
+  // Structured accommodation (primary + optional alternative), like tour templates.
+  // Stored as accommodation items; the alternative is flagged in its content snapshot.
+  function accomIdFor(day: Day, alt: boolean): string {
+    const it = day.items.find(it => it.itemType === 'accommodation' && !!it.contentSnapshot?.alternative === alt)
+    return it?.entityId ?? ''
+  }
+  function setAccom(i: number, accomId: string, alt: boolean) {
+    setDays(prev => prev.map((d, idx) => {
+      if (idx !== i) return d
+      const others = d.items.filter(it => !(it.itemType === 'accommodation' && !!it.contentSnapshot?.alternative === alt))
+      if (!accomId) return { ...d, items: others }
+      const acc = accommodations.find(a => a.id === accomId)
+      const item: DayItem = {
+        _key: uid(), id: null, itemType: 'accommodation', entityId: accomId,
+        titleSnapshot: (acc?.name as string) ?? 'Accommodation',
+        contentSnapshot: { destination_id: acc?.destination_id ?? null, description_en: acc?.description_en ?? null, alternative: alt },
+      }
+      return { ...d, items: [...others, item] }
+    }))
+    setSaved(false)
   }
 
   function applyActivities(i: number, rows: DayActivity[]) {
@@ -469,10 +491,10 @@ export default function QuoteItineraryBuilder({
           <div className="grid gap-3 px-2 text-xs font-medium text-gray-500"
             style={{ gridTemplateColumns: GRID_COLS }}>
             <div>Day / Date</div>
-            <div>Destination</div>
-            <div>Title & Notes</div>
-            <div>Meals</div>
-            <div>Items</div>
+            <div>Main Destination</div>
+            <div>Accommodation</div>
+            <div>Activities &amp; Details</div>
+            <div>Meal Plan</div>
             <div />
           </div>
 
@@ -505,49 +527,101 @@ export default function QuoteItineraryBuilder({
                 </select>
               </div>
 
-              {/* Title + Description + Notes */}
+              {/* Accommodation (primary + optional alternative) */}
               <div className="space-y-1.5">
+                <select value={accomIdFor(day, false)}
+                  onChange={e => setAccom(i, e.target.value, false)}
+                  className={inputCls} disabled={isLocked}>
+                  <option value="">— no accommodation —</option>
+                  {accommodations.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+                <select value={accomIdFor(day, true)}
+                  onChange={e => setAccom(i, e.target.value, true)}
+                  className={inputCls + ' text-gray-500'} disabled={isLocked}>
+                  <option value="">+ Alternative (optional)</option>
+                  {accommodations.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+              </div>
+
+              {/* Activities & Details */}
+              <div className="space-y-1.5">
+                <button type="button" onClick={() => setActivityModal(i)} disabled={isLocked}
+                  className="w-full rounded-md border border-dashed border-[#7A9A4A] text-[#4C5E2A] px-2 py-1 text-xs font-medium hover:bg-[#7A9A4A]/5 disabled:opacity-50">
+                  + Add Activities{day.items.filter(it => it.itemType === 'activity').length > 0 ? ` (${day.items.filter(it => it.itemType === 'activity').length})` : ''}
+                </button>
+                {day.items.filter(it => it.itemType === 'activity').length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {day.items.filter(it => it.itemType === 'activity').map(item => (
+                      <span key={item._key} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-[#7A9A4A]/10 text-[#4C5E2A]">
+                        {item.titleSnapshot}
+                        {(item.contentSnapshot?.moment as string) ? <span className="opacity-60">· {item.contentSnapshot.moment as string}</span> : null}
+                        {item.contentSnapshot?.optional ? <span className="text-amber-600">· opt</span> : null}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 <input type="text" value={day.title}
                   onChange={e => update(i, { title: e.target.value })}
                   placeholder="Day title (English)"
                   className={inputCls} disabled={isLocked} />
                 <p className="text-[10px] text-gray-400 leading-snug">
-                  The day description is pulled automatically from the selected destination
-                  in the Content library (English or Arabic, based on the client&apos;s language).
+                  Day description is pulled from the destination in the Content library (EN/AR by client language).
                 </p>
                 <textarea value={day.clientNotes}
                   onChange={e => update(i, { clientNotes: e.target.value })}
-                  placeholder="Client notes (English, optional)"
-                  rows={2}
+                  placeholder="Client notes (optional)" rows={2}
                   className={inputCls + ' resize-none'} disabled={isLocked} />
-                {/* Arabic toggle */}
-                <button
-                  type="button"
+
+                <button type="button"
                   onClick={() => setArOpenIndices(prev => {
-                    const next = new Set(prev)
-                    next.has(i) ? next.delete(i) : next.add(i)
-                    return next
+                    const next = new Set(prev); next.has(i) ? next.delete(i) : next.add(i); return next
                   })}
-                  className="text-[10px] text-gray-400 hover:text-[#7A9A4A] transition"
-                >
+                  className="text-[10px] text-gray-400 hover:text-[#7A9A4A] transition">
                   {arOpenIndices.has(i) ? '▲ Hide Arabic' : '🇸🇦 + Arabic'}
                 </button>
                 {arOpenIndices.has(i) && (
                   <div className="mt-1 pt-1 border-t border-amber-100 space-y-1.5" dir="rtl">
                     <input type="text" value={day.titleAr}
                       onChange={e => update(i, { titleAr: e.target.value })}
-                      placeholder="عنوان اليوم"
-                      className={inputCls + ' text-right'} disabled={isLocked} />
+                      placeholder="عنوان اليوم" className={inputCls + ' text-right'} disabled={isLocked} />
                     <textarea value={day.clientNotesAr}
                       onChange={e => update(i, { clientNotesAr: e.target.value })}
-                      placeholder="ملاحظات (اختياري)"
-                      rows={2}
+                      placeholder="ملاحظات (اختياري)" rows={2}
                       className={inputCls + ' resize-none text-right'} disabled={isLocked} />
+                  </div>
+                )}
+
+                {/* Extras: Vehicle & Staff */}
+                {(day.items.some(it => it.itemType === 'vehicle' || it.itemType === 'staff')) && (
+                  <div className="flex flex-wrap gap-1">
+                    {day.items.filter(it => it.itemType === 'vehicle' || it.itemType === 'staff').map(item => (
+                      <span key={item._key}
+                        className={'inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ' + (ITEM_COLORS[item.itemType] ?? 'bg-gray-100 text-gray-600')}>
+                        <span className="text-[10px] opacity-60">{ITEM_LABELS[item.itemType]}</span>
+                        {item.titleSnapshot}
+                        {!isLocked && <button onClick={() => removeItem(i, item._key)} className="ml-0.5 opacity-50 hover:opacity-100">×</button>}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {!isLocked && (
+                  <div className="flex gap-1">
+                    <select value="" className={smallSelectCls}
+                      onChange={e => { addItem(i, 'vehicle', e.target.value, vehicles); (e.target as HTMLSelectElement).value = '' }}>
+                      <option value="">+ Vehicle…</option>
+                      {vehicles.map(v => <option key={v.id} value={v.id}>{v.name}{v.type ? ` (${v.type})` : ''}</option>)}
+                    </select>
+                    <select value="" className={smallSelectCls}
+                      onChange={e => { addItem(i, 'staff', e.target.value, staff); (e.target as HTMLSelectElement).value = '' }}>
+                      <option value="">+ Staff…</option>
+                      {staff.map(s => <option key={s.id} value={s.id}>{s.name}{s.role ? ` · ${s.role}` : ''}</option>)}
+                    </select>
                   </div>
                 )}
               </div>
 
-              {/* Meals */}
+              {/* Meal Plan */}
               <div className="flex gap-1 pt-1">
                 <MealPill on={day.meals.includes('breakfast')} label="B"
                   onClick={() => !isLocked && update(i, {
@@ -567,56 +641,6 @@ export default function QuoteItineraryBuilder({
                       ? day.meals.filter(m => m !== 'dinner')
                       : [...day.meals, 'dinner'],
                   })} />
-              </div>
-
-              {/* Items */}
-              <div className="space-y-1.5">
-                {/* Existing item chips */}
-                {day.items.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {day.items.map(item => (
-                      <span key={item._key}
-                        className={'inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ' +
-                          (ITEM_COLORS[item.itemType] ?? 'bg-gray-100 text-gray-600')}>
-                        <span className="text-[10px] opacity-60">{ITEM_LABELS[item.itemType]}</span>
-                        {item.titleSnapshot}
-                        {!isLocked && (
-                          <button onClick={() => removeItem(i, item._key)}
-                            className="ml-0.5 opacity-50 hover:opacity-100">×</button>
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Add item selects */}
-                {!isLocked && (
-                  <div className="space-y-1">
-                    {/* Accommodation */}
-                    <select value="" className={smallSelectCls}
-                      onChange={e => { addItem(i, 'accommodation', e.target.value, accommodations); (e.target as HTMLSelectElement).value = '' }}>
-                      <option value="">+ Accommodation…</option>
-                      {accommodations.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                    </select>
-                    {/* Activities (modal, connected to the Content library) */}
-                    <button type="button" onClick={() => setActivityModal(i)}
-                      className="w-full rounded-md border border-dashed border-[#7A9A4A] text-[#4C5E2A] px-2 py-1 text-xs font-medium hover:bg-[#7A9A4A]/5">
-                      + Add Activities
-                    </button>
-                    {/* Vehicle */}
-                    <select value="" className={smallSelectCls}
-                      onChange={e => { addItem(i, 'vehicle', e.target.value, vehicles); (e.target as HTMLSelectElement).value = '' }}>
-                      <option value="">+ Vehicle…</option>
-                      {vehicles.map(v => <option key={v.id} value={v.id}>{v.name}{v.type ? ` (${v.type})` : ''}</option>)}
-                    </select>
-                    {/* Staff */}
-                    <select value="" className={smallSelectCls}
-                      onChange={e => { addItem(i, 'staff', e.target.value, staff); (e.target as HTMLSelectElement).value = '' }}>
-                      <option value="">+ Staff…</option>
-                      {staff.map(s => <option key={s.id} value={s.id}>{s.name}{s.role ? ` · ${s.role}` : ''}</option>)}
-                    </select>
-                  </div>
-                )}
               </div>
 
               {/* Controls */}
