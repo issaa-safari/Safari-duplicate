@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import ActivitiesModal, { DayActivity } from '@/components/admin/activities-modal'
+import { createLookup } from '@/lib/create-lookup'
 
 type ContentItem = { id: string; name: string; [key: string]: unknown }
 
@@ -161,9 +162,9 @@ export default function QuoteItineraryBuilder({
   quoteDays: initialQuoteDays,
   dayItems: initialDayItems,
   tourDays,
-  destinations,
-  accommodations,
-  activities,
+  destinations: destinationsProp,
+  accommodations: accommodationsProp,
+  activities: activitiesProp,
   vehicles,
   staff,
   isLocked,
@@ -185,6 +186,40 @@ export default function QuoteItineraryBuilder({
   language?: 'en' | 'ar'
 }) {
   const router = useRouter()
+
+  // Lookups are held in state so new destinations/accommodations/activities added
+  // inline (and saved to the Content library) appear immediately in the dropdowns.
+  const [destinations, setDestinations] = useState<ContentItem[]>(destinationsProp)
+  const [accommodations, setAccommodations] = useState<ContentItem[]>(accommodationsProp)
+  const [activities, setActivities] = useState<ContentItem[]>(activitiesProp)
+
+  async function createDestinationInline(name: string) {
+    const it = await createLookup('destination', name)
+    setDestinations(p => [...p, it as any].sort((a, b) => (a.name as string).localeCompare(b.name as string)))
+    return it
+  }
+  async function createActivityInline(name: string) {
+    const it = await createLookup('activity', name)
+    setActivities(p => [...p, it as any].sort((a, b) => (a.name as string).localeCompare(b.name as string)))
+    return it
+  }
+  async function onDestSelect(i: number, val: string) {
+    if (val !== '__add__') { onDestChange(i, val); return }
+    const name = window.prompt('New destination name')?.trim()
+    if (!name) return
+    try { const it = await createDestinationInline(name); onDestChange(i, it.id) }
+    catch (e: any) { alert(e?.message ?? 'Failed to create destination') }
+  }
+  async function onAccomSelect(i: number, val: string, alt: boolean) {
+    if (val !== '__add__') { setAccom(i, val, alt); return }
+    const name = window.prompt('New accommodation name')?.trim()
+    if (!name) return
+    try {
+      const it = await createLookup('accommodation', name)
+      setAccommodations(p => [...p, it as any].sort((a, b) => (a.name as string).localeCompare(b.name as string)))
+      setAccom(i, it.id, alt)
+    } catch (e: any) { alert(e?.message ?? 'Failed to create accommodation') }
+  }
 
   const [days, setDays] = useState<Day[]>(() =>
     loadInitialDays(initialQuoteDays, initialDayItems)
@@ -518,28 +553,31 @@ export default function QuoteItineraryBuilder({
               {/* Destination */}
               <div>
                 <select value={day.destinationId ?? ''}
-                  onChange={e => onDestChange(i, e.target.value)}
+                  onChange={e => onDestSelect(i, e.target.value)}
                   className={inputCls} disabled={isLocked}>
                   <option value="">— none —</option>
                   {destinations.map(d => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
+                  <option value="__add__">+ Add new destination…</option>
                 </select>
               </div>
 
               {/* Accommodation (primary + optional alternative) */}
               <div className="space-y-1.5">
                 <select value={accomIdFor(day, false)}
-                  onChange={e => setAccom(i, e.target.value, false)}
+                  onChange={e => onAccomSelect(i, e.target.value, false)}
                   className={inputCls} disabled={isLocked}>
                   <option value="">— no accommodation —</option>
                   {accommodations.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  <option value="__add__">+ Add new accommodation…</option>
                 </select>
                 <select value={accomIdFor(day, true)}
-                  onChange={e => setAccom(i, e.target.value, true)}
+                  onChange={e => onAccomSelect(i, e.target.value, true)}
                   className={inputCls + ' text-gray-500'} disabled={isLocked}>
                   <option value="">+ Alternative (optional)</option>
                   {accommodations.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  <option value="__add__">+ Add new accommodation…</option>
                 </select>
               </div>
 
@@ -678,6 +716,8 @@ export default function QuoteItineraryBuilder({
           dayDestinationId={days[activityModal].destinationId}
           onChange={(rows) => applyActivities(activityModal, rows)}
           onClose={() => setActivityModal(null)}
+          onCreateActivity={createActivityInline as any}
+          onCreateDestination={createDestinationInline as any}
         />
       )}
 

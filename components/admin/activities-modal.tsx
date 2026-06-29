@@ -33,6 +33,8 @@ export default function ActivitiesModal({
   dayDestinationId,
   onChange,
   onClose,
+  onCreateActivity,
+  onCreateDestination,
 }: {
   dayLabel: string
   value: DayActivity[]
@@ -41,8 +43,42 @@ export default function ActivitiesModal({
   dayDestinationId: string | null
   onChange: (rows: DayActivity[]) => void
   onClose: () => void
+  onCreateActivity?: (name: string) => Promise<Lookup | null>
+  onCreateDestination?: (name: string) => Promise<Lookup | null>
 }) {
   const [rows, setRows] = useState<DayActivity[]>(value.length ? value : [newActivity(dayDestinationId)])
+  const [extraAct, setExtraAct] = useState<Lookup[]>([])
+  const [extraDest, setExtraDest] = useState<Lookup[]>([])
+  const [busy, setBusy] = useState(false)
+
+  const allActivities = [...activities, ...extraAct]
+  const allDestinations = [...destinations, ...extraDest]
+
+  async function handleActivitySelect(i: number, val: string) {
+    if (val !== '__add__') { update(i, { activity_id: val }); return }
+    if (!onCreateActivity) return
+    const name = window.prompt('New activity name')?.trim()
+    if (!name) return
+    setBusy(true)
+    try {
+      const item = await onCreateActivity(name)
+      if (item) { setExtraAct(e => [...e, item]); update(i, { activity_id: item.id }) }
+    } catch (err: any) { alert(err?.message ?? 'Failed to create activity') }
+    finally { setBusy(false) }
+  }
+
+  async function handleLocationSelect(i: number, val: string) {
+    if (val !== '__add__') { update(i, { destination_id: val || null }); return }
+    if (!onCreateDestination) return
+    const name = window.prompt('New destination name')?.trim()
+    if (!name) return
+    setBusy(true)
+    try {
+      const item = await onCreateDestination(name)
+      if (item) { setExtraDest(e => [...e, item]); update(i, { destination_id: item.id }) }
+    } catch (err: any) { alert(err?.message ?? 'Failed to create destination') }
+    finally { setBusy(false) }
+  }
 
   const update = (i: number, patch: Partial<DayActivity>) =>
     setRows(rs => rs.map((r, idx) => idx === i ? { ...r, ...patch } : r))
@@ -96,17 +132,19 @@ export default function ActivitiesModal({
                     </div>
                   </td>
                   <td className={cell}>
-                    <select className={sel} value={row.activity_id}
-                      onChange={e => update(i, { activity_id: e.target.value })}>
+                    <select className={sel} value={row.activity_id} disabled={busy}
+                      onChange={e => handleActivitySelect(i, e.target.value)}>
                       <option value="">Select activity…</option>
-                      {activities.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                      {allActivities.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                      {onCreateActivity && <option value="__add__">+ Add new activity…</option>}
                     </select>
                   </td>
                   <td className={cell}>
-                    <select className={sel} value={row.destination_id ?? ''}
-                      onChange={e => update(i, { destination_id: e.target.value || null })}>
+                    <select className={sel} value={row.destination_id ?? ''} disabled={busy}
+                      onChange={e => handleLocationSelect(i, e.target.value)}>
                       <option value="">{dayDestinationId ? 'Day destination' : '— none —'}</option>
-                      {destinations.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                      {allDestinations.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                      {onCreateDestination && <option value="__add__">+ Add new destination…</option>}
                     </select>
                   </td>
                   <td className={cell}>

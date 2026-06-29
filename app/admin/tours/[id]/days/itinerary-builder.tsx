@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ImageUpload } from '@/components/admin/image-upload'
 import ActivitiesModal, { DayActivity } from '@/components/admin/activities-modal'
+import { createLookup } from '@/lib/create-lookup'
 
 type Lookup = { id: string; name: string; destination_id?: string | null }
 
@@ -417,6 +418,16 @@ export default function ItineraryBuilder({
           dayDestinationId={days[activityModal].destination_id}
           onChange={(rows) => update(activityModal, { activities: rows })}
           onClose={() => setActivityModal(null)}
+          onCreateActivity={async (name) => {
+            const it = await createLookup('activity', name)
+            setActivities(p => [...p, it].sort((a, b) => a.name.localeCompare(b.name)))
+            return it
+          }}
+          onCreateDestination={async (name) => {
+            const it = await createLookup('destination', name)
+            setDestinations(p => [...p, it].sort((a, b) => a.name.localeCompare(b.name)))
+            return it
+          }}
         />
       )}
 
