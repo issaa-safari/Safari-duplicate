@@ -8,9 +8,12 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { kind, name, destinationId } = await request.json()
+  const { kind, name, destinationId, descriptionEn, descriptionAr } = await request.json()
   const cleanName = (name || '').trim()
   if (!cleanName) return NextResponse.json({ error: 'Name required' }, { status: 400 })
+
+  const descEn = typeof descriptionEn === 'string' ? descriptionEn.trim() || null : null
+  const descAr = typeof descriptionAr === 'string' ? descriptionAr.trim() || null : null
 
   const admin = createAdminClient()
   try {
@@ -22,7 +25,7 @@ export async function POST(request: Request) {
   if (kind === 'destination') {
     const { data, error } = await admin
       .from('destinations')
-      .insert({ name: cleanName })
+      .insert({ name: cleanName, description_en: descEn, description_ar: descAr, is_active: true })
       .select('id, name')
       .single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -32,7 +35,7 @@ export async function POST(request: Request) {
   if (kind === 'accommodation') {
     const { data, error } = await admin
       .from('accommodations')
-      .insert({ name: cleanName, destination_id: destinationId || null })
+      .insert({ name: cleanName, destination_id: destinationId || null, description_en: descEn, description_ar: descAr, is_active: true })
       .select('id, name, destination_id')
       .single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -42,7 +45,7 @@ export async function POST(request: Request) {
   if (kind === 'activity') {
     const { data, error } = await admin
       .from('activities')
-      .insert({ name: cleanName, destination_id: destinationId || null })
+      .insert({ name: cleanName, destination_id: destinationId || null, description_en: descEn, description_ar: descAr, is_active: true })
       .select('id, name, destination_id')
       .single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
