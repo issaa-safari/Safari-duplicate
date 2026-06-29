@@ -1,6 +1,15 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import type { SearchQuote, SearchRequest } from '@/lib/types'
+
+// PostgREST returns the embedded relation as an object for a to-one join.
+type ClientEmbed = { first_name: string | null; last_name: string | null } | null
+type RawQuoteRow = { id: string; quote_number: string | null; status: string; clients: ClientEmbed }
+type RawRequestRow = { id: string; reference: string | null; stage: string; clients: ClientEmbed }
+
+const clientName = (c: ClientEmbed) =>
+  c ? `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() : null
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
@@ -28,18 +37,18 @@ export async function GET(req: NextRequest) {
       .limit(6),
   ])
 
-  const quotes = (quotesRaw ?? []).map((q: any) => ({
+  const quotes: SearchQuote[] = ((quotesRaw ?? []) as unknown as RawQuoteRow[]).map((q) => ({
     id: q.id,
     quote_number: q.quote_number,
     status: q.status,
-    client_name: q.clients ? `${q.clients.first_name} ${q.clients.last_name}`.trim() : null,
+    client_name: clientName(q.clients),
   }))
 
-  const requests = (requestsRaw ?? []).map((r: any) => ({
+  const requests: SearchRequest[] = ((requestsRaw ?? []) as unknown as RawRequestRow[]).map((r) => ({
     id: r.id,
     reference: r.reference,
     stage: r.stage,
-    client_name: r.clients ? `${r.clients.first_name} ${r.clients.last_name}`.trim() : null,
+    client_name: clientName(r.clients),
   }))
 
   return NextResponse.json({ quotes, clients: clients ?? [], requests })

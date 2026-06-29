@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useTransition, useRef } from 'react'
+import type { SearchResults, SearchQuote, SearchClient, SearchRequest } from '@/lib/types'
 
 const NAV_ITEMS = [
   { label: 'Dashboard',      href: '/admin/dashboard',   icon: '⌂' },
@@ -20,7 +21,7 @@ const NAV_ITEMS = [
 
 function SearchModal({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<any>(null)
+  const [results, setResults] = useState<SearchResults | null>(null)
   const [searching, startSearch] = useTransition()
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
@@ -81,11 +82,11 @@ function SearchModal({ onClose }: { onClose: () => void }) {
             <div className="px-4 py-6 text-center text-sm text-gray-400">No results for "{query}"</div>
           )}
 
-          {results?.quotes?.length > 0 && (
+          {(results?.quotes?.length ?? 0) > 0 && (
             <div>
               <p className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide"
                 style={{ backgroundColor: '#F5F0E8' }}>Quotes</p>
-              {results.quotes.map((q: any) => (
+              {results?.quotes.map((q: SearchQuote) => (
                 <button key={q.id} onClick={() => go(`/admin/quotes/${q.id}`)}
                   className="w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-[#F5F0E8] transition text-left">
                   <div>
@@ -98,11 +99,11 @@ function SearchModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {results?.clients?.length > 0 && (
+          {(results?.clients?.length ?? 0) > 0 && (
             <div>
               <p className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide"
                 style={{ backgroundColor: '#F5F0E8' }}>Clients</p>
-              {results.clients.map((c: any) => (
+              {results?.clients.map((c: SearchClient) => (
                 <button key={c.id} onClick={() => go(`/admin/clients/${c.id}`)}
                   className="w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-[#F5F0E8] transition text-left">
                   <span className="font-medium text-gray-800">{c.first_name} {c.last_name}</span>
@@ -112,11 +113,11 @@ function SearchModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {results?.requests?.length > 0 && (
+          {(results?.requests?.length ?? 0) > 0 && (
             <div>
               <p className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide"
                 style={{ backgroundColor: '#F5F0E8' }}>Requests</p>
-              {results.requests.map((r: any) => (
+              {results?.requests.map((r: SearchRequest) => (
                 <button key={r.id} onClick={() => go(`/admin/requests/${r.id}`)}
                   className="w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-[#F5F0E8] transition text-left">
                   <div>

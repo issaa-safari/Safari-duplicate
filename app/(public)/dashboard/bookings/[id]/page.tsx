@@ -5,6 +5,7 @@ import Link from 'next/link'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import PrintButton from '@/components/public/print-button'
+import type { BookingTraveller } from '@/lib/types'
 
 const G = '#7A9A4A'
 
@@ -57,7 +58,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
   const departure = booking.departures as any
   const tour = departure?.tours as any
-  const travellers = booking.booking_travellers as any[]
+  const travellers = (booking.booking_travellers ?? []) as BookingTraveller[]
 
   // Payment records (group_25). Sum what's been paid vs the booking total.
   const { data: payments } = await admin
