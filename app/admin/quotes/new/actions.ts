@@ -66,47 +66,62 @@ export async function createQuote(formData: FormData) {
     .limit(1)
     .single()
 
-  // Auto-populate travellers from request if linked
+  // Auto-populate travellers from the linked request's composition
+  // (adults / older children / younger children) using the matching age bands.
   if (requestId && firstVersion) {
     const { data: requestData } = await admin
       .from('requests')
-      .select('group_size')
+      .select('travelers_adults, travelers_children_older, travelers_children_younger')
       .eq('id', requestId)
       .single()
 
-    if (requestData?.group_size) {
-      // Get adult age band (default)
-      const { data: adultBand } = await admin
+    if (requestData) {
+      const { data: bands } = await admin
         .from('traveller_age_bands')
         .select('id, name, code, min_age, max_age, default_pricing_method, default_percentage, default_fixed_amount_usd')
-        .eq('code', 'adult')
-        .limit(1)
-        .single()
+        .in('code', ['adult', 'child', 'infant'])
 
-      if (adultBand) {
-        // Create traveller records
-        const travellers = Array.from({ length: requestData.group_size }, (_, i) => ({
-          quote_version_id: firstVersion.id,
-          display_name: `Traveller ${i + 1}`,
-          age_on_travel_date: null,
-          age_band_id: adultBand.id,
-          age_band_snapshot: {
-            id: adultBand.id,
-            name: adultBand.name,
-            code: adultBand.code,
-            min_age: adultBand.min_age,
-            max_age: adultBand.max_age,
-            default_pricing_method: adultBand.default_pricing_method,
-            default_percentage: adultBand.default_pricing_method === 'percentage' ? adultBand.default_percentage : null,
-            default_fixed_amount_usd: adultBand.default_pricing_method === 'fixed' ? adultBand.default_fixed_amount_usd : null,
-          },
-          traveller_category: adultBand.code,
-          room_category: 'sharing',
-          is_paying: true,
-          is_complimentary: false,
-          sort_order: i + 1,
-        }))
+      const bandByCode: Record<string, any> = {}
+      for (const b of bands ?? []) bandByCode[b.code] = b
 
+      const snapshot = (b: any) => ({
+        id: b.id, name: b.name, code: b.code, min_age: b.min_age, max_age: b.max_age,
+        default_pricing_method: b.default_pricing_method,
+        default_percentage: b.default_pricing_method === 'percentage' ? b.default_percentage : null,
+        default_fixed_amount_usd: b.default_pricing_method === 'fixed' ? b.default_fixed_amount_usd : null,
+      })
+
+      // Map the request composition to age bands:
+      //   adults -> adult, older children -> child (3–15), younger children -> infant (0–2)
+      const groups = [
+        { code: 'adult',  count: requestData.travelers_adults ?? 0,           label: 'Adult' },
+        { code: 'child',  count: requestData.travelers_children_older ?? 0,   label: 'Child' },
+        { code: 'infant', count: requestData.travelers_children_younger ?? 0, label: 'Infant' },
+      ]
+
+      const travellers: any[] = []
+      let sort = 0
+      for (const g of groups) {
+        const band = bandByCode[g.code]
+        if (!band || g.count < 1) continue
+        const isFree = band.default_pricing_method === 'free'
+        for (let i = 0; i < g.count; i++) {
+          travellers.push({
+            quote_version_id: firstVersion.id,
+            display_name: `${g.label} ${i + 1}`,
+            age_on_travel_date: null,
+            age_band_id: band.id,
+            age_band_snapshot: snapshot(band),
+            traveller_category: band.code,
+            room_category: 'sharing',
+            is_paying: !isFree,
+            is_complimentary: false,
+            sort_order: sort++,
+          })
+        }
+      }
+
+      if (travellers.length > 0) {
         await admin.from('quote_travellers').insert(travellers)
       }
     }
