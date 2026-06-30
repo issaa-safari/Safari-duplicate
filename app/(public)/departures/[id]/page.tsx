@@ -23,7 +23,7 @@ const SAND = '#EAE3D2'
 const OLIVE = '#7A9A4A'
 
 function accentFor(tripType: string | null): string {
-  return tripType === 'motorbike' ? '#B0492B' : '#C9A24B'
+  return tripType === 'bike' ? '#B0492B' : '#C9A24B'
 }
 
 function SectionHeading({ children, accent }: { children: React.ReactNode; accent: string }) {

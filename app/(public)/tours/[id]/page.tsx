@@ -28,12 +28,12 @@ const SAND = '#EAE3D2'
 const STONE = '#6E6A59'
 
 function accentFor(tripType: string | null): string {
-  return tripType === 'motorbike' ? '#B0492B' : '#C9A24B'
+  return tripType === 'bike' ? '#B0492B' : '#C9A24B'
 }
 
 function tripLabel(tripType: string | null, isAr: boolean): string | null {
-  if (tripType === 'motorbike') return isAr ? 'جولة دراجات' : 'Motorbike Tour'
-  if (tripType === 'safari') return isAr ? 'سفاري خاص' : 'Private Safari'
+  if (tripType === 'bike') return isAr ? 'جولة دراجات' : 'Bike Tour'
+  if (tripType === 'private') return isAr ? 'سفاري خاص' : 'Private Safari'
   return null
 }
 
