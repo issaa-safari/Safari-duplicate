@@ -503,7 +503,7 @@ export default async function TourDetailPage({
             <p style={{ color: STONE, marginBottom: 32, fontFamily: 'var(--font-body, sans-serif)', fontSize: '1rem' }}>
               {isAr
                 ? 'أخبرنا عن رحلة أحلامك وسنبدأ في إعداد عرض مخصص لك.'
-                : 'Tell us about your dream trip and we'll start building a personalised proposal.'}
+                : "Tell us about your dream trip and we’ll start building a personalised proposal."}
             </p>
           </SectionReveal>
           <SectionReveal delay={0.1}>
