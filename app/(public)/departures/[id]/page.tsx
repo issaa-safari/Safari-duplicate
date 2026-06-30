@@ -515,7 +515,7 @@ export default async function DepartureDetailPage({
               <SectionReveal>
                 <SectionHeading accent={accent}>{t.itinerary}</SectionHeading>
               </SectionReveal>
-              <ItineraryRouteLine days={itineraryDays} accentColor={accent} isAr={isAr} locale={locale} />
+              <ItineraryRouteLine days={itineraryDays} accentColor={accent} isAr={isAr} />
             </div>
           </section>
         )}
