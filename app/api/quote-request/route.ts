@@ -5,7 +5,7 @@ import { findOrCreateClientByEmail } from '@/lib/server/clients'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { firstName, lastName, email, phone, country, tourType, startDate, duration, groupSize, budget, preferences } = body
+    const { firstName, lastName, email, phone, country, tourType, startDate, duration, groupSize, budget, preferences, heardAboutUs } = body
 
     if (!firstName || !lastName || !email || !phone) {
       return NextResponse.json(
@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
         travelers_adults: groupSize ? parseInt(groupSize) : 1,
         preferred_start_date: startDate || null,
         client_question: preferences || null,
+        heard_about_us: heardAboutUs || null,
       })
       .select('id')
       .single()
