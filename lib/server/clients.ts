@@ -1,39 +1,49 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-// Find a CRM client by email (case-insensitive), creating one if absent.
-// Used to firmly link website bookings and accepted quotes to a client record.
-// Best-effort: returns null if it can't resolve a client (never throws).
+// Find a CRM client by normalised email, creating one if absent.
+// Throws on hard DB failure — callers that require a client must not swallow this.
 export async function findOrCreateClientByEmail(
   admin: SupabaseClient,
   details: { email?: string | null; first_name?: string | null; last_name?: string | null; phone?: string | null },
-): Promise<string | null> {
-  const email = (details.email ?? '').trim()
-  if (!email) return null
+): Promise<string> {
+  const email = (details.email ?? '').trim().toLowerCase()
+  if (!email) throw new Error('Client email is required')
 
-  try {
-    const { data: existing } = await admin
-      .from('clients')
-      .select('id')
-      .ilike('email', email)
-      .limit(1)
-      .maybeSingle()
-    if (existing?.id) return existing.id
+  const { data: existing, error: lookupError } = await admin
+    .from('clients')
+    .select('id, first_name, last_name, phone')
+    .ilike('email', email)
+    .limit(1)
+    .maybeSingle()
 
-    const { data: created } = await admin
-      .from('clients')
-      .insert({
-        email,
-        first_name: details.first_name ?? '',
-        last_name: details.last_name ?? '',
-        phone: details.phone ?? null,
-        source: 'website',
-      })
-      .select('id')
-      .single()
-    return created?.id ?? null
-  } catch {
-    return null
+  if (lookupError) throw new Error(`Client lookup failed: ${lookupError.message}`)
+
+  if (existing?.id) {
+    // Fill in any blank fields the new call can supply
+    const patch: Record<string, string> = {}
+    if (!existing.first_name && details.first_name) patch.first_name = details.first_name
+    if (!existing.last_name && details.last_name) patch.last_name = details.last_name
+    if (!existing.phone && details.phone) patch.phone = details.phone
+    if (Object.keys(patch).length > 0) {
+      await admin.from('clients').update(patch).eq('id', existing.id)
+    }
+    return existing.id
   }
+
+  const { data: created, error: insertError } = await admin
+    .from('clients')
+    .insert({
+      email,
+      first_name: details.first_name ?? '',
+      last_name: details.last_name ?? '',
+      phone: details.phone ?? null,
+      source: 'website',
+    })
+    .select('id')
+    .single()
+
+  if (insertError || !created) throw new Error(`Client creation failed: ${insertError?.message ?? 'no row returned'}`)
+  return created.id
 }
 
 // Best-effort refresh of a client's rolled-up booking totals.

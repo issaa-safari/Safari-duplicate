@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { findOrCreateClientByEmail } from '@/lib/server/clients'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { firstName, lastName, email, phone, country, tourType, startDate, duration, groupSize, budget, preferences } = body
+    const { firstName, lastName, email, phone, country, tourType, startDate, duration, groupSize, budget, preferences, heardAboutUs } = body
 
     if (!firstName || !lastName || !email || !phone) {
       return NextResponse.json(
@@ -15,37 +16,45 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient()
 
-    // Create a client if they don't exist
-    const { data: existingClient } = await admin
-      .from('clients')
-      .select('id')
-      .eq('email', email)
-      .single()
-
-    let clientId = existingClient?.id
-    if (!clientId) {
-      const { data: newClient, error: clientError } = await admin
-        .from('clients')
-        .insert({
-          first_name: firstName,
-          last_name: lastName,
-          email,
-          phone,
-          country,
-        })
-        .select('id')
-        .single()
-
-      if (clientError || !newClient) {
-        return NextResponse.json(
-          { error: 'Failed to create client' },
-          { status: 500 }
-        )
-      }
-      clientId = newClient.id
+    // Resolve (or create) the client — mandatory before any insert
+    let clientId: string
+    try {
+      clientId = await findOrCreateClientByEmail(admin, {
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+      })
+    } catch (err) {
+      console.error('[quote-request] client resolution failed', err)
+      return NextResponse.json({ error: 'Failed to identify client' }, { status: 500 })
     }
 
-    // Create a quote request (stored as a quote in draft status)
+    // Resolve the tour id when the user selected a specific tour
+    const tourId: string | null = (tourType && tourType !== 'custom') ? tourType : null
+
+    // Create the request row — this is the CRM intake record with source attribution
+    const { data: newRequest, error: requestError } = await admin
+      .from('requests')
+      .insert({
+        client_id: clientId,
+        tour_id: tourId,
+        stage: 'new',
+        source: 'website',
+        travelers_adults: groupSize ? parseInt(groupSize) : 1,
+        preferred_start_date: startDate || null,
+        client_question: preferences || null,
+        heard_about_us: heardAboutUs || null,
+      })
+      .select('id')
+      .single()
+
+    if (requestError || !newRequest) {
+      console.error('[quote-request] request insert failed', requestError)
+      return NextResponse.json({ error: 'Failed to create enquiry' }, { status: 500 })
+    }
+
+    // Create a draft quote linked to the request
     const { data: quote, error: quoteError } = await admin
       .from('quotes')
       .insert({
@@ -53,44 +62,23 @@ export async function POST(request: NextRequest) {
         status: 'draft',
         mode: 'custom',
         client_id: clientId,
+        request_id: newRequest.id,
+        tour_id: tourId,
       })
       .select('id')
       .single()
 
     if (quoteError || !quote) {
-      return NextResponse.json(
-        { error: 'Failed to create quote request' },
-        { status: 500 }
-      )
-    }
-
-    // Store quote details
-    const { error: detailsError } = await admin
-      .from('quote_requests')
-      .insert({
-        quote_id: quote.id,
-        tour_type: tourType,
-        start_date: startDate || null,
-        duration_days: duration ? parseInt(duration) : null,
-        group_size: groupSize ? parseInt(groupSize) : null,
-        budget_usd: budget ? parseFloat(budget) : null,
-        preferences: preferences || null,
-      })
-      .single()
-
-    if (detailsError) {
-      console.error('Failed to store quote details:', detailsError)
+      console.error('[quote-request] quote insert failed', quoteError)
+      return NextResponse.json({ error: 'Failed to create quote request' }, { status: 500 })
     }
 
     return NextResponse.json(
       { success: true, quoteId: quote.id },
       { status: 201 }
     )
-  } catch (error: any) {
-    console.error('Quote request error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    console.error('[quote-request] unexpected error', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

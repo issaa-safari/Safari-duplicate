@@ -1,13 +1,47 @@
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
+import Link from 'next/link'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
-
-const G = '#7A9A4A'
+import WhatsAppButton from '@/components/public/whatsapp-button'
+import SafariImage from '@/components/public/safari-image'
+import ItineraryRouteLine from '@/components/public/itinerary-route-line'
+import type { ItineraryDay } from '@/components/public/itinerary-route-line'
+import GalleryGrid from '@/components/public/gallery-grid'
+import TourEnquiryForm from '@/components/public/tour-enquiry-form'
+import SectionReveal from '@/components/public/section-reveal'
+import { getServerLocale } from '@/lib/i18n'
+import { whatsappLink } from '@/lib/site'
 
 export const dynamic = 'force-dynamic'
+
+const BUSH = '#20271A'
+const STONE = '#6E6A59'
+const SAND = '#EAE3D2'
+const OLIVE = '#7A9A4A'
+
+function accentFor(tripType: string | null): string {
+  return tripType === 'bike' ? '#B0492B' : '#C9A24B'
+}
+
+function SectionHeading({ children, accent }: { children: React.ReactNode; accent: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 32 }}>
+      <div style={{ width: 4, height: 36, borderRadius: 99, background: accent, flexShrink: 0 }} />
+      <h2 style={{
+        fontFamily: 'var(--font-display, "Readex Pro", sans-serif)',
+        fontSize: 'clamp(1.4rem, 3vw, 1.9rem)',
+        fontWeight: 700,
+        color: BUSH,
+        margin: 0,
+      }}>
+        {children}
+      </h2>
+    </div>
+  )
+}
 
 function formatDate(dateStr: string, locale: string = 'en') {
   if (!dateStr) return '—'
@@ -25,7 +59,7 @@ function getDaysCount(start: string, end: string) {
   return Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
 }
 
-function mealsLabel(day: any, locale: string) {
+function mealsLabel(day: { meal_breakfast?: boolean; meal_lunch?: boolean; meal_dinner?: boolean }, locale: string) {
   const parts: string[] = []
   if (locale === 'ar') {
     if (day.meal_breakfast) parts.push('فطور')
@@ -39,12 +73,47 @@ function mealsLabel(day: any, locale: string) {
   return parts.length ? parts.join(', ') : 'No meals included'
 }
 
-function dayLabel(day: any, locale: string) {
+function dayLabel(day: { day_number: number; day_number_end?: number | null }, locale: string) {
   const base = locale === 'ar' ? 'اليوم' : 'Day'
   if (day.day_number_end && day.day_number_end !== day.day_number) {
     return `${base} ${day.day_number}–${day.day_number_end}`
   }
   return `${base} ${day.day_number}`
+}
+
+const momentLabel = (m: string, isAr: boolean) => {
+  const map: Record<string, [string, string]> = {
+    morning: ['Morning', 'صباحاً'],
+    afternoon: ['Afternoon', 'بعد الظهر'],
+    evening: ['Evening', 'مساءً'],
+    night: ['Night', 'ليلاً'],
+  }
+  return map[m] ? (isAr ? map[m][1] : map[m][0]) : ''
+}
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ lang?: string }>
+}): Promise<Metadata> {
+  const { id } = await params
+  const sp = await searchParams
+  const locale = await getServerLocale(sp)
+  const supabase = await createClient()
+  const { data: dep } = await supabase
+    .from('departures')
+    .select('start_date, end_date, tours(title_en, title_ar, hero_image_url)')
+    .eq('id', id)
+    .maybeSingle()
+  if (!dep) return {}
+  const tour = dep.tours as any
+  const title = locale === 'ar' ? (tour?.title_ar || tour?.title_en) : tour?.title_en
+  return {
+    title: title ? `${title} — ${formatDate(dep.start_date, locale)}` : undefined,
+    openGraph: { images: tour?.hero_image_url ? [tour.hero_image_url] : [] },
+  }
 }
 
 export default async function DepartureDetailPage({
@@ -55,35 +124,29 @@ export default async function DepartureDetailPage({
   searchParams: Promise<{ lang?: string }>
 }) {
   const { id } = await params
-  const { lang } = await searchParams
-  const locale = (lang as 'en' | 'ar') || 'en'
+  const sp = await searchParams
+  const locale = await getServerLocale(sp)
   const isAr = locale === 'ar'
+  const dir = isAr ? 'rtl' : 'ltr'
 
-  const admin = createAdminClient()
+  const supabase = await createClient()
 
-  // Get departure details
-  const { data: departure } = await admin
+  // ── Departure ──────────────────────────────────────────────────────────────
+  const { data: departure } = await supabase
     .from('departures')
     .select(`
-      id,
-      tour_id,
-      start_date,
-      end_date,
-      max_seats,
-      booked_seats,
-      price_usd,
-      status,
-      is_active,
+      id, tour_id, start_date, end_date,
+      max_seats, booked_seats, price_usd, status, is_active,
       tours (
-        id,
-        title_en,
-        title_ar,
-        subtitle_en,
-        overview_en,
-        type,
-        countries_visited,
-        start_destination,
-        end_destination
+        id, title_en, title_ar, subtitle_en, subtitle_ar,
+        overview_en, overview_ar, type,
+        countries_visited, start_destination, end_destination,
+        hero_image_url, gallery_urls, route_map_url,
+        highlights_en, highlights_ar,
+        included_en, included_ar, excluded_en, excluded_ar,
+        terrain, vehicle, accommodation_level,
+        total_distance_km, difficulty_rating, max_group_size,
+        faqs
       )
     `)
     .eq('id', id)
@@ -91,483 +154,454 @@ export default async function DepartureDetailPage({
 
   if (!departure) notFound()
 
-  // Rich tour content (group_23). Fetched separately and fault-tolerantly so the
-  // page still renders if the migration hasn't been applied yet.
-  let rich: any = {}
-  {
-    const { data } = await admin
-      .from('tours')
-      .select('subtitle_ar, overview_ar, hero_image_url, gallery_urls, route_map_url, highlights_en, highlights_ar, included_en, included_ar, excluded_en, excluded_ar, terrain, vehicle, accommodation_level, total_distance_km, difficulty_rating, max_group_size, faqs')
-      .eq('id', departure.tour_id)
-      .maybeSingle()
-    if (data) rich = data
-  }
-
-  // Get tour days for itinerary. image_url is in group_23; select it tolerantly.
-  let tourDays: any[] | null = null
-  {
-    const withImage = await admin
-      .from('tour_days')
-      .select('id, day_number, day_number_end, title_en, title_ar, destination_id, accommodation_id, meal_breakfast, meal_lunch, meal_dinner, distance_km, image_url')
-      .eq('tour_id', departure.tour_id)
-      .order('day_number')
-    if (withImage.error) {
-      const fallback = await admin
-        .from('tour_days')
-        .select('id, day_number, day_number_end, title_en, title_ar, destination_id, accommodation_id, meal_breakfast, meal_lunch, meal_dinner, distance_km')
-        .eq('tour_id', departure.tour_id)
-        .order('day_number')
-      tourDays = fallback.data
-    } else {
-      tourDays = withImage.data
-    }
-  }
-
-  // Day descriptions come from the selected destination in the Content library.
-  const destIds = [...new Set((tourDays ?? []).map((d: any) => d.destination_id).filter(Boolean))]
-  const destDescMap: Record<string, { en: string | null; ar: string | null }> = {}
-  if (destIds.length > 0) {
-    const { data: dests } = await admin
-      .from('destinations')
-      .select('id, description_en, description_ar')
-      .in('id', destIds)
-    for (const d of dests ?? []) destDescMap[d.id] = { en: d.description_en, ar: d.description_ar }
-  }
-
-  // Per-day activities (group_26) — fetched tolerantly and merged onto the days.
-  {
-    const { data: actRows, error } = await admin
-      .from('tour_days')
-      .select('id, activities')
-      .eq('tour_id', departure.tour_id)
-    if (!error && actRows) {
-      const m: Record<string, any[]> = {}
-      for (const r of actRows) m[r.id] = Array.isArray(r.activities) ? r.activities : []
-      for (const d of tourDays ?? []) (d as any).activities = m[d.id] ?? []
-    }
-  }
-
-  // Resolve activity names + bilingual descriptions from the Content library.
-  const actIds = [...new Set((tourDays ?? []).flatMap((d: any) => (d.activities ?? []).map((a: any) => a.activity_id)).filter(Boolean))]
-  const activityMap: Record<string, { name: string; en: string | null; ar: string | null }> = {}
-  if (actIds.length > 0) {
-    const { data: acts } = await admin
-      .from('activities')
-      .select('id, name, description_en, description_ar')
-      .in('id', actIds)
-    for (const a of acts ?? []) activityMap[a.id] = { name: a.name, en: a.description_en, ar: a.description_ar }
-  }
-
-  const momentLabel = (m: string) => {
-    const map: Record<string, { en: string; ar: string }> = {
-      morning: { en: 'Morning', ar: 'صباحاً' }, afternoon: { en: 'Afternoon', ar: 'بعد الظهر' },
-      evening: { en: 'Evening', ar: 'مساءً' }, night: { en: 'Night', ar: 'ليلاً' },
-    }
-    return map[m] ? (isAr ? map[m].ar : map[m].en) : ''
-  }
-
-  // Resolve accommodation names for the days that have them
-  const accomIds = [...new Set((tourDays ?? []).map((d: any) => d.accommodation_id).filter(Boolean))]
-  const accomMap: Record<string, string> = {}
-  if (accomIds.length > 0) {
-    const { data: accoms } = await admin.from('accommodations').select('id, name').in('id', accomIds)
-    for (const a of accoms ?? []) accomMap[a.id] = a.name
-  }
-
   const tour = departure.tours as any
+  const accent = accentFor(tour?.type ?? null)
   const daysCount = getDaysCount(departure.start_date, departure.end_date)
   const availableSpots = departure.max_seats - departure.booked_seats
   const isAvailable = availableSpots > 0 && departure.status === 'available'
-  const title = isAr ? (tour?.title_ar || tour?.title_en) : tour?.title_en
-  const description = isAr
-    ? (rich.overview_ar || tour?.overview_en || rich.subtitle_ar || tour?.subtitle_en || '')
-    : (tour?.overview_en || tour?.subtitle_en || '')
 
-  // Pick the localized list (fall back to the other language if one is empty)
-  const pickList = (en?: string[], ar?: string[]): string[] => {
+  const title = isAr ? (tour?.title_ar || tour?.title_en) : tour?.title_en
+  const overview = isAr ? (tour?.overview_ar || tour?.overview_en) : (tour?.overview_en || tour?.subtitle_en)
+
+  const pickList = (en?: string[] | null, ar?: string[] | null): string[] => {
     const a = Array.isArray(ar) ? ar.filter(Boolean) : []
     const e = Array.isArray(en) ? en.filter(Boolean) : []
     return isAr ? (a.length ? a : e) : (e.length ? e : a)
   }
-  const highlights = pickList(rich.highlights_en, rich.highlights_ar)
-  const included = pickList(rich.included_en, rich.included_ar)
-  const excluded = pickList(rich.excluded_en, rich.excluded_ar)
-  const gallery: string[] = Array.isArray(rich.gallery_urls) ? rich.gallery_urls.filter(Boolean) : []
-  const faqs: any[] = Array.isArray(rich.faqs) ? rich.faqs : []
-  const heroImage: string | null = rich.hero_image_url || null
-  const routeMap: string | null = rich.route_map_url || null
+
+  const highlights = pickList(tour?.highlights_en, tour?.highlights_ar)
+  const included = pickList(tour?.included_en, tour?.included_ar)
+  const excluded = pickList(tour?.excluded_en, tour?.excluded_ar)
+  const gallery: string[] = Array.isArray(tour?.gallery_urls) ? (tour.gallery_urls as string[]).filter(Boolean) : []
+  const faqs: { q_en?: string; q_ar?: string; a_en?: string; a_ar?: string }[] = Array.isArray(tour?.faqs) ? tour.faqs : []
+
+  // ── Tour days ──────────────────────────────────────────────────────────────
+  const { data: rawDays } = await supabase
+    .from('tour_days')
+    .select('id, day_number, day_number_end, title_en, title_ar, destination_id, accommodation_id, meal_breakfast, meal_lunch, meal_dinner, distance_km, image_url, activities')
+    .eq('tour_id', departure.tour_id)
+    .order('day_number')
+
+  const tourDays = rawDays ?? []
+
+  // Resolve destination descriptions
+  const destIds = [...new Set(tourDays.map(d => d.destination_id).filter(Boolean))] as string[]
+  const destMap: Record<string, { en: string | null; ar: string | null }> = {}
+  if (destIds.length > 0) {
+    const { data: dests } = await supabase.from('destinations').select('id, description_en, description_ar').in('id', destIds)
+    for (const d of dests ?? []) destMap[d.id] = { en: d.description_en, ar: d.description_ar }
+  }
+
+  // Resolve accommodation names
+  const accomIds = [...new Set(tourDays.map(d => d.accommodation_id).filter(Boolean))] as string[]
+  const accomMap: Record<string, string> = {}
+  if (accomIds.length > 0) {
+    const { data: accoms } = await supabase.from('accommodations').select('id, name').in('id', accomIds)
+    for (const a of accoms ?? []) accomMap[a.id] = a.name
+  }
+
+  // Resolve activity names
+  const actIds = [...new Set(
+    tourDays.flatMap(d => (Array.isArray(d.activities) ? d.activities : []).map((a: any) => a.activity_id))
+  ).values()].filter(Boolean) as string[]
+  const activityMap: Record<string, { name: string; en: string | null; ar: string | null }> = {}
+  if (actIds.length > 0) {
+    const { data: acts } = await supabase.from('activities').select('id, name, description_en, description_ar').in('id', actIds)
+    for (const a of acts ?? []) activityMap[a.id] = { name: a.name, en: a.description_en, ar: a.description_ar }
+  }
+
+  // Build ItineraryDay[] for the route-line component
+  const itineraryDays: ItineraryDay[] = tourDays.map(d => {
+    const dd = d.destination_id ? destMap[d.destination_id] : null
+    return {
+      id: d.id,
+      dayNumber: d.day_number,
+      dayNumberEnd: d.day_number_end ?? null,
+      title: isAr ? (d.title_ar || d.title_en || '') : (d.title_en ?? ''),
+      description: dd ? (isAr ? (dd.ar || dd.en) : dd.en) ?? null : null,
+      imageUrl: (d as any).image_url ?? null,
+      mealBreakfast: d.meal_breakfast ?? false,
+      mealLunch: d.meal_lunch ?? false,
+      mealDinner: d.meal_dinner ?? false,
+      distanceKm: d.distance_km ?? null,
+      accommodation: d.accommodation_id ? accomMap[d.accommodation_id] ?? null : null,
+      activities: (Array.isArray(d.activities) ? d.activities : []).map((a: any) => ({
+        name: activityMap[a.activity_id]?.name ?? '',
+        description: isAr
+          ? (activityMap[a.activity_id]?.ar || activityMap[a.activity_id]?.en || null)
+          : (activityMap[a.activity_id]?.en ?? null),
+        moment: a.moment ?? null,
+        optional: a.optional ?? false,
+      })),
+    }
+  })
+
+  const bookHref = `/departures/${id}/book?lang=${locale}&price=${departure.price_usd}&tour=${encodeURIComponent(title ?? '')}`
+  const waHref = whatsappLink(`Hi, I'm interested in the ${title} departure on ${formatDate(departure.start_date, 'en')}`)
 
   const t = isAr ? {
+    backToTour: 'العودة إلى الجولة',
+    departure: 'موعد الرحلة',
     bookNow: 'احجز الآن',
-    askQuestion: 'اسأل سؤالاً',
-    tourOverview: 'نظرة عامة على الرحلة',
-    tourSnapshot: 'لمحة سريعة',
-    itinerary: 'برنامج الرحلة يوماً بيوم',
-    keyInfo: 'الحالة',
-    price: 'السعر',
-    availableSpots: 'المقاعد المتاحة',
-    startDate: 'تاريخ البداية',
-    endDate: 'تاريخ النهاية',
-    duration: 'المدة',
+    enquire: 'استفسر عن هذا الموعد',
+    whatsapp: 'واتساب',
     days: 'أيام',
-    meals: 'الوجبات',
-    accommodation: 'الإقامة',
-    distance: 'المسافة',
-    fullyBooked: 'مكتمل الحجز',
+    startDate: 'تاريخ البدء',
+    endDate: 'تاريخ الانتهاء',
+    duration: 'المدة',
+    spots: 'المقاعد المتاحة',
+    price: 'السعر',
     perPerson: 'للفرد',
-    startingFrom: 'يبدأ من',
-    route: 'المسار',
-    readyToBook: 'هل أنت مستعد للحجز؟',
-    secureSpot: 'احجز مكانك في هذه المغامرة الرائعة!',
-    fullMessage: 'هذه الرحلة مكتملة حالياً، لكن تحقق قريباً من تواريخ جديدة!',
-    noItinerary: 'لا تتوفر تفاصيل البرنامج لهذه الرحلة بعد.',
-    guidedSupported: 'رحلة مصحوبة بمرشد',
-    highlights: 'أبرز ما في الرحلة',
-    included: 'ما يشمله السعر',
-    excluded: 'ما لا يشمله السعر',
-    gallery: 'معرض الصور',
-    routeMap: 'خريطة المسار',
-    faqs: 'الأسئلة الشائعة',
+    status: 'الحالة',
     terrain: 'التضاريس',
     vehicle: 'المركبة',
     accommodationLevel: 'مستوى الإقامة',
     totalDistance: 'إجمالي المسافة',
-    difficulty: 'مستوى الصعوبة',
+    difficulty: 'الصعوبة',
     groupSize: 'حجم المجموعة',
+    overview: 'نظرة عامة',
+    highlights: 'أبرز ما في الرحلة',
+    itinerary: 'برنامج الرحلة',
+    included: 'ما يشمله السعر',
+    excluded: 'ما لا يشمله السعر',
+    gallery: 'معرض الصور',
+    faqs: 'الأسئلة الشائعة',
+    enquireForm: 'أرسل استفساراً',
+    fullyBooked: 'مكتمل الحجز',
+    available: 'متاح',
+    guaranteed: 'مضمون',
   } : {
+    backToTour: 'Back to Tour',
+    departure: 'Departure',
     bookNow: 'Book Now',
-    askQuestion: 'Ask a Question',
-    tourOverview: 'Tour Overview',
-    tourSnapshot: 'Tour Snapshot',
-    itinerary: 'Day-by-Day Itinerary',
-    keyInfo: 'Status',
-    price: 'Price',
-    availableSpots: 'Available Spots',
+    enquire: 'Enquire About This Date',
+    whatsapp: 'WhatsApp',
+    days: 'days',
     startDate: 'Start Date',
     endDate: 'End Date',
     duration: 'Duration',
-    days: 'days',
-    meals: 'Meals',
-    accommodation: 'Accommodation',
-    distance: 'Distance',
-    fullyBooked: 'Fully Booked',
+    spots: 'Spots Available',
+    price: 'Price',
     perPerson: 'per person',
-    startingFrom: 'Starting from',
-    route: 'Route',
-    readyToBook: 'Ready to Book?',
-    secureSpot: 'Secure your spot on this amazing adventure!',
-    fullMessage: 'This departure is currently full, but check back soon for new dates!',
-    noItinerary: 'No itinerary details available for this tour yet.',
-    guidedSupported: 'Guided & Supported',
-    highlights: 'Tour Highlights',
-    included: "What's Included",
-    excluded: "What's Excluded",
-    gallery: 'Photo Gallery',
-    routeMap: 'Route Map',
-    faqs: 'Frequently Asked Questions',
+    status: 'Status',
     terrain: 'Terrain',
     vehicle: 'Vehicle',
     accommodationLevel: 'Accommodation',
     totalDistance: 'Total Distance',
     difficulty: 'Difficulty',
     groupSize: 'Group Size',
+    overview: 'Tour Overview',
+    highlights: 'Tour Highlights',
+    itinerary: 'Day-by-Day Itinerary',
+    included: "What's Included",
+    excluded: "What's Excluded",
+    gallery: 'Photo Gallery',
+    faqs: 'Frequently Asked Questions',
+    enquireForm: 'Send an Enquiry',
+    fullyBooked: 'Fully Booked',
+    available: 'Available',
+    guaranteed: 'Guaranteed',
   }
 
-  const bookHref = `/departures/${id}/book?lang=${locale}&price=${departure.price_usd}&tour=${encodeURIComponent(title ?? '')}`
+  const statusLabel = departure.status === 'guaranteed' ? t.guaranteed
+    : departure.status === 'available' ? t.available
+    : t.fullyBooked
+
+  const statusColor = departure.status === 'guaranteed' ? '#166534'
+    : departure.status === 'available' ? OLIVE
+    : '#991B1B'
 
   return (
-    <div dir={isAr ? 'rtl' : 'ltr'}>
+    <div dir={dir}>
       <Suspense>
         <PublicHeader />
       </Suspense>
 
       <main>
-        {/* Hero Section */}
-        <section className="relative bg-gradient-to-b from-gray-900 to-gray-800 text-white py-8 md:py-12">
-          <div className="max-w-6xl mx-auto px-4">
-            <div className="bg-gradient-to-b from-gray-700 to-gray-800 rounded-xl h-72 md:h-[420px] flex items-center justify-center text-8xl mb-8 overflow-hidden">
-              {heroImage
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={heroImage} alt={title} className="w-full h-full object-cover" />
-                : '🦁'}
+        {/* ── Hero ─────────────────────────────────────────────────────────── */}
+        <section style={{
+          position: 'relative',
+          minHeight: 520,
+          background: BUSH,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          overflow: 'hidden',
+        }}>
+          {/* Background image */}
+          {tour?.hero_image_url && (
+            <div style={{ position: 'absolute', inset: 0 }}>
+              <SafariImage
+                src={tour.hero_image_url}
+                seed={departure.tour_id}
+                alt={title ?? ''}
+                className="w-full h-full"
+                sizes="100vw"
+                priority
+              />
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(to top, rgba(32,39,26,0.92) 0%, rgba(32,39,26,0.4) 60%, rgba(32,39,26,0.1) 100%)',
+              }} />
+            </div>
+          )}
+
+          <div style={{ position: 'relative', maxWidth: 1120, margin: '0 auto', padding: '0 24px 56px', width: '100%' }}>
+            {/* Back link */}
+            <Link href={`/tours/${departure.tour_id}?lang=${locale}`} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              color: 'rgba(255,255,255,0.75)', fontSize: '0.85rem',
+              textDecoration: 'none', marginBottom: 32,
+              fontFamily: 'var(--font-body, sans-serif)',
+            }}>
+              {isAr ? '→' : '←'} {t.backToTour}
+            </Link>
+
+            {/* Departure badge */}
+            <div style={{ marginBottom: 16 }}>
+              <span style={{
+                background: accent, color: '#fff',
+                fontSize: '0.72rem', fontWeight: 700,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                padding: '5px 14px', borderRadius: 99,
+                fontFamily: 'var(--font-body, sans-serif)',
+              }}>
+                {t.departure}
+              </span>
             </div>
 
-            <div>
-              <div className="inline-block bg-orange-500 text-white px-4 py-1.5 rounded font-bold text-xs uppercase tracking-wide mb-4">
-                {t.guidedSupported}
-              </div>
-              <h1 className="text-3xl md:text-5xl font-bold mb-3">{title}</h1>
-              <p className="text-lg text-gray-300 mb-6">
-                {daysCount}-{isAr ? 'يوم' : 'day'} {isAr ? 'مغامرة سفاري' : 'safari adventure'}
-                {tour?.start_destination ? ` · ${tour.start_destination}${tour?.end_destination ? ` → ${tour.end_destination}` : ''}` : ''}
-              </p>
+            <h1 style={{
+              fontFamily: 'var(--font-display, "Readex Pro", sans-serif)',
+              fontSize: 'clamp(1.8rem, 5vw, 3rem)',
+              fontWeight: 700,
+              color: '#fff',
+              margin: '0 0 8px',
+              lineHeight: 1.2,
+            }}>
+              {title}
+            </h1>
 
-              <div className="flex flex-col sm:flex-row gap-3 mb-8">
-                <Link
-                  href={isAvailable ? bookHref : '#'}
-                  className={`px-8 py-3 rounded-lg font-bold text-lg text-center transition ${
-                    isAvailable ? 'text-white hover:opacity-90' : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  }`}
-                  style={{ backgroundColor: isAvailable ? G : undefined }}
-                >
-                  📅 {isAvailable ? t.bookNow : t.fullyBooked}
-                </Link>
-                <Link
-                  href={`/contact?lang=${locale}`}
-                  className="px-8 py-3 rounded-lg font-bold border-2 border-white text-white hover:bg-white hover:text-gray-900 transition text-center"
-                >
-                  💬 {t.askQuestion}
-                </Link>
-              </div>
+            <p style={{
+              color: 'rgba(255,255,255,0.75)',
+              fontFamily: 'var(--font-body, sans-serif)',
+              fontSize: '1.1rem',
+              margin: '0 0 32px',
+            }}>
+              {formatDate(departure.start_date, locale)} → {formatDate(departure.end_date, locale)}
+              {daysCount > 0 && ` · ${daysCount} ${t.days}`}
+            </p>
 
+            {/* Price + CTA row */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16 }}>
               <div>
-                <span className="text-gray-300 text-sm">{t.startingFrom}</span>
-                <div className="text-4xl font-bold" style={{ color: '#A8C97A' }}>
+                <div style={{
+                  fontFamily: 'var(--font-display, sans-serif)',
+                  fontSize: 'clamp(2rem, 5vw, 2.6rem)',
+                  fontWeight: 700,
+                  color: '#fff',
+                  lineHeight: 1,
+                }}>
                   ${departure.price_usd?.toLocaleString()}
-                  <span className="text-lg text-gray-300 ml-2">{t.perPerson}</span>
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', fontFamily: 'var(--font-body, sans-serif)' }}>
+                  {t.perPerson}
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
 
-        {/* Tour Snapshot */}
-        <section className="bg-gray-50 py-10 md:py-14 border-b-4" style={{ borderColor: G }}>
-          <div className="max-w-6xl mx-auto px-4">
-            <div className="bg-orange-50 border-l-4 border-orange-500 px-6 py-4 mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 uppercase">{t.tourSnapshot}</h2>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <SnapshotCard label={`📅 ${t.startDate}`} value={formatDate(departure.start_date, locale)} />
-              <SnapshotCard label={`🏁 ${t.endDate}`} value={formatDate(departure.end_date, locale)} />
-              <SnapshotCard label={`⏱️ ${t.duration}`} value={`${daysCount} ${t.days}`} />
-              <SnapshotCard label={`💺 ${t.availableSpots}`} value={`${availableSpots}/${departure.max_seats}`} />
-              <SnapshotCard label={`💰 ${t.price}`} value={`$${departure.price_usd?.toLocaleString()}`} highlight />
-              <SnapshotCard label={`📍 ${t.keyInfo}`} value={departure.status} />
-              {rich.terrain && <SnapshotCard label={`🏞️ ${t.terrain}`} value={rich.terrain} />}
-              {rich.vehicle && <SnapshotCard label={`🚙 ${t.vehicle}`} value={rich.vehicle} />}
-              {rich.accommodation_level && <SnapshotCard label={`🏨 ${t.accommodationLevel}`} value={rich.accommodation_level} />}
-              {rich.total_distance_km && <SnapshotCard label={`📏 ${t.totalDistance}`} value={`${rich.total_distance_km} km`} />}
-              {rich.difficulty_rating && <SnapshotCard label={`⚡ ${t.difficulty}`} value={`${rich.difficulty_rating}/10`} />}
-              {rich.max_group_size && <SnapshotCard label={`👥 ${t.groupSize}`} value={`${isAr ? 'حتى' : 'Max'} ${rich.max_group_size}`} />}
-            </div>
-          </div>
-        </section>
-
-        {/* Tour Overview */}
-        {description && (
-          <section className="py-10 md:py-14 bg-white">
-            <div className="max-w-6xl mx-auto px-4">
-              <div className="bg-orange-50 border-l-4 border-orange-500 px-6 py-4 mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{t.tourOverview}</h2>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                {isAvailable && (
+                  <Link href={bookHref} style={{
+                    background: accent, color: '#fff',
+                    padding: '13px 28px', borderRadius: 8,
+                    fontWeight: 700, fontSize: '1rem',
+                    textDecoration: 'none',
+                    fontFamily: 'var(--font-body, sans-serif)',
+                  }}>
+                    {t.bookNow}
+                  </Link>
+                )}
+                <Link href={waHref} target="_blank" rel="noopener noreferrer" style={{
+                  background: '#25D366', color: '#fff',
+                  padding: '13px 28px', borderRadius: 8,
+                  fontWeight: 700, fontSize: '1rem',
+                  textDecoration: 'none',
+                  fontFamily: 'var(--font-body, sans-serif)',
+                }}>
+                  {t.whatsapp}
+                </Link>
               </div>
-              <p className="text-lg leading-relaxed text-gray-700 max-w-3xl whitespace-pre-line">{description}</p>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Quick facts bar ───────────────────────────────────────────────── */}
+        <section style={{ background: SAND, borderBottom: `3px solid ${accent}` }}>
+          <div style={{
+            maxWidth: 1120, margin: '0 auto', padding: '0 24px',
+            display: 'flex', flexWrap: 'wrap', gap: 0,
+          }}>
+            {[
+              { label: t.startDate, value: formatDate(departure.start_date, locale) },
+              { label: t.endDate, value: formatDate(departure.end_date, locale) },
+              { label: t.duration, value: `${daysCount} ${t.days}` },
+              { label: t.spots, value: `${availableSpots} / ${departure.max_seats}` },
+              { label: t.status, value: statusLabel, color: statusColor },
+              ...(tour?.terrain ? [{ label: t.terrain, value: tour.terrain }] : []),
+              ...(tour?.difficulty_rating ? [{ label: t.difficulty, value: `${tour.difficulty_rating}/10` }] : []),
+              ...(tour?.max_group_size ? [{ label: t.groupSize, value: `Max ${tour.max_group_size}` }] : []),
+            ].map((fact, i) => (
+              <div key={i} style={{
+                padding: '20px 24px',
+                borderRight: `1px solid rgba(110,106,89,0.2)`,
+                minWidth: 120,
+              }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: STONE, fontFamily: 'var(--font-body, sans-serif)', marginBottom: 4 }}>
+                  {fact.label}
+                </div>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: (fact as any).color ?? BUSH, fontFamily: 'var(--font-body, sans-serif)' }}>
+                  {fact.value}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Overview ──────────────────────────────────────────────────────── */}
+        {overview && (
+          <section style={{ padding: '72px 24px', background: '#fff' }}>
+            <div style={{ maxWidth: 800, margin: '0 auto' }}>
+              <SectionReveal>
+                <SectionHeading accent={accent}>{t.overview}</SectionHeading>
+                <p style={{
+                  fontSize: '1.1rem', lineHeight: 1.8, color: STONE,
+                  fontFamily: 'var(--font-body, sans-serif)', whiteSpace: 'pre-line',
+                }}>
+                  {overview}
+                </p>
+              </SectionReveal>
             </div>
           </section>
         )}
 
-        {/* Highlights */}
+        {/* ── Highlights ────────────────────────────────────────────────────── */}
         {highlights.length > 0 && (
-          <section className="py-10 md:py-14 bg-gray-50">
-            <div className="max-w-6xl mx-auto px-4">
-              <div className="bg-orange-50 border-l-4 border-orange-500 px-6 py-4 mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{t.highlights}</h2>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-4">
+          <section style={{ padding: '72px 24px', background: SAND }}>
+            <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+              <SectionReveal>
+                <SectionHeading accent={accent}>{t.highlights}</SectionHeading>
+              </SectionReveal>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
                 {highlights.map((h, i) => (
-                  <div key={i} className="flex items-start gap-3 bg-white rounded-lg border border-gray-200 px-5 py-4">
-                    <span className="text-xl" style={{ color: G }}>✦</span>
-                    <span className="text-gray-700">{h}</span>
-                  </div>
+                  <SectionReveal key={i} delay={i * 0.05}>
+                    <div style={{
+                      background: '#fff', borderRadius: 12, padding: '18px 20px',
+                      border: '1px solid #E5E0D8',
+                      display: 'flex', alignItems: 'flex-start', gap: 12,
+                    }}>
+                      <span style={{ color: accent, fontSize: 18, flexShrink: 0, marginTop: 1 }}>✦</span>
+                      <span style={{ color: BUSH, fontFamily: 'var(--font-body, sans-serif)', fontSize: '0.95rem', lineHeight: 1.5 }}>{h}</span>
+                    </div>
+                  </SectionReveal>
                 ))}
               </div>
             </div>
           </section>
         )}
 
-        {/* Itinerary */}
-        <section className="py-10 md:py-14 bg-gray-50">
-          <div className="max-w-6xl mx-auto px-4">
-            <div className="bg-orange-50 border-l-4 border-orange-500 px-6 py-4 mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{t.itinerary}</h2>
+        {/* ── Itinerary ─────────────────────────────────────────────────────── */}
+        {itineraryDays.length > 0 && (
+          <section style={{ padding: '72px 24px', background: '#fff' }}>
+            <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+              <SectionReveal>
+                <SectionHeading accent={accent}>{t.itinerary}</SectionHeading>
+              </SectionReveal>
+              <ItineraryRouteLine days={itineraryDays} accentColor={accent} isAr={isAr} locale={locale} />
             </div>
+          </section>
+        )}
 
-            <div className="space-y-6">
-              {tourDays && tourDays.length > 0 ? (
-                tourDays.map((day: any, idx: number) => {
-                  const dayTitle = isAr ? (day.title_ar || day.title_en) : day.title_en
-                  const accomName = day.accommodation_id ? accomMap[day.accommodation_id] : null
-                  const dd = day.destination_id ? destDescMap[day.destination_id] : null
-                  const dayDesc = dd ? (isAr ? (dd.ar || dd.en) : dd.en) : null
-                  return (
-                    <details key={day.id} open={idx === 0} className="group bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                      <summary className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-white/20 flex-shrink-0">
-                            <span className="text-lg font-bold">{day.day_number}</span>
-                          </div>
-                          <div>
-                            <p className="text-orange-100 text-xs uppercase tracking-wide">{dayLabel(day, locale)}</p>
-                            <h3 className="text-xl font-bold">{dayTitle}</h3>
-                          </div>
-                        </div>
-                        <span className="text-2xl leading-none transition-transform duration-200 group-open:rotate-180" aria-hidden="true">⌄</span>
-                      </summary>
-
-                      {day.image_url && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={day.image_url} alt={dayTitle} className="w-full h-56 object-cover" />
-                      )}
-
-                      <div className="px-6 py-6">
-                        {dayDesc && (
-                          <p className="text-gray-700 leading-relaxed mb-5 whitespace-pre-line">
-                            {dayDesc}
-                          </p>
-                        )}
-
-                        {Array.isArray(day.activities) && day.activities.length > 0 && (
-                          <div className="mb-5 border-t border-gray-100 pt-4">
-                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">🎯 {isAr ? 'الأنشطة' : 'Activities'}</p>
-                            <div className="space-y-3">
-                              {day.activities.map((da: any, ai: number) => {
-                                const info = activityMap[da.activity_id]
-                                if (!info) return null
-                                const desc = isAr ? (info.ar || info.en) : info.en
-                                const mom = da.moment ? momentLabel(da.moment) : ''
-                                return (
-                                  <div key={ai} className="flex items-start gap-2">
-                                    <span style={{ color: G }}>→</span>
-                                    <div>
-                                      <p className="text-gray-800 font-medium">
-                                        {info.name}
-                                        {mom && <span className="text-xs text-gray-400 font-normal"> · {mom}</span>}
-                                        {da.optional && <span className="text-xs text-amber-600 font-normal"> · {isAr ? 'اختياري' : 'optional'}</span>}
-                                      </p>
-                                      {desc && <p className="text-sm text-gray-600">{desc}</p>}
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="grid sm:grid-cols-3 gap-4 text-sm border-t border-gray-100 pt-4">
-                          <div>
-                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">🍽️ {t.meals}</p>
-                            <p className="text-gray-700">{mealsLabel(day, locale)}</p>
-                          </div>
-                          {accomName && (
-                            <div>
-                              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">🏨 {t.accommodation}</p>
-                              <p className="text-gray-700">{accomName}</p>
-                            </div>
-                          )}
-                          {day.distance_km && (
-                            <div>
-                              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">📏 {t.distance}</p>
-                              <p className="text-gray-700">{day.distance_km} km</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </details>
-                  )
-                })
-              ) : (
-                <div className="bg-white rounded-lg p-12 text-center border border-gray-200">
-                  <p className="text-gray-600 text-lg">{t.noItinerary}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Included / Excluded */}
+        {/* ── Included / Excluded ───────────────────────────────────────────── */}
         {(included.length > 0 || excluded.length > 0) && (
-          <section className="py-10 md:py-14 bg-white">
-            <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-8">
+          <section style={{ padding: '72px 24px', background: SAND }}>
+            <div style={{ maxWidth: 1120, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 48 }}>
               {included.length > 0 && (
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span className="text-green-600">✓</span> {t.included}
-                  </h2>
-                  <ul className="space-y-2">
+                <SectionReveal>
+                  <SectionHeading accent={accent}>{t.included}</SectionHeading>
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {included.map((item, i) => (
-                      <li key={i} className="flex items-start gap-2 text-gray-700">
-                        <span className="text-green-600 mt-0.5">✓</span><span>{item}</span>
+                      <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <span style={{ color: '#166534', fontWeight: 700, flexShrink: 0, marginTop: 2 }}>✓</span>
+                        <span style={{ color: BUSH, fontFamily: 'var(--font-body, sans-serif)', fontSize: '0.95rem', lineHeight: 1.5 }}>{item}</span>
                       </li>
                     ))}
                   </ul>
-                </div>
+                </SectionReveal>
               )}
               {excluded.length > 0 && (
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span className="text-red-500">✕</span> {t.excluded}
-                  </h2>
-                  <ul className="space-y-2">
+                <SectionReveal delay={0.05}>
+                  <SectionHeading accent={accent}>{t.excluded}</SectionHeading>
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {excluded.map((item, i) => (
-                      <li key={i} className="flex items-start gap-2 text-gray-700">
-                        <span className="text-red-500 mt-0.5">✕</span><span>{item}</span>
+                      <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <span style={{ color: '#991B1B', fontWeight: 700, flexShrink: 0, marginTop: 2 }}>✕</span>
+                        <span style={{ color: STONE, fontFamily: 'var(--font-body, sans-serif)', fontSize: '0.95rem', lineHeight: 1.5 }}>{item}</span>
                       </li>
                     ))}
                   </ul>
-                </div>
+                </SectionReveal>
               )}
             </div>
           </section>
         )}
 
-        {/* Route Map */}
-        {routeMap && (
-          <section className="py-10 md:py-14 bg-gray-50">
-            <div className="max-w-6xl mx-auto px-4">
-              <div className="bg-orange-50 border-l-4 border-orange-500 px-6 py-4 mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{t.routeMap}</h2>
-              </div>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={routeMap} alt={t.routeMap} className="w-full rounded-xl border border-gray-200" />
-            </div>
-          </section>
-        )}
-
-        {/* Gallery */}
+        {/* ── Gallery ───────────────────────────────────────────────────────── */}
         {gallery.length > 0 && (
-          <section className="py-10 md:py-14 bg-white">
-            <div className="max-w-6xl mx-auto px-4">
-              <div className="bg-orange-50 border-l-4 border-orange-500 px-6 py-4 mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{t.gallery}</h2>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {gallery.map((url, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={i} src={url} alt="" className="h-48 w-full object-cover rounded-lg border border-gray-200" />
-                ))}
-              </div>
+          <section style={{ padding: '72px 24px', background: '#fff' }}>
+            <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+              <SectionReveal>
+                <SectionHeading accent={accent}>{t.gallery}</SectionHeading>
+              </SectionReveal>
+              <GalleryGrid urls={gallery} tourId={departure.tour_id} alt={title ?? ''} />
             </div>
           </section>
         )}
 
-        {/* FAQs */}
+        {/* ── FAQs ──────────────────────────────────────────────────────────── */}
         {faqs.length > 0 && (
-          <section className="py-10 md:py-14 bg-gray-50">
-            <div className="max-w-4xl mx-auto px-4">
-              <div className="bg-orange-50 border-l-4 border-orange-500 px-6 py-4 mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{t.faqs}</h2>
-              </div>
-              <div className="space-y-4">
+          <section style={{ padding: '72px 24px', background: SAND }}>
+            <div style={{ maxWidth: 800, margin: '0 auto' }}>
+              <SectionReveal>
+                <SectionHeading accent={accent}>{t.faqs}</SectionHeading>
+              </SectionReveal>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {faqs.map((f, i) => {
                   const q = isAr ? (f.q_ar || f.q_en) : (f.q_en || f.q_ar)
                   const a = isAr ? (f.a_ar || f.a_en) : (f.a_en || f.a_ar)
                   if (!q) return null
                   return (
-                    <details key={i} className="bg-white rounded-lg border border-gray-200 px-5 py-4">
-                      <summary className="font-semibold text-gray-900 cursor-pointer">{q}</summary>
-                      {a && <p className="text-gray-700 mt-3 whitespace-pre-line">{a}</p>}
-                    </details>
+                    <SectionReveal key={i} delay={i * 0.04}>
+                      <details style={{
+                        background: '#fff', borderRadius: 12,
+                        border: '1px solid #E5E0D8', padding: '16px 20px',
+                      }}>
+                        <summary style={{
+                          fontWeight: 600, color: BUSH, cursor: 'pointer',
+                          fontFamily: 'var(--font-body, sans-serif)',
+                          fontSize: '0.95rem', lineHeight: 1.5,
+                        }}>
+                          {q}
+                        </summary>
+                        {a && (
+                          <p style={{
+                            color: STONE, marginTop: 12, fontSize: '0.9rem',
+                            lineHeight: 1.7, fontFamily: 'var(--font-body, sans-serif)',
+                            whiteSpace: 'pre-line',
+                          }}>
+                            {a}
+                          </p>
+                        )}
+                      </details>
+                    </SectionReveal>
                   )
                 })}
               </div>
@@ -575,33 +609,26 @@ export default async function DepartureDetailPage({
           </section>
         )}
 
-        {/* CTA */}
-        <section className="py-12 md:py-16" style={{ backgroundColor: G }}>
-          <div className="max-w-4xl mx-auto px-4 text-center text-white">
-            <h2 className="text-3xl font-bold mb-4">{t.readyToBook}</h2>
-            <p className="text-lg mb-8 opacity-90">{isAvailable ? t.secureSpot : t.fullMessage}</p>
-            {isAvailable && (
-              <Link
-                href={bookHref}
-                className="px-8 py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition inline-block"
-              >
-                {t.bookNow}
-              </Link>
-            )}
+        {/* ── Enquiry form ──────────────────────────────────────────────────── */}
+        <section style={{ padding: '72px 24px', background: '#fff' }}>
+          <div style={{ maxWidth: 700, margin: '0 auto' }}>
+            <SectionReveal>
+              <SectionHeading accent={accent}>{t.enquireForm}</SectionHeading>
+              <TourEnquiryForm
+                tourId={departure.tour_id}
+                tourTitleEn={tour?.title_en ?? ''}
+                accentColor={accent}
+                isAr={isAr}
+                locale={locale}
+                departureId={id}
+              />
+            </SectionReveal>
           </div>
         </section>
       </main>
 
       <PublicFooter />
-    </div>
-  )
-}
-
-function SnapshotCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div className="bg-white p-4 rounded-lg border border-gray-200">
-      <p className="text-xs text-gray-600 font-bold uppercase mb-2">{label}</p>
-      <p className="text-sm font-bold capitalize" style={highlight ? { color: G } : { color: '#111827' }}>{value}</p>
+      <WhatsAppButton lang={locale} />
     </div>
   )
 }

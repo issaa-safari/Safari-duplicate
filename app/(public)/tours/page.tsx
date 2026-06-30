@@ -93,7 +93,7 @@ export default async function ToursPage({
                         )}
                         {desc && <p className="text-sm text-gray-600 mb-6 line-clamp-3">{desc}</p>}
                         <Link
-                          href={`/quote-request?tour=${tour.id}&lang=${locale}`}
+                          href={`/tours/${tour.id}?lang=${locale}`}
                           className="block text-center px-4 py-2 rounded-lg font-semibold text-white transition"
                           style={{ backgroundColor: G }}
                         >

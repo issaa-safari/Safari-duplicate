@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  /* Existing tokens */
   --safari-deep:      #1A2E13;
   --safari-green:     #5C7A3E;
   --safari-brand:     #7A9A4A;
@@ -13,6 +14,14 @@
   --safari-border:    #E0D4C3;
   --background: var(--safari-parchment);
   --foreground: #2C1A0E;
+
+  /* Tour-page Kenyan landscape palette */
+  --sand:   #EAE3D2;
+  --olive:  #7A9A4A;
+  --bush:   #20271A;
+  --murram: #B0492B;
+  --gold:   #C9A24B;
+  --stone:  #6E6A59;
 }
 
 @theme inline {
