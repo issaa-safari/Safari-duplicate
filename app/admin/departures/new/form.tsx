@@ -78,8 +78,9 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
                 onChange={(e) => setMaxSeats(e.target.value)} required className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Booked Seats</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Already-booked seats</label>
               <input type="number" name="bookedSeats" min={0} defaultValue={0} className={inputCls} />
+              <p className="text-[11px] text-gray-400 mt-1">Only for migrating existing bookings — leave at 0 for new departures.</p>
             </div>
           </div>
 

@@ -37,10 +37,12 @@ export default async function FinancePage({
   const admin = createAdminClient()
 
   const [
-    { data: acceptances },
-    { data: payments },
+    { data: acceptances, error: acceptancesError },
+    { data: payments, error: paymentsError },
     { data: acceptedVersions },
     { data: priceLines },
+    { data: directBookings },
+    { data: bookingPayments },
   ] = await Promise.all([
     admin.from('quote_acceptances')
       .select('id, client_name, accepted_at, quote_version_id, quote_id, quote_versions(title, total_selling_usd, total_cost_usd), quotes(id, quote_number)')
@@ -52,7 +54,16 @@ export default async function FinancePage({
       .eq('status', 'accepted'),
     admin.from('quote_price_lines')
       .select('cost_category, total_selling_usd, total_cost_usd, quote_version_id'),
+    admin.from('bookings')
+      .select('id, total_price_usd, status, created_at, departure_id, departures(start_date, tours(title_en))')
+      .is('quote_id', null)
+      .eq('status', 'confirmed'),
+    admin.from('booking_payments')
+      .select('id, booking_id, amount_usd, status, created_at'),
   ])
+
+  if (acceptancesError) console.error('[Finance] quote_acceptances read error:', acceptancesError.message)
+  if (paymentsError) console.error('[Finance] quote_payments read error:', paymentsError.message)
 
   // --- Receivables ---
   const paymentsByQuote: Record<string, any[]> = {}
@@ -71,8 +82,26 @@ export default async function FinancePage({
     return { quoteId, quoteNumber, clientName: a.client_name, totalSelling, totalReceived, acceptedAt: a.accepted_at, payments: qPayments }
   })
 
+  // --- Direct website bookings (quote_id IS NULL) ---
+  const bpByBooking: Record<string, number> = {}
+  for (const bp of (bookingPayments ?? [])) {
+    if (bp.status === 'paid') {
+      bpByBooking[bp.booking_id] = (bpByBooking[bp.booking_id] ?? 0) + Number(bp.amount_usd)
+    }
+  }
+  const directRows = (directBookings ?? []).map((b: any) => {
+    const amountDue = Number(b.total_price_usd ?? 0)
+    const amountReceived = bpByBooking[b.id] ?? 0
+    const tourTitle = (b.departures as any)?.tours?.title_en ?? 'Direct Booking'
+    const startDate = (b.departures as any)?.start_date ?? null
+    return { bookingId: b.id, tourTitle, startDate, amountDue, amountReceived, createdAt: b.created_at }
+  })
+
   const totalAccepted = rows.reduce((s, r) => s + r.totalSelling, 0)
-  const totalReceived = rows.reduce((s, r) => s + r.totalReceived, 0)
+    + directRows.reduce((s, r) => s + r.amountDue, 0)
+  const totalQuoteReceived = rows.reduce((s, r) => s + r.totalReceived, 0)
+  const totalDirectReceived = directRows.reduce((s, r) => s + r.amountReceived, 0)
+  const totalReceived = totalQuoteReceived + totalDirectReceived
   const totalOutstanding = Math.max(totalAccepted - totalReceived, 0)
 
   // --- P&L ---
@@ -138,7 +167,7 @@ export default async function FinancePage({
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <p className="text-xs text-gray-500">Total Accepted Value</p>
               <p className="text-2xl font-semibold text-gray-900 mt-1">${fmt(totalAccepted)}</p>
-              <p className="text-xs text-gray-400 mt-1">{rows.length} quote{rows.length !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-gray-400 mt-1">{rows.length} quote{rows.length !== 1 ? 's' : ''} + {directRows.length} direct booking{directRows.length !== 1 ? 's' : ''}</p>
             </div>
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <p className="text-xs text-gray-500">Total Received</p>
@@ -158,10 +187,10 @@ export default async function FinancePage({
             </div>
           </div>
 
-          {/* Receivables list */}
+          {/* Quote-based receivables */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100">
-              <h2 className="text-sm font-semibold text-gray-700">Receivables</h2>
+              <h2 className="text-sm font-semibold text-gray-700">Quote-based receivables</h2>
               <p className="text-xs text-gray-400 mt-0.5">Click a row to see payments or record a new one</p>
             </div>
             {rows.length === 0 ? (
@@ -170,6 +199,56 @@ export default async function FinancePage({
               </div>
             ) : (
               <ReceivablesTable rows={rows} />
+            )}
+          </div>
+
+          {/* Direct website bookings */}
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-700">Direct website bookings</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Confirmed bookings made without a quote — revenue only, no cost breakdown available</p>
+            </div>
+            {directRows.length === 0 ? (
+              <div className="p-10 text-center text-sm text-gray-400">
+                No confirmed direct bookings yet.
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
+                    <th className="px-5 py-3 font-medium">Tour / Departure</th>
+                    <th className="px-5 py-3 font-medium text-right">Amount Due</th>
+                    <th className="px-5 py-3 font-medium text-right">Received</th>
+                    <th className="px-5 py-3 font-medium text-right">Outstanding</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {directRows.map((r) => {
+                    const outstanding = Math.max(r.amountDue - r.amountReceived, 0)
+                    return (
+                      <tr key={r.bookingId} className="border-b border-gray-50 last:border-0">
+                        <td className="px-5 py-3">
+                          <p className="font-medium text-gray-800">{r.tourTitle}</p>
+                          {r.startDate && (
+                            <p className="text-xs text-gray-400">{new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-right text-gray-700">${fmt(r.amountDue)}</td>
+                        <td className="px-5 py-3 text-right text-green-700">${fmt(r.amountReceived)}</td>
+                        <td className={`px-5 py-3 text-right font-semibold ${outstanding > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
+                          ${fmt(outstanding)}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                  <tr className="bg-gray-50 text-sm font-semibold">
+                    <td className="px-5 py-3 text-gray-900">Total</td>
+                    <td className="px-5 py-3 text-right text-gray-900">${fmt(directRows.reduce((s, r) => s + r.amountDue, 0))}</td>
+                    <td className="px-5 py-3 text-right text-green-700">${fmt(directRows.reduce((s, r) => s + r.amountReceived, 0))}</td>
+                    <td className="px-5 py-3 text-right text-amber-700">${fmt(directRows.reduce((s, r) => s + Math.max(r.amountDue - r.amountReceived, 0), 0))}</td>
+                  </tr>
+                </tbody>
+              </table>
             )}
           </div>
         </>

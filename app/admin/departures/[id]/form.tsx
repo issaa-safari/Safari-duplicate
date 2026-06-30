@@ -110,13 +110,10 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Booked Seats</label>
-              <input
-                type="number"
-                name="bookedSeats"
-                min={0}
-                defaultValue={departure.booked_seats}
-                className={inputCls}
-              />
+              <div className={`${inputCls} bg-gray-50 text-gray-500 cursor-default`}>
+                {departure.booked_seats}
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1">Computed from confirmed bookings — not editable here.</p>
             </div>
           </div>
 

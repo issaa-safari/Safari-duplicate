@@ -46,13 +46,13 @@ export default async function VersionEditorPage({
     { data: vehicles },
     { data: staffData },
     { data: parksData },
-    { data: quoteRequest },
+    { data: _unused },
   ] = await Promise.all([
     admin.from('quote_versions')
       .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until, language, cost_base_usd, default_markup_percent')
       .eq('id', versionId).single(),
     admin.from('quotes')
-      .select('id, quote_number, status, mode, client_id, tour_id')
+      .select('id, quote_number, status, mode, client_id, tour_id, request_id, requests(preferred_start_date, travelers_adults), tours(duration_days)')
       .eq('id', id).single(),
     admin.from('quote_travellers')
       .select('id, display_name, age_on_travel_date, age_band_id, age_band_snapshot, pricing_fixed_amount_usd, traveller_category, room_category, is_paying, is_complimentary, sort_order')
@@ -75,12 +75,15 @@ export default async function VersionEditorPage({
       .select('id, name, role').order('name'),
     admin.from('parks')
       .select('id, name, country').eq('is_active', true).order('name'),
-    admin.from('quote_requests')
-      .select('start_date, duration_days, group_size')
-      .eq('quote_id', id).single(),
+    Promise.resolve({ data: null }),
   ])
 
   if (!version || !quote) notFound()
+
+  const quoteRequest = {
+    start_date: (quote as any).requests?.preferred_start_date ?? null,
+    duration_days: (quote as any).tours?.duration_days ?? null,
+  }
 
   // Confirm this version belongs to this quote
   const { data: versionCheck } = await admin
@@ -179,7 +182,7 @@ export default async function VersionEditorPage({
         version={version}
         travellers={travellers ?? []}
         ageBands={ageBands ?? []}
-        quoteRequest={quoteRequest as any}
+        quoteRequest={quoteRequest}
       />
 
       {/* Live pricing summary */}
