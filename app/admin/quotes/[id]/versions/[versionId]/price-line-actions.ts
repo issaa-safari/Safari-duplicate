@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
+import { calculateLineTotals } from '@/lib/pricing'
 
 const COST_CATEGORIES = ['accommodation', 'activities', 'park_fees', 'transport', 'staff', 'meals', 'flights', 'other'] as const
 const PRICING_UNITS = ['person', 'room', 'vehicle', 'group', 'day', 'night', 'trip'] as const
@@ -50,8 +51,7 @@ export async function addPriceLine(formData: FormData) {
 
   await requireMutableVersion(admin, versionId, quoteId)
 
-  const totalCostUsd = quantity * unitCostUsd
-  const totalSellingUsd = totalCostUsd * (1 + markupPct / 100)
+  const { totalCostUsd, totalSellingUsd } = calculateLineTotals(quantity, unitCostUsd, markupPct)
 
   const { data: existing } = await admin
     .from('quote_price_lines')
@@ -103,8 +103,7 @@ export async function updatePriceLine(formData: FormData) {
 
   await requireMutableVersion(admin, versionId, quoteId)
 
-  const totalCostUsd = quantity * unitCostUsd
-  const totalSellingUsd = totalCostUsd * (1 + markupPct / 100)
+  const { totalCostUsd, totalSellingUsd } = calculateLineTotals(quantity, unitCostUsd, markupPct)
 
   const { error } = await admin.from('quote_price_lines').update({
     description,
@@ -176,8 +175,7 @@ export async function bulkSetMarkup(formData: FormData) {
   if (!lines?.length) return
 
   for (const line of lines) {
-    const totalCostUsd = line.quantity * line.unit_cost_usd
-    const totalSellingUsd = totalCostUsd * (1 + markupPct / 100)
+    const { totalSellingUsd } = calculateLineTotals(line.quantity, line.unit_cost_usd, markupPct)
     await admin.from('quote_price_lines').update({
       markup_percent_override: markupPct,
       total_selling_usd: totalSellingUsd,
