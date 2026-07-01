@@ -51,22 +51,21 @@ export default function DepartureHero({
   const dir = isAr ? 'rtl' : 'ltr'
   const EASE = [0.22, 1, 0.36, 1] as const
 
-  const fadeUp = (delay: number) =>
-    reduced
-      ? {}
-      : {
-          initial: { opacity: 0, y: 20 },
-          animate: { opacity: 1, y: 0 },
-          transition: { duration: 0.6, delay, ease: EASE },
-        }
+  // `initial` stays identical between server and client renders (server can't know the
+  // client's prefers-reduced-motion) — only the transition duration is gated, so a
+  // reduced-motion client lands on `animate` instantly instead of a hydration mismatch
+  // leaving the element stuck at its initial (invisible) state.
+  const fadeUp = (delay: number) => ({
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: reduced ? 0 : 0.6, delay: reduced ? 0 : delay, ease: EASE },
+  })
 
-  const imageAnim = reduced
-    ? {}
-    : {
-        initial: { opacity: 0, scale: 1.06 },
-        animate: { opacity: 1, scale: 1 },
-        transition: { duration: 1.1, ease: EASE },
-      }
+  const imageAnim = {
+    initial: { opacity: 0, scale: 1.06 },
+    animate: { opacity: 1, scale: 1 },
+    transition: { duration: reduced ? 0 : 1.1, ease: EASE },
+  }
 
   return (
     <section
@@ -106,21 +105,23 @@ export default function DepartureHero({
         </motion.div>
 
         {/* Departure + status badges */}
-        <motion.div {...fadeUp(0.18)} style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+        <motion.div {...fadeUp(0.16)} style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
           <span style={{
             background: accentColor, color: '#fff',
             fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
             textTransform: 'uppercase', padding: '5px 14px', borderRadius: 4,
             fontFamily: 'var(--font-body, sans-serif)',
+            boxShadow: `0 4px 20px ${accentColor}55`,
           }}>
             {departureLabel}
           </span>
           <span style={{
-            background: 'rgba(255,255,255,0.12)', color: statusColor === '#166534' ? '#4ade80' : '#fff',
+            background: 'rgba(255,255,255,0.08)', color: statusColor === '#166534' ? '#4ade80' : '#fff',
             border: `1px solid rgba(255,255,255,0.25)`,
             fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
             textTransform: 'uppercase', padding: '5px 14px', borderRadius: 4,
-            backdropFilter: 'blur(6px)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
             fontFamily: 'var(--font-body, sans-serif)',
           }}>
             {statusLabel}
@@ -171,7 +172,11 @@ export default function DepartureHero({
 
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {isAvailable && (
-              <motion.div whileHover={reduced ? {} : { scale: 1.04 }} whileTap={reduced ? {} : { scale: 0.98 }}>
+              <motion.div
+                whileHover={reduced ? {} : { scale: 1.04, boxShadow: `0 8px 28px ${accentColor}66` }}
+                whileTap={reduced ? {} : { scale: 0.98 }}
+                style={{ borderRadius: 8 }}
+              >
                 <Link href={bookHref} style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   padding: '14px 28px', borderRadius: 8,

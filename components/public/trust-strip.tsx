@@ -68,7 +68,13 @@ export default function TrustStrip({ staff, isAr, accentColor }: TrustStripProps
                 display: 'flex', flexDirection: 'column', gap: 10,
                 height: '100%', boxSizing: 'border-box',
               }}>
-              <span style={{ fontSize: 28 }}>{p.icon}</span>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 48, height: 48, borderRadius: 12,
+                background: `${accentColor}1A`,
+                boxShadow: `inset 0 0 0 2px ${accentColor}33`,
+                fontSize: 22,
+              }}>{p.icon}</span>
               <h3 style={{
                 fontFamily: 'var(--font-display, sans-serif)',
                 fontSize: '1rem', fontWeight: 700, color: BUSH, margin: 0,
@@ -99,10 +105,10 @@ export default function TrustStrip({ staff, isAr, accentColor }: TrustStripProps
             {staff.map((member, i) => (
               <motion.div
                 key={member.id}
-                initial={reduced ? false : { opacity: 0, y: 16 }}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.07 }}
+                transition={{ duration: reduced ? 0 : 0.4, delay: reduced ? 0 : i * 0.07 }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 14,
                   background: '#fff', borderRadius: 50,

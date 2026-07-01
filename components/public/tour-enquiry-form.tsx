@@ -168,7 +168,19 @@ export default function TourEnquiryForm({
   const focusVars: FormCSSVars = { '--focus-accent': accentColor }
 
   return (
-    <form onSubmit={handleSubmit} dir={isAr ? 'rtl' : 'ltr'} style={focusVars}>
+    <form
+      onSubmit={handleSubmit}
+      dir={isAr ? 'rtl' : 'ltr'}
+      style={{
+        ...focusVars,
+        background: '#fff',
+        border: `1px solid ${SAND}`,
+        borderRadius: 16,
+        padding: '32px 28px',
+        boxShadow: '0 2px 16px rgba(32,39,26,0.05)',
+        boxSizing: 'border-box',
+      }}
+    >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label style={labelStyle}>{t.firstName}</label>
@@ -221,7 +233,7 @@ export default function TourEnquiryForm({
           type="submit"
           disabled={isPending}
           className="enquiry-field"
-          whileHover={reduced || isPending ? {} : { scale: 1.01 }}
+          whileHover={reduced || isPending ? {} : { scale: 1.01, boxShadow: `0 8px 24px ${accentColor}44` }}
           whileTap={reduced || isPending ? {} : { scale: 0.99 }}
           style={{
             width: '100%', padding: '14px 24px', borderRadius: 8,

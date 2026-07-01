@@ -22,21 +22,21 @@ interface TourHeroProps {
   tripLabel: string | null
 }
 
-const OLIVE = '#7A9A4A'
-
-const chip = (label: string, accent: string) => ({
+const chip = () => ({
   display: 'inline-flex' as const,
   alignItems: 'center' as const,
   gap: 6,
-  padding: '4px 14px',
+  padding: '5px 15px',
   borderRadius: 999,
-  background: 'rgba(255,255,255,0.12)',
-  border: `1px solid rgba(255,255,255,0.22)`,
+  background: 'rgba(255,255,255,0.08)',
+  border: `1px solid rgba(255,255,255,0.24)`,
   fontSize: 13,
   fontWeight: 600,
   color: '#fff',
-  backdropFilter: 'blur(6px)',
+  backdropFilter: 'blur(10px)',
+  WebkitBackdropFilter: 'blur(10px)',
   letterSpacing: '0.02em',
+  boxShadow: `inset 0 1px 0 rgba(255,255,255,0.08)`,
 })
 
 export default function TourHero({
@@ -61,22 +61,21 @@ export default function TourHero({
 
   const EASE = [0.22, 1, 0.36, 1] as const
 
-  const fadeUp = (delay: number) =>
-    reduced
-      ? {}
-      : {
-          initial: { opacity: 0, y: 20 },
-          animate: { opacity: 1, y: 0 },
-          transition: { duration: 0.6, delay, ease: EASE },
-        }
+  // `initial` stays identical between server and client renders (server can't know the
+  // client's prefers-reduced-motion) — only the transition duration is gated, so a
+  // reduced-motion client lands on `animate` instantly instead of a hydration mismatch
+  // leaving the element stuck at its initial (invisible) state.
+  const fadeUp = (delay: number) => ({
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: reduced ? 0 : 0.6, delay: reduced ? 0 : delay, ease: EASE },
+  })
 
-  const imageAnim = reduced
-    ? {}
-    : {
-        initial: { opacity: 0, scale: 1.06 },
-        animate: { opacity: 1, scale: 1 },
-        transition: { duration: 1.1, ease: EASE },
-      }
+  const imageAnim = {
+    initial: { opacity: 0, scale: 1.06 },
+    animate: { opacity: 1, scale: 1 },
+    transition: { duration: reduced ? 0 : 1.1, ease: EASE },
+  }
 
   const chips = [
     durationDays ? `${durationDays} ${isAr ? 'يوم' : 'days'}` : null,
@@ -114,9 +113,11 @@ export default function TourHero({
 
         {/* Trip type badge */}
         {tripLabel && (
-          <motion.div {...fadeUp(0.15)} style={{ marginBottom: 20 }}>
+          <motion.div {...fadeUp(0.12)} style={{ marginBottom: 20 }}>
             <span style={{
-              display: 'inline-block',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
               padding: '5px 16px',
               borderRadius: 4,
               background: accentColor,
@@ -126,6 +127,7 @@ export default function TourHero({
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
               fontFamily: 'var(--font-body, sans-serif)',
+              boxShadow: `0 4px 20px ${accentColor}55`,
             }}>
               {tripLabel}
             </span>
@@ -190,7 +192,7 @@ export default function TourHero({
             style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 36 }}
           >
             {chips.map((c) => (
-              <span key={c} style={chip(c, accentColor)}>{c}</span>
+              <span key={c} style={chip()}>{c}</span>
             ))}
           </motion.div>
         )}
@@ -218,7 +220,11 @@ export default function TourHero({
 
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {isAvailable ? (
-              <motion.div whileHover={reduced ? {} : { scale: 1.04 }} whileTap={reduced ? {} : { scale: 0.98 }}>
+              <motion.div
+                whileHover={reduced ? {} : { scale: 1.04, boxShadow: `0 8px 28px ${accentColor}66` }}
+                whileTap={reduced ? {} : { scale: 0.98 }}
+                style={{ borderRadius: 8 }}
+              >
                 <Link
                   href={bookHref}
                   style={{

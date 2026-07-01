@@ -16,11 +16,15 @@ export default function SectionReveal({
 }) {
     const reduced = useReducedMotion()
 
+  // `initial` stays identical between server and client renders (server can't know the
+  // client's prefers-reduced-motion) — only the transition duration is gated, so a
+  // reduced-motion client lands on `whileInView`'s target instantly instead of a
+  // hydration mismatch leaving the element stuck at its initial (invisible) state.
   return (
     <motion.div
-      initial={reduced ? false : { opacity: 0, y: 28 }}
+      initial={{ opacity: 0, y: 28 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.55, delay, ease: EASE }}
+      transition={{ duration: reduced ? 0 : 0.55, delay: reduced ? 0 : delay, ease: EASE }}
       viewport={{ once: true, margin: '-60px' }}
       className={className}
     >

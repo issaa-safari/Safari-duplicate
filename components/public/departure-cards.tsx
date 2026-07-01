@@ -95,10 +95,10 @@ export default function DepartureCards({ departures, accentColor, isAr, tourTitl
         return (
           <motion.div
             key={dep.id}
-            initial={reduced ? false : { opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            whileHover={reduced ? {} : { y: -2, boxShadow: '0 8px 32px rgba(32,39,26,0.12)' }}
-            transition={{ duration: 0.4, delay: i * 0.06 }}
+            whileHover={reduced || !available ? {} : { y: -3, boxShadow: `0 12px 32px ${accentColor}26` }}
+            transition={{ duration: reduced ? 0 : 0.4, delay: reduced ? 0 : i * 0.06 }}
             viewport={{ once: true, margin: '-40px' }}
             style={{
               background: available ? '#fff' : '#f9f9f7',
@@ -109,6 +109,7 @@ export default function DepartureCards({ departures, accentColor, isAr, tourTitl
               display: 'flex', flexWrap: 'wrap', alignItems: 'center',
               gap: 20,
               opacity: available ? 1 : 0.7,
+              boxShadow: '0 2px 12px rgba(32,39,26,0.05)',
             }}
           >
             {/* Dates */}

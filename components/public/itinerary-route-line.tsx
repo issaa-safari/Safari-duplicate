@@ -85,15 +85,16 @@ function DayCard({
   return (
     <motion.div
       ref={ref}
-      initial={reduced ? false : { opacity: 0, y: 32 }}
+      initial={{ opacity: 0, y: 32 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] as const }}
+      transition={{ duration: reduced ? 0 : 0.5, delay: reduced ? 0 : index * 0.07, ease: [0.22, 1, 0.36, 1] as const }}
+      whileHover={reduced || isOpen ? {} : { y: -2 }}
       style={{
         background: '#fff',
         borderRadius: 14,
         border: `1px solid ${isOpen ? accentColor : '#E5E0D8'}`,
         overflow: 'hidden',
-        boxShadow: isOpen ? '0 8px 28px rgba(32,39,26,0.14)' : '0 2px 12px rgba(32,39,26,0.06)',
+        boxShadow: isOpen ? `0 10px 32px ${accentColor}33` : '0 2px 12px rgba(32,39,26,0.06)',
         transition: 'box-shadow 0.25s, border-color 0.25s',
       }}
     >
@@ -119,6 +120,7 @@ function DayCard({
           fontWeight: 700, fontSize: 16,
           color: '#fff',
           border: `2px solid ${isOpen ? 'rgba(255,255,255,0.4)' : 'transparent'}`,
+          boxShadow: isOpen ? 'none' : `0 3px 10px ${accentColor}55`,
         }}>
           {day.dayNumber}
         </div>
@@ -192,7 +194,7 @@ function DayCard({
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {day.activities.map((a, i) => (
                   <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                    <span style={{ color: accentColor, marginTop: 2, flexShrink: 0 }}>→</span>
+                    <span style={{ color: accentColor, marginTop: 2, flexShrink: 0 }}>{isAr ? '←' : '→'}</span>
                     <div>
                       <span style={{ fontWeight: 600, color: BUSH, fontSize: '0.9rem', fontFamily: 'var(--font-body, sans-serif)' }}>
                         {a.name}
