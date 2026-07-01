@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
-import { safeErrorResponse } from '@/lib/security/safe-error'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -58,6 +57,6 @@ export async function POST(request: Request) {
     .select('id')
     .single()
 
-  if (error) return safeErrorResponse('create_departure.failed', error, { message: 'Failed to create departure' })
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true, id: data.id })
 }

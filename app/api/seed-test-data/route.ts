@@ -1,33 +1,10 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
-import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { NextRequest, NextResponse } from 'next/server'
-import { randomUUID } from 'crypto'
-import { logger } from '@/lib/security/logger'
-import { safeErrorResponse } from '@/lib/security/safe-error'
 
-// Dev/staging-only utility for seeding a sample quote. Never available in
-// production, and only callable by an authenticated admin even elsewhere —
-// it writes real rows via the service-role client and used to be reachable
-// by anyone with the URL.
 export async function POST(request: NextRequest) {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  }
-
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const admin = createAdminClient()
-
   try {
-    await assertAdminAccess(admin, user?.email)
-  } catch {
-    logger.security('seed_test_data.forbidden', { email: user?.email ?? null })
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
-  try {
-    logger.audit('seed_test_data.start', { actor: user?.email })
+    console.log('🚀 Starting test data creation...\n')
+    const admin = createAdminClient()
 
     // Step 1: Create client
     const { data: clientData, error: clientError } = await admin
@@ -348,7 +325,7 @@ export async function POST(request: NextRequest) {
     console.log('✓ Step 9: Added 5 price line items (1 optional)')
 
     // Step 10: Create quote delivery
-    const accessToken = `test-${randomUUID()}`
+    const accessToken = 'test-' + Math.random().toString(36).substr(2, 20)
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 30)
 
@@ -389,9 +366,12 @@ export async function POST(request: NextRequest) {
       },
     }
 
-    logger.audit('seed_test_data.success', { actor: user?.email, quoteId, accessToken: `${accessToken.slice(0, 8)}…` })
     return NextResponse.json(result)
   } catch (error) {
-    return safeErrorResponse('seed_test_data.failed', error, { message: 'Failed to create test data' })
+    console.error('❌ Error creating test data:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to create test data' },
+      { status: 500 }
+    )
   }
 }

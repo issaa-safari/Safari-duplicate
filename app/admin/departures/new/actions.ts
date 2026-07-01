@@ -2,16 +2,12 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 
 export async function createDeparture(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/admin/login')
-
-  const admin = createAdminClient()
-  await assertAdminAccess(admin, user.email)
 
   const tourId = formData.get('tourId') as string
   const startDate = formData.get('startDate') as string
@@ -28,6 +24,7 @@ export async function createDeparture(formData: FormData) {
   if (isNaN(priceUsd)) throw new Error('Price is required.')
   if (bookedSeats > maxSeats) throw new Error('Booked seats cannot exceed max seats.')
 
+  const admin = createAdminClient()
   const { data: newDep, error } = await admin
     .from('departures')
     .insert({

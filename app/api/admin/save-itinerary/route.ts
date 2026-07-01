@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
-import { safeErrorResponse } from '@/lib/security/safe-error'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -26,7 +25,7 @@ export async function POST(request: Request) {
     delQuery = delQuery.not('id', 'in', `(${keepIds.join(',')})`)
   }
   const { error: delErr } = await delQuery
-  if (delErr) return safeErrorResponse('save_itinerary.delete_failed', delErr, { message: 'Failed to update itinerary days' })
+  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 })
 
   // Upsert each day
   for (const d of days as any[]) {
@@ -52,10 +51,10 @@ export async function POST(request: Request) {
     }
     if (d.id) {
       const { error } = await admin.from('tour_days').update(row).eq('id', d.id)
-      if (error) return safeErrorResponse('save_itinerary.update_failed', error, { message: 'Failed to update itinerary days' })
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     } else {
       const { error } = await admin.from('tour_days').insert(row)
-      if (error) return safeErrorResponse('save_itinerary.insert_failed', error, { message: 'Failed to update itinerary days' })
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     }
   }
 
