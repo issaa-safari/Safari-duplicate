@@ -17,6 +17,7 @@ import type { StaffMember } from '@/components/public/trust-strip'
 import TourEnquiryForm from '@/components/public/tour-enquiry-form'
 import Testimonials from '@/components/public/testimonials'
 import SectionReveal from '@/components/public/section-reveal'
+import StickyEnquiryBar from '@/components/public/sticky-enquiry-bar'
 import { getServerLocale } from '@/lib/i18n'
 import { whatsappLink } from '@/lib/site'
 
@@ -130,9 +131,10 @@ export default async function TourDetailPage({
   const gallery: string[] = Array.isArray(tour.gallery_urls) ? (tour.gallery_urls as string[]).filter(Boolean) : []
   const faqs: { q_en?: string; q_ar?: string; a_en?: string; a_ar?: string }[] = Array.isArray(tour.faqs) ? tour.faqs as { q_en?: string; q_ar?: string; a_en?: string; a_ar?: string }[] : []
 
-  // Route text e.g. "Nairobi → Masai Mara → Nairobi"
+  // Route text e.g. "Nairobi → Masai Mara → Nairobi" (arrow mirrors for RTL)
+  const routeArrow = isAr ? ' ← ' : ' → '
   const routeText = tour.start_destination
-    ? `${tour.start_destination}${tour.end_destination ? ` → ${tour.end_destination}` : ''}`
+    ? `${tour.start_destination}${tour.end_destination ? `${routeArrow}${tour.end_destination}` : ''}`
     : null
 
   // ── Tour days ─────────────────────────────────────────────────────────────
@@ -291,8 +293,17 @@ export default async function TourDetailPage({
         }
       />
 
-      {/* 2. Sticky enquiry bar — needs a hero ref; handled client-side via portal */}
-      {/* Implemented inline in TourHero scroll position — see sticky-enquiry-bar.tsx usage on departure page */}
+      {/* 2. Sticky enquiry bar — slides in once the hero (#tour-hero) scrolls out of view */}
+      <StickyEnquiryBar
+        price={lowestPrice}
+        accentColor={accent}
+        enquireHref={enquireHref}
+        whatsappHref={waHref}
+        isAr={isAr}
+        isAvailable={hasAvailable}
+        bookHref={bookHref}
+        heroElementId="tour-hero"
+      />
 
       {/* 3. Overview + quick facts */}
       {(overview || tour.difficulty_rating || tour.vehicle || tour.accommodation_level) && (

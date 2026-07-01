@@ -102,8 +102,9 @@ export default function DepartureCards({ departures, accentColor, isAr, tourTitl
             viewport={{ once: true, margin: '-40px' }}
             style={{
               background: available ? '#fff' : '#f9f9f7',
-              borderRadius: 12,
+              borderRadius: 14,
               border: `1px solid ${available ? '#E5E0D8' : '#EDEAE4'}`,
+              borderInlineStart: available ? `4px solid ${accentColor}` : '4px solid #EDEAE4',
               padding: '20px 24px',
               display: 'flex', flexWrap: 'wrap', alignItems: 'center',
               gap: 20,
@@ -117,7 +118,7 @@ export default function DepartureCards({ departures, accentColor, isAr, tourTitl
                 fontSize: '1.05rem', fontWeight: 600, color: '#20271A', marginBottom: 4,
               }}>
                 {formatDate(dep.startDate, locale)}
-                <span style={{ color: STONE, margin: '0 8px' }}>→</span>
+                <span style={{ color: STONE, margin: '0 8px' }}>{isAr ? '←' : '→'}</span>
                 {formatDate(dep.endDate, locale)}
               </div>
               <div style={{ fontSize: 13, color: STONE, fontFamily: 'var(--font-body, sans-serif)' }}>

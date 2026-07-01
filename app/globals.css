@@ -45,3 +45,9 @@ body {
 input, textarea, select { color: #1f2937; }
 input::placeholder, textarea::placeholder { color: #9ca3af; }
 html { scroll-behavior: smooth; }
+
+/* Accent-colored, visible keyboard focus for public form fields (accent set per-instance via --focus-accent) */
+.enquiry-field:focus-visible {
+  outline: 2px solid var(--focus-accent, var(--olive));
+  outline-offset: 1px;
+}

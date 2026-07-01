@@ -87,6 +87,7 @@ export default function TourHero({
 
   return (
     <section
+      id="tour-hero"
       dir={dir}
       style={{ position: 'relative', minHeight: '92vh', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', overflow: 'hidden', background: '#20271A' }}
     >
@@ -100,6 +101,11 @@ export default function TourHero({
         <div style={{
           position: 'absolute', inset: 0,
           background: 'linear-gradient(to top, rgba(20,25,15,0.92) 0%, rgba(20,25,15,0.55) 45%, rgba(20,25,15,0.18) 100%)',
+        }} />
+        {/* Accent-tinted ambient glow — murram for moto, gold for safari */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: `radial-gradient(ellipse 60% 50% at ${isAr ? '85%' : '15%'} 100%, ${accentColor}33 0%, transparent 60%)`,
         }} />
       </motion.div>
 
@@ -137,6 +143,7 @@ export default function TourHero({
             lineHeight: 1.08,
             marginBottom: 16,
             maxWidth: 820,
+            textShadow: '0 2px 24px rgba(0,0,0,0.35)',
           }}
         >
           {tourTitle}
@@ -202,7 +209,7 @@ export default function TourHero({
                 color: '#fff',
               }}>
                 ${price.toLocaleString()}
-                <span style={{ fontSize: '0.45em', color: 'rgba(255,255,255,0.6)', fontWeight: 400, marginLeft: 6 }}>
+                <span style={{ fontSize: '0.45em', color: 'rgba(255,255,255,0.6)', fontWeight: 400, marginInlineStart: 6 }}>
                   {isAr ? '/ شخص' : '/ person'}
                 </span>
               </span>
@@ -211,34 +218,37 @@ export default function TourHero({
 
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {isAvailable ? (
+              <motion.div whileHover={reduced ? {} : { scale: 1.04 }} whileTap={reduced ? {} : { scale: 0.98 }}>
+                <Link
+                  href={bookHref}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    padding: '14px 28px', borderRadius: 8,
+                    background: accentColor, color: '#fff',
+                    fontWeight: 700, fontSize: 15, textDecoration: 'none',
+                    fontFamily: 'var(--font-body, sans-serif)',
+                  }}
+                >
+                  {isAr ? 'احجز الآن' : 'Book Now'}
+                </Link>
+              </motion.div>
+            ) : null}
+            <motion.div whileHover={reduced ? {} : { scale: 1.04 }} whileTap={reduced ? {} : { scale: 0.98 }}>
               <Link
-                href={bookHref}
+                href={enquireHref}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   padding: '14px 28px', borderRadius: 8,
-                  background: accentColor, color: '#fff',
+                  background: 'rgba(255,255,255,0.12)', color: '#fff',
+                  border: '1.5px solid rgba(255,255,255,0.4)',
                   fontWeight: 700, fontSize: 15, textDecoration: 'none',
                   fontFamily: 'var(--font-body, sans-serif)',
-                  transition: 'opacity 0.2s',
+                  backdropFilter: 'blur(6px)',
                 }}
               >
-                {isAr ? 'احجز الآن' : 'Book Now'}
+                {isAr ? 'استفسر الآن' : 'Request Quote'}
               </Link>
-            ) : null}
-            <Link
-              href={enquireHref}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '14px 28px', borderRadius: 8,
-                background: 'rgba(255,255,255,0.12)', color: '#fff',
-                border: '1.5px solid rgba(255,255,255,0.4)',
-                fontWeight: 700, fontSize: 15, textDecoration: 'none',
-                fontFamily: 'var(--font-body, sans-serif)',
-                backdropFilter: 'blur(6px)',
-              }}
-            >
-              {isAr ? 'استفسر الآن' : 'Request Quote'}
-            </Link>
+            </motion.div>
           </div>
         </motion.div>
       </div>

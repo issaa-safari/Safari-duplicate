@@ -18,17 +18,17 @@ export default function GalleryGrid({ urls, tourId, alt }: GalleryGridProps) {
   const [hero, ...rest] = urls
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {/* Large hero image spans 2 rows and 2 cols on first position */}
       <motion.div
         initial={reduced ? false : { opacity: 0, scale: 0.97 }}
         whileInView={{ opacity: 1, scale: 1 }}
-        whileHover={reduced ? {} : { scale: 1.015 }}
+        whileHover={reduced ? {} : { scale: 1.015, boxShadow: '0 12px 32px rgba(32,39,26,0.18)' }}
         viewport={{ once: true, margin: '-60px' }}
         transition={{ duration: 0.5 }}
         style={{
           gridColumn: 'span 2', gridRow: 'span 2',
-          borderRadius: 12, overflow: 'hidden',
+          borderRadius: 14, overflow: 'hidden',
           aspectRatio: '4/3', position: 'relative',
         }}
       >

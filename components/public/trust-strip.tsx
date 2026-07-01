@@ -59,11 +59,15 @@ export default function TrustStrip({ staff, isAr, accentColor }: TrustStripProps
       }}>
         {points.map((p, i) => (
           <SectionReveal key={p.title} delay={i * 0.08}>
-            <div style={{
-              background: '#fff', borderRadius: 12, padding: '24px 20px',
-              border: '1px solid #E5E0D8',
-              display: 'flex', flexDirection: 'column', gap: 10,
-            }}>
+            <motion.div
+              whileHover={reduced ? {} : { y: -3, boxShadow: '0 10px 28px rgba(32,39,26,0.1)' }}
+              transition={{ duration: 0.25 }}
+              style={{
+                background: '#fff', borderRadius: 14, padding: '24px 20px',
+                border: '1px solid #E5E0D8',
+                display: 'flex', flexDirection: 'column', gap: 10,
+                height: '100%', boxSizing: 'border-box',
+              }}>
               <span style={{ fontSize: 28 }}>{p.icon}</span>
               <h3 style={{
                 fontFamily: 'var(--font-display, sans-serif)',
@@ -77,7 +81,7 @@ export default function TrustStrip({ staff, isAr, accentColor }: TrustStripProps
               }}>
                 {p.body}
               </p>
-            </div>
+            </motion.div>
           </SectionReveal>
         ))}
       </div>

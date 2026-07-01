@@ -47,9 +47,10 @@ const inputStyle = {
   color: '#20271A',
   background: '#fff',
   fontFamily: 'var(--font-body, sans-serif)',
-  outline: 'none',
   boxSizing: 'border-box' as const,
 }
+
+type FormCSSVars = React.CSSProperties & { '--focus-accent'?: string }
 
 const labelStyle = {
   display: 'block' as const,
@@ -164,46 +165,48 @@ export default function TourEnquiryForm({
     )
   }
 
+  const focusVars: FormCSSVars = { '--focus-accent': accentColor }
+
   return (
-    <form onSubmit={handleSubmit} dir={isAr ? 'rtl' : 'ltr'}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 20px' }}>
+    <form onSubmit={handleSubmit} dir={isAr ? 'rtl' : 'ltr'} style={focusVars}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label style={labelStyle}>{t.firstName}</label>
-          <input name="firstName" value={form.firstName} onChange={handleChange} required style={inputStyle} />
+          <input name="firstName" value={form.firstName} onChange={handleChange} required className="enquiry-field" style={inputStyle} />
         </div>
         <div>
           <label style={labelStyle}>{t.lastName}</label>
-          <input name="lastName" value={form.lastName} onChange={handleChange} required style={inputStyle} />
+          <input name="lastName" value={form.lastName} onChange={handleChange} required className="enquiry-field" style={inputStyle} />
         </div>
         <div>
           <label style={labelStyle}>{t.email}</label>
-          <input type="email" name="email" value={form.email} onChange={handleChange} required style={inputStyle} />
+          <input type="email" name="email" value={form.email} onChange={handleChange} required className="enquiry-field" style={inputStyle} />
         </div>
         <div>
           <label style={labelStyle}>{t.phone}</label>
-          <input type="tel" name="phone" value={form.phone} onChange={handleChange} required style={inputStyle} />
+          <input type="tel" name="phone" value={form.phone} onChange={handleChange} required className="enquiry-field" style={inputStyle} />
         </div>
         <div>
           <label style={labelStyle}>{t.country}</label>
-          <input name="country" value={form.country} onChange={handleChange} style={inputStyle} />
+          <input name="country" value={form.country} onChange={handleChange} className="enquiry-field" style={inputStyle} />
         </div>
         <div>
           <label style={labelStyle}>{t.groupSize}</label>
-          <input type="number" name="groupSize" value={form.groupSize} onChange={handleChange} min="1" required style={inputStyle} />
+          <input type="number" name="groupSize" value={form.groupSize} onChange={handleChange} min="1" required className="enquiry-field" style={inputStyle} />
         </div>
         <div>
           <label style={labelStyle}>{t.startDate}</label>
-          <input type="date" name="startDate" value={form.startDate} onChange={handleChange} style={inputStyle} />
+          <input type="date" name="startDate" value={form.startDate} onChange={handleChange} className="enquiry-field" style={inputStyle} />
         </div>
         <div>
           <label style={labelStyle}>{t.heardAbout}</label>
-          <select name="heardAboutUs" value={form.heardAboutUs} onChange={handleChange} style={inputStyle}>
+          <select name="heardAboutUs" value={form.heardAboutUs} onChange={handleChange} className="enquiry-field" style={inputStyle}>
             {heardOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
-        <div style={{ gridColumn: '1 / -1' }}>
+        <div className="sm:col-span-2">
           <label style={labelStyle}>{t.preferences}</label>
-          <textarea name="preferences" value={form.preferences} onChange={handleChange} rows={4} style={{ ...inputStyle, resize: 'vertical' }} />
+          <textarea name="preferences" value={form.preferences} onChange={handleChange} rows={4} className="enquiry-field" style={{ ...inputStyle, resize: 'vertical' }} />
         </div>
       </div>
 
@@ -214,9 +217,12 @@ export default function TourEnquiryForm({
       )}
 
       <div style={{ marginTop: 24 }}>
-        <button
+        <motion.button
           type="submit"
           disabled={isPending}
+          className="enquiry-field"
+          whileHover={reduced || isPending ? {} : { scale: 1.01 }}
+          whileTap={reduced || isPending ? {} : { scale: 0.99 }}
           style={{
             width: '100%', padding: '14px 24px', borderRadius: 8,
             background: isPending ? '#a0a0a0' : accentColor,
@@ -227,7 +233,7 @@ export default function TourEnquiryForm({
           }}
         >
           {isPending ? t.sending : t.submit}
-        </button>
+        </motion.button>
       </div>
     </form>
   )

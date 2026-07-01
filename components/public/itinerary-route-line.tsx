@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { motion, useInView, useReducedMotion } from 'framer-motion'
 import SafariImage from '@/components/public/safari-image'
 
@@ -25,9 +25,9 @@ interface ItineraryRouteLineProps {
   isAr: boolean
 }
 
-const OLIVE = '#7A9A4A'
 const STONE = '#6E6A59'
 const SAND = '#EAE3D2'
+const BUSH = '#20271A'
 
 function DayLabel(day: ItineraryDay, isAr: boolean) {
   const base = isAr ? 'اليوم' : 'Day'
@@ -64,19 +64,19 @@ function MomentLabel(m: string, isAr: boolean) {
 function DayCard({
   day,
   index,
-  total,
   accentColor,
   isAr,
   isOpen,
   onToggle,
+  headerRef,
 }: {
   day: ItineraryDay
   index: number
-  total: number
   accentColor: string
   isAr: boolean
   isOpen: boolean
   onToggle: () => void
+  headerRef: (el: HTMLButtonElement | null) => void
 }) {
   const reduced = useReducedMotion()
   const ref = useRef<HTMLDivElement>(null)
@@ -90,14 +90,16 @@ function DayCard({
       transition={{ duration: 0.5, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] as const }}
       style={{
         background: '#fff',
-        borderRadius: 12,
-        border: '1px solid #E5E0D8',
+        borderRadius: 14,
+        border: `1px solid ${isOpen ? accentColor : '#E5E0D8'}`,
         overflow: 'hidden',
-        boxShadow: '0 2px 12px rgba(32,39,26,0.06)',
+        boxShadow: isOpen ? '0 8px 28px rgba(32,39,26,0.14)' : '0 2px 12px rgba(32,39,26,0.06)',
+        transition: 'box-shadow 0.25s, border-color 0.25s',
       }}
     >
-      {/* Header */}
+      {/* Header — doubles as the route-line node anchor for the desktop SVG */}
       <button
+        ref={headerRef}
         onClick={onToggle}
         style={{
           width: '100%', display: 'flex', alignItems: 'center',
@@ -115,7 +117,7 @@ function DayCard({
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontFamily: 'var(--font-display, sans-serif)',
           fontWeight: 700, fontSize: 16,
-          color: isOpen ? '#fff' : '#fff',
+          color: '#fff',
           border: `2px solid ${isOpen ? 'rgba(255,255,255,0.4)' : 'transparent'}`,
         }}>
           {day.dayNumber}
@@ -133,7 +135,7 @@ function DayCard({
           <div style={{
             fontFamily: 'var(--font-display, sans-serif)',
             fontWeight: 600, fontSize: '1.05rem',
-            color: isOpen ? '#fff' : '#20271A',
+            color: isOpen ? '#fff' : BUSH,
           }}>
             {day.title}
           </div>
@@ -192,16 +194,16 @@ function DayCard({
                   <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                     <span style={{ color: accentColor, marginTop: 2, flexShrink: 0 }}>→</span>
                     <div>
-                      <span style={{ fontWeight: 600, color: '#20271A', fontSize: '0.9rem', fontFamily: 'var(--font-body, sans-serif)' }}>
+                      <span style={{ fontWeight: 600, color: BUSH, fontSize: '0.9rem', fontFamily: 'var(--font-body, sans-serif)' }}>
                         {a.name}
                       </span>
                       {a.moment && (
-                        <span style={{ color: STONE, fontSize: '0.8rem', marginLeft: 6 }}>
+                        <span style={{ color: STONE, fontSize: '0.8rem', marginInlineStart: 6 }}>
                           · {MomentLabel(a.moment, isAr)}
                         </span>
                       )}
                       {a.optional && (
-                        <span style={{ color: '#C9A24B', fontSize: '0.8rem', marginLeft: 6 }}>
+                        <span style={{ color: '#C9A24B', fontSize: '0.8rem', marginInlineStart: 6 }}>
                           · {isAr ? 'اختياري' : 'optional'}
                         </span>
                       )}
@@ -226,7 +228,7 @@ function DayCard({
               <div style={{ fontSize: 10, fontWeight: 700, color: STONE, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
                 🍽 {isAr ? 'الوجبات' : 'Meals'}
               </div>
-              <div style={{ fontSize: '0.875rem', color: '#20271A' }}>
+              <div style={{ fontSize: '0.875rem', color: BUSH }}>
                 <MealsLine day={day} isAr={isAr} />
               </div>
             </div>
@@ -235,7 +237,7 @@ function DayCard({
                 <div style={{ fontSize: 10, fontWeight: 700, color: STONE, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
                   🏨 {isAr ? 'الإقامة' : 'Stay'}
                 </div>
-                <div style={{ fontSize: '0.875rem', color: '#20271A' }}>{day.accommodation}</div>
+                <div style={{ fontSize: '0.875rem', color: BUSH }}>{day.accommodation}</div>
               </div>
             )}
             {day.distanceKm && (
@@ -243,7 +245,7 @@ function DayCard({
                 <div style={{ fontSize: 10, fontWeight: 700, color: STONE, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
                   📏 {isAr ? 'المسافة' : 'Distance'}
                 </div>
-                <div style={{ fontSize: '0.875rem', color: '#20271A' }}>{day.distanceKm} km</div>
+                <div style={{ fontSize: '0.875rem', color: BUSH }}>{day.distanceKm} km</div>
               </div>
             )}
           </div>
@@ -257,7 +259,33 @@ export default function ItineraryRouteLine({ days, accentColor, isAr }: Itinerar
   const [openIndex, setOpenIndex] = useState(0)
   const reduced = useReducedMotion()
   const sectionRef = useRef<HTMLDivElement>(null)
+  const cardsColRef = useRef<HTMLDivElement>(null)
+  const headerRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const [nodeCenters, setNodeCenters] = useState<number[]>([])
   const lineInView = useInView(sectionRef, { once: true, margin: '-80px' })
+
+  // Measure each day-card header's vertical center relative to the cards column,
+  // so route-line nodes track real card positions instead of an assumed fixed pitch
+  // (headers are fixed-height; only the expandable body below them varies).
+  useLayoutEffect(() => {
+    function measure() {
+      const colTop = cardsColRef.current?.getBoundingClientRect().top ?? 0
+      const centers = headerRefs.current.map((el) => {
+        if (!el) return 0
+        const r = el.getBoundingClientRect()
+        return r.top - colTop + r.height / 2
+      })
+      setNodeCenters(centers)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    if (cardsColRef.current) ro.observe(cardsColRef.current)
+    window.addEventListener('resize', measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [days.length])
 
   if (days.length === 0) {
     return (
@@ -267,13 +295,15 @@ export default function ItineraryRouteLine({ days, accentColor, isAr }: Itinerar
     )
   }
 
-  const svgH = days.length * 100
-  const nodeY = (i: number) => 50 + i * 100
+  const hasMeasurements = nodeCenters.length === days.length && nodeCenters.every((c) => c > 0)
+  const nodeY = (i: number) => (hasMeasurements ? nodeCenters[i] : 50 + i * 100)
+  const svgH = hasMeasurements ? nodeCenters[nodeCenters.length - 1] + 50 : days.length * 100
+  const pathD = `M 28 0 Q 32 ${svgH * 0.25} 24 ${svgH * 0.5} Q 32 ${svgH * 0.75} 28 ${svgH}`
 
   return (
     <div ref={sectionRef} dir={isAr ? 'rtl' : 'ltr'} style={{ display: 'flex', gap: 0, alignItems: 'flex-start' }}>
-      {/* Route line SVG — desktop only via CSS */}
-      <div style={{ flexShrink: 0, width: 56, display: 'none' }} className="md-route-line" aria-hidden="true">
+      {/* Route line SVG — the signature element, desktop only */}
+      <div className="hidden md:block shrink-0 w-14" aria-hidden="true">
         <svg
           width={56}
           height={svgH}
@@ -281,41 +311,40 @@ export default function ItineraryRouteLine({ days, accentColor, isAr }: Itinerar
           style={{ overflow: 'visible' }}
         >
           {/* Track */}
-          <path
-            d={`M 28 0 Q 32 ${svgH * 0.25} 24 ${svgH * 0.5} Q 32 ${svgH * 0.75} 28 ${svgH}`}
-            fill="none"
-            stroke="#E5E0D8"
-            strokeWidth={3}
-          />
+          <path d={pathD} fill="none" stroke="#E5E0D8" strokeWidth={4} />
           {/* Animated fill */}
           {!reduced && (
             <motion.path
-              d={`M 28 0 Q 32 ${svgH * 0.25} 24 ${svgH * 0.5} Q 32 ${svgH * 0.75} 28 ${svgH}`}
+              d={pathD}
               fill="none"
               stroke={accentColor}
-              strokeWidth={3}
+              strokeWidth={4}
               strokeLinecap="round"
               initial={{ pathLength: 0 }}
               animate={lineInView ? { pathLength: 1 } : {}}
               transition={{ duration: 1.8, ease: 'easeInOut', delay: 0.2 }}
+              style={{ filter: `drop-shadow(0 2px 4px ${accentColor}66)` }}
             />
           )}
           {reduced && (
-            <path
-              d={`M 28 0 Q 32 ${svgH * 0.25} 24 ${svgH * 0.5} Q 32 ${svgH * 0.75} 28 ${svgH}`}
-              fill="none"
-              stroke={accentColor}
-              strokeWidth={3}
-            />
+            <path d={pathD} fill="none" stroke={accentColor} strokeWidth={4} />
           )}
           {/* Day nodes */}
           {days.map((day, i) => (
             <g key={day.id}>
-              <circle cx={28} cy={nodeY(i)} r={18} fill={i === openIndex ? accentColor : '#fff'} stroke={accentColor} strokeWidth={2.5} />
+              <circle
+                cx={28}
+                cy={nodeY(i)}
+                r={20}
+                fill={i === openIndex ? accentColor : '#fff'}
+                stroke={accentColor}
+                strokeWidth={i === openIndex ? 0 : 3}
+                style={{ filter: i === openIndex ? `drop-shadow(0 2px 6px ${accentColor}88)` : undefined }}
+              />
               <text
                 x={28} y={nodeY(i) + 5}
                 textAnchor="middle"
-                fontSize={12}
+                fontSize={13}
                 fontWeight={700}
                 fill={i === openIndex ? '#fff' : accentColor}
                 fontFamily="var(--font-display, sans-serif)"
@@ -328,17 +357,17 @@ export default function ItineraryRouteLine({ days, accentColor, isAr }: Itinerar
       </div>
 
       {/* Day cards */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div ref={cardsColRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {days.map((day, i) => (
           <DayCard
             key={day.id}
             day={day}
             index={i}
-            total={days.length}
             accentColor={accentColor}
             isAr={isAr}
             isOpen={openIndex === i}
             onToggle={() => setOpenIndex(openIndex === i ? -1 : i)}
+            headerRef={(el) => { headerRefs.current[i] = el }}
           />
         ))}
       </div>

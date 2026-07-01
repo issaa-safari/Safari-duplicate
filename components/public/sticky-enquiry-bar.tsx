@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import Link from 'next/link'
 
@@ -12,7 +12,7 @@ interface StickyEnquiryBarProps {
   isAr: boolean
   isAvailable: boolean
   bookHref: string
-  heroRef: React.RefObject<HTMLElement | null>
+  heroElementId: string
 }
 
 const OLIVE = '#7A9A4A'
@@ -25,19 +25,21 @@ export default function StickyEnquiryBar({
   isAr,
   isAvailable,
   bookHref,
-  heroRef,
+  heroElementId,
 }: StickyEnquiryBarProps) {
   const [visible, setVisible] = useState(false)
   const reduced = useReducedMotion()
 
   useEffect(() => {
+    const el = document.getElementById(heroElementId)
+    if (!el) return
     const observer = new IntersectionObserver(
       ([entry]) => setVisible(!entry.isIntersecting),
       { threshold: 0.1 },
     )
-    if (heroRef.current) observer.observe(heroRef.current)
+    observer.observe(el)
     return () => observer.disconnect()
-  }, [heroRef])
+  }, [heroElementId])
 
   return (
     <AnimatePresence>
@@ -66,7 +68,7 @@ export default function StickyEnquiryBar({
               </span>
               <span style={{ fontSize: '1.4rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-display, sans-serif)' }}>
                 ${price.toLocaleString()}
-                <span style={{ fontSize: '0.55em', color: 'rgba(255,255,255,0.5)', marginLeft: 5 }}>
+                <span style={{ fontSize: '0.55em', color: 'rgba(255,255,255,0.5)', marginInlineStart: 5 }}>
                   /{isAr ? 'شخص' : 'person'}
                 </span>
               </span>

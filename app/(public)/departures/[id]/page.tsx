@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import WhatsAppButton from '@/components/public/whatsapp-button'
@@ -12,6 +11,8 @@ import type { ItineraryDay } from '@/components/public/itinerary-route-line'
 import GalleryGrid from '@/components/public/gallery-grid'
 import TourEnquiryForm from '@/components/public/tour-enquiry-form'
 import SectionReveal from '@/components/public/section-reveal'
+import DepartureHero from '@/components/public/departure-hero'
+import StickyEnquiryBar from '@/components/public/sticky-enquiry-bar'
 import { getServerLocale } from '@/lib/i18n'
 import { whatsappLink } from '@/lib/site'
 
@@ -319,150 +320,78 @@ export default async function DepartureDetailPage({
 
       <main>
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
-        <section style={{
-          position: 'relative',
-          minHeight: 520,
-          background: BUSH,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
-          overflow: 'hidden',
-        }}>
-          {/* Background image */}
-          {tour?.hero_image_url && (
-            <div style={{ position: 'absolute', inset: 0 }}>
-              <SafariImage
-                src={tour.hero_image_url}
-                seed={departure.tour_id}
-                alt={title ?? ''}
-                className="w-full h-full"
-                sizes="100vw"
-                priority
-              />
-              <div style={{
-                position: 'absolute', inset: 0,
-                background: 'linear-gradient(to top, rgba(32,39,26,0.92) 0%, rgba(32,39,26,0.4) 60%, rgba(32,39,26,0.1) 100%)',
-              }} />
-            </div>
-          )}
+        <DepartureHero
+          tourTitle={title ?? ''}
+          backToTourHref={`/tours/${departure.tour_id}?lang=${locale}`}
+          backToTourLabel={t.backToTour}
+          departureLabel={t.departure}
+          dateRangeText={`${formatDate(departure.start_date, locale)} ${isAr ? '←' : '→'} ${formatDate(departure.end_date, locale)}`}
+          daysCount={daysCount}
+          daysLabel={t.days}
+          statusLabel={statusLabel}
+          statusColor={statusColor}
+          priceUsd={departure.price_usd}
+          perPersonLabel={t.perPerson}
+          isAvailable={isAvailable}
+          bookHref={bookHref}
+          bookNowLabel={t.bookNow}
+          whatsappHref={waHref}
+          whatsappLabel={t.whatsapp}
+          accentColor={accent}
+          isAr={isAr}
+          imageSlot={
+            <SafariImage
+              src={tour?.hero_image_url}
+              seed={departure.tour_id}
+              alt={title ?? ''}
+              className="w-full h-full"
+              sizes="100vw"
+              priority
+            />
+          }
+        />
 
-          <div style={{ position: 'relative', maxWidth: 1120, margin: '0 auto', padding: '0 24px 56px', width: '100%' }}>
-            {/* Back link */}
-            <Link href={`/tours/${departure.tour_id}?lang=${locale}`} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              color: 'rgba(255,255,255,0.75)', fontSize: '0.85rem',
-              textDecoration: 'none', marginBottom: 32,
-              fontFamily: 'var(--font-body, sans-serif)',
-            }}>
-              {isAr ? '→' : '←'} {t.backToTour}
-            </Link>
-
-            {/* Departure badge */}
-            <div style={{ marginBottom: 16 }}>
-              <span style={{
-                background: accent, color: '#fff',
-                fontSize: '0.72rem', fontWeight: 700,
-                letterSpacing: '0.1em', textTransform: 'uppercase',
-                padding: '5px 14px', borderRadius: 99,
-                fontFamily: 'var(--font-body, sans-serif)',
-              }}>
-                {t.departure}
-              </span>
-            </div>
-
-            <h1 style={{
-              fontFamily: 'var(--font-display, "Readex Pro", sans-serif)',
-              fontSize: 'clamp(1.8rem, 5vw, 3rem)',
-              fontWeight: 700,
-              color: '#fff',
-              margin: '0 0 8px',
-              lineHeight: 1.2,
-            }}>
-              {title}
-            </h1>
-
-            <p style={{
-              color: 'rgba(255,255,255,0.75)',
-              fontFamily: 'var(--font-body, sans-serif)',
-              fontSize: '1.1rem',
-              margin: '0 0 32px',
-            }}>
-              {formatDate(departure.start_date, locale)} → {formatDate(departure.end_date, locale)}
-              {daysCount > 0 && ` · ${daysCount} ${t.days}`}
-            </p>
-
-            {/* Price + CTA row */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16 }}>
-              <div>
-                <div style={{
-                  fontFamily: 'var(--font-display, sans-serif)',
-                  fontSize: 'clamp(2rem, 5vw, 2.6rem)',
-                  fontWeight: 700,
-                  color: '#fff',
-                  lineHeight: 1,
-                }}>
-                  ${departure.price_usd?.toLocaleString()}
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', fontFamily: 'var(--font-body, sans-serif)' }}>
-                  {t.perPerson}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                {isAvailable && (
-                  <Link href={bookHref} style={{
-                    background: accent, color: '#fff',
-                    padding: '13px 28px', borderRadius: 8,
-                    fontWeight: 700, fontSize: '1rem',
-                    textDecoration: 'none',
-                    fontFamily: 'var(--font-body, sans-serif)',
-                  }}>
-                    {t.bookNow}
-                  </Link>
-                )}
-                <Link href={waHref} target="_blank" rel="noopener noreferrer" style={{
-                  background: '#25D366', color: '#fff',
-                  padding: '13px 28px', borderRadius: 8,
-                  fontWeight: 700, fontSize: '1rem',
-                  textDecoration: 'none',
-                  fontFamily: 'var(--font-body, sans-serif)',
-                }}>
-                  {t.whatsapp}
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+        <StickyEnquiryBar
+          price={departure.price_usd}
+          accentColor={accent}
+          enquireHref="#enquiry-form"
+          whatsappHref={waHref}
+          isAr={isAr}
+          isAvailable={isAvailable}
+          bookHref={bookHref}
+          heroElementId="departure-hero"
+        />
 
         {/* ── Quick facts bar ───────────────────────────────────────────────── */}
-        <section style={{ background: SAND, borderBottom: `3px solid ${accent}` }}>
-          <div style={{
-            maxWidth: 1120, margin: '0 auto', padding: '0 24px',
-            display: 'flex', flexWrap: 'wrap', gap: 0,
-          }}>
-            {[
-              { label: t.startDate, value: formatDate(departure.start_date, locale) },
-              { label: t.endDate, value: formatDate(departure.end_date, locale) },
-              { label: t.duration, value: `${daysCount} ${t.days}` },
-              { label: t.spots, value: `${availableSpots} / ${departure.max_seats}` },
-              { label: t.status, value: statusLabel, color: statusColor },
-              ...(tour?.terrain ? [{ label: t.terrain, value: tour.terrain }] : []),
-              ...(tour?.difficulty_rating ? [{ label: t.difficulty, value: `${tour.difficulty_rating}/10` }] : []),
-              ...(tour?.max_group_size ? [{ label: t.groupSize, value: `Max ${tour.max_group_size}` }] : []),
-            ].map((fact, i) => (
-              <div key={i} style={{
-                padding: '20px 24px',
-                borderRight: `1px solid rgba(110,106,89,0.2)`,
-                minWidth: 120,
+        <section style={{ padding: '40px 24px', background: '#fff' }}>
+          <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+            <SectionReveal>
+              <div style={{
+                background: SAND, borderRadius: 16, padding: '8px 8px',
+                display: 'flex', flexWrap: 'wrap',
+                border: '1px solid #DDD8CC',
               }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: STONE, fontFamily: 'var(--font-body, sans-serif)', marginBottom: 4 }}>
-                  {fact.label}
-                </div>
-                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: (fact as any).color ?? BUSH, fontFamily: 'var(--font-body, sans-serif)' }}>
-                  {fact.value}
-                </div>
+                {([
+                  { label: t.startDate, value: formatDate(departure.start_date, locale) },
+                  { label: t.endDate, value: formatDate(departure.end_date, locale) },
+                  { label: t.duration, value: `${daysCount} ${t.days}` },
+                  { label: t.spots, value: `${availableSpots} / ${departure.max_seats}` },
+                  { label: t.status, value: statusLabel, color: statusColor },
+                  ...(tour?.terrain ? [{ label: t.terrain, value: tour.terrain as string }] : []),
+                  ...(tour?.difficulty_rating ? [{ label: t.difficulty, value: `${tour.difficulty_rating}/10` }] : []),
+                  ...(tour?.max_group_size ? [{ label: t.groupSize, value: `Max ${tour.max_group_size}` }] : []),
+                ] as { label: string; value: string; color?: string }[]).map((fact, i) => (
+                  <div key={i} style={{ padding: '16px 20px', minWidth: 130, flex: '1 1 130px' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: STONE, fontFamily: 'var(--font-body, sans-serif)', marginBottom: 4 }}>
+                      {fact.label}
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: fact.color ?? BUSH, fontFamily: 'var(--font-display, sans-serif)' }}>
+                      {fact.value}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </SectionReveal>
           </div>
         </section>
 
@@ -610,7 +539,7 @@ export default async function DepartureDetailPage({
         )}
 
         {/* ── Enquiry form ──────────────────────────────────────────────────── */}
-        <section style={{ padding: '72px 24px', background: '#fff' }}>
+        <section id="enquiry-form" style={{ padding: '72px 24px', background: '#fff' }}>
           <div style={{ maxWidth: 700, margin: '0 auto' }}>
             <SectionReveal>
               <SectionHeading accent={accent}>{t.enquireForm}</SectionHeading>
