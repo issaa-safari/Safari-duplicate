@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 
 export async function createDeparture(formData: FormData) {
@@ -25,6 +26,7 @@ export async function createDeparture(formData: FormData) {
   if (bookedSeats > maxSeats) throw new Error('Booked seats cannot exceed max seats.')
 
   const admin = createAdminClient()
+  await assertAdminAccess(admin, user.email)
   const { data: newDep, error } = await admin
     .from('departures')
     .insert({

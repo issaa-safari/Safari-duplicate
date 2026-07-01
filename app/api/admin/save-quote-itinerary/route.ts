@@ -24,7 +24,10 @@ export async function POST(request: Request) {
     p_days: days,
   })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  if (error) {
+    console.error('[save-quote-itinerary] rpc failed', error)
+    return NextResponse.json({ error: 'Failed to save itinerary' }, { status: 400 })
+  }
 
   return NextResponse.json({ success: true })
 }

@@ -28,7 +28,10 @@ export async function POST(request: Request) {
       .insert({ name: cleanName, description_en: descEn, description_ar: descAr, is_active: true })
       .select('id, name')
       .single()
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('[create-lookup]', error)
+      return NextResponse.json({ error: 'Request failed' }, { status: 500 })
+    }
     return NextResponse.json({ item: data })
   }
 
@@ -38,7 +41,10 @@ export async function POST(request: Request) {
       .insert({ name: cleanName, destination_id: destinationId || null, description_en: descEn, description_ar: descAr, is_active: true })
       .select('id, name, destination_id')
       .single()
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('[create-lookup]', error)
+      return NextResponse.json({ error: 'Request failed' }, { status: 500 })
+    }
     return NextResponse.json({ item: data })
   }
 
@@ -48,7 +54,10 @@ export async function POST(request: Request) {
       .insert({ name: cleanName, destination_id: destinationId || null, description_en: descEn, description_ar: descAr, is_active: true })
       .select('id, name, destination_id')
       .single()
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('[create-lookup]', error)
+      return NextResponse.json({ error: 'Request failed' }, { status: 500 })
+    }
     return NextResponse.json({ item: data })
   }
 

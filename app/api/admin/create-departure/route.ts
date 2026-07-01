@@ -57,6 +57,9 @@ export async function POST(request: Request) {
     .select('id')
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[create-departure]', error)
+    return NextResponse.json({ error: 'Request failed' }, { status: 500 })
+  }
   return NextResponse.json({ success: true, id: data.id })
 }

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 
 export async function createTour(formData: FormData) {
@@ -27,6 +28,7 @@ export async function createTour(formData: FormData) {
 
   // All DB work through the admin client — no cookies, bypasses RLS, logout-safe
   const admin = createAdminClient()
+  await assertAdminAccess(admin, user.email)
 
   // Ensure the slug is unique (append -2, -3… if taken)
   let slug = baseSlug

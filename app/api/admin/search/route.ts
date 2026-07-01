@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { NextRequest, NextResponse } from 'next/server'
 import type { SearchQuote, SearchRequest } from '@/lib/types'
 
@@ -16,10 +17,21 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const q = req.nextUrl.searchParams.get('q')?.trim() ?? ''
-  if (q.length < 2) return NextResponse.json({ quotes: [], clients: [], requests: [] })
-
   const admin = createAdminClient()
+  try {
+    await assertAdminAccess(admin, user.email)
+  } catch {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const rawQ = req.nextUrl.searchParams.get('q')?.trim() ?? ''
+  if (rawQ.length < 2) return NextResponse.json({ quotes: [], clients: [], requests: [] })
+  if (!/^[\p{L}\p{N}\s@._+-]{2,64}$/u.test(rawQ)) {
+    return NextResponse.json({ quotes: [], clients: [], requests: [] })
+  }
+
+  // Escape PostgREST filter control characters before embedding in the .or() expression.
+  const q = rawQ.replace(/[%_,()*]/g, '\\$&')
   const like = `%${q}%`
 
   const [{ data: quotesRaw }, { data: clients }, { data: requestsRaw }] = await Promise.all([

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
@@ -21,6 +22,7 @@ export async function updatePark(formData: FormData) {
   if (!name) throw new Error('Name is required.')
 
   const admin = createAdminClient()
+  await assertAdminAccess(admin, user.email)
   const { error } = await admin.from('parks').update({
     name,
     country,
@@ -42,6 +44,7 @@ export async function deletePark(formData: FormData) {
 
   const id = formData.get('id') as string
   const admin = createAdminClient()
+  await assertAdminAccess(admin, user.email)
   const { error } = await admin.from('parks').delete().eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/content/parks')

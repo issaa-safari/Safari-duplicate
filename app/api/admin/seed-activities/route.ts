@@ -132,7 +132,10 @@ async function handle() {
     const { error, count } = await admin
       .from('activities')
       .insert(toInsert, { count: 'exact' })
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('[seed-activities]', error)
+      return NextResponse.json({ error: 'Request failed' }, { status: 500 })
+    }
     inserted = count ?? toInsert.length
   }
 

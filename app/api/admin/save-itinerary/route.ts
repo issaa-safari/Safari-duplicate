@@ -18,14 +18,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  const isUuid = (v: unknown): v is string =>
+    typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
+
   // Delete existing days for this tour that are no longer present
-  const keepIds = (days as any[]).filter((d) => d.id).map((d) => d.id)
+  const keepIds = (days as any[]).filter((d) => isUuid(d.id)).map((d) => d.id)
   let delQuery = admin.from('tour_days').delete().eq('tour_id', tourId)
   if (keepIds.length > 0) {
     delQuery = delQuery.not('id', 'in', `(${keepIds.join(',')})`)
   }
   const { error: delErr } = await delQuery
-  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 })
+  if (delErr) {
+    console.error('[save-itinerary] delete failed', delErr)
+    return NextResponse.json({ error: 'Failed to save itinerary' }, { status: 500 })
+  }
 
   // Upsert each day
   for (const d of days as any[]) {
@@ -49,12 +55,18 @@ export async function POST(request: Request) {
       image_url: d.image_url ?? null,
       updated_at: new Date().toISOString(),
     }
-    if (d.id) {
+    if (isUuid(d.id)) {
       const { error } = await admin.from('tour_days').update(row).eq('id', d.id)
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      if (error) {
+        console.error('[save-itinerary] update failed', error)
+        return NextResponse.json({ error: 'Failed to save itinerary' }, { status: 500 })
+      }
     } else {
       const { error } = await admin.from('tour_days').insert(row)
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      if (error) {
+        console.error('[save-itinerary] insert failed', error)
+        return NextResponse.json({ error: 'Failed to save itinerary' }, { status: 500 })
+      }
     }
   }
 

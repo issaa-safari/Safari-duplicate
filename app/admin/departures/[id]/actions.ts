@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
@@ -22,6 +23,7 @@ export async function updateDeparture(id: string, formData: FormData) {
   if (isNaN(priceUsd)) throw new Error('Price is required.')
 
   const admin = createAdminClient()
+  await assertAdminAccess(admin, user.email)
   const { error } = await admin
     .from('departures')
     .update({
@@ -45,6 +47,7 @@ export async function toggleDeparturePublished(id: string) {
   if (!user) redirect('/admin/login')
 
   const admin = createAdminClient()
+  await assertAdminAccess(admin, user.email)
 
   // Get current state
   const { data: departure } = await admin

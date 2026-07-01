@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 
 export async function createRequest(formData: FormData) {
@@ -12,6 +13,7 @@ export async function createRequest(formData: FormData) {
 
   // Service-role client — all DB work goes through this. No cookies, bypasses RLS.
   const admin = createAdminClient()
+  await assertAdminAccess(admin, user.email)
 
   const email = (formData.get('email') as string).toLowerCase().trim()
   const firstName = formData.get('firstName') as string

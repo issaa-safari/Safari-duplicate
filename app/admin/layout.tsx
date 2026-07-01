@@ -3,6 +3,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminProfile } from '@/lib/auth/admin-access'
 import AdminSidebar from './sidebar'
 
+// Route-level access is enforced by proxy.ts (see updateSession in
+// lib/supabase/middleware.ts), which redirects unauthenticated/non-admin
+// visitors before this layout renders. This component only decides whether
+// to show the admin chrome.
 export default async function AdminLayout({
   children,
 }: {

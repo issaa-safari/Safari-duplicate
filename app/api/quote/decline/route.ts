@@ -40,8 +40,8 @@ export async function POST(req: NextRequest) {
     await admin.from('quotes').update({ status: 'declined' }).eq('id', quoteId)
 
     return NextResponse.json({ ok: true })
-  } catch (err: any) {
+  } catch (err) {
     console.error('[quote/decline]', err)
-    return NextResponse.json({ error: err.message ?? 'Server error.' }, { status: 500 })
+    return NextResponse.json({ error: 'Server error.' }, { status: 500 })
   }
 }

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 
 export async function saveSettings(formData: FormData) {
@@ -29,6 +30,7 @@ export async function saveSettings(formData: FormData) {
   }
 
   const admin = createAdminClient()
+  await assertAdminAccess(admin, user.email)
   const { error } = await admin
     .from('company_settings')
     .update({

@@ -1,5 +1,17 @@
+import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+
+function isValidSignature(rawBody: string, signatureHeader: string | null): boolean {
+  const appSecret = process.env.WHATSAPP_APP_SECRET
+  if (!appSecret || !signatureHeader) return false
+
+  const expected = 'sha256=' + crypto.createHmac('sha256', appSecret).update(rawBody).digest('hex')
+  const sigBuf = Buffer.from(signatureHeader)
+  const expBuf = Buffer.from(expected)
+  if (sigBuf.length !== expBuf.length) return false
+  return crypto.timingSafeEqual(sigBuf, expBuf)
+}
 
 async function sendWhatsAppMessage(to: string, body: string) {
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
@@ -35,9 +47,14 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const rawBody = await request.text()
+  if (!isValidSignature(rawBody, request.headers.get('x-hub-signature-256'))) {
+    return new NextResponse('Invalid signature', { status: 401 })
+  }
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const body: any = await request.json()
+    const body: any = JSON.parse(rawBody)
     const admin = createAdminClient()
 
     const entries: unknown[] = body?.entry ?? []

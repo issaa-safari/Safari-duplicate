@@ -42,7 +42,51 @@ export async function POST(
       )
     }
 
-    // 2. Resolve the client — mandatory; abort if this fails
+    // 2. Reserve the seats atomically. The .eq('booked_seats', ...) check makes
+    // this an optimistic-concurrency compare-and-swap: if another request has
+    // booked in the meantime, booked_seats will have moved and this update
+    // affects zero rows, so we can detect and reject the conflict instead of
+    // overselling.
+    const { data: reserved, error: reserveError } = await admin
+      .from('departures')
+      .update({ booked_seats: departure.booked_seats + groupSize })
+      .eq('id', id)
+      .eq('booked_seats', departure.booked_seats)
+      .select('id')
+
+    if (reserveError) {
+      console.error('[book] seat reservation failed', reserveError)
+      return NextResponse.json({ error: 'Failed to reserve seats' }, { status: 500 })
+    }
+    if (!reserved || reserved.length === 0) {
+      return NextResponse.json(
+        { error: 'These spots were just booked by someone else — please refresh and try again.' },
+        { status: 409 }
+      )
+    }
+
+    // From here on, seats are reserved. Any fatal failure below must release
+    // them again so we don't leak booked_seats without a matching booking.
+    // Re-read the current value and CAS it down rather than resetting to the
+    // pre-reservation snapshot, so we don't clobber a seat count that moved
+    // due to another concurrent (successful) booking in the meantime.
+    const releaseSeats = async () => {
+      try {
+        const { data: current } = await admin
+          .from('departures')
+          .select('booked_seats')
+          .eq('id', id)
+          .single()
+        if (!current) return
+        await admin
+          .from('departures')
+          .update({ booked_seats: Math.max(0, current.booked_seats - groupSize) })
+          .eq('id', id)
+          .eq('booked_seats', current.booked_seats)
+      } catch { /* best-effort release */ }
+    }
+
+    // 3. Resolve the client — mandatory; abort if this fails
     const lead = travellers[0]
     let clientId: string
     try {
@@ -54,13 +98,14 @@ export async function POST(
       })
     } catch (err) {
       console.error('[book] client resolution failed', err)
+      await releaseSeats()
       return NextResponse.json(
         { error: 'Could not identify client — please check the lead traveller email.' },
         { status: 500 }
       )
     }
 
-    // 3. Create a tracked request for attribution before the booking row exists
+    // 4. Create a tracked request for attribution before the booking row exists
     const { data: newRequest, error: requestError } = await admin
       .from('requests')
       .insert({
@@ -78,7 +123,7 @@ export async function POST(
       // Not fatal — proceed without request attribution rather than block the booking
     }
 
-    // 4. Create booking with client_id + departure_id set from the start
+    // 5. Create booking with client_id + departure_id set from the start
     const { data: booking, error: bookingError } = await admin
       .from('bookings')
       .insert({
@@ -93,10 +138,11 @@ export async function POST(
       .single()
 
     if (bookingError || !booking) {
+      await releaseSeats()
       return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 })
     }
 
-    // 5. Insert traveller records
+    // 6. Insert traveller records
     const travellerRecords = travellers.map((t: BookingTraveller & { firstName?: string; lastName?: string; dateOfBirth?: string; passportNumber?: string; nationality?: string }) => ({
       booking_id: booking.id,
       first_name: t.firstName ?? t.first_name,
@@ -113,20 +159,11 @@ export async function POST(
       .insert(travellerRecords)
 
     if (travellerError) {
+      await releaseSeats()
       return NextResponse.json(
         { error: 'Failed to save traveller information' },
         { status: 500 }
       )
-    }
-
-    // 6. Update booked seats — required for availability accuracy
-    const { error: updateError } = await admin
-      .from('departures')
-      .update({ booked_seats: departure.booked_seats + groupSize })
-      .eq('id', id)
-
-    if (updateError) {
-      return NextResponse.json({ error: 'Failed to update availability' }, { status: 500 })
     }
 
     // Best-effort: finance stub (requires group_25 migration)

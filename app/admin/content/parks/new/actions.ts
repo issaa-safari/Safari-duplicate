@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 
 export async function createPark(formData: FormData) {
@@ -19,6 +20,7 @@ export async function createPark(formData: FormData) {
   if (!name) throw new Error('Name is required.')
 
   const admin = createAdminClient()
+  await assertAdminAccess(admin, user.email)
   const { error } = await admin.from('parks').insert({
     name,
     country,

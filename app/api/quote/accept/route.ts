@@ -67,6 +67,7 @@ async function createBookingFromAcceptedQuote(
         await admin.from('departures')
           .update({ booked_seats: (dep.booked_seats ?? 0) + numTravellers })
           .eq('id', quote.departure_id)
+          .eq('booked_seats', dep.booked_seats)
       }
     } catch { /* seat reservation is non-critical */ }
   }
@@ -156,8 +157,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true })
-  } catch (err: any) {
+  } catch (err) {
     console.error('[quote/accept]', err)
-    return NextResponse.json({ error: err.message ?? 'Server error.' }, { status: 500 })
+    return NextResponse.json({ error: 'Server error.' }, { status: 500 })
   }
 }

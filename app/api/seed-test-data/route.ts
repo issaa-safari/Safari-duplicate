@@ -1,10 +1,24 @@
+import crypto from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
+import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 })
+  }
+
   try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     console.log('🚀 Starting test data creation...\n')
     const admin = createAdminClient()
+    await assertAdminAccess(admin, user.email)
 
     // Step 1: Create client
     const { data: clientData, error: clientError } = await admin
@@ -325,7 +339,7 @@ export async function POST(request: NextRequest) {
     console.log('✓ Step 9: Added 5 price line items (1 optional)')
 
     // Step 10: Create quote delivery
-    const accessToken = 'test-' + Math.random().toString(36).substr(2, 20)
+    const accessToken = crypto.randomBytes(32).toString('hex')
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 30)
 
@@ -347,30 +361,17 @@ export async function POST(request: NextRequest) {
     const result = {
       success: true,
       message: 'Test quotation created successfully',
-      data: {
-        clientId,
-        requestId,
-        quoteId,
-        versionId,
-        accessToken,
-        pdfUrl: `/quote/${accessToken}/print`,
-        adminUrl: `/admin/quotes/${quoteId}/versions/${versionId}`,
-        pricing: {
-          costBase: 5000.00,
-          markupPercent: 40,
-          markupAmount: 2000.00,
-          clientPrice: 7000.00,
-          perPersonSharing: 1750.00,
-          perPersonSingle: 2100.00,
-        },
-      },
+      data: { quoteId },
     }
 
     return NextResponse.json(result)
   } catch (error) {
     console.error('❌ Error creating test data:', error)
+    if (error instanceof Error && error.message.includes('not authorized')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create test data' },
+      { error: 'Failed to create test data' },
       { status: 500 }
     )
   }

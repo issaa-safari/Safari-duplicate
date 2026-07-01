@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 
 export async function createVehicle(formData: FormData) {
@@ -22,6 +23,7 @@ export async function createVehicle(formData: FormData) {
   if (count < 1) throw new Error('Count must be at least 1.')
 
   const admin = createAdminClient()
+  await assertAdminAccess(admin, user.email)
   const { error } = await admin
     .from('vehicles')
     .insert({

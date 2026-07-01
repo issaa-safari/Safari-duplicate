@@ -26,7 +26,10 @@ export async function POST(request: Request) {
     .update({ stage, updated_at: new Date().toISOString() })
     .eq('id', requestId)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[update-stage]', error)
+    return NextResponse.json({ error: 'Request failed' }, { status: 500 })
+  }
 
   return NextResponse.json({ success: true })
 }
