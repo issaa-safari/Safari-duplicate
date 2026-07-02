@@ -19,7 +19,8 @@ import Testimonials from '@/components/public/testimonials'
 import SectionReveal from '@/components/public/section-reveal'
 import StickyEnquiryBar from '@/components/public/sticky-enquiry-bar'
 import { getServerLocale } from '@/lib/i18n'
-import { whatsappLink } from '@/lib/site'
+import { site, whatsappLink } from '@/lib/site'
+import StructuredData, { touristTripJsonLd } from '@/components/public/structured-data'
 
 export const dynamic = 'force-dynamic'
 
@@ -263,6 +264,19 @@ export default async function TourDetailPage({
 
   return (
     <div dir={isAr ? 'rtl' : 'ltr'} style={{ background: '#fff' }}>
+      <StructuredData
+        data={touristTripJsonLd({
+          url: `${site.url}/tours/${id}`,
+          name: title ?? '',
+          description: overview,
+          image: tour.hero_image_url,
+          durationDays: tour.duration_days,
+          priceUsd: lowestPrice,
+          available: hasAvailable,
+          providerName: site.name,
+          providerUrl: site.url,
+        })}
+      />
       <Suspense><PublicHeader /></Suspense>
 
       {/* 1. Hero */}

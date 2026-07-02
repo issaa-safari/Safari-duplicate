@@ -14,7 +14,8 @@ import SectionReveal from '@/components/public/section-reveal'
 import DepartureHero from '@/components/public/departure-hero'
 import StickyEnquiryBar from '@/components/public/sticky-enquiry-bar'
 import { getServerLocale } from '@/lib/i18n'
-import { whatsappLink } from '@/lib/site'
+import { site, whatsappLink } from '@/lib/site'
+import StructuredData, { touristTripJsonLd } from '@/components/public/structured-data'
 
 export const dynamic = 'force-dynamic'
 
@@ -314,6 +315,21 @@ export default async function DepartureDetailPage({
 
   return (
     <div dir={dir}>
+      <StructuredData
+        data={touristTripJsonLd({
+          url: `${site.url}/departures/${id}`,
+          name: title ?? '',
+          description: overview,
+          image: tour?.hero_image_url,
+          durationDays: daysCount,
+          priceUsd: departure.price_usd,
+          startDate: departure.start_date,
+          endDate: departure.end_date,
+          available: isAvailable,
+          providerName: site.name,
+          providerUrl: site.url,
+        })}
+      />
       <Suspense>
         <PublicHeader />
       </Suspense>

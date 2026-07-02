@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { findOrCreateClientByEmail, refreshClientTotals } from '@/lib/server/clients'
+import { sendEmail, notifyAdmin, emailShell, detailRows, escapeHtml } from '@/lib/email'
+import { enforceRateLimit } from '@/lib/rate-limit'
+import { site } from '@/lib/site'
 import type { BookingTraveller } from '@/lib/types'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const limited = enforceRateLimit(request, 'book', 5, 60_000)
+  if (limited) return limited
+
   try {
     const { id } = await params
     const { travellers, totalPrice, currency } = await request.json()
@@ -189,6 +195,39 @@ export async function POST(
     try {
       await refreshClientTotals(admin, clientId)
     } catch { /* totals are a convenience cache */ }
+
+    // Best-effort: email notifications (never block or fail the booking)
+    const leadName = `${lead?.firstName ?? ''} ${lead?.lastName ?? ''}`.trim()
+    const bookingRows = detailRows([
+      ['Lead traveller', leadName],
+      ['Email', lead?.email],
+      ['Phone', lead?.phone],
+      ['Travellers', groupSize],
+      ['Total (USD)', totalPrice],
+      ['Booking ID', booking.id],
+    ])
+    await notifyAdmin(
+      `New booking — ${leadName || lead?.email || 'website'} (${groupSize} traveller${groupSize > 1 ? 's' : ''})`,
+      emailShell(
+        'New website booking',
+        bookingRows +
+          `<p style="margin:16px 0 0;font-size:14px"><a href="${site.url}/admin/bookings/${booking.id}">Open in admin</a></p>`
+      ),
+      lead?.email
+    )
+    if (lead?.email) {
+      await sendEmail({
+        to: lead.email,
+        subject: `Your booking with ${site.name} is confirmed`,
+        html: emailShell(
+          'Booking confirmed 🎉',
+          `<p style="margin:0 0 16px;font-size:14px">Thank you${leadName ? `, ${escapeHtml(leadName)}` : ''}! Your booking is confirmed. Our team will contact you shortly with payment and preparation details.</p>` +
+            bookingRows +
+            `<p style="margin:16px 0 0;font-size:14px">Questions? Reply to this email or WhatsApp us at ${site.phoneDisplay}.</p>`
+        ),
+        replyTo: site.email,
+      })
+    }
 
     return NextResponse.json({
       success: true,
