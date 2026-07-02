@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { findOrCreateClientByEmail } from '@/lib/server/clients'
+import { notifyAdmin, emailShell, detailRows } from '@/lib/email'
+import { site } from '@/lib/site'
+import { enforceRateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
+  const limited = enforceRateLimit(request, 'quote-request', 5, 60_000)
+  if (limited) return limited
+
   try {
     const body = await request.json()
     const { firstName, lastName, email, phone, country, tourType, startDate, duration, groupSize, budget, preferences, heardAboutUs } = body
@@ -72,6 +78,29 @@ export async function POST(request: NextRequest) {
       console.error('[quote-request] quote insert failed', quoteError)
       return NextResponse.json({ error: 'Failed to create quote request' }, { status: 500 })
     }
+
+    // Best-effort admin alert; never blocks the response.
+    await notifyAdmin(
+      `New quote request from ${firstName} ${lastName}`,
+      emailShell(
+        'New quote request',
+        detailRows([
+          ['Name', `${firstName} ${lastName}`],
+          ['Email', email],
+          ['Phone', phone],
+          ['Country', country],
+          ['Tour', tourType],
+          ['Start date', startDate],
+          ['Duration', duration],
+          ['Group size', groupSize],
+          ['Budget', budget],
+          ['Preferences', preferences],
+          ['Heard about us', heardAboutUs],
+        ]) +
+          `<p style="margin:16px 0 0;font-size:14px"><a href="${site.url}/admin/requests/${newRequest.id}">Open in admin</a></p>`
+      ),
+      email
+    )
 
     return NextResponse.json(
       { success: true, quoteId: quote.id },

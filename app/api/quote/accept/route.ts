@@ -1,5 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { refreshClientTotals } from '@/lib/server/clients'
+import { notifyAdmin, emailShell, detailRows } from '@/lib/email'
+import { site } from '@/lib/site'
+import { enforceRateLimit } from '@/lib/rate-limit'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -79,6 +82,9 @@ async function createBookingFromAcceptedQuote(
 }
 
 export async function POST(req: NextRequest) {
+  const limited = enforceRateLimit(req, 'quote-accept', 10, 60_000)
+  if (limited) return limited
+
   try {
     const { deliveryId, versionId, quoteId, clientName } = await req.json()
 
@@ -155,6 +161,19 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.error('[quote/accept] booking creation skipped', e)
     }
+
+    // Best-effort admin alert; never blocks the response.
+    await notifyAdmin(
+      `Quote accepted by ${clientName.trim()}`,
+      emailShell(
+        'Quote accepted',
+        detailRows([
+          ['Accepted by', clientName.trim()],
+          ['Quote ID', quoteId],
+        ]) +
+          `<p style="margin:16px 0 0;font-size:14px"><a href="${site.url}/admin/quotes/${quoteId}">Open in admin</a></p>`
+      )
+    )
 
     return NextResponse.json({ ok: true })
   } catch (err) {

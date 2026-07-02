@@ -1,7 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { enforceRateLimit } from '@/lib/rate-limit'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
+  const limited = enforceRateLimit(req, 'quote-decline', 10, 60_000)
+  if (limited) return limited
+
   try {
     const { deliveryId, versionId, quoteId } = await req.json()
 
