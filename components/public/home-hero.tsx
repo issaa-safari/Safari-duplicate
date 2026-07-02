@@ -24,7 +24,7 @@ export default function HomeHero({ heroImageUrl, heroTourId, isAr, locale }: Hom
     cta: 'اختر مسارك',
     quote: 'طلب عرض سعر',
   } : {
-    headline: 'Ride the Bush.​Drive the Wild.',
+    headline: 'LIVE THE ADVENTURE',
     sub: 'Group bike tours and private safaris across Kenya and East Africa — designed for people who want more than a package holiday.',
     cta: 'Plan Your Adventure',
     quote: 'Request a Quote',
