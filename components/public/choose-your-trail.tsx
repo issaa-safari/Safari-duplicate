@@ -85,7 +85,7 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
       imageUrl: bikeCard.imageUrl,
       seed: bikeCard.tourId ?? 'bike',
       badge: isAr ? 'جولات الدراجات' : 'Group Bike Tours',
-      heading: isAr ? 'اركب البرية' : 'Ride the Bush',
+      heading: isAr ? 'اركب البرية' : 'MOTORBIKE ADVENTURE',
       body: isAr
         ? 'جولات دراجات جماعية بقيادة خبراء من نيروبي إلى الساحل. مدعومة بالكامل، ممتازة للمغامرين.'
         : 'Expert-led group rides from Nairobi to the coast. Fully supported, KTM-grade adventure for serious riders.',
@@ -97,7 +97,7 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
       imageUrl: privateCard.imageUrl,
       seed: privateCard.tourId ?? 'private',
       badge: isAr ? 'سفاري خاص' : 'Private Safari',
-      heading: isAr ? 'أطلق العنان للبرية' : 'Drive the Wild',
+      heading: isAr ? 'أطلق العنان للبرية' : 'CAR SAFARI',
       body: isAr
         ? 'مسارات مخصصة، مخيمات حصرية، مجموعتك وحدها فقط. سفاري مصمم حول تفضيلاتك.'
         : 'Custom itineraries, exclusive camps, your group only. Safari built entirely around your preferences.',
@@ -171,7 +171,7 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
                   {/* Dark + colour tint overlay */}
                   <div style={{
                     position: 'absolute', inset: 0,
-                    background: `linear-gradient(to top, ${card.accent}ee 0%, ${card.accent}44 40%, rgba(0,0,0,0.15) 100%)`,
+                    background: `linear-gradient(to top, ${card.accent}ee 0%, ${card.accent}77 45%, rgba(20,25,15,0.35) 100%)`,
                   }} />
                 </div>
 
@@ -209,6 +209,7 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
                     color: '#fff',
                     margin: '0 0 12px',
                     lineHeight: 1.15,
+                    textShadow: '0 2px 12px rgba(20,25,15,0.55)',
                   }}>
                     {card.heading}
                   </h3>
@@ -219,6 +220,7 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
                     fontSize: '0.92rem',
                     lineHeight: 1.6,
                     margin: '0 0 24px',
+                    textShadow: '0 1px 8px rgba(20,25,15,0.5)',
                   }}>
                     {card.body}
                   </p>

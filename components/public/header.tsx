@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useSearchParams, usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -91,47 +92,53 @@ export default function PublicHeader() {
   if (!mounted) return null
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+    <header className="sticky top-0 z-50 bg-white border-b border-[#E5E0D8]">
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         {/* Logo */}
-        <Link href={`/?lang=${currentLang}`} className="flex items-center gap-2">
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg"
-            style={{ backgroundColor: G }}
+        <Link href={`/?lang=${currentLang}`} className="flex items-center gap-2.5">
+          <Image
+            src="/logo-safari-riders.png"
+            alt="Safari Adventure Riders logo"
+            width={34}
+            height={48}
+            priority
+          />
+          <span
+            className="font-bold text-lg"
+            style={{ fontFamily: 'var(--font-display, "Readex Pro", sans-serif)', color: '#20271A' }}
           >
-            🦁
-          </div>
-          <span className="font-bold text-gray-900 text-lg">Safari Adventure Riders</span>
+            Safari Adventure Riders
+          </span>
         </Link>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link href={getNavLink('/tours')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+          <Link href={getNavLink('/tours')} className="text-[#6E6A59] hover:text-[#20271A] text-sm font-medium">
             {currentLang === 'ar' ? 'الجولات' : 'Tours'}
           </Link>
-          <Link href={getNavLink('/departures')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+          <Link href={getNavLink('/departures')} className="text-[#6E6A59] hover:text-[#20271A] text-sm font-medium">
             {currentLang === 'ar' ? 'الرحلات' : 'Departures'}
           </Link>
-          <Link href={getNavLink('/gallery')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+          <Link href={getNavLink('/gallery')} className="text-[#6E6A59] hover:text-[#20271A] text-sm font-medium">
             {currentLang === 'ar' ? 'المعرض' : 'Gallery'}
           </Link>
-          <Link href={getNavLink('/about')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+          <Link href={getNavLink('/about')} className="text-[#6E6A59] hover:text-[#20271A] text-sm font-medium">
             {currentLang === 'ar' ? 'نبذة عنا' : 'About'}
           </Link>
-          <Link href={getNavLink('/contact')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+          <Link href={getNavLink('/contact')} className="text-[#6E6A59] hover:text-[#20271A] text-sm font-medium">
             {currentLang === 'ar' ? 'اتصل بنا' : 'Contact'}
           </Link>
           {signedIn ? (
             <>
-              <Link href={getNavLink('/dashboard')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+              <Link href={getNavLink('/dashboard')} className="text-[#6E6A59] hover:text-[#20271A] text-sm font-medium">
                 {currentLang === 'ar' ? 'حسابي' : 'Dashboard'}
               </Link>
-              <button onClick={handleSignOut} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+              <button onClick={handleSignOut} className="text-[#6E6A59] hover:text-[#20271A] text-sm font-medium">
                 {currentLang === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}
               </button>
             </>
           ) : (
-            <Link href={getNavLink('/login')} className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+            <Link href={getNavLink('/login')} className="text-[#6E6A59] hover:text-[#20271A] text-sm font-medium">
               {currentLang === 'ar' ? 'تسجيل الدخول' : 'Sign In'}
             </Link>
           )}
@@ -144,13 +151,13 @@ export default function PublicHeader() {
           </Link>
 
           {/* Language Toggle */}
-          <div className="flex gap-2 ml-4 pl-4 border-l border-gray-200">
+          <div className="flex gap-2 ml-4 pl-4 border-l border-[#E5E0D8]">
             <Link
               href={getLangUrl('en')}
               className={`text-xs px-3 py-1.5 rounded transition ${
                 currentLang === 'en'
-                  ? 'bg-gray-200 text-gray-900 font-semibold'
-                  : 'text-gray-500 hover:text-gray-900'
+                  ? 'bg-[#EAE3D2] text-[#20271A] font-semibold'
+                  : 'text-[#6E6A59] hover:text-[#20271A]'
               }`}
             >
               EN
@@ -159,8 +166,8 @@ export default function PublicHeader() {
               href={getLangUrl('ar')}
               className={`text-xs px-3 py-1.5 rounded transition ${
                 currentLang === 'ar'
-                  ? 'bg-gray-200 text-gray-900 font-semibold'
-                  : 'text-gray-500 hover:text-gray-900'
+                  ? 'bg-[#EAE3D2] text-[#20271A] font-semibold'
+                  : 'text-[#6E6A59] hover:text-[#20271A]'
               }`}
             >
               العربية
@@ -181,33 +188,33 @@ export default function PublicHeader() {
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 px-4 py-4 space-y-3">
-          <Link href={getNavLink('/tours')} className="block text-gray-600 hover:text-gray-900 text-sm font-medium py-2">
+        <div className="md:hidden border-t border-[#E5E0D8] px-4 py-4 space-y-3">
+          <Link href={getNavLink('/tours')} className="block text-[#6E6A59] hover:text-[#20271A] text-sm font-medium py-2">
             {currentLang === 'ar' ? 'الجولات' : 'Tours'}
           </Link>
-          <Link href={getNavLink('/departures')} className="block text-gray-600 hover:text-gray-900 text-sm font-medium py-2">
+          <Link href={getNavLink('/departures')} className="block text-[#6E6A59] hover:text-[#20271A] text-sm font-medium py-2">
             {currentLang === 'ar' ? 'الرحلات' : 'Departures'}
           </Link>
-          <Link href={getNavLink('/gallery')} className="block text-gray-600 hover:text-gray-900 text-sm font-medium py-2">
+          <Link href={getNavLink('/gallery')} className="block text-[#6E6A59] hover:text-[#20271A] text-sm font-medium py-2">
             {currentLang === 'ar' ? 'المعرض' : 'Gallery'}
           </Link>
-          <Link href={getNavLink('/about')} className="block text-gray-600 hover:text-gray-900 text-sm font-medium py-2">
+          <Link href={getNavLink('/about')} className="block text-[#6E6A59] hover:text-[#20271A] text-sm font-medium py-2">
             {currentLang === 'ar' ? 'نبذة عنا' : 'About'}
           </Link>
-          <Link href={getNavLink('/contact')} className="block text-gray-600 hover:text-gray-900 text-sm font-medium py-2">
+          <Link href={getNavLink('/contact')} className="block text-[#6E6A59] hover:text-[#20271A] text-sm font-medium py-2">
             {currentLang === 'ar' ? 'اتصل بنا' : 'Contact'}
           </Link>
           {signedIn ? (
             <>
-              <Link href={getNavLink('/dashboard')} className="block text-gray-600 hover:text-gray-900 text-sm font-medium py-2">
+              <Link href={getNavLink('/dashboard')} className="block text-[#6E6A59] hover:text-[#20271A] text-sm font-medium py-2">
                 {currentLang === 'ar' ? 'حسابي' : 'Dashboard'}
               </Link>
-              <button onClick={handleSignOut} className="block w-full text-left text-gray-600 hover:text-gray-900 text-sm font-medium py-2">
+              <button onClick={handleSignOut} className="block w-full text-left text-[#6E6A59] hover:text-[#20271A] text-sm font-medium py-2">
                 {currentLang === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}
               </button>
             </>
           ) : (
-            <Link href={getNavLink('/login')} className="block text-gray-600 hover:text-gray-900 text-sm font-medium py-2">
+            <Link href={getNavLink('/login')} className="block text-[#6E6A59] hover:text-[#20271A] text-sm font-medium py-2">
               {currentLang === 'ar' ? 'تسجيل الدخول' : 'Sign In'}
             </Link>
           )}
@@ -220,13 +227,13 @@ export default function PublicHeader() {
           </Link>
 
           {/* Language Toggle Mobile */}
-          <div className="flex gap-2 pt-2 border-t border-gray-200">
+          <div className="flex gap-2 pt-2 border-t border-[#E5E0D8]">
             <Link
               href={getLangUrl('en')}
               className={`flex-1 text-center text-xs px-3 py-2 rounded transition ${
                 currentLang === 'en'
-                  ? 'bg-gray-200 text-gray-900 font-semibold'
-                  : 'text-gray-500 hover:text-gray-900'
+                  ? 'bg-[#EAE3D2] text-[#20271A] font-semibold'
+                  : 'text-[#6E6A59] hover:text-[#20271A]'
               }`}
             >
               EN
@@ -235,8 +242,8 @@ export default function PublicHeader() {
               href={getLangUrl('ar')}
               className={`flex-1 text-center text-xs px-3 py-2 rounded transition ${
                 currentLang === 'ar'
-                  ? 'bg-gray-200 text-gray-900 font-semibold'
-                  : 'text-gray-500 hover:text-gray-900'
+                  ? 'bg-[#EAE3D2] text-[#20271A] font-semibold'
+                  : 'text-[#6E6A59] hover:text-[#20271A]'
               }`}
             >
               العربية

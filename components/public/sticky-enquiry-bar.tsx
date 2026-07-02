@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import Link from 'next/link'
 
@@ -29,6 +29,7 @@ export default function StickyEnquiryBar({
 }: StickyEnquiryBarProps) {
   const [visible, setVisible] = useState(false)
   const reduced = useReducedMotion()
+  const barRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const el = document.getElementById(heroElementId)
@@ -41,10 +42,31 @@ export default function StickyEnquiryBar({
     return () => observer.disconnect()
   }, [heroElementId])
 
+  // Publish the bar's height as --sticky-bar-h on <html> so other floating
+  // elements (e.g. the WhatsApp button) can offset themselves above it.
+  useEffect(() => {
+    const root = document.documentElement
+    if (!visible) {
+      root.style.setProperty('--sticky-bar-h', '0px')
+      return
+    }
+    const bar = barRef.current
+    if (!bar) return
+    const publish = () => root.style.setProperty('--sticky-bar-h', `${bar.offsetHeight}px`)
+    publish()
+    const ro = new ResizeObserver(publish)
+    ro.observe(bar)
+    return () => {
+      ro.disconnect()
+      root.style.setProperty('--sticky-bar-h', '0px')
+    }
+  }, [visible])
+
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
+          ref={barRef}
           initial={reduced ? false : { y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}

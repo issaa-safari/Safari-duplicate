@@ -322,7 +322,7 @@ export default async function TourDetailPage({
       {/* 3. Overview + quick facts */}
       {(overview || tour.difficulty_rating || tour.vehicle || tour.accommodation_level) && (
         <section style={{ padding: '72px 24px', background: '#fff' }}>
-          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr auto', gap: 48, alignItems: 'start' }}>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-12 items-start" style={{ maxWidth: 1100, margin: '0 auto' }}>
             <SectionReveal>
               <SectionHeading accent={accent}>{t.overview}</SectionHeading>
               {overview && (
@@ -420,7 +420,7 @@ export default async function TourDetailPage({
       {/* 6. Included / Excluded */}
       {(included.length > 0 || excluded.length > 0) && (
         <section style={{ padding: '72px 24px', background: SAND }}>
-          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10" style={{ maxWidth: 1100, margin: '0 auto' }}>
             {included.length > 0 && (
               <SectionReveal>
                 <h3 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: '1.2rem', fontWeight: 700, color: BUSH, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
