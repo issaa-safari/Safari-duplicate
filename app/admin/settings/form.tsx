@@ -31,6 +31,7 @@ interface Settings {
   quote_prefix: string | null
   booking_prefix: string | null
   default_markup_percent: number
+  usd_to_kes_rate?: number | null
   logo_url: string | null
   updated_at: string
 }
@@ -99,10 +100,11 @@ export default function SettingsForm({ settings }: { settings: Settings }) {
       </Section>
 
       <Section title="Booking & Cancellation Policy">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Field label="Deposit %" name="depositPercent" value={settings.deposit_percent} type="number" min={0} max={100} step="0.01" required />
           <Field label="Balance Due (days)" name="balanceDueDays" value={settings.balance_due_days} type="number" min={0} step={1} required />
           <Field label="Default Markup %" name="defaultMarkupPercent" value={settings.default_markup_percent} type="number" min={0} step="0.01" required />
+          <Field label="USD → KES rate" name="usdToKesRate" value={settings.usd_to_kes_rate ?? 129} type="number" min={1} step="0.0001" required />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Cancellation: 61+ days" name="cancellation61Plus" value={settings.cancellation_61_plus} />

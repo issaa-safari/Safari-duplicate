@@ -59,9 +59,20 @@ export async function updateRateCard(formData: FormData) {
   if (!/^[A-Z]{3}$/.test(currency)) throw new Error('Currency must be a three-letter code.')
 
   const admin = await context()
+
+  const supplierId = (formData.get('supplierId') as string) || null
+  let supplierName: string | null = null
+  if (supplierId) {
+    const { data: supplier } = await admin
+      .from('suppliers').select('name').eq('id', supplierId).maybeSingle()
+    if (!supplier) throw new Error('Selected supplier not found.')
+    supplierName = supplier.name
+  }
+
   const { error } = await admin.from('supplier_rate_cards').update({
     name,
-    supplier_name: (formData.get('supplierName') as string)?.trim() || null,
+    supplier_id: supplierId,
+    supplier_name: supplierName,
     entity_type: entityType,
     entity_id: (formData.get('entityId') as string) || null,
     cost_category: costCategory,

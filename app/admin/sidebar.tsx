@@ -7,7 +7,7 @@ import { useState, useEffect, useTransition, useRef } from 'react'
 import {
   LayoutDashboard, Inbox, Map, Library, FileText,
   CalendarDays, BookOpen, Users, DollarSign, BarChart3,
-  Search, Leaf,
+  Search, Leaf, Calculator, Truck,
 } from 'lucide-react'
 import type { SearchResults, SearchQuote, SearchClient, SearchRequest } from '@/lib/types'
 
@@ -17,9 +17,11 @@ const NAV_ITEMS = [
   { label: 'Tour Templates', href: '/admin/tours',       Icon: Map },
   { label: 'Content',        href: '/admin/content',     Icon: Library },
   { label: 'Quotes',         href: '/admin/quotes',      Icon: FileText },
+  { label: 'Trip Builder',   href: '/admin/trip-builder', Icon: Calculator },
   { label: 'Departures',     href: '/admin/departures',  Icon: CalendarDays },
   { label: 'Bookings',       href: '/admin/bookings',    Icon: BookOpen },
   { label: 'Clients',        href: '/admin/clients',     Icon: Users },
+  { label: 'Suppliers',      href: '/admin/suppliers',   Icon: Truck },
   { label: 'Finance',        href: '/admin/finance',     Icon: DollarSign },
   { label: 'Analytics',      href: '/admin/analytics',   Icon: BarChart3 },
 ]

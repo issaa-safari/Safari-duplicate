@@ -26,6 +26,7 @@ export default function RatePicker({
   versionId,
   quoteId,
   defaultMarkup,
+  defaultDate,
   entities,
   onAdded,
   onCancel,
@@ -33,6 +34,8 @@ export default function RatePicker({
   versionId: string
   quoteId: string
   defaultMarkup: number
+  /** The travel date rates should resolve against — never defaults to today unless the version has no dates. */
+  defaultDate?: string | null
   entities: {
     accommodation: EntityList[]
     vehicle: EntityList[]
@@ -45,7 +48,7 @@ export default function RatePicker({
 }) {
   const [entityType, setEntityType] = useState('accommodation')
   const [entityId, setEntityId] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(defaultDate || new Date().toISOString().slice(0, 10))
   const [cards, setCards] = useState<any[]>([])
   const [selectedRate, setSelectedRate] = useState<any | null>(null)
   const [quantity, setQuantity] = useState('1')

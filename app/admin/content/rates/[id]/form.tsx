@@ -10,7 +10,7 @@ import { COST_CATEGORIES, ENTITY_TYPES, PRICING_UNITS, RESIDENCIES, label } from
 type Entity = { id: string; name: string }
 type AgeBand = { code: string; name: string }
 type Card = {
-  id: string; name: string; supplier_name: string | null; entity_type: string; entity_id: string | null;
+  id: string; name: string; supplier_name: string | null; supplier_id?: string | null; entity_type: string; entity_id: string | null;
   cost_category: string; valid_from: string; valid_to: string; currency: string; notes: string | null; is_active: boolean
 }
 type Rate = {
@@ -20,7 +20,7 @@ type Rate = {
 
 const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
 const smallInputCls = 'w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
-const linkedTypes = new Set(['accommodation', 'activity', 'vehicle', 'staff', 'destination'])
+const linkedTypes = new Set(['accommodation', 'activity', 'vehicle', 'staff', 'destination', 'park_fee'])
 const roomCategories = ['sharing', 'single', 'triple', 'extra_bed', 'no_bed']
 
 function RateFields({ rate, ageBands }: { rate?: Rate; ageBands: AgeBand[] }) {
@@ -35,7 +35,7 @@ function RateFields({ rate, ageBands }: { rate?: Rate; ageBands: AgeBand[] }) {
   </>
 }
 
-export default function RateCardEditor({ card, rates, ageBands, entities }: { card: Card; rates: Rate[]; ageBands: AgeBand[]; entities: Record<string, Entity[]> }) {
+export default function RateCardEditor({ card, rates, ageBands, entities, suppliers }: { card: Card; rates: Rate[]; ageBands: AgeBand[]; entities: Record<string, Entity[]>; suppliers: Entity[] }) {
   const [entityType, setEntityType] = useState(card.entity_type)
   const [isActive, setIsActive] = useState(card.is_active)
   const [message, setMessage] = useState('')
@@ -72,7 +72,14 @@ export default function RateCardEditor({ card, rates, ageBands, entities }: { ca
         <h2 className="text-sm font-semibold text-gray-900">Rate Card Details</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div><label className="block text-sm font-medium text-gray-700 mb-1">Name</label><input name="name" required defaultValue={card.name} className={inputCls} /></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label><input name="supplierName" defaultValue={card.supplier_name ?? ''} className={inputCls} /></div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+            <select name="supplierId" defaultValue={card.supplier_id ?? ''} className={inputCls}>
+              <option value="">— no supplier —</option>
+              {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            {!card.supplier_id && card.supplier_name && <p className="text-xs text-amber-600 mt-1">Legacy supplier text: “{card.supplier_name}” — pick a real supplier to include this card in Payables.</p>}
+          </div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label><select name="entityType" value={entityType} onChange={e => setEntityType(e.target.value)} className={inputCls}>{ENTITY_TYPES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">Cost Category</label><select name="costCategory" defaultValue={card.cost_category} className={inputCls}>{COST_CATEGORIES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
           {linkedTypes.has(entityType) && <div><label className="block text-sm font-medium text-gray-700 mb-1">Linked Content</label><select name="entityId" defaultValue={entityType === card.entity_type ? card.entity_id ?? '' : ''} className={inputCls}><option value="">No linked item</option>{(entities[entityType] ?? []).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>}

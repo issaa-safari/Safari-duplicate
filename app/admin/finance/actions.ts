@@ -37,6 +37,30 @@ export async function recordPayment(formData: FormData) {
     throw new Error('Can only record payment on accepted or active quotes.')
   }
 
+  // Received may never exceed invoiced (the accepted version's selling total).
+  if (paymentType !== 'refund') {
+    const [{ data: acceptedVersion }, { data: existingPayments }] = await Promise.all([
+      admin.from('quote_versions')
+        .select('total_selling_usd')
+        .eq('quote_id', quoteId)
+        .eq('status', 'accepted')
+        .maybeSingle(),
+      admin.from('quote_payments').select('amount_usd, payment_type').eq('quote_id', quoteId),
+    ])
+    const invoiced = Number(acceptedVersion?.total_selling_usd ?? 0)
+    if (invoiced > 0) {
+      const received = (existingPayments ?? []).reduce(
+        (s: number, p: { amount_usd: number; payment_type: string | null }) =>
+          p.payment_type === 'refund' ? s - Number(p.amount_usd) : s + Number(p.amount_usd), 0)
+      if (received + amount > invoiced + 0.01) {
+        throw new Error(
+          `This receipt would exceed the invoiced total: invoiced $${invoiced.toFixed(2)}, ` +
+          `already received $${received.toFixed(2)}, balance $${(invoiced - received).toFixed(2)}.`,
+        )
+      }
+    }
+  }
+
   const { error } = await admin.from('quote_payments').insert({
     quote_id: quoteId,
     amount_usd: amount,
@@ -50,5 +74,6 @@ export async function recordPayment(formData: FormData) {
 
   if (error) throw new Error(error.message)
   revalidatePath('/admin/finance')
+  revalidatePath('/admin/finance/receipts')
   revalidatePath(`/admin/quotes/${quoteId}`)
 }

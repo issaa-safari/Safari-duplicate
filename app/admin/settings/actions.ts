@@ -16,6 +16,7 @@ export async function saveSettings(formData: FormData) {
   const depositPercent = Number(formData.get('depositPercent'))
   const balanceDueDays = Number(formData.get('balanceDueDays'))
   const defaultMarkupPercent = Number(formData.get('defaultMarkupPercent'))
+  const usdToKesRate = Number(formData.get('usdToKesRate'))
 
   if (!id) throw new Error('Settings record ID is missing.')
   if (!companyName) throw new Error('Company name is required.')
@@ -27,6 +28,9 @@ export async function saveSettings(formData: FormData) {
   }
   if (!Number.isFinite(defaultMarkupPercent) || defaultMarkupPercent < 0) {
     throw new Error('Default markup must be zero or greater.')
+  }
+  if (!Number.isFinite(usdToKesRate) || usdToKesRate <= 0) {
+    throw new Error('USD → KES rate must be greater than zero.')
   }
 
   const admin = createAdminClient()
@@ -58,6 +62,7 @@ export async function saveSettings(formData: FormData) {
       quote_prefix: text('quotePrefix'),
       booking_prefix: text('bookingPrefix'),
       default_markup_percent: defaultMarkupPercent,
+      usd_to_kes_rate: usdToKesRate,
       logo_url: text('logoUrl'),
       updated_at: new Date().toISOString(),
     })
