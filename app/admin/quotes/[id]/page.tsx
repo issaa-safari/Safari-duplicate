@@ -44,7 +44,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       ? admin.from('departures').select('start_date, end_date').eq('id', quote.departure_id).single()
       : Promise.resolve({ data: null }),
     admin.from('quote_versions')
-      .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until, default_markup_percent, sharing_price_per_person_usd, single_price_per_person_usd, single_supplement_usd, total_cost_usd, total_selling_usd, gross_margin_percent, locked_at, sent_at, created_at')
+      .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until, default_markup_percent, sharing_price_per_person_usd, single_price_per_person_usd, single_supplement_usd, total_cost_usd, total_selling_usd, gross_margin_percent, locked_at, sent_at, created_at, track_label, compare_group')
       .eq('quote_id', id)
       .order('version_number', { ascending: false }),
     admin.from('quote_deliveries')
@@ -86,6 +86,13 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           </div>
         </div>
         <div className="flex gap-2">
+          {versions.some((v: any) => v.track_label) && ['draft', 'ready'].includes(quote.status) && (
+            <Link
+              href={`/admin/trip-builder/${quote.id}`}
+              className="rounded-md px-4 py-2 text-sm font-medium text-[var(--olive-dk)] border border-[var(--olive)]/40 hover:bg-[var(--olive)]/5">
+              Open in Trip Builder
+            </Link>
+          )}
           {/* Always allow opening the latest version to review the itinerary and
               costing. While editable it's "Edit"; once sent/accepted it's "View". */}
           {latestVersion && (
@@ -189,6 +196,13 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
                           className="text-[var(--olive)] hover:underline font-medium">
                           v{v.version_number}
                         </Link>
+                        {v.track_label && (
+                          <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wide ${
+                            v.track_label === 'premium' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {v.track_label}
+                          </span>
+                        )}
                         {v.title && (
                           <p className="text-xs text-gray-400 mt-0.5">{v.title}</p>
                         )}

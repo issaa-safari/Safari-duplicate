@@ -228,6 +228,7 @@ export default async function VersionEditorPage({
           priceLines={clientPriceLines}
           isLocked={isLocked}
           defaultMarkup={settings?.default_markup_percent ?? 20}
+          travelStartDate={version.travel_start_date ?? null}
           entities={{
             accommodation: (accommodations ?? []).map((a: any) => ({ id: a.id, name: a.name })),
             vehicle: (vehicles ?? []).map((v: any) => ({ id: v.id, name: v.name })),

@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     // Validate delivery is still active
     const { data: delivery } = await admin
       .from('quote_deliveries')
-      .select('id, revoked_at, expires_at')
+      .select('id, quote_version_id, revoked_at, expires_at')
       .eq('id', deliveryId)
       .eq('quote_id', quoteId)
       .single()
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
     // Check the version isn't already accepted/declined/expired
     const { data: version } = await admin
       .from('quote_versions')
-      .select('id, status, quote_id')
+      .select('id, status, quote_id, compare_group, track_label')
       .eq('id', versionId)
       .eq('quote_id', quoteId)
       .single()
@@ -120,8 +120,35 @@ export async function POST(req: NextRequest) {
     if (version.status === 'accepted') {
       return NextResponse.json({ error: 'This quote has already been accepted.' }, { status: 409 })
     }
-    if (!['sent', 'viewed', 'ready'].includes(version.status)) {
+
+    // Dual-track: the delivered link points at one track, but the client may
+    // pick its sibling (same compare_group), which can still be draft/ready.
+    const { data: deliveredVersion } = await admin
+      .from('quote_versions')
+      .select('id, compare_group')
+      .eq('id', delivery.quote_version_id ?? '')
+      .maybeSingle()
+    const isSiblingOfDelivered =
+      versionId !== delivery.quote_version_id &&
+      !!version.compare_group &&
+      version.compare_group === deliveredVersion?.compare_group
+
+    const acceptableStatuses = isSiblingOfDelivered
+      ? ['draft', 'ready', 'sent', 'viewed']
+      : ['sent', 'viewed', 'ready']
+    if (!acceptableStatuses.includes(version.status)) {
       return NextResponse.json({ error: 'This quote cannot be accepted.' }, { status: 409 })
+    }
+
+    // One acceptance per quote — a sibling track being accepted counts.
+    const { data: quoteAccepted } = await admin
+      .from('quote_acceptances')
+      .select('id')
+      .eq('quote_id', quoteId)
+      .limit(1)
+      .maybeSingle()
+    if (quoteAccepted) {
+      return NextResponse.json({ error: 'This quote has already been accepted.' }, { status: 409 })
     }
 
     // Check no existing acceptance
@@ -150,10 +177,25 @@ export async function POST(req: NextRequest) {
     if (insertError) throw insertError
 
     // Update version status
-    await admin.from('quote_versions').update({ status: 'accepted' }).eq('id', versionId)
+    await admin.from('quote_versions')
+      .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+      .eq('id', versionId)
 
-    // Update parent quote status
-    await admin.from('quotes').update({ status: 'accepted' }).eq('id', quoteId)
+    // Update parent quote status + point it at the winning version
+    await admin.from('quotes')
+      .update({ status: 'accepted', accepted_version_id: versionId })
+      .eq('id', quoteId)
+
+    // Dual-track: the sibling track loses — mark it superseded so it never
+    // shows as payable or acceptable again.
+    if (version.compare_group) {
+      await admin.from('quote_versions')
+        .update({ status: 'superseded' })
+        .eq('quote_id', quoteId)
+        .eq('compare_group', version.compare_group)
+        .neq('id', versionId)
+        .in('status', ['draft', 'ready', 'sent', 'viewed'])
+    }
 
     // Promote the accepted quote into a confirmed booking (best-effort).
     try {

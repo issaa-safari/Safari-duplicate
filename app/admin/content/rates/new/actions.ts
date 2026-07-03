@@ -12,7 +12,7 @@ export async function createRateCard(formData: FormData) {
   if (!user) redirect('/admin/login')
 
   const name = (formData.get('name') as string)?.trim()
-  const supplierName = (formData.get('supplierName') as string)?.trim() || null
+  const supplierId = (formData.get('supplierId') as string) || null
   const entityType = formData.get('entityType') as string
   const entityId = (formData.get('entityId') as string) || null
   const costCategory = formData.get('costCategory') as string
@@ -30,8 +30,19 @@ export async function createRateCard(formData: FormData) {
 
   const admin = createAdminClient()
   await assertAdminAccess(admin, user.email)
+
+  // supplier_name mirrors the linked supplier for older list views.
+  let supplierName: string | null = null
+  if (supplierId) {
+    const { data: supplier } = await admin
+      .from('suppliers').select('name').eq('id', supplierId).maybeSingle()
+    if (!supplier) throw new Error('Selected supplier not found.')
+    supplierName = supplier.name
+  }
+
   const { data, error } = await admin.from('supplier_rate_cards').insert({
     name,
+    supplier_id: supplierId,
     supplier_name: supplierName,
     entity_type: entityType,
     entity_id: entityId,

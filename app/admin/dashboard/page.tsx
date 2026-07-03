@@ -3,14 +3,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ButtonLink, Button } from '@/components/ui/button'
-
-const KES_RATE = 129
+import { getPayables, getReceivablesSummary, getUsdToKesRate } from '@/lib/server/finance'
 
 function formatUSD(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 }
-function formatKES(n: number) {
-  return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', maximumFractionDigits: 0 }).format(n * KES_RATE)
+function formatKES(n: number, rate: number) {
+  return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', maximumFractionDigits: 0 }).format(n * rate)
 }
 
 const STAGES = [
@@ -47,7 +46,7 @@ export default async function AdminDashboardPage() {
     { data: allAcceptances6mo },
   ] = await Promise.all([
     admin.from('quote_acceptances')
-      .select('quote_versions(total_selling_usd)')
+      .select('quote_versions(total_selling_usd, total_cost_usd)')
       .gte('accepted_at', startOfMonth),
     admin.from('quote_versions')
       .select('id', { count: 'exact', head: true })
@@ -81,9 +80,27 @@ export default async function AdminDashboardPage() {
       .gte('accepted_at', sixMonthsAgo.toISOString()),
   ])
 
+  // Finance tiles: AR / AP / margin / issued-vs-accepted.
+  // Payables need group_33; degrade gracefully until it's applied.
+  const [usdToKes, receivables, payables, { count: issuedThisMonth }] = await Promise.all([
+    getUsdToKesRate(admin),
+    getReceivablesSummary(admin),
+    getPayables(admin).catch(() => null),
+    admin.from('quote_versions')
+      .select('id', { count: 'exact', head: true })
+      .gte('sent_at', startOfMonth),
+  ])
+
   const revenueThisMonth = (acceptancesThisMonth ?? []).reduce((sum: number, a: any) => {
     return sum + Number(a.quote_versions?.total_selling_usd ?? 0)
   }, 0)
+  const costThisMonth = (acceptancesThisMonth ?? []).reduce((sum: number, a) => {
+    return sum + Number((a.quote_versions as { total_cost_usd?: number } | null)?.total_cost_usd ?? 0)
+  }, 0)
+  const marginThisMonth = revenueThisMonth > 0
+    ? ((revenueThisMonth - costThisMonth) / revenueThisMonth) * 100
+    : 0
+  const acceptedThisMonth = (acceptancesThisMonth ?? []).length
 
   const stageCounts = STAGES.map(s => ({
     ...s,
@@ -120,7 +137,7 @@ export default async function AdminDashboardPage() {
         <KpiCard
           label="Accepted Revenue This Month"
           value={formatUSD(revenueThisMonth)}
-          sub={formatKES(revenueThisMonth)}
+          sub={formatKES(revenueThisMonth, usdToKes)}
         />
         <KpiCard
           label="Active Quotes"
@@ -137,6 +154,38 @@ export default async function AdminDashboardPage() {
           value={String(expiringVersions?.length ?? 0)}
           sub="valid until within 3 days"
           urgent={!!(expiringVersions?.length)}
+        />
+      </div>
+
+      {/* Finance KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link href="/admin/finance/receipts">
+          <KpiCard
+            label="Receivable (AR)"
+            value={formatUSD(receivables.outstandingUsd)}
+            sub={`invoiced ${formatUSD(receivables.invoicedUsd)} · received ${formatUSD(receivables.receivedUsd)}`}
+            urgent={receivables.outstandingUsd > 0}
+          />
+        </Link>
+        <Link href="/admin/finance/payables">
+          <KpiCard
+            label="Payable (AP)"
+            value={payables ? formatUSD(Math.max(payables.totalBalanceUsd, 0)) : '—'}
+            sub={payables
+              ? `owed ${formatUSD(payables.totalOwedUsd)} · paid ${formatUSD(payables.totalPaidUsd)}`
+              : 'apply migration group_33'}
+            urgent={!!payables && payables.totalBalanceUsd > 0}
+          />
+        </Link>
+        <KpiCard
+          label="Gross Margin This Month"
+          value={`${marginThisMonth.toFixed(1)}%`}
+          sub={`${formatUSD(revenueThisMonth - costThisMonth)} on accepted quotes`}
+        />
+        <KpiCard
+          label="Quotes Issued vs Accepted"
+          value={`${issuedThisMonth ?? 0} / ${acceptedThisMonth}`}
+          sub="sent vs accepted this month"
         />
       </div>
 

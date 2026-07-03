@@ -1,0 +1,105 @@
+// Shared Trip Builder types (client form ⇄ server actions).
+
+import type { Residency } from '@/lib/rate-resolution'
+
+export type TrackKey = 'standard' | 'premium'
+
+export const ROOM_CATEGORIES = ['sharing', 'single', 'triple', 'extra_bed'] as const
+export type RoomCategory = (typeof ROOM_CATEGORIES)[number]
+
+export const MEAL_PLANS = ['BB', 'HB', 'FB', 'AI'] as const
+export type MealPlan = (typeof MEAL_PLANS)[number]
+
+export interface GuestDetails {
+  name: string
+  email: string
+  phone: string
+  adults: number
+  /** One age per child (3–15 → Child band, 0–2 → Infant band) */
+  childAges: number[]
+  startDate: string
+  endDate: string
+}
+
+export interface HotelRowInput {
+  /** Client-side row key */
+  key: string
+  destinationId: string
+  budgetTier: string
+  accommodationId: string
+  roomCategory: RoomCategory | ''
+  mealPlan: MealPlan | ''
+  rooms: number
+  checkIn: string
+  checkOut: string
+}
+
+export interface TransportRowInput {
+  key: string
+  vehicleId: string
+  startDate: string
+  endDate: string
+  vehicleCount: number
+}
+
+export interface ParkRowInput {
+  key: string
+  parkId: string
+  travellerCategory: 'adult' | 'child'
+  residency: Residency
+  entryDate: string
+  tickets: number
+}
+
+export interface TripBuilderState {
+  guest: GuestDetails
+  title: string
+  hotelRows: Record<TrackKey, HotelRowInput[]>
+  transportRows: TransportRowInput[]
+  parkRows: ParkRowInput[]
+  salePrices: Record<TrackKey, string>
+}
+
+export interface SaveTripInput {
+  quoteId?: string | null
+  versionIds?: Partial<Record<TrackKey, string | null>>
+  state: TripBuilderState
+}
+
+// ── resolve-rate action payloads ─────────────────────────────────────────────
+
+export type ResolveRowRequest =
+  | { kind: 'hotel'; accommodationId: string; checkIn: string; checkOut: string; roomCategory: string; mealPlan: string; rooms: number }
+  | { kind: 'transport'; vehicleId: string; startDate: string; endDate: string; vehicleCount: number }
+  | { kind: 'park'; parkId: string; entryDate: string; travellerCategory: 'adult' | 'child'; residency: Residency; tickets: number }
+
+export interface ResolvedSegmentView {
+  label: string
+  units: number
+  unitCostUsd: number
+  totalCostUsd: number
+  sourceCurrency: string
+  sourceUnitCost: number
+}
+
+export type ResolveRowResult =
+  | {
+      ok: true
+      /** nights / days / tickets across all segments */
+      units: number
+      /** representative per-unit USD cost (first segment) */
+      unitCostUsd: number
+      totalCostUsd: number
+      segments: ResolvedSegmentView[]
+    }
+  | { ok: false; message: string }
+
+export type SaveTripResult =
+  | {
+      ok: true
+      quoteId: string
+      quoteNumber: string | null
+      versionIds: Record<TrackKey, string>
+      totals: Record<TrackKey, { costUsd: number; sellingUsd: number }>
+    }
+  | { ok: false; message: string; gaps?: string[] }

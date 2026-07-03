@@ -115,6 +115,7 @@ export default function PriceLinesEditor({
   priceLines: initial,
   isLocked,
   defaultMarkup = 20,
+  travelStartDate,
   entities,
 }: {
   quoteId: string
@@ -122,6 +123,7 @@ export default function PriceLinesEditor({
   priceLines: PriceLine[]
   isLocked: boolean
   defaultMarkup?: number
+  travelStartDate?: string | null
   entities?: {
     accommodation: EntityList[]
     vehicle: EntityList[]
@@ -551,6 +553,7 @@ export default function PriceLinesEditor({
             versionId={versionId}
             quoteId={quoteId}
             defaultMarkup={defaultMarkup}
+            defaultDate={travelStartDate}
             entities={entities}
             onAdded={() => { setShowRatePicker(false); window.location.reload() }}
             onCancel={() => setShowRatePicker(false)}

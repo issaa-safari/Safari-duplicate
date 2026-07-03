@@ -10,9 +10,9 @@ import { COST_CATEGORIES, ENTITY_TYPES, label } from '../constants'
 type Entity = { id: string; name: string }
 type Entities = Record<string, Entity[]>
 const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
-const linkedTypes = new Set(['accommodation', 'activity', 'vehicle', 'staff', 'destination'])
+const linkedTypes = new Set(['accommodation', 'activity', 'vehicle', 'staff', 'destination', 'park_fee'])
 
-export default function NewRateCardForm({ entities }: { entities: Entities }) {
+export default function NewRateCardForm({ entities, suppliers }: { entities: Entities; suppliers: Entity[] }) {
   const [entityType, setEntityType] = useState('accommodation')
   const [isActive, setIsActive] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -32,7 +32,14 @@ export default function NewRateCardForm({ entities }: { entities: Entities }) {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
           <div><label className="block text-sm font-medium text-gray-700 mb-1">Name</label><input name="name" required className={inputCls} placeholder="e.g. Mara Lodge High Season 2027" /></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label><input name="supplierName" className={inputCls} /></div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+            <select name="supplierId" defaultValue="" className={inputCls}>
+              <option value="">— no supplier —</option>
+              {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <p className="text-xs text-gray-400 mt-1">Manage suppliers under <Link href="/admin/suppliers" className="underline">Admin → Suppliers</Link>. Linking one makes this card&apos;s costs show in Payables.</p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label><select name="entityType" value={entityType} onChange={e => setEntityType(e.target.value)} className={inputCls}>{ENTITY_TYPES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Cost Category</label><select name="costCategory" defaultValue="accommodation" className={inputCls}>{COST_CATEGORIES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
