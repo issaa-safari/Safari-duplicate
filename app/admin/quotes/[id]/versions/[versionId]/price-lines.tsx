@@ -272,11 +272,11 @@ export default function PriceLinesEditor({
 
       {/* Column headers + rows — horizontally scrollable on mobile */}
       <div className="overflow-x-auto">
-        <div className="min-w-[620px]">
+        <div className="stack-grid-wrap min-w-[620px]">
 
       {/* Column headers */}
       {lines.length > 0 && (
-        <div className="grid px-4 py-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-wide border-b border-gray-100"
+        <div className="stack-grid-header grid px-4 py-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-wide border-b border-gray-100"
           style={{ gridTemplateColumns: '120px 1fr 52px 88px 80px 56px 72px 40px' }}>
           <span>Category</span>
           <span>Description</span>
@@ -305,10 +305,11 @@ export default function PriceLinesEditor({
           return (
             <div key={line.id}>
               <div
-                className="grid px-4 py-2 items-center gap-1 group"
+                className="stack-grid grid px-4 py-2 items-center gap-1 group"
                 style={{ gridTemplateColumns: '120px 1fr 52px 88px 80px 56px 72px 40px' }}
               >
                 {/* Category */}
+                <div data-label="Category" className="min-w-0">
                 {isLocked ? (
                   <span className={`text-xs px-1.5 py-0.5 rounded font-medium border ${CATEGORY_COLORS[line.costCategory] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                     {CATEGORIES.find(c => c.value === line.costCategory)?.label ?? line.costCategory}
@@ -323,8 +324,10 @@ export default function PriceLinesEditor({
                     {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                   </select>
                 )}
+                </div>
 
                 {/* Description */}
+                <div data-label="Description" className="min-w-0">
                 {isLocked ? (
                   <span className="text-sm text-gray-900 px-1 truncate">{line.description}</span>
                 ) : (
@@ -336,8 +339,10 @@ export default function PriceLinesEditor({
                     className={cellCls}
                   />
                 )}
+                </div>
 
                 {/* Quantity */}
+                <div data-label="Qty" className="min-w-0">
                 {isLocked ? (
                   <span className="text-sm text-right text-gray-600 pr-1 tabular-nums">{line.quantity}</span>
                 ) : (
@@ -349,8 +354,10 @@ export default function PriceLinesEditor({
                     className={numCls}
                   />
                 )}
+                </div>
 
                 {/* Unit cost */}
+                <div data-label="Unit cost" className="min-w-0">
                 {isLocked ? (
                   <span className="text-sm text-right text-gray-600 pr-1 tabular-nums">${fmt(parseFloat(line.unitCostUsd))}</span>
                 ) : (
@@ -366,8 +373,10 @@ export default function PriceLinesEditor({
                     />
                   </div>
                 )}
+                </div>
 
                 {/* Unit */}
+                <div data-label="Unit" className="min-w-0">
                 {isLocked ? (
                   <span className="text-xs text-gray-400 px-1">
                     {UNITS.find(u => u.value === line.pricingUnit)?.label ?? line.pricingUnit}
@@ -382,8 +391,10 @@ export default function PriceLinesEditor({
                     {UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
                   </select>
                 )}
+                </div>
 
                 {/* Markup % */}
+                <div data-label="Markup" className="min-w-0">
                 {isLocked ? (
                   <span className="text-sm text-right text-gray-600 pr-1 tabular-nums">{line.markupPercent}%</span>
                 ) : (
@@ -398,9 +409,10 @@ export default function PriceLinesEditor({
                     <span className="text-xs text-gray-400 shrink-0">%</span>
                   </div>
                 )}
+                </div>
 
                 {/* Selling price */}
-                <div className="text-right">
+                <div data-label="Selling" className="text-right">
                   <span className="text-sm font-semibold text-gray-900 tabular-nums">
                     ${fmt(line.totalSellingUsd)}
                   </span>

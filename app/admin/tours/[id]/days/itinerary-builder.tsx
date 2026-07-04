@@ -234,8 +234,8 @@ export default function ItineraryBuilder({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <div className="min-w-[900px] space-y-3">
-            <div className="grid gap-3 px-2 text-xs font-medium text-gray-500" style={{ gridTemplateColumns: GRID_COLS }}>
+          <div className="stack-grid-wrap min-w-[900px] space-y-3">
+            <div className="stack-grid-header grid gap-3 px-2 text-xs font-medium text-gray-500" style={{ gridTemplateColumns: GRID_COLS }}>
               <div>Days</div>
               <div>Main Destination</div>
               <div>Accommodation</div>
@@ -248,8 +248,8 @@ export default function ItineraryBuilder({
               const dayActs = activities.filter((a) => day.activity_ids.includes(a.id))
               const availActs = activities.filter((a) => !day.activity_ids.includes(a.id))
               return (
-                <div key={day._key} className="grid gap-3 bg-white rounded-lg border border-gray-200 p-3 items-start" style={{ gridTemplateColumns: GRID_COLS }}>
-                  <div className="space-y-2">
+                <div key={day._key} className="stack-grid grid gap-3 bg-white rounded-lg border border-gray-200 p-3 items-start" style={{ gridTemplateColumns: GRID_COLS }}>
+                  <div data-label="Days" className="space-y-2">
                     <span className="text-sm font-semibold text-gray-900">
                       Day {day.day_number}{day.day_number_end ? `–${day.day_number_end}` : ''}
                     </span>
@@ -261,7 +261,7 @@ export default function ItineraryBuilder({
                       placeholder="km" className={inputCls} />
                   </div>
 
-                  <div>
+                  <div data-label="Main Destination">
                     <select value={day.destination_id ?? ''}
                       onChange={(e) => {
                         if (e.target.value === '__add__') setAdding({ index: i, kind: 'destination' })
@@ -274,7 +274,7 @@ export default function ItineraryBuilder({
                     </select>
                   </div>
 
-                  <div className="space-y-2">
+                  <div data-label="Accommodation" className="space-y-2">
                     <select value={day.accommodation_id ?? ''}
                       onChange={(e) => {
                         if (e.target.value === '__add__') setAdding({ index: i, kind: 'accommodation' })
@@ -305,7 +305,7 @@ export default function ItineraryBuilder({
                     </select>
                   </div>
 
-                  <div className="space-y-2">
+                  <div data-label="Activities" className="space-y-2">
                     {day.activities.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {day.activities.map((da, ai) => {
@@ -353,13 +353,13 @@ export default function ItineraryBuilder({
                     </div>
                   </div>
 
-                  <div className="flex gap-1 pt-1">
+                  <div data-label="Meal Plan" className="flex gap-1 pt-1">
                     <MealPill on={day.meal_breakfast} label="B" onClick={() => update(i, { meal_breakfast: !day.meal_breakfast })} />
                     <MealPill on={day.meal_lunch} label="L" onClick={() => update(i, { meal_lunch: !day.meal_lunch })} />
                     <MealPill on={day.meal_dinner} label="D" onClick={() => update(i, { meal_dinner: !day.meal_dinner })} />
                   </div>
 
-                  <div className="flex flex-col items-center gap-1">
+                  <div className="flex flex-col max-sm:flex-row max-sm:justify-end items-center gap-1">
                     <button onClick={() => move(i, -1)} disabled={i === 0}
                       className="px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30">↑</button>
                     <button onClick={() => move(i, 1)} disabled={i === days.length - 1}
