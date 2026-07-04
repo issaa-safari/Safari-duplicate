@@ -210,14 +210,15 @@ export default async function VersionEditorPage({
           {!isLocked && (
             <Link href={`/admin/trip-builder/${id}`}
               className="rounded-md px-3.5 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
-              Open Trip Builder
+              Continue to Trip Builder →
             </Link>
           )}
         </div>
         {version.track_label && (
           <p className="px-5 py-2.5 text-xs text-amber-700 bg-amber-50 border-b border-amber-100">
-            This is a {version.track_label} track version — itinerary items, travellers and price lines
-            are rewritten each time the Trip Builder is saved.
+            This is a {version.track_label} track version — travellers and price lines are rewritten each
+            time the Trip Builder is saved; the itinerary narrative (day titles, descriptions, notes,
+            activities) is preserved.
           </p>
         )}
         {clientPriceLines.length === 0 ? (

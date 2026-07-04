@@ -266,7 +266,15 @@ interface LineDraft {
   sourceUnitCost: number
   exchangeRateToUsd: number
   unitCostUsd: number
+  originalUnitCostUsd: number | null
+  isManualOverride: boolean
   sortOrder: number
+}
+
+/** Parse a row's manual price override; null = use the rate list. */
+function manualPriceOf(raw: string | undefined): number | null {
+  const n = Number(raw)
+  return raw !== undefined && raw.trim() !== '' && Number.isFinite(n) && n > 0 ? n : null
 }
 
 interface ItemDraft {
@@ -349,8 +357,9 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
       assertWithinTrip(row.startDate, state, 'A transport start date')
       assertWithinTrip(row.endDate, state, 'A transport end date')
       const label = await entityName(admin, 'vehicles', row.vehicleId)
+      const manual = manualPriceOf(row.manualUnitCostUsd)
       const cards = await fetchCards(admin, 'vehicle', row.vehicleId, row.startDate, row.endDate)
-      let segments: PricedSegment[]
+      let segments: PricedSegment[] | null = null
       try {
         segments = priceVehicleHire(
           {
@@ -361,28 +370,54 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
           cards, fx,
         )
       } catch (err) {
-        if (err instanceof RateGapError) { gaps.push(err.message); continue }
-        throw err
+        // A manual price makes the row saveable even without a rate card.
+        if (err instanceof RateGapError) {
+          if (manual === null) { gaps.push(err.message); continue }
+        } else throw err
       }
       const days = vehicleDaysInclusive(row.startDate, row.endDate)
-      for (const seg of segments) {
+      if (manual !== null) {
+        const units = days * Math.max(1, row.vehicleCount)
         sharedLines.push({
-          dayNumber: isoDiffDays(guest.startDate, seg.startDate) + 1,
+          dayNumber: isoDiffDays(guest.startDate, row.startDate) + 1,
           costCategory: 'transport',
-          description: `${label} — ${seg.units} day${seg.units === 1 ? '' : 's'}`
-            + (segments.length > 1 && seg.resolved.seasonName ? ` (${seg.resolved.seasonName})` : ''),
-          rateCardId: seg.resolved.rateCardId,
-          supplierRateId: seg.resolved.supplierRateId,
-          pricingUnit: seg.resolved.pricingUnit,
+          description: `${label} — ${units} day${units === 1 ? '' : 's'} (manual price)`,
+          rateCardId: null,
+          supplierRateId: null,
+          pricingUnit: 'day',
           travellerCategory: null,
           roomCategory: null,
-          quantity: seg.units,
-          sourceCurrency: seg.resolved.sourceCurrency,
-          sourceUnitCost: seg.resolved.sourceUnitCost,
-          exchangeRateToUsd: seg.resolved.exchangeRateToUsd,
-          unitCostUsd: seg.resolved.unitCostUsd,
+          quantity: units,
+          sourceCurrency: 'USD',
+          sourceUnitCost: manual,
+          exchangeRateToUsd: 1,
+          unitCostUsd: manual,
+          originalUnitCostUsd: segments?.[0]?.resolved.unitCostUsd ?? null,
+          isManualOverride: true,
           sortOrder: sort++,
         })
+      } else {
+        for (const seg of segments!) {
+          sharedLines.push({
+            dayNumber: isoDiffDays(guest.startDate, seg.startDate) + 1,
+            costCategory: 'transport',
+            description: `${label} — ${seg.units} day${seg.units === 1 ? '' : 's'}`
+              + (segments!.length > 1 && seg.resolved.seasonName ? ` (${seg.resolved.seasonName})` : ''),
+            rateCardId: seg.resolved.rateCardId,
+            supplierRateId: seg.resolved.supplierRateId,
+            pricingUnit: seg.resolved.pricingUnit,
+            travellerCategory: null,
+            roomCategory: null,
+            quantity: seg.units,
+            sourceCurrency: seg.resolved.sourceCurrency,
+            sourceUnitCost: seg.resolved.sourceUnitCost,
+            exchangeRateToUsd: seg.resolved.exchangeRateToUsd,
+            unitCostUsd: seg.resolved.unitCostUsd,
+            originalUnitCostUsd: null,
+            isManualOverride: false,
+            sortOrder: sort++,
+          })
+        }
       }
       sharedItems.push({
         dayNumber: isoDiffDays(guest.startDate, row.startDate) + 1,
@@ -399,10 +434,12 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
       if (!isIsoDate(row.entryDate)) throw new Error('Every park row needs an entry date.')
       assertWithinTrip(row.entryDate, state, 'A park entry date')
       const label = await entityName(admin, 'parks', row.parkId)
+      const manual = manualPriceOf(row.manualUnitCostUsd)
       const cards = await fetchCards(admin, 'park_fee', row.parkId, row.entryDate, row.entryDate)
       const childBand = bands.find(b => b.code === 'child')
+      let entry: ReturnType<typeof pricePark> | null = null
       try {
-        const entry = pricePark(
+        entry = pricePark(
           {
             parkId: row.parkId, parkLabel: label, entryDate: row.entryDate,
             travellerCategory: row.travellerCategory, residency: row.residency,
@@ -411,25 +448,50 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
           },
           cards, fx,
         )
+      } catch (err) {
+        if (err instanceof RateGapError) {
+          if (manual === null) { gaps.push(err.message); continue }
+        } else throw err
+      }
+      if (manual !== null) {
+        const tickets = Math.max(1, row.tickets)
         sharedLines.push({
           dayNumber: isoDiffDays(guest.startDate, row.entryDate) + 1,
           costCategory: 'park_fees',
-          description: `${label} — ${row.travellerCategory} entry (${row.residency.replace('_', '-')}) × ${entry.units}`,
-          rateCardId: entry.resolved.rateCardId,
-          supplierRateId: entry.resolved.supplierRateId,
-          pricingUnit: entry.resolved.pricingUnit,
+          description: `${label} — ${row.travellerCategory} entry (${row.residency.replace('_', '-')}) × ${tickets} (manual price)`,
+          rateCardId: null,
+          supplierRateId: null,
+          pricingUnit: 'person',
           travellerCategory: row.travellerCategory,
           roomCategory: null,
-          quantity: entry.units,
-          sourceCurrency: entry.resolved.sourceCurrency,
-          sourceUnitCost: entry.resolved.sourceUnitCost,
-          exchangeRateToUsd: entry.resolved.exchangeRateToUsd,
-          unitCostUsd: entry.resolved.unitCostUsd,
+          quantity: tickets,
+          sourceCurrency: 'USD',
+          sourceUnitCost: manual,
+          exchangeRateToUsd: 1,
+          unitCostUsd: manual,
+          originalUnitCostUsd: entry?.resolved.unitCostUsd ?? null,
+          isManualOverride: true,
           sortOrder: sort++,
         })
-      } catch (err) {
-        if (err instanceof RateGapError) { gaps.push(err.message); continue }
-        throw err
+      } else {
+        sharedLines.push({
+          dayNumber: isoDiffDays(guest.startDate, row.entryDate) + 1,
+          costCategory: 'park_fees',
+          description: `${label} — ${row.travellerCategory} entry (${row.residency.replace('_', '-')}) × ${entry!.units}`,
+          rateCardId: entry!.resolved.rateCardId,
+          supplierRateId: entry!.resolved.supplierRateId,
+          pricingUnit: entry!.resolved.pricingUnit,
+          travellerCategory: row.travellerCategory,
+          roomCategory: null,
+          quantity: entry!.units,
+          sourceCurrency: entry!.resolved.sourceCurrency,
+          sourceUnitCost: entry!.resolved.sourceUnitCost,
+          exchangeRateToUsd: entry!.resolved.exchangeRateToUsd,
+          unitCostUsd: entry!.resolved.unitCostUsd,
+          originalUnitCostUsd: null,
+          isManualOverride: false,
+          sortOrder: sort++,
+        })
       }
     }
 
@@ -447,11 +509,12 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
         assertWithinTrip(row.checkIn, state, 'A hotel check-in')
         assertWithinTrip(row.checkOut, state, 'A hotel check-out')
         const label = await entityName(admin, 'accommodations', row.accommodationId)
+        const manual = manualPriceOf(row.manualUnitCostUsd)
         const cards = filterByMealPlan(
           await fetchCards(admin, 'accommodation', row.accommodationId, row.checkIn, row.checkOut),
           row.mealPlan,
         )
-        let segments: PricedSegment[]
+        let segments: PricedSegment[] | null = null
         try {
           segments = priceAccommodationStay(
             {
@@ -463,30 +526,55 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
             cards, fx,
           )
         } catch (err) {
-          if (err instanceof RateGapError) { gaps.push(err.message); continue }
-          throw err
+          if (err instanceof RateGapError) {
+            if (manual === null) { gaps.push(err.message); continue }
+          } else throw err
         }
         const nights = nightsBetween(row.checkIn, row.checkOut)
         const mealLabel = row.mealPlan ? `, ${MEAL_LABELS[row.mealPlan] ?? row.mealPlan}` : ''
-        for (const seg of segments) {
-          const segNights = Math.round(seg.units / Math.max(1, row.rooms))
+        if (manual !== null) {
+          const units = nights * Math.max(1, row.rooms)
           trackLines[track].push({
-            dayNumber: isoDiffDays(guest.startDate, seg.startDate) + 1,
+            dayNumber: isoDiffDays(guest.startDate, row.checkIn) + 1,
             costCategory: 'accommodation',
-            description: `${label} — ${segNights} night${segNights === 1 ? '' : 's'} ${row.roomCategory || 'sharing'}${mealLabel}`
-              + (segments.length > 1 && seg.resolved.seasonName ? ` (${seg.resolved.seasonName})` : ''),
-            rateCardId: seg.resolved.rateCardId,
-            supplierRateId: seg.resolved.supplierRateId,
-            pricingUnit: seg.resolved.pricingUnit,
+            description: `${label} — ${nights} night${nights === 1 ? '' : 's'} ${row.roomCategory || 'sharing'}${mealLabel} (manual price)`,
+            rateCardId: null,
+            supplierRateId: null,
+            pricingUnit: 'night',
             travellerCategory: null,
             roomCategory: row.roomCategory || null,
-            quantity: seg.units,
-            sourceCurrency: seg.resolved.sourceCurrency,
-            sourceUnitCost: seg.resolved.sourceUnitCost,
-            exchangeRateToUsd: seg.resolved.exchangeRateToUsd,
-            unitCostUsd: seg.resolved.unitCostUsd,
+            quantity: units,
+            sourceCurrency: 'USD',
+            sourceUnitCost: manual,
+            exchangeRateToUsd: 1,
+            unitCostUsd: manual,
+            originalUnitCostUsd: segments?.[0]?.resolved.unitCostUsd ?? null,
+            isManualOverride: true,
             sortOrder: trackSort++,
           })
+        } else {
+          for (const seg of segments!) {
+            const segNights = Math.round(seg.units / Math.max(1, row.rooms))
+            trackLines[track].push({
+              dayNumber: isoDiffDays(guest.startDate, seg.startDate) + 1,
+              costCategory: 'accommodation',
+              description: `${label} — ${segNights} night${segNights === 1 ? '' : 's'} ${row.roomCategory || 'sharing'}${mealLabel}`
+                + (segments!.length > 1 && seg.resolved.seasonName ? ` (${seg.resolved.seasonName})` : ''),
+              rateCardId: seg.resolved.rateCardId,
+              supplierRateId: seg.resolved.supplierRateId,
+              pricingUnit: seg.resolved.pricingUnit,
+              travellerCategory: null,
+              roomCategory: row.roomCategory || null,
+              quantity: seg.units,
+              sourceCurrency: seg.resolved.sourceCurrency,
+              sourceUnitCost: seg.resolved.sourceUnitCost,
+              exchangeRateToUsd: seg.resolved.exchangeRateToUsd,
+              unitCostUsd: seg.resolved.unitCostUsd,
+              originalUnitCostUsd: null,
+              isManualOverride: false,
+              sortOrder: trackSort++,
+            })
+          }
         }
         trackItems[track].push({
           dayNumber: isoDiffDays(guest.startDate, row.checkIn) + 1,

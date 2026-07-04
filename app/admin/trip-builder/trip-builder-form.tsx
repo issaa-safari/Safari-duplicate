@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
+import CreateLookupDialog from '@/components/admin/create-lookup-dialog'
+import { createLookup } from '@/lib/create-lookup'
 import { resolveTripRate, saveTrip } from './actions'
 import {
   MEAL_PLANS,
@@ -87,6 +89,12 @@ function resolvedTotal(res: ResolveRowResult | 'pending' | undefined): number | 
   return res && res !== 'pending' && res.ok ? res.totalCostUsd : null
 }
 
+/** Parse a row's manual price override; null = use the rate list. */
+function manualPriceOf(raw: string | undefined): number | null {
+  const n = Number(raw)
+  return raw !== undefined && raw.trim() !== '' && Number.isFinite(n) && n > 0 ? n : null
+}
+
 export default function TripBuilderForm({
   destinations,
   accommodations,
@@ -122,6 +130,16 @@ export default function TripBuilderForm({
   const [salePrices, setSalePrices] = useState<Record<TrackKey, string>>(
     initialState?.salePrices ?? { standard: '', premium: '' },
   )
+
+  // Lookups live in state so items added inline (saved to the Content
+  // library) appear in the dropdowns immediately.
+  const [destinationList, setDestinationList] = useState<LookupOption[]>(destinations)
+  const [accommodationList, setAccommodationList] = useState<AccommodationOption[]>(accommodations)
+  const [creating, setCreating] = useState<null | {
+    kind: 'destination' | 'accommodation'
+    track: TrackKey
+    rowKey: string
+  }>(null)
 
   const [quoteId, setQuoteId] = useState<string | null>(initialQuoteId ?? null)
   const [versionIds, setVersionIds] = useState<Partial<Record<TrackKey, string | null>>>(
@@ -205,23 +223,46 @@ export default function TripBuilderForm({
   }, [hotelRows, transportRows, parkRows])
 
   // ── Summary math (display only — the server recomputes on save) ──
-  const sum = (rows: { key: string }[]) =>
-    rows.reduce((s, r) => s + (resolvedTotal(resolutions[r.key]) ?? 0), 0)
+  // Manual prices win over the resolved rate; their units are computable
+  // locally (nights × rooms / days × vehicles / tickets).
+  const hotelUnits = (row: HotelRowInput) => {
+    const nights = nightsOf(row.checkIn, row.checkOut)
+    return nights !== null ? nights * Math.max(1, row.rooms) : null
+  }
+  const transportUnits = (row: TransportRowInput) => {
+    const days = daysInclusive(row.startDate, row.endDate)
+    return days !== null ? days * Math.max(1, row.vehicleCount) : null
+  }
+  const parkUnits = (row: ParkRowInput) => Math.max(1, row.tickets)
 
-  const transportTotal = sum(transportRows)
-  const parksTotal = sum(parkRows)
+  function effectiveTotal(row: { key: string; manualUnitCostUsd?: string }, units: number | null): number | null {
+    const manual = manualPriceOf(row.manualUnitCostUsd)
+    if (manual !== null && units !== null) return manual * units
+    return resolvedTotal(resolutions[row.key])
+  }
+
+  const transportTotal = transportRows.reduce((s, r) => s + (effectiveTotal(r, transportUnits(r)) ?? 0), 0)
+  const parksTotal = parkRows.reduce((s, r) => s + (effectiveTotal(r, parkUnits(r)) ?? 0), 0)
   const trackSummary = (track: TrackKey) => {
-    const hotels = sum(hotelRows[track])
+    const hotels = hotelRows[track].reduce((s, r) => s + (effectiveTotal(r, hotelUnits(r)) ?? 0), 0)
     const total = hotels + transportTotal + parksTotal
     return { hotels, total }
   }
   const payingGuests = guest.adults + guest.childAges.filter(a => a >= 3).length
 
+  // Rows priced manually don't need a rate card — their gaps don't block saving.
+  const manualKeys = new Set<string>()
+  for (const track of ['standard', 'premium'] as TrackKey[]) {
+    for (const r of hotelRows[track]) if (manualPriceOf(r.manualUnitCostUsd) !== null) manualKeys.add(r.key)
+  }
+  for (const r of transportRows) if (manualPriceOf(r.manualUnitCostUsd) !== null) manualKeys.add(r.key)
+  for (const r of parkRows) if (manualPriceOf(r.manualUnitCostUsd) !== null) manualKeys.add(r.key)
+
   const gapMessages: string[] = []
   let anyPending = false
-  for (const res of Object.values(resolutions)) {
+  for (const [key, res] of Object.entries(resolutions)) {
     if (res === 'pending') anyPending = true
-    else if (res && !res.ok) gapMessages.push(res.message)
+    else if (res && !res.ok && !manualKeys.has(key)) gapMessages.push(res.message)
   }
 
   const tripDays = guest.startDate && guest.endDate ? daysInclusive(guest.startDate, guest.endDate) : null
@@ -270,37 +311,76 @@ export default function TripBuilderForm({
   }
 
   const hotelOptions = (row: HotelRowInput) =>
-    accommodations.filter(a =>
+    accommodationList.filter(a =>
       (!row.destinationId || a.destination_id === row.destinationId) &&
       (!row.budgetTier || a.budget_tier === row.budgetTier),
     )
 
-  function rateCell(row: { key: string }, perUnitSuffix: string) {
+  const updateHotelRow = (track: TrackKey, key: string, patch: Partial<HotelRowInput>) =>
+    setHotelRows(prev => ({
+      ...prev,
+      [track]: prev[track].map(r => (r.key === key ? { ...r, ...patch } : r)),
+    }))
+
+  // Rate cell: shows the rate-list price, and doubles as a manual override —
+  // type a price to use it instead of the rate list, clear it to go back.
+  function rateCell(
+    row: { key: string; manualUnitCostUsd?: string },
+    perUnitSuffix: string,
+    onManual: (value: string) => void,
+  ) {
     const res = resolutions[row.key]
-    if (!res) return <span className="text-xs text-gray-300">—</span>
-    if (res === 'pending') return <span className="text-xs text-gray-400 animate-pulse">…</span>
-    if (!res.ok) {
-      return (
-        <span className="inline-block rounded-full bg-red-50 border border-red-200 text-red-700 text-[11px] px-2 py-0.5 whitespace-nowrap">
-          {res.message}
-        </span>
-      )
-    }
+    const manual = manualPriceOf(row.manualUnitCostUsd) !== null
+    const resolvedOk = res && res !== 'pending' && res.ok ? res : null
     return (
-      <span className="tabular-nums text-gray-700" title={res.segments.map(s => `${s.label}: ${s.units} × $${fmt(s.unitCostUsd)}`).join('\n')}>
-        ${fmt(res.unitCostUsd)}{perUnitSuffix}
-        {res.segments.length > 1 && <span className="text-amber-600 ml-1" title="Season split">≀</span>}
-        {res.segments[0]?.sourceCurrency === 'KES' && (
-          <span className="text-[10px] text-gray-400 ml-1">KES {fmt0(res.segments[0].sourceUnitCost)}</span>
+      <div className="inline-flex flex-col items-end gap-0.5">
+        <input
+          type="number" min={0} step="0.01"
+          className={inputCls + ' w-24 text-right tabular-nums' + (manual ? ' border-amber-400 bg-amber-50' : '')}
+          value={row.manualUnitCostUsd ?? ''}
+          placeholder={resolvedOk ? fmt(resolvedOk.unitCostUsd) : 'manual $'}
+          title="Type a price to override the rate list; clear it to use the saved rate"
+          onChange={e => onManual(e.target.value)}
+        />
+        {res === 'pending' && <span className="text-[10px] text-gray-400 animate-pulse">resolving…</span>}
+        {resolvedOk && !manual && (
+          <span className="text-[10px] text-gray-400 tabular-nums"
+            title={resolvedOk.segments.map(s => `${s.label}: ${s.units} × $${fmt(s.unitCostUsd)}`).join('\n')}>
+            rate list ${fmt(resolvedOk.unitCostUsd)}{perUnitSuffix}
+            {resolvedOk.segments.length > 1 && <span className="text-amber-600 ml-1" title="Season split">≀</span>}
+            {resolvedOk.segments[0]?.sourceCurrency === 'KES' && (
+              <span className="ml-1">KES {fmt0(resolvedOk.segments[0].sourceUnitCost)}</span>
+            )}
+          </span>
         )}
-      </span>
+        {resolvedOk && manual && (
+          <span className="text-[10px] text-gray-400 tabular-nums line-through">
+            ${fmt(resolvedOk.unitCostUsd)}{perUnitSuffix}
+          </span>
+        )}
+        {res && res !== 'pending' && !res.ok && (
+          manual ? (
+            <span className="text-[10px] text-amber-600">no rate card — manual price used</span>
+          ) : (
+            <span className="inline-block rounded-full bg-red-50 border border-red-200 text-red-700 text-[11px] px-2 py-0.5 whitespace-nowrap">
+              {res.message}
+            </span>
+          )
+        )}
+      </div>
     )
   }
 
-  function totalCell(row: { key: string }) {
-    const total = resolvedTotal(resolutions[row.key])
+  function totalCell(row: { key: string; manualUnitCostUsd?: string }, units: number | null) {
+    const total = effectiveTotal(row, units)
+    const manual = manualPriceOf(row.manualUnitCostUsd) !== null
     return total !== null
-      ? <span className="tabular-nums font-medium text-gray-900">${fmt(total)}</span>
+      ? (
+        <span className="tabular-nums font-medium text-gray-900">
+          ${fmt(total)}
+          {manual && <span className="block text-[10px] font-normal text-amber-600">manual</span>}
+        </span>
+      )
       : <span className="text-xs text-gray-300">—</span>
   }
 
@@ -318,10 +398,7 @@ export default function TripBuilderForm({
         [track]: [...prev[track], blankHotelRow(guest.startDate, guest.endDate)],
       }))
     const update = (key: string, patch: Partial<HotelRowInput>) =>
-      setHotelRows(prev => ({
-        ...prev,
-        [track]: prev[track].map(r => (r.key === key ? { ...r, ...patch } : r)),
-      }))
+      updateHotelRow(track, key, patch)
     const remove = (key: string) =>
       setHotelRows(prev => ({ ...prev, [track]: prev[track].filter(r => r.key !== key) }))
 
@@ -359,9 +436,13 @@ export default function TripBuilderForm({
                     <tr key={row.key} className="border-b border-gray-50 last:border-0 align-top">
                       <td data-label="Location" className="px-3 py-1.5 min-w-[120px]">
                         <select className={inputCls} value={row.destinationId}
-                          onChange={e => update(row.key, { destinationId: e.target.value, accommodationId: '' })}>
+                          onChange={e => {
+                            if (e.target.value === '__add__') { setCreating({ kind: 'destination', track, rowKey: row.key }); return }
+                            update(row.key, { destinationId: e.target.value, accommodationId: '' })
+                          }}>
                           <option value="">Any</option>
-                          {destinations.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                          {destinationList.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                          <option value="__add__">+ Add new destination…</option>
                         </select>
                       </td>
                       <td data-label="Budget" className="px-2 py-1.5 min-w-[110px]">
@@ -373,9 +454,13 @@ export default function TripBuilderForm({
                       </td>
                       <td data-label="Hotel" className="px-2 py-1.5 min-w-[170px]">
                         <select className={inputCls} value={row.accommodationId}
-                          onChange={e => update(row.key, { accommodationId: e.target.value })}>
+                          onChange={e => {
+                            if (e.target.value === '__add__') { setCreating({ kind: 'accommodation', track, rowKey: row.key }); return }
+                            update(row.key, { accommodationId: e.target.value })
+                          }}>
                           <option value="">— select —</option>
                           {hotelOptions(row).map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                          <option value="__add__">+ Add new accommodation…</option>
                         </select>
                       </td>
                       <td data-label="Room" className="px-2 py-1.5 min-w-[100px]">
@@ -410,8 +495,10 @@ export default function TripBuilderForm({
                       <td data-label="Nights" className="px-2 py-1.5 text-right">
                         <span className={readonlyCls + ' inline-block w-12'}>{nights ?? '—'}</span>
                       </td>
-                      <td data-label="Per night" className="px-2 py-1.5 text-right whitespace-nowrap">{rateCell(row, '')}</td>
-                      <td data-label="Total" className="px-2 py-1.5 text-right whitespace-nowrap">{totalCell(row)}</td>
+                      <td data-label="Per night" className="px-2 py-1.5 text-right whitespace-nowrap">
+                        {rateCell(row, '', v => update(row.key, { manualUnitCostUsd: v }))}
+                      </td>
+                      <td data-label="Total" className="px-2 py-1.5 text-right whitespace-nowrap">{totalCell(row, hotelUnits(row))}</td>
                       <td className="px-1 py-1.5">
                         <button type="button" onClick={() => remove(row.key)} className={removeBtn} title="Remove row">✕</button>
                       </td>
@@ -560,8 +647,10 @@ export default function TripBuilderForm({
                       <td data-label="Days" className="px-2 py-1.5 text-right">
                         <span className={readonlyCls + ' inline-block w-12'}>{days ?? '—'}</span>
                       </td>
-                      <td data-label="Rate/day" className="px-2 py-1.5 text-right whitespace-nowrap">{rateCell(row, '/day')}</td>
-                      <td data-label="Total" className="px-2 py-1.5 text-right whitespace-nowrap">{totalCell(row)}</td>
+                      <td data-label="Rate/day" className="px-2 py-1.5 text-right whitespace-nowrap">
+                        {rateCell(row, '/day', v => update({ manualUnitCostUsd: v }))}
+                      </td>
+                      <td data-label="Total" className="px-2 py-1.5 text-right whitespace-nowrap">{totalCell(row, transportUnits(row))}</td>
                       <td className="px-1 py-1.5">
                         <button type="button" className={removeBtn} title="Remove row"
                           onClick={() => setTransportRows(rows => rows.filter(r => r.key !== row.key))}>✕</button>
@@ -637,8 +726,10 @@ export default function TripBuilderForm({
                         <input type="number" min={1} className={inputCls} value={row.tickets}
                           onChange={e => update({ tickets: Math.max(1, parseInt(e.target.value) || 1) })} />
                       </td>
-                      <td data-label="Rate" className="px-2 py-1.5 text-right whitespace-nowrap">{rateCell(row, '')}</td>
-                      <td data-label="Total" className="px-2 py-1.5 text-right whitespace-nowrap">{totalCell(row)}</td>
+                      <td data-label="Rate" className="px-2 py-1.5 text-right whitespace-nowrap">
+                        {rateCell(row, '', v => update({ manualUnitCostUsd: v }))}
+                      </td>
+                      <td data-label="Total" className="px-2 py-1.5 text-right whitespace-nowrap">{totalCell(row, parkUnits(row))}</td>
                       <td className="px-1 py-1.5">
                         <button type="button" className={removeBtn} title="Remove row"
                           onClick={() => setParkRows(rows => rows.filter(r => r.key !== row.key))}>✕</button>
@@ -764,6 +855,37 @@ export default function TripBuilderForm({
         </button>
         {anyPending && <span className="mt-4 text-xs text-gray-400 animate-pulse">Resolving rates…</span>}
       </div>
+
+      {creating && (
+        <CreateLookupDialog
+          title={creating.kind === 'destination' ? 'New Destination' : 'New Accommodation'}
+          onClose={() => setCreating(null)}
+          onSubmit={async (name, en, ar) => {
+            const row = hotelRows[creating.track].find(r => r.key === creating.rowKey)
+            if (creating.kind === 'destination') {
+              const it = await createLookup('destination', name, { descriptionEn: en, descriptionAr: ar })
+              setDestinationList(p =>
+                [...p, { id: it.id, name: it.name }].sort((a, b) => a.name.localeCompare(b.name)))
+              updateHotelRow(creating.track, creating.rowKey, { destinationId: it.id, accommodationId: '' })
+            } else {
+              const it = await createLookup('accommodation', name, {
+                destinationId: row?.destinationId || null,
+                budgetTier: row?.budgetTier || null,
+                descriptionEn: en,
+                descriptionAr: ar,
+              })
+              setAccommodationList(p =>
+                [...p, {
+                  id: it.id,
+                  name: it.name,
+                  destination_id: it.destination_id ?? null,
+                  budget_tier: (it as { budget_tier?: string | null }).budget_tier ?? null,
+                }].sort((a, b) => a.name.localeCompare(b.name)))
+              updateHotelRow(creating.track, creating.rowKey, { accommodationId: it.id })
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

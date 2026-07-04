@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 
@@ -13,7 +14,12 @@ export default async function ClientDetailPage({
 
   const { id } = await params
 
-  const { data: client } = await supabase
+  // Data reads use the service-role client: quotes, quote_versions, bookings
+  // and booking_travellers are RLS-locked to service_role only (group_34), so
+  // the session client would silently return empty lists here.
+  const admin = createAdminClient()
+
+  const { data: client } = await admin
     .from('clients')
     .select('*')
     .eq('id', id)
@@ -21,7 +27,7 @@ export default async function ClientDetailPage({
 
   if (!client) notFound()
 
-  const { data: requests } = await supabase
+  const { data: requests } = await admin
     .from('requests')
     .select('*, tours(title_en)')
     .eq('client_id', id)
@@ -29,7 +35,7 @@ export default async function ClientDetailPage({
 
   // Quotes carry client_id + tour_id, but the price lives on quote_versions
   // (total_selling_usd) and the tour name on the related tour — join both.
-  const { data: quotesRaw } = await supabase
+  const { data: quotesRaw } = await admin
     .from('quotes')
     .select('id, quote_number, status, tour_id, accepted_version_id, created_at, tours(title_en, title_ar), quote_versions(id, total_selling_usd, version_number)')
     .eq('client_id', id)
@@ -54,13 +60,13 @@ export default async function ClientDetailPage({
   // for legacy website bookings, by traveller email. Gather IDs from both.
   const bookingIdSet = new Set<string>()
   try {
-    const { data: byClient } = await supabase.from('bookings').select('id').eq('client_id', id)
+    const { data: byClient } = await admin.from('bookings').select('id').eq('client_id', id)
     for (const b of (byClient ?? []) as { id: string }[]) bookingIdSet.add(b.id)
   } catch {
     // client_id column may not exist yet (pre group_27) — fall back to email
   }
   if (client.email) {
-    const { data: travellerRows } = await supabase
+    const { data: travellerRows } = await admin
       .from('booking_travellers')
       .select('booking_id')
       .ilike('email', client.email)
@@ -71,7 +77,7 @@ export default async function ClientDetailPage({
 
   let bookings: any[] = []
   if (bookingIdSet.size > 0) {
-    const { data: bk } = await supabase
+    const { data: bk } = await admin
       .from('bookings')
       .select('id, total_price_usd, status, created_at, departures(start_date, tours(title_en, title_ar)), quotes(quote_number, tours(title_en, title_ar))')
       .in('id', [...bookingIdSet])
@@ -79,7 +85,7 @@ export default async function ClientDetailPage({
     bookings = bk ?? []
   }
 
-  const { data: logs } = await supabase
+  const { data: logs } = await admin
     .from('communication_logs')
     .select('*')
     .eq('client_id', id)

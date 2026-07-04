@@ -4,8 +4,13 @@
 export async function createLookup(
   kind: 'destination' | 'accommodation' | 'activity',
   name: string,
-  opts?: { destinationId?: string | null; descriptionEn?: string | null; descriptionAr?: string | null },
-): Promise<{ id: string; name: string; destination_id?: string | null }> {
+  opts?: {
+    destinationId?: string | null
+    budgetTier?: string | null
+    descriptionEn?: string | null
+    descriptionAr?: string | null
+  },
+): Promise<{ id: string; name: string; destination_id?: string | null; budget_tier?: string | null }> {
   const res = await fetch('/api/admin/create-lookup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -13,6 +18,7 @@ export async function createLookup(
       kind,
       name,
       destinationId: opts?.destinationId ?? null,
+      budgetTier: opts?.budgetTier ?? null,
       descriptionEn: opts?.descriptionEn ?? null,
       descriptionAr: opts?.descriptionAr ?? null,
     }),

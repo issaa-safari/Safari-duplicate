@@ -128,7 +128,13 @@ export async function createQuote(formData: FormData) {
   }
 
   // redirect() outside try/catch — Next.js throws NEXT_REDIRECT internally
-  // and it must not be caught
-  // Custom safaris are priced in the Trip Builder; fixed departures keep the quote detail page
-  redirect(mode === 'custom' ? `/admin/trip-builder/${newQuoteId}` : `/admin/quotes/${newQuoteId}`)
+  // and it must not be caught.
+  // Funnel: request → quote → itinerary builder → trip builder (pricing).
+  // Custom safaris land on the itinerary editor first; pricing follows from
+  // there. Fixed departures keep the quote detail page.
+  redirect(
+    mode === 'custom' && firstVersion
+      ? `/admin/quotes/${newQuoteId}/versions/${firstVersion.id}`
+      : `/admin/quotes/${newQuoteId}`
+  )
 }

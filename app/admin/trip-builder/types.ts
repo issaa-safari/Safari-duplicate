@@ -32,6 +32,8 @@ export interface HotelRowInput {
   rooms: number
   checkIn: string
   checkOut: string
+  /** Manual per-night USD price; when set it replaces the rate-card price. */
+  manualUnitCostUsd?: string
 }
 
 export interface TransportRowInput {
@@ -40,6 +42,8 @@ export interface TransportRowInput {
   startDate: string
   endDate: string
   vehicleCount: number
+  /** Manual per-day USD price; when set it replaces the rate-card price. */
+  manualUnitCostUsd?: string
 }
 
 export interface ParkRowInput {
@@ -49,6 +53,8 @@ export interface ParkRowInput {
   residency: Residency
   entryDate: string
   tickets: number
+  /** Manual per-ticket USD price; when set it replaces the rate-card price. */
+  manualUnitCostUsd?: string
 }
 
 export interface TripBuilderState {
