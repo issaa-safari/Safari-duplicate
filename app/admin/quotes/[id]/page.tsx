@@ -85,23 +85,24 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             </span>
           </div>
         </div>
+        {/* Funnel order: build the itinerary first, then price it in the Trip Builder. */}
         <div className="flex gap-2">
-          {['draft', 'ready'].includes(quote.status) && (
-            <Link
-              href={`/admin/trip-builder/${quote.id}`}
-              className="rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
-              Open in Trip Builder
-            </Link>
-          )}
-          {/* Always allow opening the latest version to review the itinerary and
-              costing. While editable it's the details view; once sent/accepted it's "View". */}
           {latestVersion && (
             <Link
               href={`/admin/quotes/${quote.id}/versions/${latestVersion.id}`}
-              className="rounded-md px-4 py-2 text-sm font-medium text-[var(--olive-dk)] border border-[var(--olive)]/40 hover:bg-[var(--olive)]/5">
+              className={['draft', 'ready'].includes(quote.status)
+                ? 'rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk'
+                : 'rounded-md px-4 py-2 text-sm font-medium text-[var(--olive-dk)] border border-[var(--olive)]/40 hover:bg-[var(--olive)]/5'}>
               {quote.status === 'draft' || quote.status === 'ready'
-                ? 'Details & itinerary'
+                ? '1 · Itinerary & details'
                 : `View itinerary & costing (v${latestVersion.version_number})`}
+            </Link>
+          )}
+          {['draft', 'ready'].includes(quote.status) && (
+            <Link
+              href={`/admin/trip-builder/${quote.id}`}
+              className="rounded-md px-4 py-2 text-sm font-medium text-[var(--olive-dk)] border border-[var(--olive)]/40 hover:bg-[var(--olive)]/5">
+              2 · Price in Trip Builder
             </Link>
           )}
         </div>

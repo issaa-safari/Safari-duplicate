@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import CreateClientDialog from '@/components/admin/create-client-dialog'
 import { createQuote } from './actions'
 
 interface Client { id: string; first_name: string; last_name: string; email: string }
@@ -13,7 +14,7 @@ const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm tex
 const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
 
 export default function NewQuoteForm({
-  clients,
+  clients: clientsProp,
   requests,
   tours,
   departures,
@@ -30,6 +31,9 @@ export default function NewQuoteForm({
   const [mode, setMode] = useState<'custom' | 'fixed_departure' | ''>(
     defaultRequestId ? 'custom' : ''
   )
+  // Held in state so a client added inline shows up (and is selected) at once.
+  const [clients, setClients] = useState<Client[]>(clientsProp)
+  const [addingClient, setAddingClient] = useState(false)
   const [clientId, setClientId] = useState(defaultClientId)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -96,7 +100,10 @@ export default function NewQuoteForm({
                 name="clientId"
                 required
                 value={clientId}
-                onChange={e => setClientId(e.target.value)}
+                onChange={e => {
+                  if (e.target.value === '__add__') { setAddingClient(true); return }
+                  setClientId(e.target.value)
+                }}
                 className={inputCls}
               >
                 <option value="" disabled>Select a client…</option>
@@ -105,6 +112,7 @@ export default function NewQuoteForm({
                     {c.first_name} {c.last_name} — {c.email}
                   </option>
                 ))}
+                <option value="__add__">+ Add new client…</option>
               </select>
             </div>
 
@@ -199,6 +207,19 @@ export default function NewQuoteForm({
           </div>
         )}
       </form>
+
+      {addingClient && (
+        <CreateClientDialog
+          onClose={() => setAddingClient(false)}
+          onCreated={(c) => {
+            setClients(prev => prev.some(p => p.id === c.id)
+              ? prev
+              : [...prev, { id: c.id, first_name: c.first_name, last_name: c.last_name, email: c.email ?? '' }]
+                  .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`)))
+            setClientId(c.id)
+          }}
+        />
+      )}
     </div>
   )
 }

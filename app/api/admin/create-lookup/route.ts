@@ -8,12 +8,13 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { kind, name, destinationId, descriptionEn, descriptionAr } = await request.json()
+  const { kind, name, destinationId, budgetTier, descriptionEn, descriptionAr } = await request.json()
   const cleanName = (name || '').trim()
   if (!cleanName) return NextResponse.json({ error: 'Name required' }, { status: 400 })
 
   const descEn = typeof descriptionEn === 'string' ? descriptionEn.trim() || null : null
   const descAr = typeof descriptionAr === 'string' ? descriptionAr.trim() || null : null
+  const tier = ['budget', 'midrange', 'luxury', 'ultra'].includes(budgetTier) ? budgetTier : null
 
   const admin = createAdminClient()
   try {
@@ -36,10 +37,18 @@ export async function POST(request: Request) {
   }
 
   if (kind === 'accommodation') {
+    // budget_tier is NOT NULL with a default — only send it when supplied.
     const { data, error } = await admin
       .from('accommodations')
-      .insert({ name: cleanName, destination_id: destinationId || null, description_en: descEn, description_ar: descAr, is_active: true })
-      .select('id, name, destination_id')
+      .insert({
+        name: cleanName,
+        destination_id: destinationId || null,
+        ...(tier ? { budget_tier: tier } : {}),
+        description_en: descEn,
+        description_ar: descAr,
+        is_active: true,
+      })
+      .select('id, name, destination_id, budget_tier')
       .single()
     if (error) {
       console.error('[create-lookup]', error)
