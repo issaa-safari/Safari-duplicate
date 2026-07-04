@@ -1,17 +1,22 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-export default function AdminLoginPage() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(() =>
+    searchParams.get('error') === 'unauthorized'
+      ? 'Your account was signed in, but this email is not on the admin list. Ask the owner to add it to admin_users.'
+      : ''
+  )
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -24,7 +29,11 @@ export default function AdminLoginPage() {
     setLoading(false)
 
     if (error) {
-      setError('Incorrect email or password. Please try again.')
+      setError(
+        error.message === 'Invalid login credentials'
+          ? 'Incorrect email or password. Please try again.'
+          : error.message
+      )
       return
     }
 
@@ -113,5 +122,13 @@ className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }

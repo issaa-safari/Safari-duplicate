@@ -37,11 +37,14 @@ export async function updateSession(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
-    const { data } = await admin
+    const { data, error } = await admin
       .from('admin_users')
       .select('email')
       .eq('email', user.email)
       .maybeSingle()
+    if (error) {
+      console.error('admin_users lookup failed in middleware:', error.message)
+    }
     isAdmin = !!data
   }
 
