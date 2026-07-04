@@ -145,7 +145,7 @@ export default async function ReceiptsPage() {
             No confirmed direct bookings yet.
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="stack-table w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
                 <th className="px-5 py-3 font-medium">Tour / Departure</th>
@@ -159,15 +159,15 @@ export default async function ReceiptsPage() {
                 const outstanding = Math.max(r.amountDue - r.amountReceived, 0)
                 return (
                   <tr key={r.bookingId} className="border-b border-gray-50 last:border-0">
-                    <td className="px-5 py-3">
+                    <td data-label="Tour / Departure" className="px-5 py-3">
                       <p className="font-medium text-gray-800">{r.tourTitle}</p>
                       {r.startDate && (
                         <p className="text-xs text-gray-400">{new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-right text-gray-700">${fmt(r.amountDue)}</td>
-                    <td className="px-5 py-3 text-right text-green-700">${fmt(r.amountReceived)}</td>
-                    <td className={`px-5 py-3 text-right font-semibold ${outstanding > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
+                    <td data-label="Amount Due" className="px-5 py-3 text-right text-gray-700">${fmt(r.amountDue)}</td>
+                    <td data-label="Received" className="px-5 py-3 text-right text-green-700">${fmt(r.amountReceived)}</td>
+                    <td data-label="Outstanding" className={`px-5 py-3 text-right font-semibold ${outstanding > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
                       ${fmt(outstanding)}
                     </td>
                   </tr>

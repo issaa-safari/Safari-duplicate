@@ -78,7 +78,7 @@ export default function SuppliersTable({ suppliers }: { suppliers: SupplierRow[]
             No suppliers yet — add the first one below. Rate cards link to suppliers so Payables knows who is owed.
           </p>
         ) : (
-          <table className="w-full text-sm">
+          <table className="stack-table w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
                 <th className="px-5 py-3 font-medium">Name</th>
@@ -110,17 +110,17 @@ export default function SuppliersTable({ suppliers }: { suppliers: SupplierRow[]
                   </tr>
                 ) : (
                   <tr key={s.id} className="border-b border-gray-50 last:border-0">
-                    <td className="px-5 py-3 font-medium text-gray-800">
+                    <td data-label="Name" className="px-5 py-3 font-medium text-gray-800">
                       {s.name}
                       {s.notes && <p className="text-xs text-gray-400 font-normal mt-0.5">{s.notes}</p>}
                     </td>
-                    <td className="px-3 py-3 text-gray-600">{typeLabel(s.supplier_type)}</td>
-                    <td className="px-3 py-3 text-gray-500 text-xs">
+                    <td data-label="Type" className="px-3 py-3 text-gray-600">{typeLabel(s.supplier_type)}</td>
+                    <td data-label="Contact" className="px-3 py-3 text-gray-500 text-xs">
                       {s.contact_email && <p>{s.contact_email}</p>}
                       {s.contact_phone && <p>{s.contact_phone}</p>}
                       {!s.contact_email && !s.contact_phone && '—'}
                     </td>
-                    <td className="px-3 py-3">
+                    <td data-label="Status" className="px-3 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${s.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                         {s.is_active ? 'Active' : 'Inactive'}
                       </span>

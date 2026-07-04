@@ -73,7 +73,7 @@ export default async function ClientsPage({
             <p className="text-gray-400 text-sm">No clients yet. They appear here when you add requests.</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="stack-table w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Name</th>
@@ -89,7 +89,7 @@ export default async function ClientsPage({
               {clients.map((client: any, i: number) => (
                 <tr key={client.id}
                   className={"border-b border-gray-50 hover:bg-gray-50 transition " + (i === clients.length - 1 ? 'border-0' : '')}>
-                  <td className="px-4 py-3">
+                  <td data-label="Name" className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div className="h-8 w-8 rounded-full bg-[var(--olive)]/10 flex items-center justify-center text-xs font-medium text-[var(--olive-dk)]">
                         {(client.first_name?.[0] ?? '?').toUpperCase()}
@@ -100,15 +100,15 @@ export default async function ClientsPage({
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{client.email}</td>
-                  <td className="px-4 py-3 text-gray-500 hidden md:table-cell">{client.country ?? '—'}</td>
-                  <td className="px-4 py-3 hidden md:table-cell">
+                  <td data-label="Email" className="px-4 py-3 text-gray-500">{client.email}</td>
+                  <td data-label="Country" className="px-4 py-3 text-gray-500 hidden md:table-cell">{client.country ?? '—'}</td>
+                  <td data-label="Language" className="px-4 py-3 hidden md:table-cell">
                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                       {client.language === 'ar' ? 'Arabic' : 'English'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">{client.total_bookings ?? 0}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{new Date(client.created_at).toLocaleDateString('en-GB')}</td>
+                  <td data-label="Bookings" className="px-4 py-3 text-gray-500 hidden lg:table-cell">{client.total_bookings ?? 0}</td>
+                  <td data-label="Added" className="px-4 py-3 text-gray-400 text-xs">{new Date(client.created_at).toLocaleDateString('en-GB')}</td>
                  <td className="px-4 py-3">
   <Link
     href={"/admin/clients/" + client.id}

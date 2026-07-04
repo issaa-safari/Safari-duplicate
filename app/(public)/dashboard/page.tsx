@@ -180,7 +180,7 @@ export default async function DashboardPage({
                 </h2>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-sm">
+                <table className="stack-table w-full min-w-[760px] text-sm">
                   <thead>
                     <tr className="border-b border-[#E5E0D8] text-left text-[#6E6A59] bg-[#FBF8F1]">
                       <th className="px-6 py-3 font-medium">{t.tour}</th>
@@ -198,24 +198,24 @@ export default async function DashboardPage({
                       const tour = departure?.tours as any
                       return (
                         <tr key={booking.id} className="border-b border-[#E5E0D8] hover:bg-[#FBF8F1]">
-                          <td className="px-6 py-4">
+                          <td data-label={t.tour} className="px-6 py-4">
                             <span className="font-medium text-[#20271A]">
                               {isAr ? (tour?.title_ar || tour?.title_en) : tour?.title_en}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-[#6E6A59]">
+                          <td data-label={t.startDate} className="px-6 py-4 text-[#6E6A59]">
                             {new Date(departure?.start_date).toLocaleDateString('en-GB')}
                           </td>
-                          <td className="px-6 py-4 text-[#6E6A59]">
+                          <td data-label={t.endDate} className="px-6 py-4 text-[#6E6A59]">
                             {new Date(departure?.end_date).toLocaleDateString('en-GB')}
                           </td>
-                          <td className="px-6 py-4 text-[#6E6A59]">
+                          <td data-label={t.travellers} className="px-6 py-4 text-[#6E6A59]">
                             {booking.number_of_travellers}
                           </td>
-                          <td className="px-6 py-4 text-[#20271A] font-medium">
+                          <td data-label={t.price} className="px-6 py-4 text-[#20271A] font-medium">
                             ${Number(booking.total_price_usd).toLocaleString()}
                           </td>
-                          <td className="px-6 py-4">
+                          <td data-label={t.status} className="px-6 py-4">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                               booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -273,7 +273,7 @@ export default async function DashboardPage({
                 </h2>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] text-sm">
+                <table className="stack-table w-full min-w-[640px] text-sm">
                   <thead>
                     <tr className="border-b border-[#E5E0D8] text-left text-[#6E6A59] bg-[#FBF8F1]">
                       <th className="px-6 py-3 font-medium">{t.tour}</th>
@@ -289,18 +289,18 @@ export default async function DashboardPage({
                       const tour = departure?.tours as any
                       return (
                         <tr key={booking.id} className="border-b border-[#E5E0D8] hover:bg-[#FBF8F1]">
-                          <td className="px-6 py-4">
+                          <td data-label={t.tour} className="px-6 py-4">
                             <span className="font-medium text-[#20271A]">
                               {isAr ? (tour?.title_ar || tour?.title_en) : tour?.title_en}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-[#6E6A59]">
+                          <td data-label={t.endDate} className="px-6 py-4 text-[#6E6A59]">
                             {new Date(departure?.end_date).toLocaleDateString('en-GB')}
                           </td>
-                          <td className="px-6 py-4 text-[#6E6A59]">
+                          <td data-label={t.travellers} className="px-6 py-4 text-[#6E6A59]">
                             {booking.number_of_travellers}
                           </td>
-                          <td className="px-6 py-4 text-[#20271A] font-medium">
+                          <td data-label={t.pricePaid} className="px-6 py-4 text-[#20271A] font-medium">
                             ${Number(booking.total_price_usd).toLocaleString()}
                           </td>
                           <td className="px-6 py-4 text-right">

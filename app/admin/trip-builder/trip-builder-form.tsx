@@ -335,7 +335,7 @@ export default function TripBuilderForm({
           <p className="px-4 py-4 text-sm text-gray-400">No hotel rows yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[1080px]">
+            <table className="stack-table w-full text-sm min-w-[1080px]">
               <thead>
                 <tr className="text-left text-[11px] text-gray-400 border-b border-gray-100">
                   <th className="px-3 py-2 font-medium">Location</th>
@@ -357,28 +357,28 @@ export default function TripBuilderForm({
                   const nights = nightsOf(row.checkIn, row.checkOut)
                   return (
                     <tr key={row.key} className="border-b border-gray-50 last:border-0 align-top">
-                      <td className="px-3 py-1.5 min-w-[120px]">
+                      <td data-label="Location" className="px-3 py-1.5 min-w-[120px]">
                         <select className={inputCls} value={row.destinationId}
                           onChange={e => update(row.key, { destinationId: e.target.value, accommodationId: '' })}>
                           <option value="">Any</option>
                           {destinations.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                         </select>
                       </td>
-                      <td className="px-2 py-1.5 min-w-[110px]">
+                      <td data-label="Budget" className="px-2 py-1.5 min-w-[110px]">
                         <select className={inputCls} value={row.budgetTier}
                           onChange={e => update(row.key, { budgetTier: e.target.value, accommodationId: '' })}>
                           <option value="">Any</option>
                           {BUDGET_TIERS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                         </select>
                       </td>
-                      <td className="px-2 py-1.5 min-w-[170px]">
+                      <td data-label="Hotel" className="px-2 py-1.5 min-w-[170px]">
                         <select className={inputCls} value={row.accommodationId}
                           onChange={e => update(row.key, { accommodationId: e.target.value })}>
                           <option value="">— select —</option>
                           {hotelOptions(row).map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
                         </select>
                       </td>
-                      <td className="px-2 py-1.5 min-w-[100px]">
+                      <td data-label="Room" className="px-2 py-1.5 min-w-[100px]">
                         <select className={inputCls} value={row.roomCategory}
                           onChange={e => update(row.key, { roomCategory: e.target.value as HotelRowInput['roomCategory'] })}>
                           {ROOM_CATEGORIES.map(r => (
@@ -386,32 +386,32 @@ export default function TripBuilderForm({
                           ))}
                         </select>
                       </td>
-                      <td className="px-2 py-1.5 w-16">
+                      <td data-label="Rooms" className="px-2 py-1.5 w-16">
                         <input type="number" min={1} className={inputCls} value={row.rooms}
                           onChange={e => update(row.key, { rooms: Math.max(1, parseInt(e.target.value) || 1) })} />
                       </td>
-                      <td className="px-2 py-1.5 min-w-[75px]">
+                      <td data-label="Meal" className="px-2 py-1.5 min-w-[75px]">
                         <select className={inputCls} value={row.mealPlan}
                           onChange={e => update(row.key, { mealPlan: e.target.value as HotelRowInput['mealPlan'] })}>
                           <option value="">Any</option>
                           {MEAL_PLANS.map(m => <option key={m} value={m}>{m}</option>)}
                         </select>
                       </td>
-                      <td className="px-2 py-1.5 min-w-[130px]">
+                      <td data-label="Check-in" className="px-2 py-1.5 min-w-[130px]">
                         <input type="date" className={inputCls} value={row.checkIn}
                           min={guest.startDate || undefined} max={guest.endDate || undefined}
                           onChange={e => update(row.key, { checkIn: e.target.value })} />
                       </td>
-                      <td className="px-2 py-1.5 min-w-[130px]">
+                      <td data-label="Check-out" className="px-2 py-1.5 min-w-[130px]">
                         <input type="date" className={inputCls} value={row.checkOut}
                           min={row.checkIn || guest.startDate || undefined} max={guest.endDate || undefined}
                           onChange={e => update(row.key, { checkOut: e.target.value })} />
                       </td>
-                      <td className="px-2 py-1.5 text-right">
+                      <td data-label="Nights" className="px-2 py-1.5 text-right">
                         <span className={readonlyCls + ' inline-block w-12'}>{nights ?? '—'}</span>
                       </td>
-                      <td className="px-2 py-1.5 text-right whitespace-nowrap">{rateCell(row, '')}</td>
-                      <td className="px-2 py-1.5 text-right whitespace-nowrap">{totalCell(row)}</td>
+                      <td data-label="Per night" className="px-2 py-1.5 text-right whitespace-nowrap">{rateCell(row, '')}</td>
+                      <td data-label="Total" className="px-2 py-1.5 text-right whitespace-nowrap">{totalCell(row)}</td>
                       <td className="px-1 py-1.5">
                         <button type="button" onClick={() => remove(row.key)} className={removeBtn} title="Remove row">✕</button>
                       </td>
@@ -516,7 +516,7 @@ export default function TripBuilderForm({
           <p className="px-4 py-4 text-sm text-gray-400">No transport rows yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[760px]">
+            <table className="stack-table w-full text-sm min-w-[760px]">
               <thead>
                 <tr className="text-left text-[11px] text-gray-400 border-b border-gray-100">
                   <th className="px-3 py-2 font-medium">Vehicle</th>
@@ -536,32 +536,32 @@ export default function TripBuilderForm({
                     setTransportRows(rows => rows.map(r => (r.key === row.key ? { ...r, ...patch } : r)))
                   return (
                     <tr key={row.key} className="border-b border-gray-50 last:border-0">
-                      <td className="px-3 py-1.5 min-w-[180px]">
+                      <td data-label="Vehicle" className="px-3 py-1.5 min-w-[180px]">
                         <select className={inputCls} value={row.vehicleId}
                           onChange={e => update({ vehicleId: e.target.value })}>
                           <option value="">— select —</option>
                           {vehicles.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                         </select>
                       </td>
-                      <td className="px-2 py-1.5 w-16">
+                      <td data-label="Count" className="px-2 py-1.5 w-16">
                         <input type="number" min={1} className={inputCls} value={row.vehicleCount}
                           onChange={e => update({ vehicleCount: Math.max(1, parseInt(e.target.value) || 1) })} />
                       </td>
-                      <td className="px-2 py-1.5 min-w-[130px]">
+                      <td data-label="Start" className="px-2 py-1.5 min-w-[130px]">
                         <input type="date" className={inputCls} value={row.startDate}
                           min={guest.startDate || undefined} max={guest.endDate || undefined}
                           onChange={e => update({ startDate: e.target.value })} />
                       </td>
-                      <td className="px-2 py-1.5 min-w-[130px]">
+                      <td data-label="End" className="px-2 py-1.5 min-w-[130px]">
                         <input type="date" className={inputCls} value={row.endDate}
                           min={row.startDate || guest.startDate || undefined} max={guest.endDate || undefined}
                           onChange={e => update({ endDate: e.target.value })} />
                       </td>
-                      <td className="px-2 py-1.5 text-right">
+                      <td data-label="Days" className="px-2 py-1.5 text-right">
                         <span className={readonlyCls + ' inline-block w-12'}>{days ?? '—'}</span>
                       </td>
-                      <td className="px-2 py-1.5 text-right whitespace-nowrap">{rateCell(row, '/day')}</td>
-                      <td className="px-2 py-1.5 text-right whitespace-nowrap">{totalCell(row)}</td>
+                      <td data-label="Rate/day" className="px-2 py-1.5 text-right whitespace-nowrap">{rateCell(row, '/day')}</td>
+                      <td data-label="Total" className="px-2 py-1.5 text-right whitespace-nowrap">{totalCell(row)}</td>
                       <td className="px-1 py-1.5">
                         <button type="button" className={removeBtn} title="Remove row"
                           onClick={() => setTransportRows(rows => rows.filter(r => r.key !== row.key))}>✕</button>
@@ -589,7 +589,7 @@ export default function TripBuilderForm({
           <p className="px-4 py-4 text-sm text-gray-400">No park rows yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[760px]">
+            <table className="stack-table w-full text-sm min-w-[760px]">
               <thead>
                 <tr className="text-left text-[11px] text-gray-400 border-b border-gray-100">
                   <th className="px-3 py-2 font-medium">Park</th>
@@ -608,37 +608,37 @@ export default function TripBuilderForm({
                     setParkRows(rows => rows.map(r => (r.key === row.key ? { ...r, ...patch } : r)))
                   return (
                     <tr key={row.key} className="border-b border-gray-50 last:border-0">
-                      <td className="px-3 py-1.5 min-w-[180px]">
+                      <td data-label="Park" className="px-3 py-1.5 min-w-[180px]">
                         <select className={inputCls} value={row.parkId}
                           onChange={e => update({ parkId: e.target.value })}>
                           <option value="">— select —</option>
                           {parks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                       </td>
-                      <td className="px-2 py-1.5 min-w-[90px]">
+                      <td data-label="Category" className="px-2 py-1.5 min-w-[90px]">
                         <select className={inputCls} value={row.travellerCategory}
                           onChange={e => update({ travellerCategory: e.target.value as ParkRowInput['travellerCategory'] })}>
                           <option value="adult">Adult</option>
                           <option value="child">Child</option>
                         </select>
                       </td>
-                      <td className="px-2 py-1.5 min-w-[120px]">
+                      <td data-label="Group" className="px-2 py-1.5 min-w-[120px]">
                         <select className={inputCls} value={row.residency}
                           onChange={e => update({ residency: e.target.value as ParkRowInput['residency'] })}>
                           {RESIDENCIES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                         </select>
                       </td>
-                      <td className="px-2 py-1.5 min-w-[130px]">
+                      <td data-label="Entry date" className="px-2 py-1.5 min-w-[130px]">
                         <input type="date" className={inputCls} value={row.entryDate}
                           min={guest.startDate || undefined} max={guest.endDate || undefined}
                           onChange={e => update({ entryDate: e.target.value })} />
                       </td>
-                      <td className="px-2 py-1.5 w-16">
+                      <td data-label="Tickets" className="px-2 py-1.5 w-16">
                         <input type="number" min={1} className={inputCls} value={row.tickets}
                           onChange={e => update({ tickets: Math.max(1, parseInt(e.target.value) || 1) })} />
                       </td>
-                      <td className="px-2 py-1.5 text-right whitespace-nowrap">{rateCell(row, '')}</td>
-                      <td className="px-2 py-1.5 text-right whitespace-nowrap">{totalCell(row)}</td>
+                      <td data-label="Rate" className="px-2 py-1.5 text-right whitespace-nowrap">{rateCell(row, '')}</td>
+                      <td data-label="Total" className="px-2 py-1.5 text-right whitespace-nowrap">{totalCell(row)}</td>
                       <td className="px-1 py-1.5">
                         <button type="button" className={removeBtn} title="Remove row"
                           onClick={() => setParkRows(rows => rows.filter(r => r.key !== row.key))}>✕</button>
@@ -659,7 +659,7 @@ export default function TripBuilderForm({
           <span className="text-xs text-gray-400">USD · KES @ {fmt0(usdToKes)}</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[720px]">
+          <table className="stack-table w-full text-sm min-w-[720px]">
             <thead>
               <tr className="text-left text-[11px] text-gray-400 border-b border-gray-100">
                 <th className="px-4 py-2 font-medium">Track</th>
@@ -681,18 +681,20 @@ export default function TripBuilderForm({
                 const marginPct = hasSale && sale > 0 ? ((sale - s.total) / sale) * 100 : null
                 return (
                   <tr key={track} className="border-b border-gray-50 last:border-0">
-                    <td className="px-4 py-2.5 font-medium text-gray-800 capitalize">{track}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">${fmt(s.hotels)}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">${fmt(transportTotal)}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">${fmt(parksTotal)}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums font-semibold text-gray-900">
-                      ${fmt(s.total)}
-                      <span className="block text-[10px] text-gray-400 font-normal">KES {fmt0(s.total * usdToKes)}</span>
+                    <td data-label="Track" className="px-4 py-2.5 font-medium text-gray-800 capitalize">{track}</td>
+                    <td data-label="Hotels" className="px-3 py-2.5 text-right tabular-nums text-gray-700">${fmt(s.hotels)}</td>
+                    <td data-label="Transport" className="px-3 py-2.5 text-right tabular-nums text-gray-700">${fmt(transportTotal)}</td>
+                    <td data-label="Parks" className="px-3 py-2.5 text-right tabular-nums text-gray-700">${fmt(parksTotal)}</td>
+                    <td data-label="Total cost" className="px-3 py-2.5 text-right tabular-nums font-semibold text-gray-900">
+                      <span>
+                        ${fmt(s.total)}
+                        <span className="block text-[10px] text-gray-400 font-normal">KES {fmt0(s.total * usdToKes)}</span>
+                      </span>
                     </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">
+                    <td data-label="Per guest" className="px-3 py-2.5 text-right tabular-nums text-gray-700">
                       {payingGuests > 0 ? `$${fmt(s.total / payingGuests)}` : '—'}
                     </td>
-                    <td className="px-3 py-2.5 text-right">
+                    <td data-label="Sale price" className="px-3 py-2.5 text-right">
                       <input
                         type="number" min={0} step="1"
                         className={inputCls + ' w-28 text-right tabular-nums inline-block'}
@@ -701,7 +703,7 @@ export default function TripBuilderForm({
                         onChange={e => setSalePrices(p => ({ ...p, [track]: e.target.value }))}
                       />
                     </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums">
+                    <td data-label="Margin" className="px-3 py-2.5 text-right tabular-nums">
                       {margin === null ? (
                         <span className="text-gray-300">—</span>
                       ) : (
