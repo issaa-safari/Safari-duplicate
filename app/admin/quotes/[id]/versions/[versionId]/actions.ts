@@ -234,140 +234,31 @@ export async function updateTraveller(formData: FormData) {
   revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
 }
 
-export async function saveCostSheet(formData: FormData) {
+export async function setVersionStatus(formData: FormData) {
   const { admin } = await authGuard()
   const versionId = formData.get('versionId') as string
   const quoteId = formData.get('quoteId') as string
-  const linesRaw = formData.get('lines') as string
-  const deletedIdsRaw = formData.get('deletedIds') as string
+  const newStatus = formData.get('status') as string
 
-  if (!versionId || !quoteId) throw new Error('Missing IDs.')
-  await requireMutableVersion(admin, versionId, quoteId)
+  const allowed = ['draft', 'ready', 'sent']
+  if (!allowed.includes(newStatus)) throw new Error('Invalid status.')
 
-  const lines: Array<{
-    id?: string; description: string; unitCost: string; quantity: string; actual: string; unit: string
-  }> = JSON.parse(linesRaw)
-  const deletedIds: string[] = JSON.parse(deletedIdsRaw)
-
-  // Delete removed lines
-  if (deletedIds.length > 0) {
-    await admin.from('quote_price_lines').delete().in('id', deletedIds).eq('quote_version_id', versionId)
-  }
-
-  // Upsert each line
-  const { data: existing } = await admin
-    .from('quote_price_lines')
-    .select('id')
-    .eq('quote_version_id', versionId)
-    .like('pricing_unit', 'cs_%')
-
-  const existingIds = new Set((existing ?? []).map((r: any) => r.id))
-
-  for (let i = 0; i < lines.length; i++) {
-    const l = lines[i]
-    const uc = parseFloat(l.unitCost) || 0
-    const q  = parseFloat(l.quantity)  || 0
-    const ac = parseFloat(l.actual)    || 0
-    let totalCost = 0
-    if (l.unit === 'cs_night' || l.unit === 'cs_transport') {
-      totalCost = q > 0 ? uc * q : uc
-    } else {
-      totalCost = uc
-    }
-    const payload = {
-      description: l.description || '',
-      cost_category: l.unit === 'cs_night' ? 'accommodation' : l.unit === 'cs_fee' ? 'park_fees' : l.unit === 'cs_transport' ? 'transport' : 'other',
-      pricing_unit: l.unit,
-      unit_cost_usd: uc,
-      quantity: q || null,
-      total_cost_usd: totalCost,
-      total_selling_usd: ac || null,
-      is_optional: false,
-      is_client_visible: false,
-      sort_order: i,
-    }
-    if (l.id && existingIds.has(l.id)) {
-      await admin.from('quote_price_lines').update(payload).eq('id', l.id).eq('quote_version_id', versionId)
-    } else {
-      await admin.from('quote_price_lines').insert({ ...payload, quote_version_id: versionId })
-    }
-  }
-
-  revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
-}
-
-export async function applyCostBaseFromSheet(formData: FormData) {
-  const { admin } = await authGuard()
-  const versionId = formData.get('versionId') as string
-  const quoteId = formData.get('quoteId') as string
-  const costBase = parseFloat(formData.get('costBase') as string)
-
-  if (!versionId || !quoteId) throw new Error('Missing IDs.')
-  if (!Number.isFinite(costBase) || costBase < 0) throw new Error('Invalid cost base.')
-  await requireMutableVersion(admin, versionId, quoteId)
-
-  // Get current markup and traveller count to calculate selling price and per-person rate
   const { data: version } = await admin
-    .from('quote_versions')
-    .select('default_markup_percent')
-    .eq('id', versionId)
-    .single()
+    .from('quote_versions').select('status').eq('id', versionId).eq('quote_id', quoteId).single()
+  if (!version) throw new Error('Version not found.')
 
-  const { count: payingTravellerCount } = await admin
-    .from('quote_travellers')
-    .select('*', { count: 'exact', head: true })
-    .eq('quote_version_id', versionId)
-    .eq('is_paying', true)
-    .eq('is_complimentary', false)
-
-  const markupPercent = version?.default_markup_percent ?? 0
-  const totalSelling = costBase > 0 ? costBase * (1 + markupPercent / 100) : 0
-  const payingCount = payingTravellerCount ?? 0
-  const perPersonSelling = payingCount > 0 ? totalSelling / payingCount : 0
-
-  const { error } = await admin
-    .from('quote_versions')
-    .update({
-      cost_base_usd: costBase,
-      total_selling_usd: totalSelling,
-      sharing_price_per_person_usd: perPersonSelling,
-      single_price_per_person_usd: perPersonSelling,
-    })
-    .eq('id', versionId)
-  if (error) throw new Error(error.message)
-  revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
-}
-
-export async function savePricing(formData: FormData) {
-  const { admin } = await authGuard()
-
-  const versionId = formData.get('versionId') as string
-  const quoteId = formData.get('quoteId') as string
-  const costBaseStr = (formData.get('costBase') as string) || ''
-  const markupPercentStr = (formData.get('markupPercent') as string) || ''
-
-  if (!versionId || !quoteId) throw new Error('Missing version or quote ID.')
-
-  const costBase = costBaseStr !== '' ? parseFloat(costBaseStr) : null
-  const markupPercent = markupPercentStr !== '' ? parseFloat(markupPercentStr) : 0
-
-  if (costBase !== null && (!Number.isFinite(costBase) || costBase < 0)) {
-    throw new Error('Cost base must be zero or greater.')
+  const transitions: Record<string, string[]> = {
+    draft: ['ready'],
+    ready: ['draft', 'sent'],
+    sent: ['ready'],
   }
-  if (!Number.isFinite(markupPercent) || markupPercent < 0 || markupPercent > 500) {
-    throw new Error('Markup percent must be between 0 and 500.')
+  if (!transitions[version.status]?.includes(newStatus)) {
+    throw new Error(`Cannot move from ${version.status} to ${newStatus}.`)
   }
 
-  await requireMutableVersion(admin, versionId, quoteId)
-
-  const { error } = await admin
-    .from('quote_versions')
-    .update({
-      cost_base_usd: costBase,
-      default_markup_percent: markupPercent,
-    })
-    .eq('id', versionId)
-
+  const { error } = await admin.from('quote_versions').update({ status: newStatus }).eq('id', versionId)
   if (error) throw new Error(error.message)
+
   revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
+  revalidatePath(`/admin/quotes/${quoteId}`)
 }

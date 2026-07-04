@@ -10,7 +10,6 @@ const MAIN_CONTENT = [
 const COMPANY_CONTENT = [
   { key: 'vehicles', href: '/admin/content/vehicles', label: 'Vehicles', icon: '▰' },
   { key: 'staff', href: '/admin/content/staff', label: 'Tour Staff', icon: '♙' },
-  { key: 'rates', href: '/admin/content/rates', label: 'Supplier Rates', icon: '$' },
 ]
 
 function NavGroup({

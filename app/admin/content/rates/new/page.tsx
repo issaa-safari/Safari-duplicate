@@ -3,7 +3,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import NewRateCardForm from './form'
 
-export default async function NewRateCardPage() {
+export default async function NewRateCardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ entityType?: string; entityId?: string; supplierId?: string }>
+}) {
+  const { entityType, entityId, supplierId } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/admin/login')
@@ -19,5 +24,11 @@ export default async function NewRateCardPage() {
     admin.from('suppliers').select('id, name').eq('is_active', true).order('name'),
   ])
 
-  return <NewRateCardForm suppliers={suppliers ?? []} entities={{ accommodation: accommodations ?? [], activity: activities ?? [], vehicle: vehicles ?? [], staff: staff ?? [], destination: destinations ?? [], park_fee: parks ?? [] }} />
+  return (
+    <NewRateCardForm
+      suppliers={suppliers ?? []}
+      entities={{ accommodation: accommodations ?? [], activity: activities ?? [], vehicle: vehicles ?? [], staff: staff ?? [], destination: destinations ?? [], park_fee: parks ?? [] }}
+      defaults={{ entityType, entityId, supplierId }}
+    />
+  )
 }

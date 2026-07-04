@@ -653,6 +653,9 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
 
     revalidatePath('/admin/quotes')
     revalidatePath(`/admin/quotes/${saved.quoteId}`)
+    revalidatePath(`/admin/trip-builder/${saved.quoteId}`)
+    revalidatePath(`/admin/quotes/${saved.quoteId}/versions/${saved.standardVersionId}`)
+    revalidatePath(`/admin/quotes/${saved.quoteId}/versions/${saved.premiumVersionId}`)
 
     const totals = Object.fromEntries(
       tracksPayload.map(t => [t.trackLabel, {

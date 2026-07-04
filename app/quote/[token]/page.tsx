@@ -191,7 +191,7 @@ export default async function QuotePortalPage({
   const singlePp = Number(version.single_price_per_person_usd ?? 0)
   const costBase = Number((version as any).cost_base_usd ?? 0)
   const markupPercent = Number((version as any).default_markup_percent ?? 0)
-  const hasQuoteLevelPricing = costBase > 0
+  const hasQuoteLevelPricing = totalSelling > 0 || costBase > 0
 
   const companyName = settings?.company_name ?? 'Safari Adventures'
 
@@ -256,9 +256,12 @@ export default async function QuotePortalPage({
 
   // Derive per-person base if not explicitly stored
   let effectiveSharingPp = sharingPp
-  const totalSellingDerived = costBase > 0
-    ? (markupPercent > 0 ? costBase * (1 + markupPercent / 100) : costBase)
-    : totalSelling
+  // Prefer the Trip Builder's rolled-up total; fall back to the legacy cost-base path
+  const totalSellingDerived = totalSelling > 0
+    ? totalSelling
+    : costBase > 0
+      ? (markupPercent > 0 ? costBase * (1 + markupPercent / 100) : costBase)
+      : 0
   if (effectiveSharingPp === 0 && totalSellingDerived > 0 && payingTravellers.length > 0) {
     const weightedSum = (payingTravellers as any[]).reduce((s: number, t: any) => {
       const pct = ((t.age_band_snapshot as any)?.default_percentage ?? 100) / 100

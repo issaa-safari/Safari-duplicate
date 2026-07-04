@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import ContentShell from '../../content-shell'
 import ParkEditForm from './form'
+import EntityRatesPanel from '@/components/admin/entity-rates-panel'
 
 export default async function ParkEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -23,6 +24,7 @@ export default async function ParkEditPage({ params }: { params: Promise<{ id: s
   return (
     <ContentShell active="parks" title={park.name} icon="⛰">
       <ParkEditForm park={park} />
+      <EntityRatesPanel entityType="park_fee" entityId={id} heading="Park Fee Rates" />
     </ContentShell>
   )
 }

@@ -86,21 +86,21 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           </div>
         </div>
         <div className="flex gap-2">
-          {versions.some((v: any) => v.track_label) && ['draft', 'ready'].includes(quote.status) && (
+          {['draft', 'ready'].includes(quote.status) && (
             <Link
               href={`/admin/trip-builder/${quote.id}`}
-              className="rounded-md px-4 py-2 text-sm font-medium text-[var(--olive-dk)] border border-[var(--olive)]/40 hover:bg-[var(--olive)]/5">
+              className="rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
               Open in Trip Builder
             </Link>
           )}
           {/* Always allow opening the latest version to review the itinerary and
-              costing. While editable it's "Edit"; once sent/accepted it's "View". */}
+              costing. While editable it's the details view; once sent/accepted it's "View". */}
           {latestVersion && (
             <Link
               href={`/admin/quotes/${quote.id}/versions/${latestVersion.id}`}
-              className="rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
+              className="rounded-md px-4 py-2 text-sm font-medium text-[var(--olive-dk)] border border-[var(--olive)]/40 hover:bg-[var(--olive)]/5">
               {quote.status === 'draft' || quote.status === 'ready'
-                ? `Edit Version ${latestVersion.version_number}`
+                ? 'Details & itinerary'
                 : `View itinerary & costing (v${latestVersion.version_number})`}
             </Link>
           )}

@@ -270,10 +270,12 @@ export default async function QuotePrintPage({
   // Cost → pricing breakdown
   const payingTravellers = (quoteTravellers ?? []).filter((t: any) => t.is_paying && !t.is_complimentary)
 
-  // Total selling: prefer cost_base + markup, fallback to version total
-  const totalSellingDerived = costBase > 0
-    ? (markupPercent > 0 ? costBase * (1 + markupPercent / 100) : costBase)
-    : totalSelling
+  // Total selling: prefer the Trip Builder's rolled-up total, fallback to legacy cost base + markup
+  const totalSellingDerived = totalSelling > 0
+    ? totalSelling
+    : costBase > 0
+      ? (markupPercent > 0 ? costBase * (1 + markupPercent / 100) : costBase)
+      : 0
 
   // Derive per-person base if not explicitly stored
   let effectiveSharingPp = sharingPp
