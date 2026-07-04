@@ -100,4 +100,24 @@ html { scroll-behavior: smooth; }
     min-width: 0;
     max-width: 70%;
   }
+
+  /* ── Mobile stacked grids ──────────────────────────────────────────────
+     Same idea as .stack-table but for the grid-based editors (itinerary
+     builders, price lines): collapse the fixed multi-column template to a
+     single column, hide the header row, cancel forced min-widths, and show
+     each cell's data-label above its content. !important is required to
+     beat the inline gridTemplateColumns/minWidth styles. */
+  .stack-grid { grid-template-columns: 1fr !important; }
+  .stack-grid-header { display: none !important; }
+  .stack-grid-wrap { min-width: 0 !important; }
+  .stack-grid > [data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--admin-text-muted);
+    margin-bottom: 0.25rem;
+  }
 }

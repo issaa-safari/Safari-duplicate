@@ -513,10 +513,10 @@ export default function QuoteItineraryBuilder({
       </div>
 
       <div className="overflow-x-auto">
-        <div className="space-y-3" style={{ minWidth: 940 }}>
+        <div className="stack-grid-wrap space-y-3" style={{ minWidth: 940 }}>
 
           {/* Header */}
-          <div className="grid gap-3 px-2 text-xs font-medium text-gray-500"
+          <div className="stack-grid-header grid gap-3 px-2 text-xs font-medium text-gray-500"
             style={{ gridTemplateColumns: GRID_COLS }}>
             <div>Day / Date</div>
             <div>Main Destination</div>
@@ -529,11 +529,11 @@ export default function QuoteItineraryBuilder({
           {/* Day rows */}
           {days.map((day, i) => (
             <div key={day._key}
-              className="grid gap-3 bg-white rounded-lg border border-gray-200 p-3 items-start"
+              className="stack-grid grid gap-3 bg-white rounded-lg border border-gray-200 p-3 items-start"
               style={{ gridTemplateColumns: GRID_COLS }}>
 
               {/* Day # + Date */}
-              <div className="space-y-1.5">
+              <div data-label="Day / Date" className="space-y-1.5">
                 <p className="text-sm font-semibold text-gray-900">Day {day.dayNumber}</p>
                 <input type="number" min={1} value={day.dayNumber}
                   onChange={e => update(i, { dayNumber: Number(e.target.value) })}
@@ -544,7 +544,7 @@ export default function QuoteItineraryBuilder({
               </div>
 
               {/* Destination */}
-              <div>
+              <div data-label="Main Destination">
                 <select value={day.destinationId ?? ''}
                   onChange={e => onDestSelect(i, e.target.value)}
                   className={inputCls} disabled={isLocked}>
@@ -557,7 +557,7 @@ export default function QuoteItineraryBuilder({
               </div>
 
               {/* Accommodation (primary + optional alternative) */}
-              <div className="space-y-1.5">
+              <div data-label="Accommodation" className="space-y-1.5">
                 <select value={accomIdFor(day, false)}
                   onChange={e => onAccomSelect(i, e.target.value, false)}
                   className={inputCls} disabled={isLocked}>
@@ -575,7 +575,7 @@ export default function QuoteItineraryBuilder({
               </div>
 
               {/* Activities & Details */}
-              <div className="space-y-1.5">
+              <div data-label="Activities & Details" className="space-y-1.5">
                 <button type="button" onClick={() => setActivityModal(i)} disabled={isLocked}
                   className="w-full rounded-md border border-dashed border-[var(--olive)] text-[var(--olive-dk)] px-2 py-1 text-xs font-medium hover:bg-[var(--olive)]/5 disabled:opacity-50">
                   + Add Activities{day.items.filter(it => it.itemType === 'activity').length > 0 ? ` (${day.items.filter(it => it.itemType === 'activity').length})` : ''}
@@ -653,7 +653,7 @@ export default function QuoteItineraryBuilder({
               </div>
 
               {/* Meal Plan */}
-              <div className="flex gap-1 pt-1">
+              <div data-label="Meal Plan" className="flex gap-1 pt-1">
                 <MealPill on={day.meals.includes('breakfast')} label="B"
                   onClick={() => !isLocked && update(i, {
                     meals: day.meals.includes('breakfast')
@@ -675,7 +675,7 @@ export default function QuoteItineraryBuilder({
               </div>
 
               {/* Controls */}
-              <div className="flex flex-col items-center gap-1 pt-0.5">
+              <div className="flex flex-col max-sm:flex-row max-sm:justify-end items-center gap-1 pt-0.5">
                 <button onClick={() => move(i, -1)} disabled={i === 0}
                   className="px-1.5 py-0.5 text-xs text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30">↑</button>
                 <button onClick={() => move(i, 1)} disabled={i === days.length - 1}
