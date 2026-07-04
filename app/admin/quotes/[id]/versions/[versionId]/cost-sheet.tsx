@@ -105,7 +105,7 @@ function SectionTable({
 
   return (
     <div className="mb-6 rounded-lg overflow-hidden border border-gray-200">
-      <table className="w-full border-collapse text-sm">
+      <table className="stack-table w-full border-collapse text-sm">
         <thead>
           <tr style={{ backgroundColor: color.bg }}>
             <th className={th} style={{ width: '35%' }}>{title}</th>
@@ -122,7 +122,7 @@ function SectionTable({
             return (
               <tr key={row.id ?? `new-${i}`} className="border-b border-gray-100">
                 {cols.map(c => (
-                  <td key={c.label} className={td}>
+                  <td key={c.label} data-label={c.label} className={td}>
                     {c.field === 'total' ? (
                       <div className="flex items-center gap-1 text-right px-1">
                         <span className="flex-1 font-medium">

@@ -42,7 +42,7 @@ export default async function TourStaffPage() {
             </Link>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="stack-table w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
                 <th className="px-4 py-3 font-medium">Name</th>
@@ -56,16 +56,16 @@ export default async function TourStaffPage() {
             <tbody>
               {staff.map((s: any) => (
                 <tr key={s.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
-                  <td className="px-4 py-3">
+                  <td data-label="Name" className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
+                  <td data-label="Role" className="px-4 py-3">
                     <span className={'text-xs px-2 py-0.5 rounded-full font-medium capitalize ' +
                       (ROLE_STYLES[s.role] ?? 'bg-gray-100 text-gray-600')}>
                       {s.role}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{s.phone ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 hidden md:table-cell">{s.email ?? '—'}</td>
-                  <td className="px-4 py-3">
+                  <td data-label="Phone" className="px-4 py-3 text-gray-500 hidden sm:table-cell">{s.phone ?? '—'}</td>
+                  <td data-label="Email" className="px-4 py-3 text-gray-500 hidden md:table-cell">{s.email ?? '—'}</td>
+                  <td data-label="Status" className="px-4 py-3">
                     <span className={'text-xs px-2 py-0.5 rounded-full font-medium ' +
                       (s.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
                       {s.is_active ? 'Active' : 'Inactive'}

@@ -71,7 +71,7 @@ export default async function DeparturesPage({
             )}
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="stack-table w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
                 <th className="px-4 py-3 font-medium">Tour</th>
@@ -89,28 +89,28 @@ export default async function DeparturesPage({
                 const available = dep.max_seats - dep.booked_seats
                 return (
                   <tr key={dep.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-4 py-3">
+                    <td data-label="Tour" className="px-4 py-3">
                       <p className="font-medium text-gray-900">{tour?.title_en ?? 'Untitled tour'}</p>
                       {tour?.type && <p className="text-xs text-gray-400 capitalize">{tour.type}</p>}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">
+                    <td data-label="Dates" className="px-4 py-3 text-gray-600">
                       {new Date(dep.start_date).toLocaleDateString('en-GB')}
                       {' → '}
                       {new Date(dep.end_date).toLocaleDateString('en-GB')}
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Seats" className="px-4 py-3">
                       <span className={available <= 0 ? 'text-red-600 font-medium' : 'text-gray-700'}>
                         {available} / {dep.max_seats}
                       </span>
                       <span className="text-xs text-gray-400 block">{dep.booked_seats} booked</span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 hidden md:table-cell">
+                    <td data-label="Price" className="px-4 py-3 text-gray-600 hidden md:table-cell">
                       ${Number(dep.price_usd).toLocaleString()}
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Status" className="px-4 py-3">
                       <StatusBadge status={dep.status} />
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Website" className="px-4 py-3">
                       <form action={async () => { 'use server'; await toggleDeparturePublished(dep.id) }}>
                         {dep.is_active ? (
                           <button type="submit"

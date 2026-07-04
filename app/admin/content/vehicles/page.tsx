@@ -43,7 +43,7 @@ export default async function VehiclesPage() {
             </Link>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="stack-table w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
                 <th className="px-4 py-3 font-medium">Name</th>
@@ -57,13 +57,13 @@ export default async function VehiclesPage() {
             <tbody>
               {vehicles.map((v: any) => (
                 <tr key={v.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{v.name}</td>
-                  <td className="px-4 py-3 text-gray-500 hidden sm:table-cell capitalize">
+                  <td data-label="Name" className="px-4 py-3 font-medium text-gray-900">{v.name}</td>
+                  <td data-label="Type" className="px-4 py-3 text-gray-500 hidden sm:table-cell capitalize">
                     {TYPE_LABELS[v.type] ?? v.type}
                   </td>
-                  <td className="px-4 py-3 text-gray-500 hidden md:table-cell">{v.seats}</td>
-                  <td className="px-4 py-3 text-gray-500 hidden md:table-cell">{v.count}</td>
-                  <td className="px-4 py-3">
+                  <td data-label="Seats" className="px-4 py-3 text-gray-500 hidden md:table-cell">{v.seats}</td>
+                  <td data-label="Count" className="px-4 py-3 text-gray-500 hidden md:table-cell">{v.count}</td>
+                  <td data-label="Status" className="px-4 py-3">
                     <span className={'text-xs px-2 py-0.5 rounded-full font-medium ' +
                       (v.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
                       {v.is_active ? 'Active' : 'Inactive'}

@@ -162,7 +162,7 @@ export default async function PnlPage({
         {acceptedRows.length === 0 ? (
           <p className="p-10 text-center text-sm text-gray-400">No quotes accepted in this range.</p>
         ) : (
-          <table className="w-full text-sm">
+          <table className="stack-table w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
                 <th className="px-5 py-3 font-medium">Quote</th>
@@ -176,20 +176,20 @@ export default async function PnlPage({
             <tbody>
               {acceptedRows.map(r => (
                 <tr key={r.id} className="border-b border-gray-50 last:border-0">
-                  <td className="px-5 py-2.5">
+                  <td data-label="Quote" className="px-5 py-2.5">
                     <Link href={`/admin/quotes/${r.quoteId}`} className="font-mono text-xs text-[var(--olive)] hover:underline">
                       {r.quoteNumber}
                     </Link>
                   </td>
-                  <td className="px-3 py-2.5 text-gray-500 text-xs">{new Date(r.acceptedAt).toLocaleDateString('en-GB')}</td>
-                  <td className="px-3 py-2.5">
+                  <td data-label="Accepted" className="px-3 py-2.5 text-gray-500 text-xs">{new Date(r.acceptedAt).toLocaleDateString('en-GB')}</td>
+                  <td data-label="Track" className="px-3 py-2.5">
                     {r.trackLabel ? (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 capitalize">{r.trackLabel}</span>
                     ) : <span className="text-xs text-gray-300">—</span>}
                   </td>
-                  <td className="px-3 py-2.5 text-right text-gray-800 tabular-nums">${fmt(r.sellingUsd)}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-500 tabular-nums">${fmt(r.costUsd)}</td>
-                  <td className="px-5 py-2.5 text-right font-medium tabular-nums text-gray-900">${fmt(r.sellingUsd - r.costUsd)}</td>
+                  <td data-label="Revenue" className="px-3 py-2.5 text-right text-gray-800 tabular-nums">${fmt(r.sellingUsd)}</td>
+                  <td data-label="Cost" className="px-3 py-2.5 text-right text-gray-500 tabular-nums">${fmt(r.costUsd)}</td>
+                  <td data-label="Margin" className="px-5 py-2.5 text-right font-medium tabular-nums text-gray-900">${fmt(r.sellingUsd - r.costUsd)}</td>
                 </tr>
               ))}
             </tbody>

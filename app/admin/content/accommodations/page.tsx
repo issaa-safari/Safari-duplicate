@@ -83,7 +83,7 @@ export default async function AccommodationsPage({
             )}
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="stack-table w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500 text-xs">
                 <th className="px-4 py-3 font-medium">Accommodation</th>
@@ -100,7 +100,7 @@ export default async function AccommodationsPage({
                 const hasImg  = acc.cover_image_url ? 1 : 0
                 return (
                   <tr key={acc.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                    <td className="px-4 py-3">
+                    <td data-label="Accommodation" className="px-4 py-3">
                       <span className="font-medium text-gray-900">{acc.name}</span>
                       {acc.budget_tier && (
                         <span className={'ml-2 text-xs px-1.5 py-0.5 rounded font-medium capitalize ' +
@@ -109,22 +109,22 @@ export default async function AccommodationsPage({
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">
+                    <td data-label="Destination" className="px-4 py-3 text-gray-500 hidden sm:table-cell">
                       {acc.destinations?.name ?? <span className="text-gray-300">—</span>}
                     </td>
-                    <td className="px-4 py-3 text-center hidden md:table-cell">
+                    <td data-label="Description" className="px-4 py-3 text-center hidden md:table-cell">
                       <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium ${
                         hasDesc ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
                         {hasDesc}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center hidden md:table-cell">
+                    <td data-label="Image" className="px-4 py-3 text-center hidden md:table-cell">
                       <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium ${
                         hasImg ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
                         {hasImg}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center hidden md:table-cell">
+                    <td data-label="Video" className="px-4 py-3 text-center hidden md:table-cell">
                       <span className="inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium bg-gray-100 text-gray-400">
                         0
                       </span>

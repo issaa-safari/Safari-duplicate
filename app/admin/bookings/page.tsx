@@ -52,7 +52,7 @@ export default async function BookingsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="stack-table w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500 bg-gray-50">
                   <th className="px-4 py-3 font-medium">Tour</th>
@@ -72,27 +72,27 @@ export default async function BookingsPage() {
 
                   return (
                     <tr key={booking.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="px-4 py-3">
+                      <td data-label="Tour" className="px-4 py-3">
                         <p className="font-medium text-gray-900">{tour?.title_en ?? 'Untitled tour'}</p>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td data-label="Dates" className="px-4 py-3 text-gray-600">
                         {departure?.start_date ? new Date(departure.start_date).toLocaleDateString('en-GB') : '—'}
                         {' → '}
                         {departure?.end_date ? new Date(departure.end_date).toLocaleDateString('en-GB') : '—'}
                       </td>
-                      <td className="px-4 py-3 text-gray-700">
+                      <td data-label="Travellers" className="px-4 py-3 text-gray-700">
                         <span className="font-medium">{booking.number_of_travellers}</span>
                         <div className="text-xs text-gray-500 mt-1">
                           {travellers?.map(t => `${t.first_name} ${t.last_name}`).join(', ')}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td data-label="Price" className="px-4 py-3 text-gray-600">
                         ${Number(booking.total_price_usd).toLocaleString()}
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Status" className="px-4 py-3">
                         <StatusBadge status={booking.status} />
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500">
+                      <td data-label="Booked" className="px-4 py-3 text-xs text-gray-500">
                         {new Date(booking.created_at).toLocaleDateString('en-GB')}
                       </td>
                       <td className="px-4 py-3 text-right">

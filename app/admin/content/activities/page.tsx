@@ -71,7 +71,7 @@ export default async function ActivitiesPage({
             )}
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="stack-table w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500 text-xs">
                 <th className="px-4 py-3 font-medium">Activity</th>
@@ -87,22 +87,22 @@ export default async function ActivitiesPage({
                 const hasImg  = act.cover_image_url ? 1 : 0
                 return (
                   <tr key={act.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                    <td className="px-4 py-3">
+                    <td data-label="Activity" className="px-4 py-3">
                       <span className="font-medium text-gray-900">{act.name}</span>
                       {!act.is_active && (
                         <span className="ml-2 text-xs text-gray-400">(inactive)</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">
+                    <td data-label="Location" className="px-4 py-3 text-gray-500 hidden sm:table-cell">
                       {act.destinations?.name ?? <span className="text-gray-300">No specific location</span>}
                     </td>
-                    <td className="px-4 py-3 text-center hidden md:table-cell">
+                    <td data-label="Description" className="px-4 py-3 text-center hidden md:table-cell">
                       <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium ${
                         hasDesc ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
                         {hasDesc}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center hidden md:table-cell">
+                    <td data-label="Image" className="px-4 py-3 text-center hidden md:table-cell">
                       <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium ${
                         hasImg ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
                         {hasImg}

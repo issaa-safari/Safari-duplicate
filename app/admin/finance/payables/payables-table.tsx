@@ -128,16 +128,16 @@ export default function PayablesTable({ suppliers }: { suppliers: SupplierPayabl
                     {s.byQuote.length > 0 && (
                       <div>
                         <p className="text-xs font-medium text-gray-500 mb-1">Owed from accepted quotes</p>
-                        <table className="w-full text-sm max-w-lg">
+                        <table className="stack-table w-full text-sm max-w-lg">
                           <tbody>
                             {s.byQuote.map(q => (
                               <tr key={q.quoteId} className="border-b border-gray-50 last:border-0">
-                                <td className="py-1.5">
+                                <td data-label="Quote" className="py-1.5">
                                   <Link href={`/admin/quotes/${q.quoteId}`} className="font-mono text-xs text-[var(--olive)] hover:underline">
                                     {q.quoteNumber ?? q.quoteId.slice(0, 8)}
                                   </Link>
                                 </td>
-                                <td className="py-1.5 text-right font-medium text-gray-800 tabular-nums">${fmt(q.owedUsd)}</td>
+                                <td data-label="Owed" className="py-1.5 text-right font-medium text-gray-800 tabular-nums">${fmt(q.owedUsd)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -147,14 +147,14 @@ export default function PayablesTable({ suppliers }: { suppliers: SupplierPayabl
                     {s.payments.length > 0 && (
                       <div>
                         <p className="text-xs font-medium text-gray-500 mb-1">Payments made</p>
-                        <table className="w-full text-sm max-w-lg">
+                        <table className="stack-table w-full text-sm max-w-lg">
                           <tbody>
                             {s.payments.map(p => (
                               <tr key={p.id} className="border-b border-gray-50 last:border-0">
-                                <td className="py-1.5 text-gray-600 text-xs">{new Date(p.paidAt).toLocaleDateString('en-GB')}</td>
-                                <td className="py-1.5 text-gray-500 text-xs">{p.method?.replace('_', ' ') ?? '—'}</td>
-                                <td className="py-1.5 text-gray-400 text-xs">{p.reference ?? '—'}</td>
-                                <td className="py-1.5 text-right font-medium text-green-700 tabular-nums">${fmt(p.amountUsd)}</td>
+                                <td data-label="Date" className="py-1.5 text-gray-600 text-xs">{new Date(p.paidAt).toLocaleDateString('en-GB')}</td>
+                                <td data-label="Method" className="py-1.5 text-gray-500 text-xs">{p.method?.replace('_', ' ') ?? '—'}</td>
+                                <td data-label="Ref" className="py-1.5 text-gray-400 text-xs">{p.reference ?? '—'}</td>
+                                <td data-label="Paid" className="py-1.5 text-right font-medium text-green-700 tabular-nums">${fmt(p.amountUsd)}</td>
                               </tr>
                             ))}
                           </tbody>

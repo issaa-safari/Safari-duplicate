@@ -177,7 +177,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             {versions.length === 0 ? (
               <div className="p-6 text-center text-sm text-gray-400">No versions yet.</div>
             ) : (
-              <table className="w-full text-sm">
+              <table className="stack-table w-full text-sm">
                 <thead>
                   <tr className="text-left text-gray-500 border-b border-gray-100">
                     <th className="px-5 py-3 font-medium">Version</th>
@@ -190,7 +190,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
                 <tbody>
                   {versions.map((v: any) => (
                     <tr key={v.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
-                      <td className="px-5 py-3">
+                      <td data-label="Version" className="px-5 py-3">
                         <Link
                           href={`/admin/quotes/${quote.id}/versions/${v.id}`}
                           className="text-[var(--olive)] hover:underline font-medium">
@@ -207,15 +207,15 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
                           <p className="text-xs text-gray-400 mt-0.5">{v.title}</p>
                         )}
                       </td>
-                      <td className="px-5 py-3">
+                      <td data-label="Status" className="px-5 py-3">
                         <StatusBadge status={v.status} />
                       </td>
-                      <td className="px-5 py-3 text-gray-500 hidden md:table-cell">
+                      <td data-label="Dates" className="px-5 py-3 text-gray-500 hidden md:table-cell">
                         {v.travel_start_date
                           ? new Date(v.travel_start_date).toLocaleDateString('en-GB')
                           : '—'}
                       </td>
-                      <td className="px-5 py-3 text-right font-medium text-gray-900">
+                      <td data-label="Price /pp" className="px-5 py-3 text-right font-medium text-gray-900">
                         {v.sharing_price_per_person_usd
                           ? `$${Number(v.sharing_price_per_person_usd).toLocaleString()}`
                           : '—'}

@@ -394,7 +394,7 @@ export default async function QuotePortalPage({
               {isArabic ? 'يوم بيوم' : 'Day by Day'}
             </h2>
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <table className="w-full text-sm">
+              <table className="stack-table w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200" style={{ backgroundColor: '#7A9A4A' }}>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-white uppercase tracking-wide" style={{ width: '16%' }}>
@@ -423,12 +423,12 @@ export default async function QuotePortalPage({
                       : `${isArabic ? AR.day : 'Day'} ${day.day_number}`
                     return (
                       <tr key={day.id} style={{ backgroundColor: i % 2 === 0 ? '#fafff5' : '#fff' }}>
-                        <td className="px-4 py-3 font-medium text-gray-900">{dayLabel}</td>
-                        <td className="px-4 py-3 font-medium text-gray-800">{dest}</td>
-                        <td className="px-4 py-3 text-gray-700">
+                        <td data-label={isArabic ? 'اليوم' : 'Days'} className="px-4 py-3 font-medium text-gray-900">{dayLabel}</td>
+                        <td data-label={isArabic ? 'الوجهة التالية' : 'Next Destination'} className="px-4 py-3 font-medium text-gray-800">{dest}</td>
+                        <td data-label={isArabic ? 'الإقامة' : 'Accommodation'} className="px-4 py-3 text-gray-700">
                           {accoms.length > 0 ? accoms[0] : <span className="text-gray-400 text-xs italic">{isArabic ? 'بدون إقامة' : 'No accommodation'}</span>}
                         </td>
-                        <td className="px-4 py-3 text-gray-700 text-xs">{mealStr}</td>
+                        <td data-label={isArabic ? 'خطة الوجبات' : 'Meal Plan'} className="px-4 py-3 text-gray-700 text-xs">{mealStr}</td>
                       </tr>
                     )
                   })}

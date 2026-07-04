@@ -91,7 +91,7 @@ export default function ExpensesTable({ expenses }: { expenses: ExpenseRow[] }) 
         {expenses.length === 0 ? (
           <p className="p-10 text-center text-sm text-gray-400">No expenses logged yet.</p>
         ) : (
-          <table className="w-full text-sm">
+          <table className="stack-table w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
                 <th className="px-5 py-3 font-medium">Date</th>
@@ -105,18 +105,18 @@ export default function ExpensesTable({ expenses }: { expenses: ExpenseRow[] }) 
             <tbody>
               {expenses.map(x => (
                 <tr key={x.id} className="border-b border-gray-50 last:border-0">
-                  <td className="px-5 py-2.5 text-gray-600 whitespace-nowrap">
+                  <td data-label="Date" className="px-5 py-2.5 text-gray-600 whitespace-nowrap">
                     {new Date(x.expense_date).toLocaleDateString('en-GB')}
                   </td>
-                  <td className="px-3 py-2.5">
+                  <td data-label="Category" className="px-3 py-2.5">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{label(x.category)}</span>
                   </td>
-                  <td className="px-3 py-2.5 text-gray-800">
+                  <td data-label="Description" className="px-3 py-2.5 text-gray-800">
                     {x.description}
                     {x.reference && <span className="text-xs text-gray-400 ml-2">({x.reference})</span>}
                   </td>
-                  <td className="px-3 py-2.5 text-gray-500 text-xs">{x.method ? label(x.method) : '—'}</td>
-                  <td className="px-3 py-2.5 text-right font-medium text-gray-900 tabular-nums">${fmt(Number(x.amount_usd))}</td>
+                  <td data-label="Method" className="px-3 py-2.5 text-gray-500 text-xs">{x.method ? label(x.method) : '—'}</td>
+                  <td data-label="Amount" className="px-3 py-2.5 text-right font-medium text-gray-900 tabular-nums">${fmt(Number(x.amount_usd))}</td>
                   <td className="px-3 py-2.5 text-right">
                     <button type="button" onClick={() => remove(x.id)} disabled={pending}
                       className="text-xs text-gray-300 hover:text-red-500">✕</button>

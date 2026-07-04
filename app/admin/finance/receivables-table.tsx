@@ -102,7 +102,7 @@ export default function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
                   <div className="pt-3">
                     {row.payments.length > 0 ? (
                       <div className="overflow-x-auto">
-                      <table className="w-full text-sm mb-3 min-w-[420px]">
+                      <table className="stack-table w-full text-sm mb-3 min-w-[420px]">
                         <thead>
                           <tr className="text-xs text-gray-400 text-left border-b border-gray-100">
                             <th className="pb-1 font-medium">Date</th>
@@ -115,13 +115,13 @@ export default function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
                         <tbody>
                           {row.payments.map(p => (
                             <tr key={p.id} className="border-b border-gray-50 last:border-0">
-                              <td className="py-1.5 text-gray-600">
+                              <td data-label="Date" className="py-1.5 text-gray-600">
                                 {new Date(p.received_at).toLocaleDateString('en-GB')}
                               </td>
-                              <td className="py-1.5 text-gray-600 capitalize">{p.payment_type}</td>
-                              <td className="py-1.5 text-gray-500">{p.method ?? '—'}</td>
-                              <td className="py-1.5 text-gray-400 text-xs">{p.reference ?? '—'}</td>
-                              <td className="py-1.5 text-right font-medium text-gray-900">
+                              <td data-label="Type" className="py-1.5 text-gray-600 capitalize">{p.payment_type}</td>
+                              <td data-label="Method" className="py-1.5 text-gray-500">{p.method ?? '—'}</td>
+                              <td data-label="Ref" className="py-1.5 text-gray-400 text-xs">{p.reference ?? '—'}</td>
+                              <td data-label="Amount" className="py-1.5 text-right font-medium text-gray-900">
                                 ${fmt(Number(p.amount_usd))}
                               </td>
                             </tr>

@@ -51,3 +51,53 @@ html { scroll-behavior: smooth; }
   outline: 2px solid var(--focus-accent, var(--olive));
   outline-offset: 1px;
 }
+
+/* ── Mobile stacked tables ────────────────────────────────────────────────
+   Tables marked .stack-table collapse into label/value cards on phones
+   instead of scrolling sideways. Each <td> carries a data-label copied
+   from its column header; cells without one (action buttons, spacers)
+   right-align with no label. Columns hidden on small screens via Tailwind
+   (`hidden md:table-cell`) intentionally reappear here — stacking removes
+   the width constraint that hid them. */
+@media (max-width: 639px) {
+  .stack-table,
+  .stack-table tbody,
+  .stack-table tfoot,
+  .stack-table tr,
+  .stack-table td {
+    display: block;
+    width: 100%;
+    min-width: 0; /* cancels the min-w-[...] that forces sideways scroll */
+  }
+  .stack-table thead { display: none; }
+  .stack-table tr { padding: 0.5rem 0; }
+  .stack-table tr + tr { border-top: 1px solid var(--admin-border); }
+  .stack-table td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.25rem 1rem;
+    text-align: right;
+  }
+  .stack-table td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--admin-text-muted);
+    text-align: left;
+  }
+  .stack-table td:not([data-label]) { justify-content: flex-end; }
+  .stack-table td:not([data-label])::before { content: none; }
+  .stack-table td:empty { display: none; }
+  /* Form controls inside stacked cells (trip builder rows) get room to breathe */
+  .stack-table td > select,
+  .stack-table td > input {
+    flex: 1;
+    min-width: 0;
+    max-width: 70%;
+  }
+}
