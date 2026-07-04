@@ -6,25 +6,44 @@ import { ButtonLink, Button } from '@/components/ui/button'
 import { label } from './constants'
 import ContentShell from '../content-shell'
 
-export default async function SupplierRatesPage() {
+export default async function SupplierRatesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ supplierId?: string }>
+}) {
+  const { supplierId } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/admin/login')
 
   const admin = createAdminClient()
-  const { data: cards } = await admin
+  let query = admin
     .from('supplier_rate_cards')
     .select('id, name, supplier_name, entity_type, cost_category, valid_from, valid_to, currency, is_active, supplier_rates(count)')
     .order('valid_from', { ascending: false })
+  if (supplierId) query = query.eq('supplier_id', supplierId)
+  const { data: cards } = await query
+
+  const { data: filterSupplier } = supplierId
+    ? await admin.from('suppliers').select('name').eq('id', supplierId).maybeSingle()
+    : { data: null }
 
   return (
     <ContentShell active="rates" title="Supplier Rates" icon="$">
       <div className="flex items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-lg font-semibold text-gray-900">Supplier Rates</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Seasonal reusable costs used by the Quote Builder</p>
+          <p className="text-sm text-gray-500 mt-0.5">Seasonal costs used by the Trip Builder</p>
+          {supplierId && (
+            <p className="text-xs mt-1.5">
+              <span className="inline-flex items-center gap-2 rounded-full px-2.5 py-1 bg-[var(--olive)]/10 text-[var(--olive-dk)]">
+                Filtered by supplier{filterSupplier ? `: ${filterSupplier.name}` : ''}
+                <Link href="/admin/content/rates" className="font-semibold hover:underline">× clear</Link>
+              </span>
+            </p>
+          )}
         </div>
-        <ButtonLink href="/admin/content/rates/new" size="sm">+ New Rate Card</ButtonLink>
+        <ButtonLink href={supplierId ? `/admin/content/rates/new?supplierId=${supplierId}` : '/admin/content/rates/new'} size="sm">+ New Rate Card</ButtonLink>
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">

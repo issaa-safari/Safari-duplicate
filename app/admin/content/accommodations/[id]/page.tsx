@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import AccommodationEditForm from './form'
+import EntityRatesPanel from '@/components/admin/entity-rates-panel'
 
 export default async function AccommodationEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -26,5 +27,10 @@ export default async function AccommodationEditPage({ params }: { params: Promis
 
   if (!accommodation) notFound()
 
-  return <AccommodationEditForm accommodation={accommodation} destinations={destinations ?? []} />
+  return (
+    <>
+      <AccommodationEditForm accommodation={accommodation} destinations={destinations ?? []} />
+      <EntityRatesPanel entityType="accommodation" entityId={id} />
+    </>
+  )
 }

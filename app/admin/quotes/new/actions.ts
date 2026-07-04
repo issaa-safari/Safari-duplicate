@@ -129,5 +129,6 @@ export async function createQuote(formData: FormData) {
 
   // redirect() outside try/catch — Next.js throws NEXT_REDIRECT internally
   // and it must not be caught
-  redirect(`/admin/quotes/${newQuoteId}`)
+  // Custom safaris are priced in the Trip Builder; fixed departures keep the quote detail page
+  redirect(mode === 'custom' ? `/admin/trip-builder/${newQuoteId}` : `/admin/quotes/${newQuoteId}`)
 }

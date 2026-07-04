@@ -5,9 +5,7 @@ import Link from 'next/link'
 import StatusBadge from '@/components/admin/status-badge'
 import VersionEditorForm from './form'
 import QuoteItineraryBuilder from './quote-itinerary-builder'
-import PriceLinesEditor from './price-lines'
 import VersionStatusControls from './version-status-controls'
-import CostSheetEditor, { CS_UNITS, type CostLine } from './cost-sheet'
 
 export default async function VersionEditorPage({
   params,
@@ -38,7 +36,7 @@ export default async function VersionEditorPage({
     { data: _unused },
   ] = await Promise.all([
     admin.from('quote_versions')
-      .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until, language, cost_base_usd, default_markup_percent')
+      .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until, language, track_label')
       .eq('id', versionId).single(),
     admin.from('quotes')
       .select('id, quote_number, status, mode, client_id, tour_id, request_id, requests(preferred_start_date, travelers_adults), tours(duration_days)')
@@ -83,7 +81,7 @@ export default async function VersionEditorPage({
   // Load items for existing days and optionally the tour template days
   const dayIds = (quoteDays ?? []).map((d: any) => d.id)
 
-  const [{ data: dayItems }, { data: tourDays }, { data: client }, { data: priceLines }, { data: settings }] = await Promise.all([
+  const [{ data: dayItems }, { data: tourDays }, { data: client }, { data: priceLines }] = await Promise.all([
     dayIds.length
       ? admin.from('quote_day_items')
           .select('id, quote_day_id, item_type, accommodation_id, activity_id, vehicle_id, staff_id, title_snapshot, content_snapshot, sort_order')
@@ -98,7 +96,6 @@ export default async function VersionEditorPage({
     admin.from('quote_price_lines')
       .select('id, description, cost_category, pricing_unit, quantity, unit_cost_usd, markup_percent_override, total_cost_usd, total_selling_usd, is_optional, is_client_visible, sort_order')
       .eq('quote_version_id', versionId).order('sort_order'),
-    admin.from('company_settings').select('default_markup_percent').limit(1).single(),
   ])
 
   const clientName = client
@@ -107,20 +104,13 @@ export default async function VersionEditorPage({
 
   const isLocked = !['draft', 'ready'].includes(version.status)
 
-  // Separate cost-sheet (internal) lines from client-visible price lines
-  const csUnitValues = Object.values(CS_UNITS)
-  const allPriceLines = priceLines ?? []
-  const costSheetRaw = allPriceLines.filter((l: any) => csUnitValues.includes(l.pricing_unit))
-  const clientPriceLines = allPriceLines.filter((l: any) => !csUnitValues.includes(l.pricing_unit))
+  // Hide legacy internal cost-sheet rows (pricing_unit cs_*) — they are no longer editable
+  const clientPriceLines = (priceLines ?? []).filter(
+    (l: any) => !String(l.pricing_unit ?? '').startsWith('cs_')
+  )
 
-  const costSheetLines: CostLine[] = costSheetRaw.map((l: any) => ({
-    id: l.id,
-    description: l.description ?? '',
-    unitCost: l.unit_cost_usd != null ? String(l.unit_cost_usd) : '',
-    quantity: l.quantity != null ? String(l.quantity) : '',
-    actual: l.total_selling_usd != null ? String(l.total_selling_usd) : '',
-    unit: l.pricing_unit as any,
-  }))
+  const categoryLabel = (c: string) =>
+    ({ accommodation: 'Accommodation', activities: 'Activities', park_fees: 'Park Fees', transport: 'Transport', staff: 'Staff', meals: 'Meals', flights: 'Flights', other: 'Other' } as Record<string, string>)[c] ?? c
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -210,33 +200,68 @@ export default async function VersionEditorPage({
         )
       })()}
 
-      {/* Cost Sheet */}
-      <CostSheetEditor
-        quoteId={id}
-        versionId={versionId}
-        initialLines={costSheetLines}
-        isLocked={isLocked}
-        currentCostBase={version.cost_base_usd ?? null}
-        currentMarkup={version.default_markup_percent ?? 0}
-      />
-
-      {/* Price Lines (client-visible) */}
-      <div className="mt-2">
-        <PriceLinesEditor
-          quoteId={id}
-          versionId={versionId}
-          priceLines={clientPriceLines}
-          isLocked={isLocked}
-          defaultMarkup={settings?.default_markup_percent ?? 20}
-          travelStartDate={version.travel_start_date ?? null}
-          entities={{
-            accommodation: (accommodations ?? []).map((a: any) => ({ id: a.id, name: a.name })),
-            vehicle: (vehicles ?? []).map((v: any) => ({ id: v.id, name: v.name })),
-            activity: (activities ?? []).map((a: any) => ({ id: a.id, name: a.name })),
-            staff: (staffData ?? []).map((s: any) => ({ id: s.id, name: s.name })),
-            park_fee: (parksData ?? []).map((p: any) => ({ id: p.id, name: p.name })),
-          }}
-        />
+      {/* Pricing — managed in the Trip Builder */}
+      <div className="mt-4 bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">Price Lines</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Pricing is managed in the Trip Builder.</p>
+          </div>
+          {!isLocked && (
+            <Link href={`/admin/trip-builder/${id}`}
+              className="rounded-md px-3.5 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
+              Open Trip Builder
+            </Link>
+          )}
+        </div>
+        {version.track_label && (
+          <p className="px-5 py-2.5 text-xs text-amber-700 bg-amber-50 border-b border-amber-100">
+            This is a {version.track_label} track version — itinerary items, travellers and price lines
+            are rewritten each time the Trip Builder is saved.
+          </p>
+        )}
+        {clientPriceLines.length === 0 ? (
+          <p className="px-5 py-6 text-sm text-gray-400">
+            No price lines yet — build this quote in the Trip Builder to generate them.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                  <th className="px-5 py-2.5 font-semibold">Description</th>
+                  <th className="px-3 py-2.5 font-semibold">Category</th>
+                  <th className="px-3 py-2.5 font-semibold text-right">Qty</th>
+                  <th className="px-3 py-2.5 font-semibold text-right">Unit cost</th>
+                  <th className="px-5 py-2.5 font-semibold text-right">Selling</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clientPriceLines.map((l: any) => (
+                  <tr key={l.id} className="border-b border-gray-50 last:border-0">
+                    <td className="px-5 py-2.5 text-gray-800">
+                      {l.description}
+                      {l.is_optional && (
+                        <span className="ml-2 text-xs text-gray-400">(optional)</span>
+                      )}
+                      {l.is_client_visible === false && (
+                        <span className="ml-2 text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">hidden from client</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 text-gray-500">{categoryLabel(l.cost_category)}</td>
+                    <td className="px-3 py-2.5 text-right text-gray-600">{l.quantity ?? '—'}</td>
+                    <td className="px-3 py-2.5 text-right text-gray-600">
+                      {l.unit_cost_usd != null ? `$${Number(l.unit_cost_usd).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '—'}
+                    </td>
+                    <td className="px-5 py-2.5 text-right font-medium text-gray-900">
+                      {l.total_selling_usd != null ? `$${Number(l.total_selling_usd).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Phase 3: Itinerary */}

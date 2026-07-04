@@ -12,8 +12,20 @@ type Entities = Record<string, Entity[]>
 const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
 const linkedTypes = new Set(['accommodation', 'activity', 'vehicle', 'staff', 'destination', 'park_fee'])
 
-export default function NewRateCardForm({ entities, suppliers }: { entities: Entities; suppliers: Entity[] }) {
-  const [entityType, setEntityType] = useState('accommodation')
+export default function NewRateCardForm({
+  entities,
+  suppliers,
+  defaults,
+}: {
+  entities: Entities
+  suppliers: Entity[]
+  defaults?: { entityType?: string; entityId?: string; supplierId?: string }
+}) {
+  const [entityType, setEntityType] = useState(
+    defaults?.entityType && ENTITY_TYPES.includes(defaults.entityType as (typeof ENTITY_TYPES)[number])
+      ? defaults.entityType
+      : 'accommodation'
+  )
   const [isActive, setIsActive] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -34,7 +46,7 @@ export default function NewRateCardForm({ entities, suppliers }: { entities: Ent
           <div><label className="block text-sm font-medium text-gray-700 mb-1">Name</label><input name="name" required className={inputCls} placeholder="e.g. Mara Lodge High Season 2027" /></div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
-            <select name="supplierId" defaultValue="" className={inputCls}>
+            <select name="supplierId" defaultValue={defaults?.supplierId ?? ''} className={inputCls}>
               <option value="">— no supplier —</option>
               {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
@@ -44,7 +56,7 @@ export default function NewRateCardForm({ entities, suppliers }: { entities: Ent
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label><select name="entityType" value={entityType} onChange={e => setEntityType(e.target.value)} className={inputCls}>{ENTITY_TYPES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Cost Category</label><select name="costCategory" defaultValue="accommodation" className={inputCls}>{COST_CATEGORIES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
           </div>
-          {linkedTypes.has(entityType) && <div><label className="block text-sm font-medium text-gray-700 mb-1">Linked Content</label><select name="entityId" defaultValue="" className={inputCls}><option value="">No linked item</option>{(entities[entityType] ?? []).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>}
+          {linkedTypes.has(entityType) && <div><label className="block text-sm font-medium text-gray-700 mb-1">Linked Content</label><select name="entityId" defaultValue={defaults?.entityId ?? ''} className={inputCls}><option value="">No linked item</option>{(entities[entityType] ?? []).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Valid From</label><input type="date" name="validFrom" required className={inputCls} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Valid To</label><input type="date" name="validTo" required className={inputCls} /></div>

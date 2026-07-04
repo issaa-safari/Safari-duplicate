@@ -28,7 +28,7 @@ export default async function TripBuilderEditPage({
 
   const { data: quote } = await admin
     .from('quotes')
-    .select('id, quote_number, status')
+    .select('id, quote_number, status, client_id')
     .eq('id', quoteId)
     .maybeSingle()
   if (!quote) notFound()
@@ -47,8 +47,54 @@ export default async function TripBuilderEditPage({
     if (!latestByTrack[v.track_label]) latestByTrack[v.track_label] = v
   }
 
-  const initialState =
+  let initialState =
     latestByTrack.standard?.builder_state ?? latestByTrack.premium?.builder_state ?? null
+  const hasBuilderState = initialState != null
+
+  // Quotes created outside the builder (e.g. the new-quote wizard) have no
+  // builder_state — seed the form from the quote's client, dates and travellers
+  // so the admin doesn't re-enter details they already provided.
+  if (!initialState) {
+    const [{ data: client }, { data: latestVersion }] = await Promise.all([
+      quote.client_id
+        ? admin.from('clients').select('first_name, last_name, email, phone').eq('id', quote.client_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      admin.from('quote_versions')
+        .select('id, title, travel_start_date, travel_end_date')
+        .eq('quote_id', quoteId)
+        .order('version_number', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ])
+
+    const { data: travellers } = latestVersion
+      ? await admin.from('quote_travellers')
+          .select('traveller_category, age_on_travel_date')
+          .eq('quote_version_id', latestVersion.id)
+      : { data: null }
+
+    const adults = (travellers ?? []).filter((t: any) => t.traveller_category === 'adult').length
+    const childAges = (travellers ?? [])
+      .filter((t: any) => t.traveller_category !== 'adult')
+      .map((t: any) => t.age_on_travel_date ?? (t.traveller_category === 'infant' ? 0 : 8))
+
+    initialState = {
+      guest: {
+        name: client ? `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim() : '',
+        email: client?.email ?? '',
+        phone: client?.phone ?? '',
+        adults: adults > 0 ? adults : 2,
+        childAges,
+        startDate: latestVersion?.travel_start_date ?? '',
+        endDate: latestVersion?.travel_end_date ?? '',
+      },
+      title: latestVersion?.title ?? '',
+      hotelRows: { standard: [], premium: [] },
+      transportRows: [],
+      parkRows: [],
+      salePrices: { standard: '', premium: '' },
+    }
+  }
 
   const lookups = await loadBuilderLookups(admin)
 
@@ -68,10 +114,10 @@ export default async function TripBuilderEditPage({
         </Link>
       </div>
 
-      {!initialState && (
+      {!hasBuilderState && (
         <p className="mb-4 text-sm text-amber-700 bg-amber-50 rounded-lg border border-amber-200 px-4 py-3">
-          This quote wasn&apos;t created in the Trip Builder (no saved builder state) — the form below starts empty,
-          and saving will add new Standard/Premium track versions to the quote.
+          Pricing hasn&apos;t been built for this quote yet — add hotels, transport and parks below, then Save
+          to create its Standard/Premium track versions.
         </p>
       )}
 

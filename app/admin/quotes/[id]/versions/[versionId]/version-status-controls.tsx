@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { setVersionStatus } from './price-line-actions'
+import { setVersionStatus } from './actions'
 import StatusBadge from '@/components/admin/status-badge'
 
 const TRANSITIONS: Record<string, { to: string; label: string; style: string }[]> = {

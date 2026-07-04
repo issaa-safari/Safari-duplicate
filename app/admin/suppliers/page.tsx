@@ -10,10 +10,21 @@ export default async function SuppliersPage() {
   if (!user) redirect('/admin/login')
 
   const admin = createAdminClient()
-  const { data: suppliers, error } = await admin
-    .from('suppliers')
-    .select('id, name, supplier_type, contact_email, contact_phone, notes, is_active')
-    .order('name')
+  const [{ data: suppliers, error }, { data: rateCards }] = await Promise.all([
+    admin
+      .from('suppliers')
+      .select('id, name, supplier_type, contact_email, contact_phone, notes, is_active')
+      .order('name'),
+    admin
+      .from('supplier_rate_cards')
+      .select('id, supplier_id')
+      .not('supplier_id', 'is', null),
+  ])
+
+  const rateCardCounts: Record<string, number> = {}
+  for (const card of rateCards ?? []) {
+    rateCardCounts[card.supplier_id] = (rateCardCounts[card.supplier_id] ?? 0) + 1
+  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -28,7 +39,7 @@ export default async function SuppliersPage() {
           Suppliers table not available — apply migration group_33_supplier_finance.sql first. ({error.message})
         </p>
       ) : (
-        <SuppliersTable suppliers={(suppliers ?? []) as SupplierRow[]} />
+        <SuppliersTable suppliers={(suppliers ?? []) as SupplierRow[]} rateCardCounts={rateCardCounts} />
       )}
     </div>
   )

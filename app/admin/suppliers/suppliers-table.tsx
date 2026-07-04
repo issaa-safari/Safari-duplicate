@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { createSupplier, setSupplierActive, updateSupplier } from './actions'
 import { SUPPLIER_TYPES, type SupplierRow } from './constants'
 
@@ -29,7 +30,13 @@ function SupplierFields({ supplier }: { supplier?: SupplierRow }) {
   )
 }
 
-export default function SuppliersTable({ suppliers }: { suppliers: SupplierRow[] }) {
+export default function SuppliersTable({
+  suppliers,
+  rateCardCounts = {},
+}: {
+  suppliers: SupplierRow[]
+  rateCardCounts?: Record<string, number>
+}) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -84,6 +91,7 @@ export default function SuppliersTable({ suppliers }: { suppliers: SupplierRow[]
                 <th className="px-5 py-3 font-medium">Name</th>
                 <th className="px-3 py-3 font-medium">Type</th>
                 <th className="px-3 py-3 font-medium">Contact</th>
+                <th className="px-3 py-3 font-medium">Rates</th>
                 <th className="px-3 py-3 font-medium">Status</th>
                 <th className="px-3 py-3 font-medium text-right">Actions</th>
               </tr>
@@ -92,7 +100,7 @@ export default function SuppliersTable({ suppliers }: { suppliers: SupplierRow[]
               {suppliers.map(s => (
                 editingId === s.id ? (
                   <tr key={s.id} className="border-b border-gray-50 bg-[var(--olive)]/5">
-                    <td colSpan={5} className="px-5 py-4">
+                    <td colSpan={6} className="px-5 py-4">
                       <form onSubmit={e => submitEdit(e, s.id)} className="space-y-3">
                         <SupplierFields supplier={s} />
                         <div className="flex gap-2 justify-end">
@@ -119,6 +127,19 @@ export default function SuppliersTable({ suppliers }: { suppliers: SupplierRow[]
                       {s.contact_email && <p>{s.contact_email}</p>}
                       {s.contact_phone && <p>{s.contact_phone}</p>}
                       {!s.contact_email && !s.contact_phone && '—'}
+                    </td>
+                    <td data-label="Rates" className="px-3 py-3 text-xs">
+                      {(rateCardCounts[s.id] ?? 0) > 0 ? (
+                        <Link href={`/admin/content/rates?supplierId=${s.id}`}
+                          className="text-[var(--olive)] hover:text-[var(--olive-dk)] font-medium">
+                          {rateCardCounts[s.id]} rate card{rateCardCounts[s.id] === 1 ? '' : 's'}
+                        </Link>
+                      ) : (
+                        <Link href={`/admin/content/rates/new?supplierId=${s.id}`}
+                          className="text-gray-400 hover:text-gray-600">
+                          Add rates
+                        </Link>
+                      )}
                     </td>
                     <td data-label="Status" className="px-3 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${s.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
