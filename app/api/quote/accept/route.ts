@@ -204,12 +204,17 @@ export async function POST(req: NextRequest) {
       console.error('[quote/accept] booking creation skipped', e)
     }
 
-    // Advance the parent request to 'booked' (best-effort). This also fires the
-    // DB trigger that auto-generates the booking task checklist (group_38).
+    // Advance the parent request (best-effort). When pre-booking is enabled a
+    // client acceptance lands on 'pre_booked' (Booked stays a manual step, matching
+    // the Safari app); otherwise it goes straight to 'booked'. Moving to 'booked'
+    // fires the DB trigger that generates the booking task checklist (group_38).
     try {
       const { data: q } = await admin.from('quotes').select('request_id').eq('id', quoteId).single()
       if (q?.request_id) {
-        await admin.from('requests').update({ stage: 'booked' }).eq('id', q.request_id)
+        const { data: settings } = await admin
+          .from('company_settings').select('prebooked_enabled').limit(1).single()
+        const targetStage = settings?.prebooked_enabled ? 'pre_booked' : 'booked'
+        await admin.from('requests').update({ stage: targetStage }).eq('id', q.request_id)
       }
     } catch (e) {
       console.error('[quote/accept] request stage advance skipped', e)

@@ -9,10 +9,15 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { requestId, stage } = await request.json()
-  const allowedStages = new Set(['new', 'working_on', 'open', 'pre_booked', 'booked', 'completed', 'not_booked'])
+  // New / Working On / Open are computed from quote activity (group_44 trigger),
+  // so only the manual stages are settable by hand — matching the Safari app.
+  const manualStages = new Set(['pre_booked', 'booked', 'completed', 'not_booked', 'archived'])
 
-  if (typeof requestId !== 'string' || !allowedStages.has(stage)) {
-    return NextResponse.json({ error: 'Invalid request or stage.' }, { status: 400 })
+  if (typeof requestId !== 'string' || !manualStages.has(stage)) {
+    return NextResponse.json(
+      { error: 'That stage is set automatically and cannot be changed by hand.' },
+      { status: 400 },
+    )
   }
 
   const admin = createAdminClient()
