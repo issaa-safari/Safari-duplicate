@@ -15,10 +15,14 @@ async function authGuard() {
   return { user, admin }
 }
 
+const TASK_TYPES = ['payment', 'accommodation', 'activity', 'other']
+
 export async function addTask(formData: FormData) {
   const { admin } = await authGuard()
   const requestId = (formData.get('requestId') as string)?.trim()
   const title = (formData.get('title') as string)?.trim()
+  const typeRaw = (formData.get('type') as string)?.trim()
+  const type = TASK_TYPES.includes(typeRaw) ? typeRaw : 'other'
 
   if (!requestId) throw new Error('Request ID is required.')
   if (!title) throw new Error('Task title is required.')
@@ -27,7 +31,7 @@ export async function addTask(formData: FormData) {
   const { data: request } = await admin.from('requests').select('id').eq('id', requestId).single()
   if (!request) throw new Error('Request not found.')
 
-  const { error } = await admin.from('tasks').insert({ request_id: requestId, title, is_done: false })
+  const { error } = await admin.from('tasks').insert({ request_id: requestId, title, type, is_done: false })
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/requests/${requestId}`)
 }

@@ -33,8 +33,21 @@ interface Settings {
   default_markup_percent: number
   usd_to_kes_rate?: number | null
   logo_url: string | null
+  auto_complete_on_end_date?: boolean
+  auto_archive_enabled?: boolean
+  auto_archive_days?: number
+  auto_archive_stages?: string[]
+  auto_delete_enabled?: boolean
+  auto_delete_days?: number
   updated_at: string
 }
+
+const ARCHIVE_STAGE_OPTIONS = [
+  { key: 'not_booked', label: 'Not Booked' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'open', label: 'Open' },
+  { key: 'pre_booked', label: 'Pre-Booked' },
+]
 
 const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
 const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
@@ -119,6 +132,46 @@ export default function SettingsForm({ settings }: { settings: Settings }) {
           <Field label="Invoice Prefix" name="invoicePrefix" value={settings.invoice_prefix} />
           <Field label="Quote Prefix" name="quotePrefix" value={settings.quote_prefix} />
           <Field label="Booking Prefix" name="bookingPrefix" value={settings.booking_prefix} />
+        </div>
+      </Section>
+
+      <Section title="Request Automation">
+        <p className="text-xs text-gray-500 -mt-1">
+          Runs daily. Automatically progresses stale requests so your inbox stays clean.
+        </p>
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" name="autoCompleteOnEndDate" defaultChecked={!!settings.auto_complete_on_end_date} className="mt-0.5" />
+          <span><span className="font-medium text-gray-800">Auto-complete finished trips</span><br />
+            <span className="text-gray-500 text-xs">Move a Booked request to Completed once its travel end date has passed.</span></span>
+        </label>
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" name="autoArchiveEnabled" defaultChecked={!!settings.auto_archive_enabled} className="mt-0.5" />
+          <span><span className="font-medium text-gray-800">Auto-archive stale requests</span><br />
+            <span className="text-gray-500 text-xs">Archive requests with no stage change for the number of days below.</span></span>
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6">
+          <Field label="Archive after (days)" name="autoArchiveDays" value={settings.auto_archive_days ?? 30} type="number" min={0} step={1} />
+          <div>
+            <label className={labelCls}>Archive which stages</label>
+            <div className="flex flex-wrap gap-3 pt-1">
+              {ARCHIVE_STAGE_OPTIONS.map(o => (
+                <label key={o.key} className="flex items-center gap-1.5 text-sm text-gray-700">
+                  <input type="checkbox" name="autoArchiveStages" value={o.key}
+                    defaultChecked={(settings.auto_archive_stages ?? ['not_booked','completed']).includes(o.key)} />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" name="autoDeleteEnabled" defaultChecked={!!settings.auto_delete_enabled} className="mt-0.5" />
+          <span><span className="font-medium text-gray-800">Auto-delete archived requests</span>
+            <span className="ml-1 text-xs text-red-600">(permanent)</span><br />
+            <span className="text-gray-500 text-xs">Permanently delete requests that have been archived for the number of days below.</span></span>
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6">
+          <Field label="Delete after archived (days)" name="autoDeleteDays" value={settings.auto_delete_days ?? 90} type="number" min={0} step={1} />
         </div>
       </Section>
 

@@ -9,6 +9,7 @@ export const STATUS_VARIANT: Record<string, StatusVariant> = {
   booked:      'success',
   completed:   'success',
   not_booked:  'neutral',
+  archived:    'muted',
   // quote / version statuses
   draft:       'neutral',
   ready:       'info',
@@ -46,4 +47,5 @@ export const STAGE_LABELS: Record<string, string> = {
   booked:      'Booked',
   completed:   'Completed',
   not_booked:  'Not Booked',
+  archived:    'Archived',
 }

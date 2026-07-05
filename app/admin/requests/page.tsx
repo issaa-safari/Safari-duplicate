@@ -11,6 +11,7 @@ const STAGES = [
   { key: 'booked',     label: 'Booked' },
   { key: 'completed',  label: 'Completed' },
   { key: 'not_booked', label: 'Not Booked' },
+  { key: 'archived',   label: 'Archive' },
 ]
 
 export default async function RequestsPage({
