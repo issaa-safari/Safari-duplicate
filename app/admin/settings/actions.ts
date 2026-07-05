@@ -33,11 +33,24 @@ export async function saveSettings(formData: FormData) {
     throw new Error('USD → KES rate must be greater than zero.')
   }
 
+  const bool = (name: string) => formData.get(name) === 'on'
+  const intOrDefault = (name: string, fallback: number) => {
+    const n = Number(formData.get(name))
+    return Number.isInteger(n) && n >= 0 ? n : fallback
+  }
+  const archiveStages = formData.getAll('autoArchiveStages').map(String)
+
   const admin = createAdminClient()
   await assertAdminAccess(admin, user.email)
   const { error } = await admin
     .from('company_settings')
     .update({
+      auto_complete_on_end_date: bool('autoCompleteOnEndDate'),
+      auto_archive_enabled: bool('autoArchiveEnabled'),
+      auto_archive_days: intOrDefault('autoArchiveDays', 30),
+      auto_archive_stages: archiveStages.length ? archiveStages : ['not_booked', 'completed'],
+      auto_delete_enabled: bool('autoDeleteEnabled'),
+      auto_delete_days: intOrDefault('autoDeleteDays', 90),
       company_name: companyName,
       brand_name: text('brandName'),
       email: text('email'),

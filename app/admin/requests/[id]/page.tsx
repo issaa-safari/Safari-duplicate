@@ -6,6 +6,9 @@ import StatusBadge from '@/components/admin/status-badge'
 import StageSelector from './stage-selector'
 import CommunicationLog from './communication-log'
 import TaskManager from './task-manager'
+import StartFromTemplate from './start-from-template'
+import FlightsManager from './flights-manager'
+import AssignmentManager from './assignment-manager'
 
 const STAGES = [
   { key: 'new', label: 'New' },
@@ -15,6 +18,7 @@ const STAGES = [
   { key: 'booked', label: 'Booked' },
   { key: 'completed', label: 'Completed' },
   { key: 'not_booked', label: 'Not Booked' },
+  { key: 'archived', label: 'Archived' },
 ]
 
 const STATUS_ORDER = ['draft','ready','sent','viewed','accepted','declined','expired','superseded','cancelled']
@@ -41,6 +45,12 @@ export default async function RequestDetailPage({
     { data: logs },
     { data: tasks },
     { data: quotesData },
+    { data: templateData },
+    { data: flightData },
+    { data: staffAssignData },
+    { data: vehicleAssignData },
+    { data: staffOptions },
+    { data: vehicleOptions },
   ] = await Promise.all([
     supabase.from('requests')
       .select('*, clients (*), tours (id, title_en, type)')
@@ -57,7 +67,24 @@ export default async function RequestDetailPage({
       `)
       .eq('request_id', id)
       .order('created_at', { ascending: true }),
+    admin.from('quotes')
+      .select('id, quote_number, quote_versions (title, version_number)')
+      .eq('is_template', true)
+      .order('created_at', { ascending: false }),
+    admin.from('request_flights')
+      .select('*').eq('request_id', id).order('scheduled_at', { ascending: true }),
+    admin.from('request_staff_assignments')
+      .select('id, role, notes, tour_staff (id, name, role)').eq('request_id', id),
+    admin.from('request_vehicle_assignments')
+      .select('id, seats_used, notes, vehicles (id, name, type, seats)').eq('request_id', id),
+    admin.from('tour_staff').select('id, name, role').eq('is_active', true).order('name'),
+    admin.from('vehicles').select('id, name, type, seats').eq('is_active', true).order('name'),
   ])
+
+  const templateOptions = (templateData ?? []).map((t: any) => {
+    const latest = (t.quote_versions ?? []).sort((a: any, b: any) => b.version_number - a.version_number)[0]
+    return { id: t.id, label: `${latest?.title || 'Untitled'} · ${t.quote_number}` }
+  })
 
   if (!request) notFound()
 
@@ -85,12 +112,18 @@ export default async function RequestDetailPage({
     byStatus[s].push(item)
   }
 
+  const flights = flightData ?? []
+  const staffAssignments = staffAssignData ?? []
+  const vehicleAssignments = vehicleAssignData ?? []
+  const logisticsCount = flights.length + staffAssignments.length + vehicleAssignments.length
+
   const TABS = [
-    { key: 'info',   label: 'Request Information', count: null },
-    { key: 'quotes', label: 'Quotes',               count: allVersions.length },
-    { key: 'tour',   label: 'Tour Information',     count: null },
-    { key: 'tasks',  label: 'Tasks',                count: openTasks.length },
-    { key: 'notes',  label: 'Notes',               count: notes.length },
+    { key: 'info',      label: 'Request Information', count: null },
+    { key: 'quotes',    label: 'Quotes',               count: allVersions.length },
+    { key: 'tour',      label: 'Tour Information',     count: null },
+    { key: 'logistics', label: 'Logistics',            count: logisticsCount },
+    { key: 'tasks',     label: 'Tasks',                count: openTasks.length },
+    { key: 'notes',     label: 'Notes',               count: notes.length },
   ]
 
   const handledBy = user.email?.split('@')[0] ?? 'Admin'
@@ -266,11 +299,14 @@ export default async function RequestDetailPage({
             {allVersions.length === 0 ? (
               <div className="bg-white rounded-lg border border-gray-200 p-10 text-center">
                 <p className="text-sm text-gray-500 mb-4">No quotes yet for this request.</p>
-                <Link
-                  href={`/admin/quotes/new?request=${id}`}
-                  className="inline-block rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
-                  Create First Quote
-                </Link>
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <Link
+                    href={`/admin/quotes/new?request=${id}`}
+                    className="inline-block rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
+                    Create First Quote
+                  </Link>
+                  <StartFromTemplate requestId={id} templates={templateOptions} />
+                </div>
               </div>
             ) : (
               <>
@@ -322,11 +358,14 @@ export default async function RequestDetailPage({
                     </div>
                   </div>
                 ))}
-                <Link
-                  href={`/admin/quotes/new?request=${id}`}
-                  className="text-sm font-medium text-[var(--olive)] hover:text-[var(--olive-dk)]">
-                  + Create Another Quote
-                </Link>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Link
+                    href={`/admin/quotes/new?request=${id}`}
+                    className="text-sm font-medium text-[var(--olive)] hover:text-[var(--olive-dk)]">
+                    + Create Another Quote
+                  </Link>
+                  <StartFromTemplate requestId={id} templates={templateOptions} />
+                </div>
               </>
             )}
           </div>
@@ -381,6 +420,25 @@ export default async function RequestDetailPage({
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── LOGISTICS ─────────────────────────────────────────────── */}
+        {activeTab === 'logistics' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <FlightsManager requestId={id} flights={flights as any} />
+            </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <h2 className="text-sm font-semibold text-gray-900 mb-4">Staff &amp; Vehicles</h2>
+              <AssignmentManager
+                requestId={id}
+                staffAssignments={staffAssignments as any}
+                vehicleAssignments={vehicleAssignments as any}
+                staffOptions={(staffOptions ?? []) as any}
+                vehicleOptions={(vehicleOptions ?? []) as any}
+              />
             </div>
           </div>
         )}

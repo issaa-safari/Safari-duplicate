@@ -204,6 +204,17 @@ export async function POST(req: NextRequest) {
       console.error('[quote/accept] booking creation skipped', e)
     }
 
+    // Advance the parent request to 'booked' (best-effort). This also fires the
+    // DB trigger that auto-generates the booking task checklist (group_38).
+    try {
+      const { data: q } = await admin.from('quotes').select('request_id').eq('id', quoteId).single()
+      if (q?.request_id) {
+        await admin.from('requests').update({ stage: 'booked' }).eq('id', q.request_id)
+      }
+    } catch (e) {
+      console.error('[quote/accept] request stage advance skipped', e)
+    }
+
     // Best-effort admin alert; never blocks the response.
     await notifyAdmin(
       `Quote accepted by ${clientName.trim()}`,

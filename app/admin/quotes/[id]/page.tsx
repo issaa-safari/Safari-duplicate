@@ -6,6 +6,7 @@ import { headers } from 'next/headers'
 import StatusBadge from '@/components/admin/status-badge'
 import DeliveryPanel from './delivery-panel'
 import CloneVersionButton from './clone-version-button'
+import TemplateToggleButton from './template-toggle-button'
 
 export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -19,7 +20,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   // Separate queries to avoid PostgREST FK ambiguity
   const { data: quote } = await admin
     .from('quotes')
-    .select('id, quote_number, status, mode, created_at, client_id, request_id, tour_id, departure_id')
+    .select('id, quote_number, status, mode, created_at, client_id, request_id, tour_id, departure_id, is_template')
     .eq('id', id)
     .single()
 
@@ -86,7 +87,8 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           </div>
         </div>
         {/* Funnel order: build the itinerary first, then price it in the Trip Builder. */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
+          <TemplateToggleButton quoteId={id} isTemplate={!!quote.is_template} />
           {latestVersion && (
             <Link
               href={`/admin/quotes/${quote.id}/versions/${latestVersion.id}`}
