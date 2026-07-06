@@ -107,6 +107,20 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               2 · Price in Trip Builder
             </Link>
           )}
+          {latestVersion && (
+            <>
+              <Link
+                href={`/admin/quotes/${quote.id}/preview`}
+                className="rounded-md px-4 py-2 text-sm font-medium text-[var(--olive-dk)] border border-[var(--olive)]/40 hover:bg-[var(--olive)]/5">
+                3 · Preview
+              </Link>
+              <Link
+                href={`/admin/quotes/${quote.id}/finish`}
+                className="rounded-md px-4 py-2 text-sm font-medium text-[var(--olive-dk)] border border-[var(--olive)]/40 hover:bg-[var(--olive)]/5">
+                4 · Finish &amp; share
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
