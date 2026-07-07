@@ -14,7 +14,7 @@ import type { SearchResults, SearchQuote, SearchClient, SearchRequest } from '@/
 const NAV_ITEMS = [
   { label: 'Dashboard',      href: '/admin/dashboard',   Icon: LayoutDashboard },
   { label: 'Requests',       href: '/admin/requests',    Icon: Inbox },
-  { label: 'Tour Templates', href: '/admin/tours',       Icon: Map },
+  { label: 'Tour Templates', href: '/admin/tour-templates', Icon: Map },
   { label: 'Content',        href: '/admin/content',     Icon: Library },
   { label: 'Quotes',         href: '/admin/quotes',      Icon: FileText },
   { label: 'Trip Builder',   href: '/admin/trip-builder', Icon: Calculator },
