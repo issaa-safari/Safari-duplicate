@@ -48,7 +48,7 @@ export default async function VersionEditorPage({
       .select('id, name, code, min_age, max_age, default_pricing_method, default_percentage, default_fixed_amount_usd, sort_order')
       .eq('is_active', true).order('sort_order'),
     admin.from('quote_days')
-      .select('id, day_number, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_id, destination_snapshot, meals, sort_order')
+      .select('id, day_number, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_id, destination_snapshot, meals, photos, sort_order')
       .eq('quote_version_id', versionId).order('sort_order'),
     admin.from('destinations')
       .select('id, name').eq('is_active', true).order('name'),

@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
+import { syncQuoteStatus } from '@/lib/server/quote-status'
 
 async function authGuard() {
   const supabase = await createClient()
@@ -50,6 +51,7 @@ export async function createShareLink(formData: FormData) {
   // Move version to 'sent' if it's still 'ready'
   if (version.status === 'ready') {
     await admin.from('quote_versions').update({ status: 'sent' }).eq('id', versionId)
+    await syncQuoteStatus(admin, quoteId)
   }
 
   revalidatePath(`/admin/quotes/${quoteId}`)

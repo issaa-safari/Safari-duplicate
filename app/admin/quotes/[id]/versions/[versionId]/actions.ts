@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
+import { syncQuoteStatus } from '@/lib/server/quote-status'
 
 async function authGuard() {
   const supabase = await createClient()
@@ -256,8 +257,15 @@ export async function setVersionStatus(formData: FormData) {
     throw new Error(`Cannot move from ${version.status} to ${newStatus}.`)
   }
 
+  if (newStatus === 'ready') {
+    const { count } = await admin
+      .from('quote_days').select('id', { count: 'exact', head: true }).eq('quote_version_id', versionId)
+    if (!count) throw new Error('Add at least one itinerary day before marking this quote Ready.')
+  }
+
   const { error } = await admin.from('quote_versions').update({ status: newStatus }).eq('id', versionId)
   if (error) throw new Error(error.message)
+  await syncQuoteStatus(admin, quoteId)
 
   revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
   revalidatePath(`/admin/quotes/${quoteId}`)

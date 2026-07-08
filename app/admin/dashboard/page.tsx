@@ -142,7 +142,7 @@ export default async function AdminDashboardPage() {
         <KpiCard
           label="Active Quotes"
           value={String(activeQuoteCount ?? 0)}
-          sub="sent or being viewed"
+          sub="versions currently sent or viewed"
         />
         <KpiCard
           label="New Enquiries"

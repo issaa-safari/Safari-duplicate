@@ -100,10 +100,27 @@ export default function NewRequestPage() {
                 <option value="other">Other</option>
               </select>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Start Date</label>
+                <input type="date" name="preferredDate"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Trip Length (nights)</label>
+                <input type="number" name="tripLengthNights" min={1} placeholder="e.g. 7"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
+              </div>
+            </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Start Date</label>
-              <input type="date" name="preferredDate"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Room Type</label>
+              <select name="preferredRoomType" defaultValue=""
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]">
+                <option value="">Not specified</option>
+                <option value="sharing">Sharing</option>
+                <option value="single">Single</option>
+                <option value="family">Family</option>
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Travelers</label>

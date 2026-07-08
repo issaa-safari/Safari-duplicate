@@ -82,6 +82,8 @@ body { font-family: Georgia, 'Times New Roman', serif; color: #1a1a1a; font-size
 .day-line strong { color: #333; }
 .day-ico { margin-right: 5px; color: ${G}; }
 .day-notes { font-size: 11px; color: #666; font-style: italic; margin: 6px 0 0; }
+.day-photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0 0; }
+.day-photos img { width: 100%; height: 62px; object-fit: cover; border-radius: 6px; border: 1px solid #e6e6e6; }
 h1 { font-size: 30px; font-weight: 800; margin: 0 0 6px; line-height: 1.2; }
 h2 { font-size: 22px; font-weight: 800; margin: 0 0 14px; line-height: 1.2; }
 h3 { font-size: 15px; font-weight: 700; margin: 0 0 12px; }
@@ -126,7 +128,7 @@ export default async function QuotePrintPage({
       .select('id, quote_number, mode, client_id, tour_id')
       .eq('id', delivery.quote_id).single(),
     admin.from('quote_days')
-      .select('id, day_number, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_snapshot, meals')
+      .select('id, day_number, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_snapshot, meals, photos')
       .eq('quote_version_id', delivery.quote_version_id)
       .order('day_number'),
     admin.from('quote_price_lines')
@@ -604,6 +606,14 @@ export default async function QuotePrintPage({
                     </div>
                   )}
                   {notes && <p className="day-notes">{notes}</p>}
+                  {Array.isArray(day.photos) && day.photos.length > 0 && (
+                    <div className="day-photos">
+                      {day.photos.slice(0, 4).map((url: string, pi: number) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={pi} src={url} alt="" />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )
             })}

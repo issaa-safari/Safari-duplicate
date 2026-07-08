@@ -59,6 +59,21 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const latestVersion = versions[0]
   const deliveries: any[] = deliveryRows ?? []
 
+  const { count: dayCount } = latestVersion
+    ? await admin.from('quote_days').select('id', { count: 'exact', head: true }).eq('quote_version_id', latestVersion.id)
+    : { count: 0 }
+
+  // Step gating for the progress header below.
+  const itineraryDone = (dayCount ?? 0) > 0
+  const pricingDone = !!latestVersion && Number(latestVersion.total_selling_usd ?? 0) > 0
+  const sentOrBeyond = ['sent', 'viewed', 'accepted', 'declined'].includes(quote.status)
+  const steps = [
+    { n: 1, label: 'Itinerary & details', done: itineraryDone, href: latestVersion ? `/admin/quotes/${quote.id}/versions/${latestVersion.id}` : undefined },
+    { n: 2, label: 'Pricing', done: pricingDone, href: `/admin/trip-builder/${quote.id}` },
+    { n: 3, label: 'Preview', done: deliveries.length > 0, href: '#delivery' },
+    { n: 4, label: 'Send', done: sentOrBeyond, href: '#delivery' },
+  ]
+
   const hdrs = await headers()
   const host = hdrs.get('host') ?? 'localhost:3000'
   const proto = host.startsWith('localhost') ? 'http' : 'https'
@@ -86,28 +101,31 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             </span>
           </div>
         </div>
-        {/* Funnel order: build the itinerary first, then price it in the Trip Builder. */}
-        <div className="flex gap-2 flex-wrap justify-end">
-          <TemplateToggleButton quoteId={id} isTemplate={!!quote.is_template} />
-          {latestVersion && (
-            <Link
-              href={`/admin/quotes/${quote.id}/versions/${latestVersion.id}`}
-              className={['draft', 'ready'].includes(quote.status)
-                ? 'rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk'
-                : 'rounded-md px-4 py-2 text-sm font-medium text-[var(--olive-dk)] border border-[var(--olive)]/40 hover:bg-[var(--olive)]/5'}>
-              {quote.status === 'draft' || quote.status === 'ready'
-                ? '1 · Itinerary & details'
-                : `View itinerary & costing (v${latestVersion.version_number})`}
-            </Link>
-          )}
-          {['draft', 'ready'].includes(quote.status) && (
-            <Link
-              href={`/admin/trip-builder/${quote.id}`}
-              className="rounded-md px-4 py-2 text-sm font-medium text-[var(--olive-dk)] border border-[var(--olive)]/40 hover:bg-[var(--olive)]/5">
-              2 · Price in Trip Builder
-            </Link>
-          )}
-        </div>
+        <TemplateToggleButton quoteId={id} isTemplate={!!quote.is_template} />
+      </div>
+
+      {/* Guided-flow progress header */}
+      <div className="flex items-center gap-1 mb-6 overflow-x-auto">
+        {steps.map((s, i) => {
+          const el = (
+            <span className={'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ' +
+              (s.done
+                ? 'bg-[var(--olive)]/10 text-[var(--olive-dk)]'
+                : 'bg-gray-100 text-gray-500')}>
+              <span className={'inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-semibold ' +
+                (s.done ? 'bg-[var(--olive)] text-white' : 'bg-gray-300 text-white')}>
+                {s.done ? '✓' : s.n}
+              </span>
+              {s.label}
+            </span>
+          )
+          return (
+            <span key={s.n} className="flex items-center gap-1">
+              {s.href ? <Link href={s.href}>{el}</Link> : el}
+              {i < steps.length - 1 && <span className="text-gray-300 text-xs">→</span>}
+            </span>
+          )
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

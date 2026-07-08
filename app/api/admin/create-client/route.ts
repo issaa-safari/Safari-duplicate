@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
+import { assertValidClientIdentity } from '@/lib/server/validate-client'
 
 // Creates a CRM client inline (e.g. from the new-quote wizard's client
 // dropdown) so the admin never has to leave the flow to add one. If the
@@ -16,9 +17,14 @@ export async function POST(request: Request) {
 
   const first = (firstName || '').trim()
   const last = (lastName || '').trim()
-  if (!first) return NextResponse.json({ error: 'First name is required' }, { status: 400 })
-
   const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() || null : null
+
+  try {
+    assertValidClientIdentity({ firstName: first, lastName: last, email: cleanEmail })
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Invalid client details' }, { status: 400 })
+  }
+
   const lang = language === 'ar' ? 'ar' : 'en'
 
   const admin = createAdminClient()

@@ -95,8 +95,8 @@ export default async function AnalyticsPage() {
   const totalVersions = (allVersions ?? []).length
   const acceptedCount = statusCounts['accepted'] ?? 0
   const declinedCount = statusCounts['declined'] ?? 0
-  const sentOrBeyond = ['sent', 'viewed', 'accepted', 'declined'].reduce((s, k) => s + (statusCounts[k] ?? 0), 0)
-  const conversionRate = sentOrBeyond > 0 ? acceptedCount / (acceptedCount + declinedCount) : null
+  const decidedCount = acceptedCount + declinedCount
+  const conversionRate = decidedCount > 0 ? acceptedCount / decidedCount : null
 
   // --- Monthly quote volume chart (last 6 months) ---
   const months: { label: string; key: string; created: number; accepted: number }[] = []
@@ -175,7 +175,7 @@ export default async function AnalyticsPage() {
         <KpiCard
           label="Conversion Rate"
           value={conversionRate !== null ? `${Math.round(conversionRate * 100)}%` : '—'}
-          sub={`${acceptedCount} accepted / ${acceptedCount + declinedCount} decided`}
+          sub={`${acceptedCount} accepted / ${decidedCount} decided`}
           highlight={conversionRate !== null && conversionRate >= 0.5}
         />
         <KpiCard
