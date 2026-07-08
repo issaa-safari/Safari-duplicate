@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { saveSettings } from './actions'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
@@ -65,6 +65,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function SettingsForm({ settings }: { settings: Settings }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  // Formatted client-side only (post-mount) — toLocaleString depends on the
+  // browser's timezone/locale, which differs from the server render and was
+  // causing a hydration mismatch.
+  const [lastSaved, setLastSaved] = useState('')
+  useEffect(() => {
+    if (settings.updated_at) setLastSaved(new Date(settings.updated_at).toLocaleString('en-GB'))
+  }, [settings.updated_at])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -178,7 +185,7 @@ export default function SettingsForm({ settings }: { settings: Settings }) {
       {error && <Alert variant="error">{error}</Alert>}
       <div className="flex items-center justify-between">
         <Button type="submit" loading={loading} loadingText="Saving…">Save Settings</Button>
-        {settings.updated_at && <p className="text-xs text-gray-400">Last saved {new Date(settings.updated_at).toLocaleString('en-GB')}</p>}
+        {lastSaved && <p className="text-xs text-gray-400">Last saved {lastSaved}</p>}
       </div>
     </form>
   )

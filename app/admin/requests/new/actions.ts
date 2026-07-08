@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
+import { assertValidClientIdentity } from '@/lib/server/validate-client'
 import { redirect } from 'next/navigation'
 
 export async function createRequest(formData: FormData) {
@@ -29,6 +30,11 @@ export async function createRequest(formData: FormData) {
   const childrenYounger = parseInt(formData.get('childrenYounger') as string) || 0
   const preferredDate = formData.get('preferredDate') as string
   const priority = formData.get('priority') === 'true'
+  const tripLengthNightsRaw = formData.get('tripLengthNights') as string
+  const tripLengthNights = tripLengthNightsRaw ? parseInt(tripLengthNightsRaw) || null : null
+  const preferredRoomType = (formData.get('preferredRoomType') as string) || null
+
+  assertValidClientIdentity({ firstName, lastName, email })
 
   // Check if client exists
   let clientId: string
@@ -67,6 +73,8 @@ export async function createRequest(formData: FormData) {
       travelers_children_older: childrenOlder,
       travelers_children_younger: childrenYounger,
       preferred_start_date: preferredDate || null,
+      trip_length_nights: tripLengthNights,
+      preferred_room_type: preferredRoomType,
       client_question: clientQuestion || null,
       priority,
     })

@@ -109,10 +109,10 @@ export default function DeliveryPanel({
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div id="delivery" className="bg-white rounded-lg border border-gray-200 overflow-hidden scroll-mt-6">
       <div className="px-5 py-4 border-b border-gray-100">
-        <h2 className="text-sm font-semibold text-gray-700">Share Links</h2>
-        <p className="text-xs text-gray-400 mt-0.5">Generate a link to send to the client for viewing and acceptance.</p>
+        <h2 className="text-sm font-semibold text-gray-700">Preview &amp; Send</h2>
+        <p className="text-xs text-gray-400 mt-0.5">Generate a link to preview exactly what the client will see, then send it for viewing and acceptance.</p>
       </div>
 
       {shareableVersions.length > 0 && (
@@ -176,6 +176,16 @@ export default function DeliveryPanel({
                       <code className="text-xs text-gray-500 truncate flex-1 min-w-0 bg-gray-50 px-2 py-1 rounded">
                         {link}
                       </code>
+                      {!isRevoked && (
+                        <a
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0 text-xs px-2.5 py-1 rounded border border-gray-200 hover:border-[var(--olive)] text-gray-600 hover:text-[var(--olive-dk)] transition"
+                        >
+                          Preview
+                        </a>
+                      )}
                       {!isRevoked && (
                         <button
                           type="button"

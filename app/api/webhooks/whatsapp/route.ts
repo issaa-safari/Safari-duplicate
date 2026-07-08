@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isValidEmail } from '@/lib/server/validate-client'
 
 function isValidSignature(rawBody: string, signatureHeader: string | null): boolean {
   const appSecret = process.env.WHATSAPP_APP_SECRET
@@ -104,37 +105,59 @@ export async function POST(request: NextRequest) {
               `${greeting} 👋 Welcome to Safari Adventure Tour.\n\nTo help you plan your perfect safari, could you share your email address?`
             )
           } else if (convo.step === 'awaiting_email') {
+            const candidateEmail = messageText.trim().toLowerCase()
+            if (!isValidEmail(candidateEmail)) {
+              await sendWhatsAppMessage(waId, "That doesn't look like a valid email address — could you resend it? (e.g. name@example.com)")
+              continue
+            }
+
             await admin
               .from('whatsapp_conversations')
-              .update({ collected_email: messageText, step: 'awaiting_country' })
+              .update({ collected_email: candidateEmail, step: 'awaiting_country' })
               .eq('wa_id', waId)
 
             await sendWhatsAppMessage(waId, 'Thanks! Which country are you from?')
           } else if (convo.step === 'awaiting_country') {
             // All info collected — create client + request
             const fullName: string = convo.collected_name || profileName || ''
-            const np = fullName.split(' ')
-            const fn = np[0] || firstName || null
-            const ln = np.slice(1).join(' ') || lastName || null
+            const np = fullName.split(' ').filter(Boolean)
+            // clients.first_name/last_name are NOT NULL — fall back to '' (never null).
+            const fn = np[0] || firstName || ''
+            const ln = np.slice(1).join(' ') || lastName || ''
+            const collectedEmail = convo.collected_email || null
 
             let clientId: string
 
-            const { data: existingClient } = await admin
+            const { data: existingByWhatsapp } = await admin
               .from('clients')
               .select('id')
               .eq('whatsapp', waId)
               .maybeSingle()
 
+            // Also check by email — the same person may have already contacted
+            // via the website form, and we don't want a second duplicate client.
+            const { data: existingByEmail } = collectedEmail
+              ? await admin.from('clients').select('id').ilike('email', collectedEmail).maybeSingle()
+              : { data: null }
+
+            const existingClient = existingByWhatsapp ?? existingByEmail
+
             if (existingClient) {
               clientId = existingClient.id
               await admin
                 .from('clients')
-                .update({ first_name: fn, last_name: ln, email: convo.collected_email || null, country: messageText })
+                .update({
+                  first_name: fn || undefined,
+                  last_name: ln || undefined,
+                  email: collectedEmail ?? undefined,
+                  whatsapp: waId,
+                  country: messageText,
+                })
                 .eq('id', clientId)
             } else {
               const { data: newClient, error } = await admin
                 .from('clients')
-                .insert({ whatsapp: waId, first_name: fn, last_name: ln, email: convo.collected_email || null, country: messageText })
+                .insert({ whatsapp: waId, first_name: fn, last_name: ln, email: collectedEmail, country: messageText })
                 .select('id')
                 .single()
 

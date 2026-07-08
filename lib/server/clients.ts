@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isValidEmail } from './validate-client'
 
 // Find a CRM client by normalised email, creating one if absent.
 // Throws on hard DB failure — callers that require a client must not swallow this.
@@ -8,6 +9,7 @@ export async function findOrCreateClientByEmail(
 ): Promise<string> {
   const email = (details.email ?? '').trim().toLowerCase()
   if (!email) throw new Error('Client email is required')
+  if (!isValidEmail(email)) throw new Error(`"${email}" is not a valid email address`)
 
   const { data: existing, error: lookupError } = await admin
     .from('clients')

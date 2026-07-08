@@ -419,6 +419,18 @@ export default async function RequestDetailPage({
                     </span>
                   </div>
                 )}
+                {request.trip_length_nights && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Trip length</span>
+                    <span className="text-gray-700">{request.trip_length_nights} nights</span>
+                  </div>
+                )}
+                {request.preferred_room_type && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Preferred room type</span>
+                    <span className="text-gray-700 capitalize">{request.preferred_room_type}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import AcceptForm from './accept-form'
+import { syncQuoteStatus } from '@/lib/server/quote-status'
 
 const MEAL_LABELS: Record<string, string> = { B: 'Breakfast', L: 'Lunch', D: 'Dinner' }
 const MEAL_LABELS_AR: Record<string, string> = { B: 'إفطار', L: 'غداء', D: 'عشاء' }
@@ -91,7 +92,7 @@ export default async function QuotePortalPage({
       .eq('id', delivery.quote_id)
       .single(),
     admin.from('quote_days')
-      .select('id, day_number, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_snapshot, meals')
+      .select('id, day_number, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_snapshot, meals, photos')
       .eq('quote_version_id', delivery.quote_version_id)
       .order('day_number'),
     admin.from('quote_price_lines')
@@ -115,6 +116,7 @@ export default async function QuotePortalPage({
   // Mark as viewed if currently sent
   if (version.status === 'sent') {
     await admin.from('quote_versions').update({ status: 'viewed' }).eq('id', version.id)
+    await syncQuoteStatus(admin, delivery.quote_id)
   }
 
   // Dual-track proposal: a sibling version sharing this compare_group carries
@@ -504,6 +506,15 @@ export default async function QuotePortalPage({
                     )}
                     {dayNotes && (
                       <p className="text-sm text-[#4C5E2A] mt-2 bg-[#7A9A4A]/5 rounded-lg px-3 py-2">{dayNotes}</p>
+                    )}
+                    {Array.isArray(day.photos) && day.photos.length > 0 && (
+                      <div className={`mt-3 grid gap-2 ${day.photos.length === 1 ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3'}`}>
+                        {day.photos.map((url: string, pi: number) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img key={pi} src={url} alt="" loading="lazy"
+                            className="w-full h-32 sm:h-36 object-cover rounded-lg border border-gray-200" />
+                        ))}
+                      </div>
                     )}
                   </div>
                 )

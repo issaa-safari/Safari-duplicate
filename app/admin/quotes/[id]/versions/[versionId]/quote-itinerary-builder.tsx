@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import ActivitiesModal, { DayActivity } from '@/components/admin/activities-modal'
 import CreateLookupDialog from '@/components/admin/create-lookup-dialog'
 import { createLookup } from '@/lib/create-lookup'
+import { GalleryUpload } from '@/components/admin/image-upload'
 
 type ContentItem = { id: string; name: string; [key: string]: unknown }
 
@@ -31,6 +32,7 @@ type Day = {
   destinationId: string | null
   destinationSnapshot: Record<string, unknown>
   meals: string[]
+  photos: string[]
   items: DayItem[]
 }
 
@@ -116,6 +118,7 @@ function fromTourDays(
       destinationId: dest?.id ?? null,
       destinationSnapshot: dest ? { id: dest.id, name: dest.name } : {},
       meals,
+      photos: [],
       items,
     }
   })
@@ -150,6 +153,7 @@ function loadInitialDays(
       destinationId: qd.destination_id ?? null,
       destinationSnapshot: qd.destination_snapshot ?? {},
       meals: qd.meals ?? [],
+      photos: qd.photos ?? [],
       items,
     }
   })
@@ -232,6 +236,9 @@ export default function QuoteItineraryBuilder({
   )
   const [genCount, setGenCount] = useState<string>('')
   const [activityModal, setActivityModal] = useState<number | null>(null)
+  const [photoOpenIndices, setPhotoOpenIndices] = useState<Set<number>>(
+    () => new Set(initialQuoteDays.map((d: any, i: number) => ((d.photos ?? []).length > 0 ? i : -1)).filter((i: number) => i >= 0))
+  )
 
   // Bridge the shared ActivitiesModal <-> the quote's activity items.
   function dayActivitiesFor(day: Day): DayActivity[] {
@@ -305,7 +312,7 @@ export default function QuoteItineraryBuilder({
       _key: uid(), id: null, dayNumber: next, dayDate: '', title: '',
       descriptionEn: '', clientNotes: '',
       titleAr: '', descriptionAr: '', clientNotesAr: '',
-      destinationId: null, destinationSnapshot: {}, meals: [], items: [],
+      destinationId: null, destinationSnapshot: {}, meals: [], photos: [], items: [],
     }])
     if (language === 'ar') {
       setArOpenIndices(prev => new Set([...prev, newIdx]))
@@ -320,7 +327,7 @@ export default function QuoteItineraryBuilder({
       dayNumber: i + 1, dayDate: '', title: '',
       descriptionEn: '', clientNotes: '',
       titleAr: '', descriptionAr: '', clientNotesAr: '',
-      destinationId: null, destinationSnapshot: {}, meals: [], items: [],
+      destinationId: null, destinationSnapshot: {}, meals: [], photos: [], items: [],
     })))
     if (language === 'ar') {
       setArOpenIndices(new Set(Array.from({ length: count }, (_, i) => i)))
@@ -620,6 +627,25 @@ export default function QuoteItineraryBuilder({
                       onChange={e => update(i, { clientNotesAr: e.target.value })}
                       placeholder="ملاحظات (اختياري)" rows={2}
                       className={inputCls + ' resize-none text-right'} disabled={isLocked} />
+                  </div>
+                )}
+
+                {!isLocked && (
+                  <button type="button"
+                    onClick={() => setPhotoOpenIndices(prev => {
+                      const next = new Set(prev); next.has(i) ? next.delete(i) : next.add(i); return next
+                    })}
+                    className="text-[10px] text-gray-400 hover:text-[var(--olive)] transition">
+                    {photoOpenIndices.has(i) ? '▲ Hide Photos' : `📷 + Photos${day.photos.length ? ` (${day.photos.length})` : ''}`}
+                  </button>
+                )}
+                {photoOpenIndices.has(i) && (
+                  <div className="mt-1 pt-1 border-t border-gray-100">
+                    <GalleryUpload
+                      value={day.photos}
+                      onChange={photos => update(i, { photos })}
+                      folder={`quote-days/${day.id ?? day._key}`}
+                    />
                   </div>
                 )}
 
