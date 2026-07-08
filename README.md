@@ -1,75 +1,38 @@
-# Safari Adventure Riders
+# SafariOffice — Platform Analysis & Implementation Blueprint
 
-The website and operations platform for **Safari Adventure Riders** — an East
-Africa safari company. It powers the public marketing site (tours, departures,
-quote requests, bilingual EN/AR with RTL) and the internal admin used to build
-itineraries, manage departures, send quotes, and take bookings.
+A complete, clean-room analysis of **app.safarioffice.com** (a SaaS for safari/tour operators) produced to support building an **original, functionally-equivalent** platform. No proprietary code, assets, or branding are reproduced — the design system is described, not copied.
 
-Live site: <https://safariadventureriders.com>
+- **Analyzed tenant:** Alamoudy Group (brand: *Safari Adventure Riders*), a Kenya/Tanzania operator, on the Free plan.
+- **Method:** authenticated read-only crawl via Playwright (every page), API/network capture, DOM/computed-style inspection, and one throwaway test request used to exercise the quote builder (created as `ZZ-QA-TEST-DELETE`, then archived).
+- **Target build stack:** Next.js (React) + NestJS (Node) + PostgreSQL.
+- **Date:** 2026-07-08.
 
-## Tech stack
+## What SafariOffice is (one paragraph)
+SafariOffice is a vertical CRM + itinerary-and-quote builder for tour operators. Inbound trip **Requests** flow across a pipeline (New → Working On → Open → Pre-Booked → Booked → Completed / Not Booked / Archived). For each request an operator builds one or more **Quotes** using a day-by-day itinerary builder that pulls from a huge shared **Accommodations** database plus the operator's own **Content Library** (destinations, activities, themes, vehicles, staff). A finished quote is published as a branded **PDF** and interactive **Digital** proposal on a per-tenant subdomain, then confirmed into a **Booking**. Supporting modules: **Clients** (CRM), **Insights** (analytics), **Tour Templates** (reusable itineraries), user/billing/subscription **Settings**, and a paid **Add-on Store**.
 
-- **Next.js 16** (App Router, React Server Components)
-- **Supabase** — Postgres, Auth, Storage (service-role used server-side)
-- **Tailwind CSS**
-- **Resend / WhatsApp Cloud API** — notifications & messaging
-- Deployed on **Vercel** (production tracks the `main` branch)
+## Document map → the 14 objectives
+| # | Objective | Document |
+|---|---|---|
+| 1 | Information Architecture | [01-information-architecture.md](01-information-architecture.md) |
+| 2 | User Flows | [02-user-flows.md](02-user-flows.md) |
+| 3 | UI Components | [03-ui-components.md](03-ui-components.md) |
+| 4 | Forms | [04-forms.md](04-forms.md) |
+| 5 | Data Model + ERD | [05-data-model.md](05-data-model.md) |
+| 6 | API Analysis | [06-api.md](06-api.md) |
+| 7 | Authentication | [07-authentication.md](07-authentication.md) |
+| 8 | UX Analysis | [08-ux-analysis.md](08-ux-analysis.md) |
+| 9 | Visual Design System | [09-design-system.md](09-design-system.md) |
+| 10 | Feature Inventory | [10-feature-inventory.md](10-feature-inventory.md) |
+| 11 | Technical Stack | [11-tech-stack.md](11-tech-stack.md) |
+| 12 | Build Specification | [specs/](specs/) — PRD, technical spec, DB schema, OpenAPI, components, folder structure, roadmap, sprint plan, testing checklist |
+| 13 | Screenshots | [screenshots/](screenshots/) |
+| 14 | Navigation Strategy | Documented inline in 01 & 02 (how the crawl traversed the app) |
+| — | **Final blueprint** | [IMPLEMENTATION-BLUEPRINT.md](IMPLEMENTATION-BLUEPRINT.md) |
 
-## Getting started
+## Evidence appendix
+Raw captures live in [network/](network/): API endpoint lists, sample response payloads (`req-*-list.json`, `versions.json`, `labeloverrides.json`), the add-request form spec, and stack fingerprints. These back the inferences in every document.
 
-```bash
-npm install
-cp .env.example .env.local   # then fill in the values
-npm run dev                  # http://localhost:3000
-```
-
-See [`.env.example`](./.env.example) for the required environment variables
-(Supabase URL + keys, WhatsApp credentials).
-
-### Useful scripts
-
-```bash
-npm run dev     # local dev server
-npm run build   # production build
-npm run start   # serve the production build
-npm run lint    # eslint
-```
-
-## Project structure
-
-```
-app/
-  page.tsx              Public homepage
-  (public)/             Public site — tours, departures, gallery, about,
-                        contact, quote-request, dashboard (signed-in clients)
-  admin/                Internal admin — tours, departures, quotes, content
-  api/                  Route handlers (departures, tours, quote-request,
-                        bookings, WhatsApp webhook, admin endpoints…)
-  quote/[token]/        Shareable client-facing quote link + print/PDF view
-components/
-  public/               Public UI (header, footer, cards, WhatsApp button…)
-  admin/                Admin UI (itinerary builders, modals, content tools)
-lib/
-  supabase/             Browser, server and admin (service-role) clients
-  site.ts               Central business/contact configuration
-  i18n / use-locale     Bilingual (EN/AR) helpers
-migrations/             SQL migration groups (run in the Supabase SQL editor)
-```
-
-## Database & migrations
-
-Schema changes live in [`migrations/`](./migrations) as numbered `group_*.sql`
-files. Apply them in order in the **Supabase SQL editor**. They are written to
-be idempotent (`add column if not exists`, etc.).
-
-## Internationalisation
-
-The site is fully bilingual (English / Arabic). Language is resolved from the
-`?lang=` URL parameter first, then a `locale` cookie, then auto-detection
-(browser language / timezone). Arabic renders right-to-left (`dir="rtl"`).
-
-## Admin access
-
-The admin area lives under `/admin` and is gated by Supabase Auth plus an
-allow-list check (`lib/auth/admin-access`). Sign in at `/login` with an
-authorised account to reach the dashboard.
+## Important caveats
+- Entity/field names prefixed *inferred* are reconstructed from API payloads, DOM `data-name` attributes, and localStorage caches — they approximate the real schema, they are not the vendor's DDL.
+- Add-on-gated features (Language Pack, SafariBuddy, Share Tours, Content Library storage tiers) were observed only from their store/upsell surfaces.
+- All figures/counts reflect this single tenant at analysis time.
