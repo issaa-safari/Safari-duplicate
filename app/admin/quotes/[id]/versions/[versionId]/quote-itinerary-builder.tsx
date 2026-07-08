@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import ActivitiesModal, { DayActivity } from '@/components/admin/activities-modal'
 import CreateLookupDialog from '@/components/admin/create-lookup-dialog'
@@ -174,6 +174,8 @@ export default function QuoteItineraryBuilder({
   staff,
   isLocked,
   language = 'en',
+  onContinueToPricing,
+  onDirtyChange,
 }: {
   quoteId: string
   versionId: string
@@ -189,6 +191,10 @@ export default function QuoteItineraryBuilder({
   staff: ContentItem[]
   isLocked: boolean
   language?: 'en' | 'ar'
+  /** When provided, shows a "Save & Continue to Pricing" button that saves then calls this. */
+  onContinueToPricing?: () => void
+  /** Reports unsaved-changes state to an embedding parent (e.g. for a navigation guard). */
+  onDirtyChange?: (dirty: boolean) => void
 }) {
   const router = useRouter()
 
@@ -225,6 +231,16 @@ export default function QuoteItineraryBuilder({
   const [loading, setLoading] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+
+  // Unsaved-changes tracking for the embedding workspace's navigation guard —
+  // low-risk (watches `days` rather than instrumenting every mutation site).
+  const isFirstDaysRender = useRef(true)
+  const [dirty, setDirty] = useState(false)
+  useEffect(() => {
+    if (isFirstDaysRender.current) { isFirstDaysRender.current = false; return }
+    setDirty(true)
+  }, [days])
+  useEffect(() => { onDirtyChange?.(dirty) }, [dirty, onDirtyChange])
   const [arOpenIndices, setArOpenIndices] = useState<Set<number>>(
     () => language === 'ar'
       ? new Set(initialQuoteDays.map((_: any, i: number) => i))
@@ -428,7 +444,7 @@ export default function QuoteItineraryBuilder({
 
   // ── Save ────────────────────────────────────────────────────────────────
 
-  async function save() {
+  async function save(): Promise<boolean> {
     setLoading(true); setError(''); setSaved(false)
     try {
       const res = await fetch('/api/admin/save-quote-itinerary', {
@@ -439,12 +455,20 @@ export default function QuoteItineraryBuilder({
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Failed to save')
       setSaved(true)
+      setDirty(false)
       router.refresh()
+      return true
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to save itinerary.')
+      return false
     } finally {
       setLoading(false)
     }
+  }
+
+  async function saveAndContinue() {
+    const ok = await save()
+    if (ok) onContinueToPricing?.()
   }
 
   // ── Empty state ─────────────────────────────────────────────────────────
@@ -761,11 +785,17 @@ export default function QuoteItineraryBuilder({
       {saved && <p className="text-sm text-green-600 bg-green-50 rounded-md px-4 py-3">Itinerary saved.</p>}
 
       {!isLocked && (
-        <div className="sticky bottom-4">
-          <button type="button" onClick={save} disabled={loading}
+        <div className="sticky bottom-4 flex gap-2">
+          <button type="button" onClick={() => save()} disabled={loading}
             className="rounded-md px-6 py-2.5 text-sm font-medium text-white shadow-lg disabled:opacity-60 bg-olive hover:bg-olive-dk">
             {loading ? 'Saving…' : 'Save Itinerary'}
           </button>
+          {onContinueToPricing && (
+            <button type="button" onClick={saveAndContinue} disabled={loading}
+              className="rounded-md px-6 py-2.5 text-sm font-medium shadow-lg disabled:opacity-60 border border-[var(--olive)] text-[var(--olive-dk)] bg-white hover:bg-[var(--olive)]/5">
+              Save &amp; Continue to Pricing →
+            </button>
+          )}
         </div>
       )}
     </div>

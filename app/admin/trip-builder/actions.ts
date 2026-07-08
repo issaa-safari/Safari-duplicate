@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { findOrCreateClientByEmail } from '@/lib/server/clients'
 import { calculateLineTotals } from '@/lib/pricing'
+import { hotelRowsFromItinerary } from './load-initial-state'
 import {
   buildFxToUsd,
   nightsBetween,
@@ -765,4 +766,50 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
   } catch (err) {
     return { ok: false, message: err instanceof Error ? err.message : 'Save failed.' }
   }
+}
+
+/**
+ * Re-run the itinerary→hotel-row seeding for one track's current version, on
+ * demand. Used by the "Re-sync from itinerary" button when pricing already
+ * exists but the itinerary was edited afterward. Returns the freshly-seeded
+ * rows; the client merges them into its own state (matching by check-in
+ * date) so manual overrides on existing rows aren't clobbered.
+ */
+export async function resyncHotelRowsFromItinerary(
+  versionId: string,
+): Promise<{ ok: true; rows: Omit<HotelRowInput, 'key'>[] } | { ok: false; message: string }> {
+  const { admin } = await authGuard()
+
+  const { data: version } = await admin
+    .from('quote_versions').select('id, travel_start_date').eq('id', versionId).maybeSingle()
+  if (!version) return { ok: false, message: 'Version not found.' }
+
+  const { data: days } = await admin
+    .from('quote_days')
+    .select('id, day_number, day_date, destination_id, meals')
+    .eq('quote_version_id', versionId)
+    .order('day_number')
+  if (!days || days.length === 0) return { ok: true, rows: [] }
+
+  const { data: items } = await admin
+    .from('quote_day_items')
+    .select('quote_day_id, accommodation_id, content_snapshot, sort_order')
+    .eq('item_type', 'accommodation')
+    .in('quote_day_id', days.map(d => d.id))
+    .order('sort_order')
+
+  const accomByDay = new Map<string, { entityId: string; destinationId: string | null }>()
+  for (const it of (items ?? []) as any[]) {
+    if (!it.accommodation_id) continue
+    if (it.content_snapshot?.alternative === true) continue
+    if (!accomByDay.has(it.quote_day_id)) {
+      accomByDay.set(it.quote_day_id, {
+        entityId: it.accommodation_id,
+        destinationId: it.content_snapshot?.destination_id ?? null,
+      })
+    }
+  }
+
+  const rows = hotelRowsFromItinerary(days as any, accomByDay, version.travel_start_date ?? '')
+  return { ok: true, rows }
 }

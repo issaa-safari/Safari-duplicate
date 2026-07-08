@@ -92,5 +92,5 @@ export async function cloneVersion(formData: FormData) {
     }
   }
 
-  redirect(`/admin/quotes/${quoteId}/versions/${newId}`)
+  redirect(`/admin/quotes/${quoteId}?step=itinerary&version=${newId}`)
 }
