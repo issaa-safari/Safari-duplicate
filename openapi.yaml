@@ -1,0 +1,210 @@
+openapi: 3.1.0
+info:
+  title: Safari Ops API (rebuild)
+  version: 1.0.0
+  description: >
+    Original API contract for a SafariOffice-equivalent platform. Modeled on the observed
+    envelope and endpoints (see ../06-api.md). Not the vendor's spec.
+servers:
+  - url: https://api.yourdomain.com/api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Requests
+  - name: Quotes
+  - name: Clients
+  - name: Accommodations
+  - name: Reference
+  - name: Insights
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        result: {}
+      required: [success]
+    Error:
+      type: object
+      properties:
+        success: { type: boolean, enum: [false] }
+        error: { type: string }
+        error_msg: { type: string }
+        error_code: { type: integer }
+        error_additional: { type: string }
+      required: [success, error_code]
+    Request:
+      type: object
+      properties:
+        id: { type: integer }
+        refno: { type: string, example: "2026-0019" }
+        status: { type: string, enum: [new, working, open, prebooked, booked, completed, notbooked] }
+        client_id: { type: integer }
+        assigned_user_id: { type: integer }
+        tour_name: { type: string }
+        start_date: { type: string, format: date, nullable: true }
+        request_value: { type: number, nullable: true }
+        request_currency: { type: string, nullable: true }
+        archived: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Client:
+      type: object
+      properties:
+        id: { type: integer }
+        first_name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        country: { type: string }
+        requests_count: { type: integer }
+    Quote:
+      type: object
+      properties:
+        id: { type: integer }
+        request_id: { type: integer }
+        version_no: { type: integer }
+        status: { type: string, enum: [draft, sent, confirmed] }
+        currency: { type: string }
+        total_value: { type: number }
+        pdf_url: { type: string, nullable: true }
+        digital_url: { type: string, nullable: true }
+    Paginated:
+      type: object
+      properties:
+        success: { type: boolean }
+        result: { type: array, items: {} }
+        page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+  parameters:
+    Page: { name: page, in: query, schema: { type: integer, default: 1 } }
+    PerPage: { name: per_page, in: query, schema: { type: integer, default: 25 } }
+    Search: { name: search, in: query, schema: { type: string } }
+    Sort: { name: sort, in: query, schema: { type: string } }
+    Order: { name: order, in: query, schema: { type: string, enum: [asc, desc] } }
+paths:
+  /auth/signin:
+    post:
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                totp: { type: string, nullable: true }
+              required: [email, password]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }
+        '401': { description: Invalid credentials / token, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+  /auth/refresh:
+    post: { tags: [Auth], security: [], responses: { '200': { description: New access token } } }
+  /auth/signout:
+    post: { tags: [Auth], responses: { '204': { description: No Content } } }
+  /reference/versions:
+    get:
+      tags: [Reference]
+      summary: Dataset version map for client caching
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } } }
+  /reference/{dataset}:
+    get:
+      tags: [Reference]
+      parameters:
+        - { name: dataset, in: path, required: true, schema: { type: string, example: salutation } }
+        - { name: countries, in: query, schema: { type: string, example: "2,5" } }
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } } }
+  /requests:
+    get:
+      tags: [Requests]
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+        - { name: assigned_user_id, in: query, schema: { type: integer } }
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Paginated' } } } } }
+    post:
+      tags: [Requests]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                client: { type: object }
+                clientid: { type: integer, nullable: true }
+                language_id: { type: integer }
+                source: { type: string }
+                settings: { type: object }
+                groupsize: { type: object }
+                roomsetting: { type: object }
+                requestinfo: { type: string }
+      responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Request' } } } } }
+  /requests/{id}:
+    get: { tags: [Requests], parameters: [ { name: id, in: path, required: true, schema: { type: integer } } ], responses: { '200': { description: OK }, '403': { description: Not authorized }, '404': { description: Not found } } }
+    patch: { tags: [Requests], parameters: [ { name: id, in: path, required: true, schema: { type: integer } } ], responses: { '200': { description: Updated } } }
+    delete: { tags: [Requests], description: "Only allowed if request has no quotes.", parameters: [ { name: id, in: path, required: true, schema: { type: integer } } ], responses: { '204': { description: Deleted }, '409': { description: Has quotes - archive instead } } }
+  /requests/{id}/archive:
+    post: { tags: [Requests], parameters: [ { name: id, in: path, required: true, schema: { type: integer } } ], responses: { '200': { description: Archived } } }
+  /requests/{id}/status:
+    post:
+      tags: [Requests]
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer } } ]
+      requestBody: { content: { application/json: { schema: { type: object, properties: { status: { type: string } } } } } }
+      responses: { '200': { description: OK } }
+  /requests/{id}/quotes:
+    post: { tags: [Quotes], description: Create a quote (bootstrap builder), parameters: [ { name: id, in: path, required: true, schema: { type: integer } } ], responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Quote' } } } } } }
+  /quotes/{id}:
+    get: { tags: [Quotes], parameters: [ { name: id, in: path, required: true, schema: { type: integer } } ], responses: { '200': { description: OK } } }
+  /quotes/{id}/days:
+    put: { tags: [Quotes], summary: Replace/patch day-by-day itinerary, parameters: [ { name: id, in: path, required: true, schema: { type: integer } } ], responses: { '200': { description: OK } } }
+  /quotes/{id}/pricing:
+    put: { tags: [Quotes], parameters: [ { name: id, in: path, required: true, schema: { type: integer } } ], responses: { '200': { description: OK }, '422': { description: Itinerary incomplete } } }
+  /quotes/{id}/publish:
+    post: { tags: [Quotes], summary: Generate PDF + digital, increment version, parameters: [ { name: id, in: path, required: true, schema: { type: integer } } ], responses: { '202': { description: Publishing job queued } } }
+  /quotes/{id}/send:
+    post: { tags: [Quotes], parameters: [ { name: id, in: path, required: true, schema: { type: integer } } ], responses: { '200': { description: Sent } } }
+  /clients:
+    get:
+      tags: [Clients]
+      parameters: [ $ref: '#/components/parameters/Search', $ref: '#/components/parameters/Page', $ref: '#/components/parameters/PerPage' ]
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Paginated' } } } } }
+    post: { tags: [Clients], responses: { '201': { description: Created } } }
+  /clients/{id}:
+    get: { tags: [Clients], parameters: [ { name: id, in: path, required: true, schema: { type: integer } } ], responses: { '200': { description: OK } } }
+    patch: { tags: [Clients], parameters: [ { name: id, in: path, required: true, schema: { type: integer } } ], responses: { '200': { description: Updated } } }
+    delete: { tags: [Clients], parameters: [ { name: id, in: path, required: true, schema: { type: integer } } ], responses: { '204': { description: Deleted } } }
+  /accommodations:
+    get:
+      tags: [Accommodations]
+      parameters:
+        - { name: countries, in: query, schema: { type: string } }
+        - { name: types, in: query, schema: { type: string } }
+        - { name: classes, in: query, schema: { type: string } }
+        - { name: room_types, in: query, schema: { type: string } }
+        - { name: anchor_lat, in: query, schema: { type: number } }
+        - { name: anchor_lng, in: query, schema: { type: number } }
+        - { name: radius_km, in: query, schema: { type: integer } }
+        - { name: favorites_only, in: query, schema: { type: boolean } }
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Page'
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Paginated' } } } } }
+  /insights:
+    get:
+      tags: [Insights]
+      parameters:
+        - { name: range, in: query, schema: { type: string, example: last_90_days } }
+        - { name: user_id, in: query, schema: { type: integer } }
+        - { name: include_archived, in: query, schema: { type: boolean } }
+      responses: { '200': { description: KPI payload, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } } }
