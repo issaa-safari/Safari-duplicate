@@ -4,13 +4,13 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { assertValidClientIdentity } from '@/lib/server/validate-client'
-import { redirect } from 'next/navigation'
+import { safeAction } from '@/lib/server/action-result'
 
-export async function createRequest(formData: FormData) {
+export const createRequest = safeAction(async (formData: FormData) => {
   // Session client — used ONLY to verify the admin is logged in.
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/admin/login')
+  if (!user) return { error: null, redirectTo: '/admin/login' }
 
   // Service-role client — all DB work goes through this. No cookies, bypasses RLS.
   const admin = createAdminClient()
@@ -83,5 +83,5 @@ export async function createRequest(formData: FormData) {
 
   if (requestError) throw new Error(requestError.message)
 
-  redirect(`/admin/requests/${newRequest.id}`)
-}
+  return { error: null, redirectTo: `/admin/requests/${newRequest.id}` }
+})

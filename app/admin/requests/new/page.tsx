@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createRequest } from './actions'
 
 export default function NewRequestPage() {
+  const router = useRouter()
   const [priority, setPriority] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -15,12 +17,13 @@ export default function NewRequestPage() {
     setLoading(true)
     const formData = new FormData(e.currentTarget)
     formData.set('priority', String(priority))
-    try {
-      await createRequest(formData)
-    } catch (err: any) {
-      setError(err.message ?? 'Something went wrong.')
+    const result = await createRequest(formData)
+    if (result.error !== null) {
+      setError(result.error)
       setLoading(false)
+      return
     }
+    router.push(result.redirectTo)
   }
 
   return (

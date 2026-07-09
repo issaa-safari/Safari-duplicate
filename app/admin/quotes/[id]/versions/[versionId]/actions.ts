@@ -2,16 +2,16 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { syncQuoteStatus } from '@/lib/server/quote-status'
+import { safeAction } from '@/lib/server/action-result'
 
 async function authGuard() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/admin/login')
+  if (!user) throw new Error('Your session has expired — please log in again.')
   const admin = createAdminClient()
   await assertAdminAccess(admin, user.email)
   return { user, admin }
@@ -50,7 +50,12 @@ function validateTravellerInput(
   }
 }
 
-export async function saveDates(formData: FormData) {
+// The fine-grained saves below intentionally do NOT call revalidatePath:
+// the quote workspace keeps its own client state in sync, and revalidating
+// forced a full re-render of the (very query-heavy) quote page on every
+// small save, which is what made saving feel slow.
+
+export const saveDates = safeAction(async (formData: FormData) => {
   const { admin } = await authGuard()
 
   const versionId = formData.get('versionId') as string
@@ -70,11 +75,9 @@ export async function saveDates(formData: FormData) {
     .eq('id', versionId)
 
   if (error) throw new Error(error.message)
-  revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
-  revalidatePath(`/admin/quotes/${quoteId}`)
-}
+})
 
-export async function saveLanguage(formData: FormData) {
+export const saveLanguage = safeAction(async (formData: FormData) => {
   const { admin } = await authGuard()
   const versionId = formData.get('versionId') as string
   const quoteId = formData.get('quoteId') as string
@@ -83,11 +86,12 @@ export async function saveLanguage(formData: FormData) {
   await requireMutableVersion(admin, versionId, quoteId)
   const { error } = await admin.from('quote_versions').update({ language }).eq('id', versionId)
   if (error) throw new Error(error.message)
-  revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
-  revalidatePath(`/admin/quotes/${quoteId}`)
-}
+})
 
-export async function addTraveller(formData: FormData) {
+const TRAVELLER_COLUMNS =
+  'id, display_name, age_on_travel_date, age_band_id, age_band_snapshot, pricing_fixed_amount_usd, traveller_category, room_category, is_paying, is_complimentary, sort_order'
+
+export const addTraveller = safeAction(async (formData: FormData) => {
   const { admin } = await authGuard()
 
   const versionId = formData.get('versionId') as string
@@ -138,7 +142,7 @@ export async function addTraveller(formData: FormData) {
     .select('*', { count: 'exact', head: true })
     .eq('quote_version_id', versionId)
 
-  const { error } = await admin.from('quote_travellers').insert({
+  const { data: inserted, error } = await admin.from('quote_travellers').insert({
     quote_version_id: versionId,
     display_name: displayName,
     age_on_travel_date: age,
@@ -150,14 +154,13 @@ export async function addTraveller(formData: FormData) {
     is_paying: isComplimentary ? false : isPaying,
     is_complimentary: isComplimentary,
     sort_order: count ?? 0,
-  })
+  }).select(TRAVELLER_COLUMNS).single()
 
   if (error) throw new Error(error.message)
-  revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
-  revalidatePath(`/admin/quotes/${quoteId}`)
-}
+  return { error: null, traveller: inserted as Record<string, unknown> }
+})
 
-export async function deleteTraveller(formData: FormData) {
+export const deleteTraveller = safeAction(async (formData: FormData) => {
   const { admin } = await authGuard()
 
   const travellerId = formData.get('travellerId') as string
@@ -172,11 +175,9 @@ export async function deleteTraveller(formData: FormData) {
     .eq('quote_version_id', versionId)
 
   if (error) throw new Error(error.message)
-  revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
-  revalidatePath(`/admin/quotes/${quoteId}`)
-}
+})
 
-export async function updateTraveller(formData: FormData) {
+export const updateTraveller = safeAction(async (formData: FormData) => {
   const { admin } = await authGuard()
 
   const travellerId = formData.get('travellerId') as string
@@ -219,7 +220,7 @@ export async function updateTraveller(formData: FormData) {
       : null,
   }
 
-  const { error } = await admin
+  const { data: updated, error } = await admin
     .from('quote_travellers')
     .update({
       display_name: displayName,
@@ -234,13 +235,14 @@ export async function updateTraveller(formData: FormData) {
     })
     .eq('id', travellerId)
     .eq('quote_version_id', versionId)
+    .select(TRAVELLER_COLUMNS)
+    .single()
 
   if (error) throw new Error(error.message)
-  revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
-  revalidatePath(`/admin/quotes/${quoteId}`)
-}
+  return { error: null, traveller: updated as Record<string, unknown> }
+})
 
-export async function setVersionStatus(formData: FormData) {
+export const setVersionStatus = safeAction(async (formData: FormData) => {
   const { admin } = await authGuard()
   const versionId = formData.get('versionId') as string
   const quoteId = formData.get('quoteId') as string
@@ -272,6 +274,8 @@ export async function setVersionStatus(formData: FormData) {
   if (error) throw new Error(error.message)
   await syncQuoteStatus(admin, quoteId)
 
+  // Status drives which versions the Preview/Send panel can share, so this
+  // one does refresh the page data.
   revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
   revalidatePath(`/admin/quotes/${quoteId}`)
-}
+})

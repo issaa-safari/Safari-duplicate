@@ -2,13 +2,13 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { redirect } from 'next/navigation'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
+import { safeAction } from '@/lib/server/action-result'
 
-export async function createQuote(formData: FormData) {
+export const createQuote = safeAction(async (formData: FormData) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/admin/login')
+  if (!user) return { error: null, redirectTo: '/admin/login' }
 
   const mode = formData.get('mode') as string
   const clientId = formData.get('clientId') as string
@@ -127,13 +127,12 @@ export async function createQuote(formData: FormData) {
     }
   }
 
-  // redirect() outside try/catch — Next.js throws NEXT_REDIRECT internally
-  // and it must not be caught.
   // Funnel: request → quote → itinerary → pricing → preview → send, all steps
   // on the unified quote workspace. Custom safaris open on the Itinerary tab.
-  redirect(
-    mode === 'custom' && firstVersion
+  return {
+    error: null,
+    redirectTo: mode === 'custom' && firstVersion
       ? `/admin/quotes/${newQuoteId}?step=itinerary&version=${firstVersion.id}`
-      : `/admin/quotes/${newQuoteId}`
-  )
-}
+      : `/admin/quotes/${newQuoteId}`,
+  }
+})
