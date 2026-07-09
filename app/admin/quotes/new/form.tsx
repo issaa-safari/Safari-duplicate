@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import CreateClientDialog from '@/components/admin/create-client-dialog'
 import { createQuote } from './actions'
 
@@ -28,6 +29,7 @@ export default function NewQuoteForm({
   defaultClientId?: string
   defaultRequestId?: string
 }) {
+  const router = useRouter()
   const [mode, setMode] = useState<'custom' | 'fixed_departure' | ''>(
     defaultRequestId ? 'custom' : ''
   )
@@ -35,19 +37,32 @@ export default function NewQuoteForm({
   const [clients, setClients] = useState<Client[]>(clientsProp)
   const [addingClient, setAddingClient] = useState(false)
   const [clientId, setClientId] = useState(defaultClientId)
+  const [requestId, setRequestId] = useState(defaultRequestId)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Linking a request is what carries dates, day skeleton and travellers into
+  // the new quote — so when a client is picked, pre-select their most recent
+  // request (requests arrive newest-first). The admin can still clear it.
+  function handleClientChange(newClientId: string) {
+    setClientId(newClientId)
+    const current = requests.find(r => r.id === requestId)
+    if (!current || current.client_id !== newClientId) {
+      setRequestId(requests.find(r => r.client_id === newClientId)?.id ?? '')
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError('')
     setLoading(true)
-    try {
-      await createQuote(new FormData(e.currentTarget))
-    } catch (err: any) {
-      setError(err.message ?? 'Something went wrong.')
+    const result = await createQuote(new FormData(e.currentTarget))
+    if (result.error !== null) {
+      setError(result.error)
       setLoading(false)
+      return
     }
+    router.push(result.redirectTo)
   }
 
   return (
@@ -102,7 +117,7 @@ export default function NewQuoteForm({
                 value={clientId}
                 onChange={e => {
                   if (e.target.value === '__add__') { setAddingClient(true); return }
-                  setClientId(e.target.value)
+                  handleClientChange(e.target.value)
                 }}
                 className={inputCls}
               >
@@ -120,8 +135,9 @@ export default function NewQuoteForm({
               <label className={labelCls}>Linked Request <span className="text-gray-400 font-normal">(optional)</span></label>
               <select
                 name="requestId"
-                defaultValue={defaultRequestId}
+                value={requestId}
                 onChange={e => {
+                  setRequestId(e.target.value)
                   const req = requests.find(r => r.id === e.target.value)
                   if (req?.client_id) setClientId(req.client_id)
                 }}
@@ -216,7 +232,7 @@ export default function NewQuoteForm({
               ? prev
               : [...prev, { id: c.id, first_name: c.first_name, last_name: c.last_name, email: c.email ?? '' }]
                   .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`)))
-            setClientId(c.id)
+            handleClientChange(c.id)
           }}
         />
       )}

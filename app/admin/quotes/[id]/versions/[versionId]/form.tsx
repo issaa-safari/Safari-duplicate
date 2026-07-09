@@ -91,6 +91,10 @@ export default function VersionEditorForm({
 }) {
   const isLocked = !['draft', 'ready'].includes(version.status)
 
+  // Local copy of the traveller list — updated straight from the action
+  // results so saves don't need a full page revalidation to show up.
+  const [travellers, setTravellers] = useState<Traveller[]>(initialTravellers)
+
   // Calculate end date from start date + duration if available
   const calculateEndDate = (start: string, duration: number | null) => {
     if (!start || !duration) return ''
@@ -115,18 +119,19 @@ export default function VersionEditorForm({
   function handleSaveDates() {
     setDatesError('')
     setDatesSaved(false)
+    if (startDate && endDate && endDate < startDate) {
+      setDatesError('End date cannot be before start date.')
+      return
+    }
     const fd = new FormData()
     fd.set('versionId', version.id)
     fd.set('quoteId', quoteId)
     fd.set('travelStartDate', startDate)
     fd.set('travelEndDate', endDate)
     startDateTransition(async () => {
-      try {
-        await saveDates(fd)
-        setDatesSaved(true)
-      } catch (err: unknown) {
-        setDatesError(err instanceof Error ? err.message : 'Failed to save dates.')
-      }
+      const result = await saveDates(fd)
+      if (result.error) setDatesError(result.error)
+      else setDatesSaved(true)
     })
   }
 
@@ -134,19 +139,25 @@ export default function VersionEditorForm({
   const [language, setLanguage] = useState(version.language ?? 'en')
   const [langPending, startLangTransition] = useTransition()
   const [langSaved, setLangSaved] = useState(false)
+  const [langError, setLangError] = useState('')
 
   function handleSaveLang(lang: string) {
+    const previous = language
     setLanguage(lang)
     setLangSaved(false)
+    setLangError('')
     const fd = new FormData()
     fd.set('versionId', version.id)
     fd.set('quoteId', quoteId)
     fd.set('language', lang)
     startLangTransition(async () => {
-      try {
-        await saveLanguage(fd)
+      const result = await saveLanguage(fd)
+      if (result.error) {
+        setLanguage(previous)
+        setLangError(result.error)
+      } else {
         setLangSaved(true)
-      } catch { /* ignore */ }
+      }
     })
   }
 
@@ -164,6 +175,7 @@ export default function VersionEditorForm({
 
   // ── Delete ──────────────────────────────────────────────────────────────
   const [deletePending, startDeleteTransition] = useTransition()
+  const [deleteError, setDeleteError] = useState('')
 
   // ── Helpers ─────────────────────────────────────────────────────────────
   function classifyAge(ageStr: string, currentBandId: string): Partial<typeof addForm> {
@@ -222,13 +234,14 @@ export default function VersionEditorForm({
   function handleAdd() {
     setAddError('')
     startAddTransition(async () => {
-      try {
-        await addTraveller(buildAddFd(addForm))
-        setAddForm(blankTravellerForm(ageBands))
-        setShowAdd(false)
-      } catch (err: unknown) {
-        setAddError(err instanceof Error ? err.message : 'Failed to add traveller.')
+      const result = await addTraveller(buildAddFd(addForm))
+      if (result.error !== null) {
+        setAddError(result.error)
+        return
       }
+      setTravellers(prev => [...prev, result.traveller as unknown as Traveller])
+      setAddForm(blankTravellerForm(ageBands))
+      setShowAdd(false)
     })
   }
 
@@ -256,22 +269,27 @@ export default function VersionEditorForm({
     const fd = buildAddFd(editForm)
     fd.set('travellerId', editingId!)
     startEditTransition(async () => {
-      try {
-        await updateTraveller(fd)
-        setEditingId(null)
-      } catch (err: unknown) {
-        setEditError(err instanceof Error ? err.message : 'Failed to update traveller.')
+      const result = await updateTraveller(fd)
+      if (result.error !== null) {
+        setEditError(result.error)
+        return
       }
+      const updated = result.traveller as unknown as Traveller
+      setTravellers(prev => prev.map(t => (t.id === updated.id ? updated : t)))
+      setEditingId(null)
     })
   }
 
   function handleDelete(travellerId: string) {
+    setDeleteError('')
     const fd = new FormData()
     fd.set('travellerId', travellerId)
     fd.set('versionId', version.id)
     fd.set('quoteId', quoteId)
     startDeleteTransition(async () => {
-      await deleteTraveller(fd)
+      const result = await deleteTraveller(fd)
+      if (result.error) setDeleteError(result.error)
+      else setTravellers(prev => prev.filter(t => t.id !== travellerId))
     })
   }
 
@@ -486,6 +504,9 @@ export default function VersionEditorForm({
           {langSaved && !langPending && (
             <span className="text-xs text-green-600">Saved</span>
           )}
+          {langError && (
+            <span className="text-xs text-red-600">{langError}</span>
+          )}
         </div>
       </section>
 
@@ -494,11 +515,11 @@ export default function VersionEditorForm({
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-gray-900">Travellers</h2>
-            {initialTravellers.length > 0 && (
+            {travellers.length > 0 && (
               <p className="text-xs text-gray-400 mt-0.5">
-                {initialTravellers.filter(t => t.is_paying).length} paying
-                {initialTravellers.some(t => t.is_complimentary) &&
-                  ` · ${initialTravellers.filter(t => t.is_complimentary).length} complimentary`}
+                {travellers.filter(t => t.is_paying).length} paying
+                {travellers.some(t => t.is_complimentary) &&
+                  ` · ${travellers.filter(t => t.is_complimentary).length} complimentary`}
               </p>
             )}
           </div>
@@ -514,9 +535,9 @@ export default function VersionEditorForm({
         </div>
 
         {/* Existing travellers */}
-        {initialTravellers.length > 0 && (
+        {travellers.length > 0 && (
           <div className="divide-y divide-gray-50">
-            {initialTravellers.map((t, idx) => {
+            {travellers.map((t, idx) => {
               const snap = t.age_band_snapshot as Record<string, unknown>
               const bandName = (snap.name as string) ?? t.traveller_category
               const method = (snap.default_pricing_method as string) ?? 'percentage'
@@ -616,7 +637,11 @@ export default function VersionEditorForm({
           </div>
         )}
 
-        {initialTravellers.length === 0 && !showAdd && (
+        {deleteError && (
+          <p className="text-sm text-red-600 bg-red-50 rounded-md px-3 py-2 mx-6 my-3">{deleteError}</p>
+        )}
+
+        {travellers.length === 0 && !showAdd && (
           <div className="px-6 py-10 text-center text-sm text-gray-400">
             No travellers added yet.
           </div>

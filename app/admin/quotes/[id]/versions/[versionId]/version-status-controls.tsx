@@ -39,12 +39,9 @@ export default function VersionStatusControls({
     fd.set('quoteId', quoteId)
     fd.set('status', toStatus)
     startTransition(async () => {
-      try {
-        await setVersionStatus(fd)
-        setCurrentStatus(toStatus)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to update status.')
-      }
+      const result = await setVersionStatus(fd)
+      if (result.error) setError(result.error)
+      else setCurrentStatus(toStatus)
     })
   }
 
