@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ButtonLink } from '@/components/ui/button'
@@ -14,7 +15,8 @@ export default async function ToursPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/admin/login')
 
-  const { data: tours } = await supabase
+  const admin = createAdminClient()
+  const { data: tours } = await admin
     .from('tours')
     .select('*')
     .order('sort_order', { ascending: true })
