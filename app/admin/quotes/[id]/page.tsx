@@ -4,12 +4,21 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import StatusBadge from '@/components/admin/status-badge'
-import DeliveryPanel from './delivery-panel'
 import CloneVersionButton from './clone-version-button'
 import TemplateToggleButton from './template-toggle-button'
+import QuoteWorkspace from './quote-workspace'
+import { loadBuilderLookups } from '../../trip-builder/load-lookups'
+import { loadTripBuilderInitialState } from '../../trip-builder/load-initial-state'
 
-export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function QuoteDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ step?: string; version?: string }>
+}) {
   const { id } = await params
+  const { step: stepParam, version: versionParam } = await searchParams
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -36,16 +45,16 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   ] = await Promise.all([
     admin.from('clients').select('first_name, last_name, email, phone, country').eq('id', quote.client_id).single(),
     quote.request_id
-      ? admin.from('requests').select('id, reference').eq('id', quote.request_id).single()
+      ? admin.from('requests').select('id, reference, preferred_start_date').eq('id', quote.request_id).single()
       : Promise.resolve({ data: null }),
     quote.tour_id
-      ? admin.from('tours').select('title_en').eq('id', quote.tour_id).single()
+      ? admin.from('tours').select('title_en, duration_days').eq('id', quote.tour_id).single()
       : Promise.resolve({ data: null }),
     quote.departure_id
       ? admin.from('departures').select('start_date, end_date').eq('id', quote.departure_id).single()
       : Promise.resolve({ data: null }),
     admin.from('quote_versions')
-      .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until, default_markup_percent, sharing_price_per_person_usd, single_price_per_person_usd, single_supplement_usd, total_cost_usd, total_selling_usd, gross_margin_percent, locked_at, sent_at, created_at, track_label, compare_group')
+      .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until, default_markup_percent, sharing_price_per_person_usd, single_price_per_person_usd, single_supplement_usd, total_cost_usd, total_selling_usd, gross_margin_percent, locked_at, sent_at, created_at, track_label, compare_group, language')
       .eq('quote_id', id)
       .order('version_number', { ascending: false }),
     admin.from('quote_deliveries')
@@ -59,20 +68,93 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const latestVersion = versions[0]
   const deliveries: any[] = deliveryRows ?? []
 
-  const { count: dayCount } = latestVersion
-    ? await admin.from('quote_days').select('id', { count: 'exact', head: true }).eq('quote_version_id', latestVersion.id)
-    : { count: 0 }
+  // Which versions need itinerary data loaded: every dual-track version, or
+  // just the latest single-track one — plus any version explicitly requested
+  // via ?version= (e.g. a redirect from the old per-version route).
+  const trackedVersions = versions.filter((v: any) => v.track_label)
+  const versionsNeedingItinerary = trackedVersions.length > 1
+    ? [...trackedVersions]
+    : (latestVersion ? [latestVersion] : [])
+  const requestedVersion = versionParam
+    ? versions.find((v: any) => v.id === versionParam)
+    : null
+  if (requestedVersion && !versionsNeedingItinerary.some((v: any) => v.id === requestedVersion.id)) {
+    versionsNeedingItinerary.push(requestedVersion)
+  }
+  const versionIds = versionsNeedingItinerary.map((v: any) => v.id)
 
-  // Step gating for the progress header below.
-  const itineraryDone = (dayCount ?? 0) > 0
-  const pricingDone = !!latestVersion && Number(latestVersion.total_selling_usd ?? 0) > 0
-  const sentOrBeyond = ['sent', 'viewed', 'accepted', 'declined'].includes(quote.status)
-  const steps = [
-    { n: 1, label: 'Itinerary & details', done: itineraryDone, href: latestVersion ? `/admin/quotes/${quote.id}/versions/${latestVersion.id}` : undefined },
-    { n: 2, label: 'Pricing', done: pricingDone, href: `/admin/trip-builder/${quote.id}` },
-    { n: 3, label: 'Preview', done: deliveries.length > 0, href: '#delivery' },
-    { n: 4, label: 'Send', done: sentOrBeyond, href: '#delivery' },
-  ]
+  const [
+    { data: quoteDaysAll },
+    { data: destinations },
+    { data: accommodations },
+    { data: activities },
+    { data: vehiclesData },
+    { data: staffData },
+    { data: ageBandsData },
+    { data: tourDaysData },
+    tripBuilderLookups,
+    tripBuilderInit,
+  ] = await Promise.all([
+    versionIds.length
+      ? admin.from('quote_days')
+          .select('id, day_number, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_id, destination_snapshot, meals, photos, sort_order, quote_version_id')
+          .in('quote_version_id', versionIds).order('sort_order')
+      : Promise.resolve({ data: [] as any[] }),
+    admin.from('destinations').select('id, name').eq('is_active', true).order('name'),
+    admin.from('accommodations').select('id, name, destination_id, description_en').eq('is_active', true).order('name'),
+    admin.from('activities').select('id, name, destination_id, description_en').eq('is_active', true).order('name'),
+    admin.from('vehicles').select('id, name, type, seats').order('name'),
+    admin.from('tour_staff').select('id, name, role').order('name'),
+    admin.from('traveller_age_bands')
+      .select('id, name, code, min_age, max_age, default_pricing_method, default_percentage, default_fixed_amount_usd, sort_order')
+      .eq('is_active', true).order('sort_order'),
+    quote.tour_id
+      ? admin.from('tour_days')
+          .select('day_number, day_number_end, title_en, title_ar, description_en, destination_id, accommodation_id, activity_ids, meal_breakfast, meal_lunch, meal_dinner')
+          .eq('tour_id', quote.tour_id).order('day_number')
+      : Promise.resolve({ data: [] as any[] }),
+    loadBuilderLookups(admin),
+    loadTripBuilderInitialState(admin, id),
+  ])
+
+  const dayIds = (quoteDaysAll ?? []).map((d: any) => d.id)
+  const [{ data: dayItemsAll }, { data: travellersAll }] = await Promise.all([
+    dayIds.length
+      ? admin.from('quote_day_items')
+          .select('id, quote_day_id, item_type, accommodation_id, activity_id, vehicle_id, staff_id, title_snapshot, content_snapshot, sort_order')
+          .in('quote_day_id', dayIds).order('sort_order')
+      : Promise.resolve({ data: [] as any[] }),
+    versionIds.length
+      ? admin.from('quote_travellers')
+          .select('id, display_name, age_on_travel_date, age_band_id, age_band_snapshot, pricing_fixed_amount_usd, traveller_category, room_category, is_paying, is_complimentary, sort_order, quote_version_id')
+          .in('quote_version_id', versionIds).order('sort_order')
+      : Promise.resolve({ data: [] as any[] }),
+  ])
+
+  const itineraryByVersion: Record<string, any> = {}
+  for (const v of versionsNeedingItinerary) {
+    const vDays = (quoteDaysAll ?? []).filter((d: any) => d.quote_version_id === v.id)
+    const vDayIds = new Set(vDays.map((d: any) => d.id))
+    itineraryByVersion[v.id] = {
+      quoteDays: vDays,
+      dayItems: (dayItemsAll ?? []).filter((it: any) => vDayIds.has(it.quote_day_id)),
+      travellers: (travellersAll ?? []).filter((t: any) => t.quote_version_id === v.id),
+      isLocked: !['draft', 'ready'].includes(v.status),
+    }
+  }
+
+  const quoteRequest = {
+    start_date: (requestRow as any)?.preferred_start_date ?? null,
+    duration_days: (tourRow as any)?.duration_days ?? null,
+  }
+
+  const clientName = client ? `${client.first_name} ${client.last_name}`.trim() : 'Quote'
+
+  const VALID_STEPS = ['itinerary', 'pricing', 'preview', 'send']
+  const initialStep = (VALID_STEPS.includes(stepParam ?? '') ? stepParam : 'itinerary') as
+    'itinerary' | 'pricing' | 'preview' | 'send'
+  const initialVersionId =
+    (versionParam && versions.some((v: any) => v.id === versionParam) ? versionParam : latestVersion?.id) ?? ''
 
   const hdrs = await headers()
   const host = hdrs.get('host') ?? 'localhost:3000'
@@ -80,7 +162,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const baseUrl = `${proto}://${host}`
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
@@ -92,7 +174,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             <span className="text-sm font-mono text-gray-500">{quote.quote_number}</span>
           </div>
           <h1 className="text-lg font-semibold text-gray-900">
-            {latestVersion?.title || (client ? `${client.first_name} ${client.last_name}` : 'Quote')}
+            {latestVersion?.title || clientName}
           </h1>
           <div className="flex items-center gap-2 mt-1.5">
             <StatusBadge status={quote.status} />
@@ -104,31 +186,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         <TemplateToggleButton quoteId={id} isTemplate={!!quote.is_template} />
       </div>
 
-      {/* Guided-flow progress header */}
-      <div className="flex items-center gap-1 mb-6 overflow-x-auto">
-        {steps.map((s, i) => {
-          const el = (
-            <span className={'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ' +
-              (s.done
-                ? 'bg-[var(--olive)]/10 text-[var(--olive-dk)]'
-                : 'bg-gray-100 text-gray-500')}>
-              <span className={'inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-semibold ' +
-                (s.done ? 'bg-[var(--olive)] text-white' : 'bg-gray-300 text-white')}>
-                {s.done ? '✓' : s.n}
-              </span>
-              {s.label}
-            </span>
-          )
-          return (
-            <span key={s.n} className="flex items-center gap-1">
-              {s.href ? <Link href={s.href}>{el}</Link> : el}
-              {i < steps.length - 1 && <span className="text-gray-300 text-xs">→</span>}
-            </span>
-          )
-        })}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left — client + context */}
         <div className="space-y-4">
           <div className="bg-white rounded-lg border border-gray-200 p-5">
@@ -186,116 +244,69 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               <p className="text-sm text-gray-700">{(tourRow as any).title_en}</p>
             </div>
           )}
-        </div>
 
-        {/* Right — versions */}
-        <div className="lg:col-span-2 space-y-4">
+          {/* Versions history */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-700">Versions</h2>
-              <span className="text-xs text-gray-400">{versions.length} version{versions.length !== 1 ? 's' : ''}</span>
+              <span className="text-xs text-gray-400">{versions.length}</span>
             </div>
             {versions.length === 0 ? (
-              <div className="p-6 text-center text-sm text-gray-400">No versions yet.</div>
+              <div className="p-4 text-center text-sm text-gray-400">No versions yet.</div>
             ) : (
-              <table className="stack-table w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-500 border-b border-gray-100">
-                    <th className="px-5 py-3 font-medium">Version</th>
-                    <th className="px-5 py-3 font-medium">Status</th>
-                    <th className="px-5 py-3 font-medium hidden md:table-cell">Dates</th>
-                    <th className="px-5 py-3 font-medium text-right">Price /pp</th>
-                    <th className="px-5 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {versions.map((v: any) => (
-                    <tr key={v.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
-                      <td data-label="Version" className="px-5 py-3">
-                        <Link
-                          href={`/admin/quotes/${quote.id}/versions/${v.id}`}
-                          className="text-[var(--olive)] hover:underline font-medium">
-                          v{v.version_number}
-                        </Link>
-                        {v.track_label && (
-                          <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wide ${
-                            v.track_label === 'premium' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'
-                          }`}>
-                            {v.track_label}
-                          </span>
-                        )}
-                        {v.title && (
-                          <p className="text-xs text-gray-400 mt-0.5">{v.title}</p>
-                        )}
-                      </td>
-                      <td data-label="Status" className="px-5 py-3">
-                        <StatusBadge status={v.status} />
-                      </td>
-                      <td data-label="Dates" className="px-5 py-3 text-gray-500 hidden md:table-cell">
-                        {v.travel_start_date
-                          ? new Date(v.travel_start_date).toLocaleDateString('en-GB')
-                          : '—'}
-                      </td>
-                      <td data-label="Price /pp" className="px-5 py-3 text-right font-medium text-gray-900">
-                        {v.sharing_price_per_person_usd
-                          ? `$${Number(v.sharing_price_per_person_usd).toLocaleString()}`
-                          : '—'}
-                      </td>
-                      <td className="px-5 py-3">
-                        <CloneVersionButton quoteId={id} versionId={v.id} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="divide-y divide-gray-50">
+                {versions.map((v: any) => (
+                  <div key={v.id} className="px-5 py-3 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <Link
+                        href={`/admin/quotes/${quote.id}?step=itinerary&version=${v.id}`}
+                        className="text-[var(--olive)] hover:underline font-medium text-sm">
+                        v{v.version_number}
+                      </Link>
+                      {v.track_label && (
+                        <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wide ${
+                          v.track_label === 'premium' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {v.track_label}
+                        </span>
+                      )}
+                      <div className="mt-0.5"><StatusBadge status={v.status} /></div>
+                    </div>
+                    <CloneVersionButton quoteId={id} versionId={v.id} />
+                  </div>
+                ))}
+              </div>
             )}
           </div>
+        </div>
 
-          {/* Share links */}
-          <DeliveryPanel
-            quoteId={id}
-            versions={versions.map((v: any) => ({ id: v.id, version_number: v.version_number, status: v.status }))}
-            deliveries={deliveries}
-            baseUrl={baseUrl}
-          />
-
-          {/* Pricing summary for latest version */}
-          {latestVersion && (latestVersion.total_selling_usd > 0) && (
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                Pricing Summary — v{latestVersion.version_number}
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div>
-                  <p className="text-xs text-gray-400">Sharing /pp</p>
-                  <p className="font-semibold text-gray-900">
-                    {latestVersion.sharing_price_per_person_usd
-                      ? `$${Number(latestVersion.sharing_price_per_person_usd).toLocaleString()}`
-                      : '—'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">Single /pp</p>
-                  <p className="font-semibold text-gray-900">
-                    {latestVersion.single_price_per_person_usd
-                      ? `$${Number(latestVersion.single_price_per_person_usd).toLocaleString()}`
-                      : '—'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">Total Selling</p>
-                  <p className="font-semibold text-gray-900">
-                    ${Number(latestVersion.total_selling_usd).toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">Margin</p>
-                  <p className="font-semibold text-gray-900">
-                    {Number(latestVersion.gross_margin_percent).toFixed(1)}%
-                  </p>
-                </div>
-              </div>
+        {/* Right — the unified workspace */}
+        <div className="lg:col-span-3">
+          {versions.length === 0 || !latestVersion ? (
+            <div className="bg-white rounded-lg border border-gray-200 p-10 text-center text-sm text-gray-400">
+              This quote has no version yet.
             </div>
+          ) : (
+            <QuoteWorkspace
+              quoteId={id}
+              initialStep={initialStep}
+              versions={versions}
+              initialVersionId={initialVersionId}
+              destinations={destinations ?? []}
+              accommodations={accommodations ?? []}
+              activities={activities ?? []}
+              vehicles={vehiclesData ?? []}
+              staff={staffData ?? []}
+              ageBands={ageBandsData ?? []}
+              tourDays={tourDaysData ?? []}
+              quoteRequest={quoteRequest}
+              itineraryByVersion={itineraryByVersion}
+              tripBuilderLookups={tripBuilderLookups}
+              tripBuilderInitialState={tripBuilderInit?.initialState ?? null}
+              tripBuilderInitialVersionIds={tripBuilderInit?.initialVersionIds ?? {}}
+              deliveries={deliveries}
+              baseUrl={baseUrl}
+            />
           )}
         </div>
       </div>

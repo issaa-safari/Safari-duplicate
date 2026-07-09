@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import CreateLookupDialog from '@/components/admin/create-lookup-dialog'
 import { createLookup } from '@/lib/create-lookup'
-import { resolveTripRate, saveTrip } from './actions'
+import { resolveTripRate, resyncHotelRowsFromItinerary, saveTrip } from './actions'
 import {
   MEAL_PLANS,
   ROOM_CATEGORIES,
@@ -104,6 +104,7 @@ export default function TripBuilderForm({
   initialQuoteId,
   initialVersionIds,
   initialState,
+  onDirtyChange,
 }: {
   destinations: LookupOption[]
   accommodations: AccommodationOption[]
@@ -113,6 +114,8 @@ export default function TripBuilderForm({
   initialQuoteId?: string | null
   initialVersionIds?: Partial<Record<TrackKey, string | null>>
   initialState?: TripBuilderState | null
+  /** Reports unsaved-changes state to an embedding parent (e.g. for a navigation guard). */
+  onDirtyChange?: (dirty: boolean) => void
 }) {
   const [guest, setGuest] = useState<GuestDetails>(
     initialState?.guest ?? {
@@ -153,6 +156,16 @@ export default function TripBuilderForm({
   const [saveError, setSaveError] = useState('')
   const [saveGaps, setSaveGaps] = useState<string[]>([])
   const [savedOk, setSavedOk] = useState(false)
+
+  // Unsaved-changes tracking for the embedding workspace's navigation guard —
+  // low-risk (watches the pricing state rather than instrumenting every setter).
+  const isFirstPricingRender = useRef(true)
+  const [dirty, setDirty] = useState(false)
+  useEffect(() => {
+    if (isFirstPricingRender.current) { isFirstPricingRender.current = false; return }
+    setDirty(true)
+  }, [guest, title, hotelRows, transportRows, parkRows, salePrices])
+  useEffect(() => { onDirtyChange?.(dirty) }, [dirty, onDirtyChange])
 
   // ── Row rate resolution (fires when a row becomes complete or changes) ──
   useEffect(() => {
@@ -283,11 +296,41 @@ export default function TripBuilderForm({
         setQuoteNumber(result.quoteNumber)
         setVersionIds(result.versionIds)
         setSavedOk(true)
+        setDirty(false)
       } else {
         setSaveError(result.message)
         setSaveGaps(result.gaps ?? [])
       }
     })
+  }
+
+  // Re-pull hotel rows from the itinerary (for quotes whose itinerary changed
+  // after pricing was first built). Rows matching an existing row by
+  // accommodation + check-in keep the existing row (preserving manual price
+  // overrides); everything else is replaced by the fresh seed.
+  const [resyncing, setResyncing] = useState(false)
+  const [resyncError, setResyncError] = useState('')
+  async function handleResync(track: TrackKey) {
+    const versionId = versionIds[track] ?? versionIds.standard ?? versionIds.premium
+    if (!versionId) return
+    if (!confirm('Re-sync this track\'s hotel rows from the itinerary? Rows for stays no longer in the itinerary will be removed; matching rows keep their manual prices.')) return
+    setResyncing(true); setResyncError('')
+    try {
+      const res = await resyncHotelRowsFromItinerary(versionId)
+      if (!res.ok) { setResyncError(res.message); return }
+      setHotelRows(prev => {
+        const existing = prev[track]
+        const merged = res.rows.map((seed, i) => {
+          const match = existing.find(r => r.accommodationId === seed.accommodationId && r.checkIn === seed.checkIn)
+          return match ?? { ...seed, key: `resync-${track}-${Date.now()}-${i}` }
+        })
+        return { ...prev, [track]: merged }
+      })
+    } catch (err) {
+      setResyncError(err instanceof Error ? err.message : 'Re-sync failed.')
+    } finally {
+      setResyncing(false)
+    }
   }
 
   // Enter adds a row inside a section (spreadsheet muscle memory).
@@ -406,8 +449,18 @@ export default function TripBuilderForm({
       <div className={section} onKeyDown={sectionKeyDown(addRow)}>
         <div className={sectionHead}>
           <h2 className={sectionTitle}>{heading}</h2>
-          <button type="button" onClick={addRow} className={addBtn}>+ Add hotel row (↵)</button>
+          <div className="flex items-center gap-2">
+            {(versionIds[track] ?? versionIds.standard ?? versionIds.premium) && (
+              <button type="button" onClick={() => handleResync(track)} disabled={resyncing}
+                title="Re-pull hotel stays from this quote's itinerary"
+                className="text-xs text-gray-500 hover:text-[var(--olive-dk)] border border-gray-200 hover:border-[var(--olive-lt)] rounded px-2 py-1 disabled:opacity-50">
+                {resyncing ? 'Syncing…' : '↻ Re-sync from itinerary'}
+              </button>
+            )}
+            <button type="button" onClick={addRow} className={addBtn}>+ Add hotel row (↵)</button>
+          </div>
         </div>
+        {resyncError && <p className="px-4 pt-2 text-xs text-red-600">{resyncError}</p>}
         {rows.length === 0 ? (
           <p className="px-4 py-4 text-sm text-gray-400">No hotel rows yet.</p>
         ) : (

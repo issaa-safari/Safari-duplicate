@@ -343,7 +343,7 @@ export default async function RequestDetailPage({
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <Link
-                              href={`/admin/quotes/${quote.id}/versions/${version.id}`}
+                              href={`/admin/quotes/${quote.id}?step=itinerary&version=${version.id}`}
                               className="rounded-md px-3 py-1.5 text-xs font-medium text-white bg-olive hover:bg-olive-dk">
                               Edit Quote
                             </Link>

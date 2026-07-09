@@ -71,6 +71,7 @@ export async function saveDates(formData: FormData) {
 
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
+  revalidatePath(`/admin/quotes/${quoteId}`)
 }
 
 export async function saveLanguage(formData: FormData) {
@@ -83,6 +84,7 @@ export async function saveLanguage(formData: FormData) {
   const { error } = await admin.from('quote_versions').update({ language }).eq('id', versionId)
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
+  revalidatePath(`/admin/quotes/${quoteId}`)
 }
 
 export async function addTraveller(formData: FormData) {
@@ -152,6 +154,7 @@ export async function addTraveller(formData: FormData) {
 
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
+  revalidatePath(`/admin/quotes/${quoteId}`)
 }
 
 export async function deleteTraveller(formData: FormData) {
@@ -170,6 +173,7 @@ export async function deleteTraveller(formData: FormData) {
 
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
+  revalidatePath(`/admin/quotes/${quoteId}`)
 }
 
 export async function updateTraveller(formData: FormData) {
@@ -233,6 +237,7 @@ export async function updateTraveller(formData: FormData) {
 
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
+  revalidatePath(`/admin/quotes/${quoteId}`)
 }
 
 export async function setVersionStatus(formData: FormData) {
