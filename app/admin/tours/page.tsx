@@ -19,7 +19,7 @@ export default async function ToursPage() {
   const { data: tours } = await admin
     .from('tours')
     .select('*')
-    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: false })
 
   return (
     <div className="p-6">
