@@ -37,7 +37,7 @@ export default async function TourDetailPage({
           Back to Tours
         </Link>
         <div className="flex-1">
-          <h1 className="text-lg font-semibold text-gray-900">{tour.title_en}</h1>
+          <h1 className="text-2xl font-semibold text-brand-ink">{tour.title_en}</h1>
           <div className="flex items-center gap-2 mt-1">
             <span className={"text-xs px-2 py-0.5 rounded-full font-medium " +
               (tour.status === 'active' ? 'bg-green-100 text-green-700' :
@@ -60,7 +60,7 @@ export default async function TourDetailPage({
         </div>
 
         <div className="space-y-4">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-surface rounded-xl border border-border p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Quick Stats</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
@@ -92,7 +92,7 @@ export default async function TourDetailPage({
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-surface rounded-xl border border-border p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Itinerary Preview</h2>
             {days && days.length > 0 ? (
               <ul className="space-y-2">

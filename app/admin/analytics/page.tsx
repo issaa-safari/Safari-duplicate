@@ -165,7 +165,7 @@ export default async function AnalyticsPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-gray-900">Analytics</h1>
+        <h1 className="text-2xl font-semibold text-brand-ink">Analytics</h1>
         <p className="text-sm text-gray-500 mt-0.5">Quote pipeline performance and revenue metrics</p>
       </div>
 
@@ -194,7 +194,7 @@ export default async function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Monthly volume chart */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="bg-surface rounded-xl border border-border p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-1">Quote Volume — Last 6 Months</h2>
           <p className="text-xs text-gray-400 mb-4">Versions created vs accepted</p>
           {months.some(m => m.created > 0) ? (
@@ -242,7 +242,7 @@ export default async function AnalyticsPage() {
         </div>
 
         {/* Status funnel */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="bg-surface rounded-xl border border-border p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Quote Status Breakdown</h2>
           {totalVersions === 0 ? (
             <p className="text-sm text-gray-400 py-10 text-center">No quotes yet.</p>
@@ -275,7 +275,7 @@ export default async function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Gross P&L */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="bg-surface rounded-xl border border-border p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Gross P&amp;L — Accepted Quotes</h2>
           {acceptedCount === 0 ? (
             <p className="text-sm text-gray-400 py-8 text-center">No accepted quotes yet.</p>
@@ -306,7 +306,7 @@ export default async function AnalyticsPage() {
         </div>
 
         {/* Category breakdown */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="bg-surface rounded-xl border border-border p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Revenue by Category</h2>
           {categories.length === 0 ? (
             <p className="text-sm text-gray-400 py-8 text-center">No price line data yet.</p>
@@ -345,7 +345,7 @@ export default async function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Website bookings summary */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="bg-surface rounded-xl border border-border p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-900">Website Bookings</h2>
             <Link href="/admin/bookings" className="text-xs text-[var(--olive)] hover:underline">View all</Link>
@@ -371,7 +371,7 @@ export default async function AnalyticsPage() {
         </div>
 
         {/* Top performing tours */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="bg-surface rounded-xl border border-border p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Top Tours — by Booking Revenue</h2>
           {topTours.length === 0 ? (
             <p className="text-sm text-gray-400 py-8 text-center">No bookings to rank yet.</p>
@@ -400,7 +400,7 @@ export default async function AnalyticsPage() {
       </div>
 
       {/* Request pipeline */}
-      <div className="bg-white rounded-lg border border-gray-200 p-5">
+      <div className="bg-surface rounded-xl border border-border p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-900">Request Pipeline</h2>
           <Link href="/admin/requests" className="text-xs text-[var(--olive)] hover:underline">View all</Link>
@@ -432,7 +432,7 @@ function KpiCard({ label, value, sub, highlight }: {
   label: string; value: string; sub: string; highlight?: boolean
 }) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-5">
+    <div className="bg-surface rounded-xl border border-border p-5">
       <p className="text-xs text-gray-500">{label}</p>
       <p className={`text-2xl font-semibold mt-1 ${highlight ? 'text-green-700' : 'text-gray-900'}`}>{value}</p>
       <p className="text-xs text-gray-400 mt-1">{sub}</p>

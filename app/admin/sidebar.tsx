@@ -238,9 +238,9 @@ export default function AdminSidebar({
               <span className="font-display flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-lg font-bold text-primary-foreground">
                 S
               </span>
-              <span className="hidden leading-tight xl:block">
-                <span className="block text-sm font-semibold text-brand-ink">Safari Adventure Tours</span>
-                <span className="block text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              <span className="hidden leading-tight sm:block">
+                <span className="font-display block text-base font-bold leading-none text-brand-ink">Safari Adventure Tours</span>
+                <span className="mt-0.5 block text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                   Tour Operator Suite
                 </span>
               </span>

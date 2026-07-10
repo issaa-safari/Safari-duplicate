@@ -77,7 +77,7 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="bg-white rounded-lg border border-gray-200 p-5 space-y-4">
+      <div className="bg-surface rounded-xl border border-border p-5 space-y-4">
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Tour *</label>

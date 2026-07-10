@@ -27,7 +27,7 @@ export default async function EntityRatesPanel({
 
   return (
     <div className="p-6 pt-0 max-w-2xl mx-auto">
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100">
           <div>
             <h2 className="text-sm font-semibold text-gray-900">{heading}</h2>

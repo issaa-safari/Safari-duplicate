@@ -109,7 +109,7 @@ export default function DeliveryPanel({
   }
 
   return (
-    <div id="delivery" className="bg-white rounded-lg border border-gray-200 overflow-hidden scroll-mt-6">
+    <div id="delivery" className="bg-surface rounded-xl border border-border overflow-hidden scroll-mt-6">
       <div className="px-5 py-4 border-b border-gray-100">
         <h2 className="text-sm font-semibold text-gray-700">Preview &amp; Send</h2>
         <p className="text-xs text-gray-400 mt-0.5">Generate a link to preview exactly what the client will see, then send it for viewing and acceptance.</p>

@@ -87,3 +87,33 @@ Ported into the production Next.js admin on this branch (2026-07-10), following
 Verified: `next build`, vitest (57 tests), and eslint all pass with no new issues;
 Playwright screenshots confirmed the admin shell, dropdowns, search modal, and an
 unchanged public-site palette.
+
+### Layout pass (second pass, same day)
+
+After deploying the first pass the user observed that "only the colours and font
+changed" — the token re-skin landed but pages kept their old layouts. A second pass
+ported the Lovable **page layouts** across all admin modules:
+
+- **Shell** — wordmark now always part of the brand mark (green Playfair
+  "Safari Adventure Tours" + tagline, shown from `sm:` up).
+- **Dashboard** — Lovable landing layout with real data: time-of-day Playfair greeting
+  ("Good morning, {first name}"), "{n} new requests · ${x} in active pipeline" subtitle,
+  headline KPI row (Active Requests, Conversion Rate, Avg. Quote Value, Days to Booking —
+  the last computed from acceptance time minus request creation over 6 months), a
+  consolidated finance KPI row (revenue+margin, AR, AP, issued vs accepted), and a
+  status-dot pipeline list with an "Open board ↗" link.
+- **Trip Builder** — new Lovable start screen (`/admin/trip-builder`): "Blank itinerary"
+  and "From a template" entry cards plus a "Recent templates" grid backed by real
+  template quotes (`quotes.is_template`). "Use →" opens the builder prefilled from the
+  template via the existing `loadTripBuilderInitialState`, with guest details and sale
+  price cleared so Save creates a brand-new quote; `?start=blank` opens the blank form.
+- **All module pages** — page titles moved to the Lovable header style
+  (`text-2xl font-semibold text-brand-ink`, Playfair via the `.admin-theme h1` rule) and
+  cards/empty states to `bg-surface rounded-xl border-border` across requests, quotes,
+  bookings, clients, finance, analytics, content, departures, suppliers, settings, tours
+  and tour-templates (~65 files, mechanical class swap). New shared
+  `components/admin/page-header.tsx` for future pages.
+
+The Lovable mock's SaaS chrome (FREE PLAN pill, Upgrade, Help, Export button) and its
+mock-only modules were intentionally not reproduced. Verified again with `next build`,
+vitest (57), eslint (baseline unchanged), and Playwright desktop + mobile screenshots.

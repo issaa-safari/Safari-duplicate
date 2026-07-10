@@ -59,7 +59,7 @@ function Field({ label, name, value, type = 'text', ...props }: {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="bg-white rounded-lg border border-gray-200 p-6 space-y-4"><h2 className="text-sm font-semibold text-gray-900">{title}</h2>{children}</section>
+  return <section className="bg-surface rounded-xl border border-border p-6 space-y-4"><h2 className="text-sm font-semibold text-gray-900">{title}</h2>{children}</section>
 }
 
 export default function SettingsForm({ settings }: { settings: Settings }) {

@@ -31,7 +31,7 @@ export default async function ActivitiesPage({
     <ContentShell active="activities" title="Activities" icon="□">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Activities</h1>
+          <h1 className="text-2xl font-semibold text-brand-ink">Activities</h1>
           <p className="text-sm text-gray-500 mt-0.5">Manage activities used in tour itineraries</p>
         </div>
         <ButtonLink href="/admin/content/activities/new" size="sm">+ New Activity</ButtonLink>
@@ -58,7 +58,7 @@ export default async function ActivitiesPage({
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         {shown.length === 0 ? (
           <div className="p-10 text-center">
             <p className="text-sm text-gray-500 mb-4">

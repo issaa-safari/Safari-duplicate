@@ -439,7 +439,7 @@ export default function VersionEditorForm({
     <div className="space-y-6">
 
       {/* ── Trip Dates ─────────────────────────────────────────────────── */}
-      <section className="bg-white rounded-lg border border-gray-200 p-6">
+      <section className="bg-surface rounded-xl border border-border p-6">
         <h2 className="text-sm font-semibold text-gray-900 mb-4">Trip Dates</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
@@ -511,7 +511,7 @@ export default function VersionEditorForm({
       </section>
 
       {/* ── Travellers ─────────────────────────────────────────────────── */}
-      <section className="bg-white rounded-lg border border-gray-200">
+      <section className="bg-surface rounded-xl border border-border">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-gray-900">Travellers</h2>

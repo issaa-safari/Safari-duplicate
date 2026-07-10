@@ -40,9 +40,9 @@ export default function NewRateCardForm({
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <div className="flex items-center gap-4 mb-6"><Link href="/admin/content/rates" className="text-sm text-gray-500 hover:text-gray-700">← Supplier Rates</Link><h1 className="text-lg font-semibold text-gray-900">New Rate Card</h1></div>
+      <div className="flex items-center gap-4 mb-6"><Link href="/admin/content/rates" className="text-sm text-gray-500 hover:text-gray-700">← Supplier Rates</Link><h1 className="text-2xl font-semibold text-brand-ink">New Rate Card</h1></div>
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <div className="bg-surface rounded-xl border border-border p-6 space-y-4">
           <div><label className="block text-sm font-medium text-gray-700 mb-1">Name</label><input name="name" required className={inputCls} placeholder="e.g. Mara Lodge High Season 2027" /></div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>

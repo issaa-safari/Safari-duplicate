@@ -43,7 +43,7 @@ export default function StartFromTemplate({ requestId, templates }: { requestId:
   }
 
   return (
-    <form onSubmit={go} className="flex flex-col sm:flex-row items-start gap-2 bg-white rounded-lg border border-gray-200 p-3">
+    <form onSubmit={go} className="flex flex-col sm:flex-row items-start gap-2 bg-surface rounded-xl border border-border p-3">
       <select value={selected} onChange={e => setSelected(e.target.value)}
         className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)] min-w-[220px]">
         <option value="">Choose a template…</option>

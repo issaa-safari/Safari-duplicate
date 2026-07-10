@@ -40,7 +40,7 @@ export default async function RequestsPage({
 
   return (
     <div className="flex flex-1 min-h-screen">
-      <div className="w-48 bg-white border-r border-gray-200 p-3 flex flex-col gap-1">
+      <div className="w-48 bg-surface border-r border-border p-3 flex flex-col gap-1">
         <Link href="/admin/requests/new"
           className="mb-3 rounded-md px-3 py-2 text-sm font-medium text-white text-center bg-olive hover:bg-olive-dk">
           + New Request
@@ -77,7 +77,7 @@ export default async function RequestsPage({
       </div>
 
       <div className="flex-1 p-6">
-        <h1 className="text-lg font-semibold text-gray-900 mb-4">
+        <h1 className="text-2xl font-semibold text-brand-ink mb-4">
           {STAGES.find(s => s.key === activeStage)?.label} Requests
         </h1>
         {!requests || requests.length === 0 ? (
@@ -99,7 +99,7 @@ export default async function RequestsPage({
               return (
                 <Link key={req.id}
                   href={"/admin/requests/" + req.id}
-                  className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-[var(--olive)] hover:shadow-sm transition">
+                  className="block bg-surface rounded-xl border border-border p-4 hover:border-[var(--olive)] hover:shadow-sm transition">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">

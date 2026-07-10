@@ -28,13 +28,13 @@ export default async function VehiclesPage() {
     <ContentShell active="vehicles" title="Vehicles" icon="▰">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Vehicles</h1>
+          <h1 className="text-2xl font-semibold text-brand-ink">Vehicles</h1>
           <p className="text-sm text-gray-500 mt-0.5">Manage vehicles available for tours</p>
         </div>
         <ButtonLink href="/admin/content/vehicles/new" size="sm">+ New Vehicle</ButtonLink>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         {!vehicles || vehicles.length === 0 ? (
           <div className="p-10 text-center">
             <p className="text-sm text-gray-500 mb-4">No vehicles added yet.</p>

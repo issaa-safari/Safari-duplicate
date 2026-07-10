@@ -29,7 +29,7 @@ export default function BookingDetailForm({ booking, bookingId }: BookingDetailF
         <Link href="/admin/bookings" className="text-sm text-gray-500 hover:text-gray-700">
           ← Back to Bookings
         </Link>
-        <h1 className="text-lg font-semibold text-gray-900">Booking Details</h1>
+        <h1 className="text-2xl font-semibold text-brand-ink">Booking Details</h1>
       </div>
 
       <div className="space-y-6">
@@ -72,7 +72,7 @@ export default function BookingDetailForm({ booking, bookingId }: BookingDetailF
         </div>
 
         {/* Traveller Information */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-surface rounded-xl border border-border p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Traveller Information</h3>
           <div className="space-y-4">
             {travellers.map((traveller, index) => (

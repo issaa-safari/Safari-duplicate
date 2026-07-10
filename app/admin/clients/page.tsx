@@ -29,20 +29,20 @@ export default async function ClientsPage({
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">Clients</h1>
+        <h1 className="text-2xl font-semibold text-brand-ink">Clients</h1>
         <ButtonLink href="/admin/requests/new" size="sm">+ New Request</ButtonLink>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
+        <div className="bg-surface rounded-xl border border-border p-4 text-center">
           <p className="text-2xl font-semibold text-gray-900">{totalClients}</p>
           <p className="text-xs text-gray-500 mt-1">Total Clients</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
+        <div className="bg-surface rounded-xl border border-border p-4 text-center">
           <p className="text-2xl font-semibold text-gray-900">{arabicClients}</p>
           <p className="text-xs text-gray-500 mt-1">Arabic Speaking</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
+        <div className="bg-surface rounded-xl border border-border p-4 text-center">
           <p className="text-2xl font-semibold text-gray-900">{repeatBookers}</p>
           <p className="text-xs text-gray-500 mt-1">Repeat Bookers</p>
         </div>
@@ -67,7 +67,7 @@ export default async function ClientsPage({
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         {!clients || clients.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-gray-400 text-sm">No clients yet. They appear here when you add requests.</p>

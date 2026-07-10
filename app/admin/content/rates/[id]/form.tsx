@@ -65,9 +65,9 @@ export default function RateCardEditor({ card, rates, ageBands, entities, suppli
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center gap-4"><Link href="/admin/content/rates" className="text-sm text-gray-500 hover:text-gray-700">← Supplier Rates</Link><h1 className="text-lg font-semibold text-gray-900">{card.name}</h1></div>
+      <div className="flex items-center gap-4"><Link href="/admin/content/rates" className="text-sm text-gray-500 hover:text-gray-700">← Supplier Rates</Link><h1 className="text-2xl font-semibold text-brand-ink">{card.name}</h1></div>
 
-      <form onSubmit={cardSubmit} className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+      <form onSubmit={cardSubmit} className="bg-surface rounded-xl border border-border p-6 space-y-4">
         <input type="hidden" name="cardId" value={card.id} />
         <h2 className="text-sm font-semibold text-gray-900">Rate Card Details</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -93,7 +93,7 @@ export default function RateCardEditor({ card, rates, ageBands, entities, suppli
 
       <section className="space-y-3">
         <div><h2 className="text-sm font-semibold text-gray-900">Rates</h2><p className="text-xs text-gray-500">Use blank traveller or room categories when the rate applies to all.</p></div>
-        {rates.map(rate => <form key={rate.id} onSubmit={event => rateSubmit(event, rate.id)} className="bg-white rounded-lg border border-gray-200 p-4"><div className="grid grid-cols-2 md:grid-cols-7 gap-2"><RateFields rate={rate} ageBands={ageBands} /></div><div className="flex justify-end gap-2 mt-3"><Button type="button" variant="danger-text" size="sm" onClick={() => removeRate(rate.id)} disabled={pending}>Delete</Button><Button type="submit" size="sm" loading={pending} loadingText="Saving…">Save Rate</Button></div></form>)}
+        {rates.map(rate => <form key={rate.id} onSubmit={event => rateSubmit(event, rate.id)} className="bg-surface rounded-xl border border-border p-4"><div className="grid grid-cols-2 md:grid-cols-7 gap-2"><RateFields rate={rate} ageBands={ageBands} /></div><div className="flex justify-end gap-2 mt-3"><Button type="button" variant="danger-text" size="sm" onClick={() => removeRate(rate.id)} disabled={pending}>Delete</Button><Button type="submit" size="sm" loading={pending} loadingText="Saving…">Save Rate</Button></div></form>)}
         <form onSubmit={event => rateSubmit(event)} className="bg-[var(--olive)]/5 rounded-lg border border-[var(--olive)]/30 p-4"><p className="text-sm font-medium text-gray-700 mb-3">Add Rate</p><div className="grid grid-cols-2 md:grid-cols-7 gap-2"><RateFields ageBands={ageBands} /></div><div className="flex justify-end mt-3"><Button type="submit" loading={pending} loadingText="Adding…">+ Add Rate</Button></div></form>
       </section>
 

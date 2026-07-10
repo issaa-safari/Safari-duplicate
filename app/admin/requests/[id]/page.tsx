@@ -212,7 +212,7 @@ export default async function RequestDetailPage({
         {activeTab === 'info' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="space-y-4">
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="bg-surface rounded-xl border border-border p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold text-gray-900">Client</h2>
                   {client && (
@@ -236,7 +236,7 @@ export default async function RequestDetailPage({
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="bg-surface rounded-xl border border-border p-4">
                 <h2 className="text-sm font-semibold text-gray-900 mb-3">Request Details</h2>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -285,7 +285,7 @@ export default async function RequestDetailPage({
             </div>
 
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="bg-surface rounded-xl border border-border p-4">
                 <h2 className="text-sm font-semibold text-gray-900 mb-4">
                   Communication Log
                   {commLogs.length > 0 && (
@@ -304,7 +304,7 @@ export default async function RequestDetailPage({
         {activeTab === 'quotes' && (
           <div className="space-y-6">
             {allVersions.length === 0 ? (
-              <div className="bg-white rounded-lg border border-gray-200 p-10 text-center">
+              <div className="bg-surface rounded-xl border border-border p-10 text-center">
                 <p className="text-sm text-gray-500 mb-4">No quotes yet for this request.</p>
                 <div className="flex items-center justify-center gap-2 flex-wrap">
                   <Link
@@ -325,7 +325,7 @@ export default async function RequestDetailPage({
                     <div className="space-y-3">
                       {byStatus[statusKey].map(({ quote, version }) => (
                         <div key={version.id}
-                          className="bg-white rounded-lg border border-gray-200 p-4 flex items-start justify-between gap-4">
+                          className="bg-surface rounded-xl border border-border p-4 flex items-start justify-between gap-4">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span className="text-xs text-gray-400">Version</span>
@@ -381,7 +381,7 @@ export default async function RequestDetailPage({
         {/* ── TOUR INFORMATION ──────────────────────────────────────── */}
         {activeTab === 'tour' && (
           <div className="max-w-lg">
-            <div className="bg-white rounded-lg border border-gray-200 p-5 space-y-4">
+            <div className="bg-surface rounded-xl border border-border p-5 space-y-4">
               <h2 className="text-sm font-semibold text-gray-900">Tour Information</h2>
               {linkedTour ? (
                 <div className="space-y-2 text-sm">
@@ -446,10 +446,10 @@ export default async function RequestDetailPage({
         {/* ── LOGISTICS ─────────────────────────────────────────────── */}
         {activeTab === 'logistics' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="bg-surface rounded-xl border border-border p-5">
               <FlightsManager requestId={id} flights={flights as any} />
             </div>
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="bg-surface rounded-xl border border-border p-5">
               <h2 className="text-sm font-semibold text-gray-900 mb-4">Staff &amp; Vehicles</h2>
               <AssignmentManager
                 requestId={id}
@@ -465,7 +465,7 @@ export default async function RequestDetailPage({
         {/* ── TASKS ─────────────────────────────────────────────────── */}
         {activeTab === 'tasks' && (
           <div className="max-w-lg">
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="bg-surface rounded-xl border border-border p-5">
               <TaskManager requestId={id} tasks={tasks ?? []} />
             </div>
           </div>
@@ -474,7 +474,7 @@ export default async function RequestDetailPage({
         {/* ── NOTES ─────────────────────────────────────────────────── */}
         {activeTab === 'notes' && (
           <div className="max-w-lg">
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="bg-surface rounded-xl border border-border p-5">
               <h2 className="text-sm font-semibold text-gray-900 mb-4">Notes</h2>
               <CommunicationLog requestId={id} logs={notes} noteOnly />
             </div>

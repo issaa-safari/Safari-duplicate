@@ -32,7 +32,7 @@ export default async function SupplierRatesPage({
     <ContentShell active="rates" title="Supplier Rates" icon="$">
       <div className="flex items-center justify-between mb-6 gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Supplier Rates</h1>
+          <h1 className="text-2xl font-semibold text-brand-ink">Supplier Rates</h1>
           <p className="text-sm text-gray-500 mt-0.5">Seasonal costs used by the Trip Builder</p>
           {supplierId && (
             <p className="text-xs mt-1.5">
@@ -46,7 +46,7 @@ export default async function SupplierRatesPage({
         <ButtonLink href={supplierId ? `/admin/content/rates/new?supplierId=${supplierId}` : '/admin/content/rates/new'} size="sm">+ New Rate Card</ButtonLink>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         {!cards?.length ? (
           <div className="p-10 text-center">
             <p className="text-sm text-gray-500 mb-3">No supplier rate cards yet.</p>

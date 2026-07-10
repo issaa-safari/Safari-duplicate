@@ -101,7 +101,7 @@ export default function TourEditForm({ tour }: { tour: any }) {
   }
 
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div className="bg-white rounded-lg border border-gray-200 p-5 space-y-4">
+    <div className="bg-surface rounded-xl border border-border p-5 space-y-4">
       <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
       {children}
     </div>

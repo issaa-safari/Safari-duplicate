@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getAdminProfile } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ButtonLink, Button } from '@/components/ui/button'
+import { ButtonLink } from '@/components/ui/button'
 import { getPayables, getReceivablesSummary, getUsdToKesRate } from '@/lib/server/finance'
 
 function formatUSD(n: number) {
@@ -13,13 +14,13 @@ function formatKES(n: number, rate: number) {
 }
 
 const STAGES = [
-  { key: 'new', label: 'New' },
-  { key: 'working_on', label: 'Working On' },
-  { key: 'open', label: 'Open' },
-  { key: 'pre_booked', label: 'Pre-Booked' },
-  { key: 'booked', label: 'Booked' },
-  { key: 'completed', label: 'Completed' },
-  { key: 'not_booked', label: 'Not Booked' },
+  { key: 'new', label: 'New', color: 'var(--status-new)' },
+  { key: 'working_on', label: 'Working On', color: 'var(--status-working)' },
+  { key: 'open', label: 'Open', color: 'var(--status-open)' },
+  { key: 'pre_booked', label: 'Pre-Booked', color: 'var(--status-prebooked)' },
+  { key: 'booked', label: 'Booked', color: 'var(--status-booked)' },
+  { key: 'completed', label: 'Completed', color: 'var(--status-completed)' },
+  { key: 'not_booked', label: 'Not Booked', color: 'var(--status-notbooked)' },
 ]
 
 export default async function AdminDashboardPage() {
@@ -28,7 +29,13 @@ export default async function AdminDashboardPage() {
   if (!user) redirect('/admin/login')
 
   const admin = createAdminClient()
+  const adminProfile = await getAdminProfile(admin, user.email)
+  const firstName = adminProfile?.full_name?.split(/\s+/)[0] ?? 'there'
   const now = new Date()
+  const nairobiHour = Number(new Intl.DateTimeFormat('en-GB', {
+    hour: 'numeric', hourCycle: 'h23', timeZone: 'Africa/Nairobi',
+  }).format(now))
+  const greeting = nairobiHour < 12 ? 'Good morning' : nairobiHour < 17 ? 'Good afternoon' : 'Good evening'
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
   const threeDaysLater = new Date(now.getTime() + 3 * 86400000).toISOString().slice(0, 10)
 
@@ -36,7 +43,7 @@ export default async function AdminDashboardPage() {
 
   const [
     { data: acceptancesThisMonth },
-    { count: activeQuoteCount },
+    { data: activeQuoteVersions },
     { count: newEnquiriesCount },
     { data: requestsForStages },
     { data: upcomingDepartures },
@@ -49,7 +56,7 @@ export default async function AdminDashboardPage() {
       .select('quote_versions(total_selling_usd, total_cost_usd)')
       .gte('accepted_at', startOfMonth),
     admin.from('quote_versions')
-      .select('id', { count: 'exact', head: true })
+      .select('total_selling_usd')
       .in('status', ['sent', 'viewed']),
     admin.from('requests')
       .select('*', { count: 'exact', head: true })
@@ -76,7 +83,7 @@ export default async function AdminDashboardPage() {
       .order('created_at', { ascending: false })
       .limit(5),
     admin.from('quote_acceptances')
-      .select('accepted_at, quote_versions(total_selling_usd)')
+      .select('accepted_at, quote_versions(total_selling_usd, quotes(requests(created_at)))')
       .gte('accepted_at', sixMonthsAgo.toISOString()),
   ])
 
@@ -101,6 +108,32 @@ export default async function AdminDashboardPage() {
     ? ((revenueThisMonth - costThisMonth) / revenueThisMonth) * 100
     : 0
   const acceptedThisMonth = (acceptancesThisMonth ?? []).length
+  const activeQuoteCount = (activeQuoteVersions ?? []).length
+  const pipelineValue = (activeQuoteVersions ?? []).reduce((sum: number, v: { total_selling_usd?: number | null }) => {
+    return sum + Number(v.total_selling_usd ?? 0)
+  }, 0)
+
+  // Headline KPIs (Lovable dashboard design), computed from real data
+  const stageTotals = (requestsForStages ?? []).reduce((acc: Record<string, number>, r: { stage: string }) => {
+    acc[r.stage] = (acc[r.stage] ?? 0) + 1
+    return acc
+  }, {})
+  const activeRequestCount = ['new', 'working_on', 'open', 'pre_booked', 'booked']
+    .reduce((sum, key) => sum + (stageTotals[key] ?? 0), 0)
+  const decidedTotal = (requestsForStages ?? []).filter((r: { stage: string }) => r.stage !== 'archived').length
+  const wonCount = (stageTotals['booked'] ?? 0) + (stageTotals['completed'] ?? 0)
+  const conversionRate = decidedTotal > 0 ? (wonCount / decidedTotal) * 100 : 0
+  const avgQuoteValue = activeQuoteCount > 0 ? pipelineValue / activeQuoteCount : 0
+  const bookingDurations = (allAcceptances6mo ?? [])
+    .map((a: any) => {
+      const created = a.quote_versions?.quotes?.requests?.created_at
+      if (!created || !a.accepted_at) return null
+      return (new Date(a.accepted_at).getTime() - new Date(created).getTime()) / 86400000
+    })
+    .filter((d: number | null): d is number => d !== null && d >= 0)
+  const daysToBooking = bookingDurations.length > 0
+    ? bookingDurations.reduce((sum: number, d: number) => sum + d, 0) / bookingDurations.length
+    : null
 
   const stageCounts = STAGES.map(s => ({
     ...s,
@@ -127,38 +160,49 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-gray-900">Dashboard</h1>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold text-brand-ink md:text-4xl">
+            {greeting}, {firstName}
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            {newEnquiriesCount ?? 0} new request{(newEnquiriesCount ?? 0) === 1 ? '' : 's'} · {formatUSD(pipelineValue)} in active pipeline
+          </p>
+        </div>
         <ButtonLink href="/admin/requests/new" size="sm">+ New Request</ButtonLink>
       </div>
 
-      {/* KPIs */}
+      {/* Headline KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="Accepted Revenue This Month"
-          value={formatUSD(revenueThisMonth)}
-          sub={formatKES(revenueThisMonth, usdToKes)}
+          label="Active Requests"
+          value={String(activeRequestCount)}
+          sub="new through booked stages"
         />
         <KpiCard
-          label="Active Quotes"
-          value={String(activeQuoteCount ?? 0)}
-          sub="versions currently sent or viewed"
+          label="Conversion Rate"
+          value={`${conversionRate.toFixed(0)}%`}
+          sub={`${wonCount} of ${decidedTotal} requests booked`}
         />
         <KpiCard
-          label="New Enquiries"
-          value={String(newEnquiriesCount ?? 0)}
-          sub="waiting in pipeline"
+          label="Avg. Quote Value"
+          value={formatUSD(avgQuoteValue)}
+          sub={`across ${activeQuoteCount} active quote${activeQuoteCount === 1 ? '' : 's'}`}
         />
         <KpiCard
-          label="Expiring Soon"
-          value={String(expiringVersions?.length ?? 0)}
-          sub="valid until within 3 days"
-          urgent={!!(expiringVersions?.length)}
+          label="Days to Booking"
+          value={daysToBooking !== null ? daysToBooking.toFixed(1) : '—'}
+          sub="avg. request → acceptance, 6 mo"
         />
       </div>
 
       {/* Finance KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard
+          label="Revenue This Month"
+          value={formatUSD(revenueThisMonth)}
+          sub={`${formatKES(revenueThisMonth, usdToKes)} · ${marginThisMonth.toFixed(1)}% margin`}
+        />
         <Link href="/admin/finance/receipts">
           <KpiCard
             label="Receivable (AR)"
@@ -178,11 +222,6 @@ export default async function AdminDashboardPage() {
           />
         </Link>
         <KpiCard
-          label="Gross Margin This Month"
-          value={`${marginThisMonth.toFixed(1)}%`}
-          sub={`${formatUSD(revenueThisMonth - costThisMonth)} on accepted quotes`}
-        />
-        <KpiCard
           label="Quotes Issued vs Accepted"
           value={`${issuedThisMonth ?? 0} / ${acceptedThisMonth}`}
           sub="sent vs accepted this month"
@@ -191,7 +230,7 @@ export default async function AdminDashboardPage() {
 
       {/* Chart + Departures */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Accepted Quote Value — Last 6 Months</h2>
           {hasChartData ? (
             <div className="flex items-end gap-2 h-36 mt-2">
@@ -220,7 +259,7 @@ export default async function AdminDashboardPage() {
           )}
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-900">Upcoming Departures</h2>
             <Link href="/admin/departures" className="text-xs text-[var(--olive)] hover:underline">View all</Link>
@@ -245,22 +284,25 @@ export default async function AdminDashboardPage() {
 
       {/* Pipeline + Alerts + Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-900">Requests Pipeline</h2>
-            <Link href="/admin/requests" className="text-xs text-[var(--olive)] hover:underline">View all</Link>
+            <Link href="/admin/requests" className="text-xs text-[var(--olive)] hover:underline">Open board ↗</Link>
           </div>
           <ul className="space-y-2 text-sm">
             {stageCounts.map(s => (
-              <li key={s.key} className="flex justify-between text-gray-700">
-                <Link href={`/admin/requests?stage=${s.key}`} className="hover:text-[var(--olive)]">{s.label}</Link>
+              <li key={s.key} className="flex items-center justify-between text-gray-700">
+                <Link href={`/admin/requests?stage=${s.key}`} className="flex items-center gap-2 hover:text-[var(--olive)]">
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
+                  {s.label}
+                </Link>
                 <span className="font-medium tabular-nums">{s.count}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-900 mb-3">Alerts</h2>
           {expiringVersions && expiringVersions.length > 0 ? (
             <ul className="space-y-3">
@@ -280,7 +322,7 @@ export default async function AdminDashboardPage() {
           )}
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-900 mb-3">Recent Activity</h2>
           {((recentAcceptances?.length ?? 0) + (recentRequests?.length ?? 0)) === 0 ? (
             <p className="text-sm text-gray-400 py-10 text-center">Activity appears here as things happen.</p>
@@ -328,10 +370,10 @@ export default async function AdminDashboardPage() {
 
 function KpiCard({ label, value, sub, urgent }: { label: string; value: string; sub: string; urgent?: boolean }) {
   return (
-    <div className={`bg-white rounded-lg border p-5 ${urgent ? 'border-amber-300' : 'border-gray-200'}`}>
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className={`text-2xl font-semibold mt-1 ${urgent ? 'text-amber-700' : 'text-gray-900'}`}>{value}</p>
-      <p className="text-xs text-gray-400 mt-1">{sub}</p>
+    <div className={`rounded-xl border bg-surface p-5 shadow-sm ${urgent ? 'border-amber-300' : 'border-border'}`}>
+      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={`font-display mt-2 text-3xl ${urgent ? 'text-amber-700' : 'text-brand-ink'}`}>{value}</p>
+      <p className="mt-1.5 text-xs text-muted-foreground">{sub}</p>
     </div>
   )
 }

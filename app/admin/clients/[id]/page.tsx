@@ -103,7 +103,7 @@ export default async function ClientDetailPage({
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
+      <div className="bg-surface rounded-xl border border-border p-5 mb-6">
         <div className="flex items-start gap-4">
           <div className="h-14 w-14 rounded-full bg-[var(--olive)]/10 flex items-center justify-center text-xl font-semibold text-[var(--olive-dk)] shrink-0">
             {initials}
@@ -158,7 +158,7 @@ export default async function ClientDetailPage({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="space-y-4">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-surface rounded-xl border border-border p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Contact Details</h2>
             <div className="space-y-2 text-sm">
               <div>
@@ -215,7 +215,7 @@ export default async function ClientDetailPage({
             </div>
           )}
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-surface rounded-xl border border-border p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h2>
             <div className="space-y-2">
               <Link
@@ -228,7 +228,7 @@ export default async function ClientDetailPage({
         </div>
 
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-surface rounded-xl border border-border p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">
               Requests
               <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
@@ -262,7 +262,7 @@ export default async function ClientDetailPage({
             )}
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-surface rounded-xl border border-border p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">
               Quotes
               <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
@@ -294,7 +294,7 @@ export default async function ClientDetailPage({
             )}
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-surface rounded-xl border border-border p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">
               Bookings
               <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
@@ -333,7 +333,7 @@ export default async function ClientDetailPage({
           </div>
 
           {logs && logs.length > 0 && (
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="bg-surface rounded-xl border border-border p-4">
               <h2 className="text-sm font-semibold text-gray-900 mb-3">
                 Recent Communication
                 <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">

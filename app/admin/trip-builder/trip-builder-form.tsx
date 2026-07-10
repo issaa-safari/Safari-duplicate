@@ -416,8 +416,8 @@ export default function TripBuilderForm({
       : <span className="text-xs text-gray-300">—</span>
   }
 
-  const section = 'bg-white rounded-lg border border-gray-200'
-  const sectionHead = 'px-4 py-2.5 border-b border-gray-100 flex items-center justify-between'
+  const section = 'bg-surface rounded-xl border border-border shadow-sm'
+  const sectionHead = 'px-4 py-2.5 border-b border-border flex items-center justify-between'
   const sectionTitle = 'text-sm font-semibold text-gray-800'
   const addBtn = 'text-xs font-medium text-[var(--olive)] hover:text-[var(--olive-dk)]'
   const removeBtn = 'text-gray-300 hover:text-red-500 text-sm px-1'

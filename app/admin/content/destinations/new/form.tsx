@@ -34,12 +34,12 @@ export default function NewDestinationForm() {
         <Link href="/admin/content/destinations" className="text-sm text-gray-500 hover:text-gray-700">
           ← Back to Destinations
         </Link>
-        <h1 className="text-lg font-semibold text-gray-900">New Destination</h1>
+        <h1 className="text-2xl font-semibold text-brand-ink">New Destination</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Core details */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <div className="bg-surface rounded-xl border border-border p-6 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700">Details</h2>
 
           <div className="grid grid-cols-2 gap-4">
@@ -62,7 +62,7 @@ export default function NewDestinationForm() {
         </div>
 
         {/* Content */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <div className="bg-surface rounded-xl border border-border p-6 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700">Content</h2>
           <p className="text-xs text-gray-400 -mt-2">Filling in a description or cover image will mark this destination as "With Content".</p>
 

@@ -44,7 +44,7 @@ export default async function EditRequestPage({
         <Link href={`/admin/requests/${id}`} className="text-sm text-gray-500 hover:text-gray-700">
           Back to Request
         </Link>
-        <h1 className="text-lg font-semibold text-gray-900">
+        <h1 className="text-2xl font-semibold text-brand-ink">
           Edit Request <span className="font-mono text-sm text-gray-400">{request.reference}</span>
         </h1>
       </div>

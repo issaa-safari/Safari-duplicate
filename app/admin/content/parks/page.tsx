@@ -30,13 +30,13 @@ export default async function ParksPage() {
     <ContentShell active="parks" title="Parks & Reserves" icon="⛰">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Parks & Reserves</h1>
+          <h1 className="text-2xl font-semibold text-brand-ink">Parks & Reserves</h1>
           <p className="text-sm text-gray-500 mt-0.5">National parks, game reserves, and conservancies with entrance fees</p>
         </div>
         <ButtonLink href="/admin/content/parks/new" size="sm">+ New Park</ButtonLink>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         {(parks ?? []).length === 0 ? (
           <div className="p-10 text-center">
             <p className="text-sm text-gray-500 mb-4">No parks or reserves yet.</p>
