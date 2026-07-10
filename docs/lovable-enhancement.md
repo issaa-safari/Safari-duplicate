@@ -57,3 +57,33 @@ shipped:
 - **New module routes** — `/bookings`, `/tripbuilder`, `/departures` (seat-fill
   progress), `/finance` (Receivables / Payables / Expenses / P&L tabs with AR/AP KPI
   cards), `/settings`.
+
+## Implementation
+
+Ported into the production Next.js admin on this branch (2026-07-10), following
+`docs/lovable-design-port-plan.md`:
+
+- **Design tokens** (`app/globals.css`) — the safari-green oklch palette, surfaces,
+  and eight `--status-*` pipeline colors, scoped under a `.admin-theme` class; the
+  legacy `--admin-*` / `--olive` / `--sand` / `--bush` tokens are re-pointed inside
+  the scope so every existing admin page picks up the new skin. The public site's
+  `:root` palette is untouched.
+- **Fonts** (`app/layout.tsx`) — Inter (`--font-admin-sans`) and Playfair Display
+  (`--font-admin-display`) loaded via `next/font/google`; consumed only inside
+  `.admin-theme` (body + `h1` / `.font-display`).
+- **Theme scope** (`app/admin/layout.tsx`) — the authenticated admin wrapper now
+  carries `admin-theme`; the unauthenticated login pass-through stays unthemed.
+- **App shell** (`app/admin/sidebar.tsx`) — rebuilt as the Lovable AppShell:
+  utility bar (Alamoudy Group · Safari Adventure Riders, user name + role badge),
+  brand mark (green square Playfair "S" + wordmark/tagline), text nav with green
+  active underline (Dashboard, Requests, Quotes, Trip Builder, Bookings, Clients,
+  Finance) plus a "…" overflow dropdown (Tour Templates, Content, Departures,
+  Suppliers, Analytics), a search trigger styled as an input with ⌘K that opens
+  the existing SearchModal, and an avatar dropdown with Settings / Log out. All
+  routes and behavior (⌘K shortcut, Supabase logout) preserved.
+- **Pipeline colors** (`app/admin/requests/page.tsx`) — stage rail chips now show
+  a per-stage `--status-*` dot, with the active stage rendered as a tinted pill.
+
+Verified: `next build`, vitest (57 tests), and eslint all pass with no new issues;
+Playwright screenshots confirmed the admin shell, dropdowns, search modal, and an
+unchanged public-site palette.
