@@ -2,8 +2,6 @@
 
 import type { Residency } from '@/lib/rate-resolution'
 
-export type TrackKey = 'standard' | 'premium'
-
 export const ROOM_CATEGORIES = ['sharing', 'single', 'triple', 'extra_bed'] as const
 export type RoomCategory = (typeof ROOM_CATEGORIES)[number]
 
@@ -60,15 +58,15 @@ export interface ParkRowInput {
 export interface TripBuilderState {
   guest: GuestDetails
   title: string
-  hotelRows: Record<TrackKey, HotelRowInput[]>
+  hotelRows: HotelRowInput[]
   transportRows: TransportRowInput[]
   parkRows: ParkRowInput[]
-  salePrices: Record<TrackKey, string>
+  salePrice: string
 }
 
 export interface SaveTripInput {
   quoteId?: string | null
-  versionIds?: Partial<Record<TrackKey, string | null>>
+  versionId?: string | null
   state: TripBuilderState
 }
 
@@ -105,7 +103,7 @@ export type SaveTripResult =
       ok: true
       quoteId: string
       quoteNumber: string | null
-      versionIds: Record<TrackKey, string>
-      totals: Record<TrackKey, { costUsd: number; sellingUsd: number }>
+      versionId: string
+      totals: { costUsd: number; sellingUsd: number }
     }
   | { ok: false; message: string; gaps?: string[] }

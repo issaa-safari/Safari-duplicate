@@ -17,7 +17,7 @@ export default async function TripBuilderPage() {
       <div className="mb-5">
         <h1 className="text-lg font-semibold text-gray-900">Trip Builder</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          Build a dual-track quote (Standard + Premium) on one screen — rates resolve by travel date, one Save writes everything.
+          Build a quote on one screen — rates resolve by travel date, one Save writes everything.
         </p>
       </div>
       <TripBuilderForm {...lookups} />

@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { findOrCreateClientByEmail } from '@/lib/server/clients'
 import { calculateLineTotals } from '@/lib/pricing'
+import { syncQuoteStatus } from '@/lib/server/quote-status'
 import { hotelRowsFromItinerary } from './load-initial-state'
 import {
   buildFxToUsd,
@@ -29,7 +30,6 @@ import type {
   ResolvedSegmentView,
   SaveTripInput,
   SaveTripResult,
-  TrackKey,
   TransportRowInput,
   TripBuilderState,
 } from './types'
@@ -496,96 +496,94 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
       }
     }
 
-    // ── Per-track accommodation lines ──
-    const trackLines: Record<TrackKey, LineDraft[]> = { standard: [], premium: [] }
-    const trackItems: Record<TrackKey, ItemDraft[]> = { standard: [], premium: [] }
+    // ── Accommodation lines ──
+    const hotelLines: LineDraft[] = []
+    const hotelItems: ItemDraft[] = []
+    let hotelSort = 0
 
-    for (const track of ['standard', 'premium'] as TrackKey[]) {
-      let trackSort = 0
-      for (const row of state.hotelRows[track]) {
-        if (!row.accommodationId) continue
-        if (!isIsoDate(row.checkIn) || !isIsoDate(row.checkOut)) {
-          throw new Error('Every hotel row needs check-in and check-out dates.')
-        }
-        assertWithinTrip(row.checkIn, state, 'A hotel check-in')
-        assertWithinTrip(row.checkOut, state, 'A hotel check-out')
-        const label = await entityName(admin, 'accommodations', row.accommodationId)
-        const manual = manualPriceOf(row.manualUnitCostUsd)
-        const cards = filterByMealPlan(
-          await fetchCards(admin, 'accommodation', row.accommodationId, row.checkIn, row.checkOut),
-          row.mealPlan,
+    for (const row of state.hotelRows) {
+      if (!row.accommodationId) continue
+      if (!isIsoDate(row.checkIn) || !isIsoDate(row.checkOut)) {
+        throw new Error('Every hotel row needs check-in and check-out dates.')
+      }
+      assertWithinTrip(row.checkIn, state, 'A hotel check-in')
+      assertWithinTrip(row.checkOut, state, 'A hotel check-out')
+      const label = await entityName(admin, 'accommodations', row.accommodationId)
+      const manual = manualPriceOf(row.manualUnitCostUsd)
+      const cards = filterByMealPlan(
+        await fetchCards(admin, 'accommodation', row.accommodationId, row.checkIn, row.checkOut),
+        row.mealPlan,
+      )
+      let segments: PricedSegment[] | null = null
+      try {
+        segments = priceAccommodationStay(
+          {
+            accommodationId: row.accommodationId, accommodationLabel: label,
+            checkIn: row.checkIn, checkOut: row.checkOut,
+            roomCategory: row.roomCategory || undefined,
+            unitsPerNight: Math.max(1, row.rooms),
+          },
+          cards, fx,
         )
-        let segments: PricedSegment[] | null = null
-        try {
-          segments = priceAccommodationStay(
-            {
-              accommodationId: row.accommodationId, accommodationLabel: label,
-              checkIn: row.checkIn, checkOut: row.checkOut,
-              roomCategory: row.roomCategory || undefined,
-              unitsPerNight: Math.max(1, row.rooms),
-            },
-            cards, fx,
-          )
-        } catch (err) {
-          if (err instanceof RateGapError) {
-            if (manual === null) { gaps.push(err.message); continue }
-          } else throw err
-        }
-        const nights = nightsBetween(row.checkIn, row.checkOut)
-        const mealLabel = row.mealPlan ? `, ${MEAL_LABELS[row.mealPlan] ?? row.mealPlan}` : ''
-        if (manual !== null) {
-          const units = nights * Math.max(1, row.rooms)
-          trackLines[track].push({
-            dayNumber: isoDiffDays(guest.startDate, row.checkIn) + 1,
+      } catch (err) {
+        if (err instanceof RateGapError) {
+          if (manual === null) { gaps.push(err.message); continue }
+        } else throw err
+      }
+      const nights = nightsBetween(row.checkIn, row.checkOut)
+      const mealLabel = row.mealPlan ? `, ${MEAL_LABELS[row.mealPlan] ?? row.mealPlan}` : ''
+      if (manual !== null) {
+        const units = nights * Math.max(1, row.rooms)
+        hotelLines.push({
+          dayNumber: isoDiffDays(guest.startDate, row.checkIn) + 1,
+          costCategory: 'accommodation',
+          description: `${label} — ${nights} night${nights === 1 ? '' : 's'} ${row.roomCategory || 'sharing'}${mealLabel} (manual price)`,
+          rateCardId: null,
+          supplierRateId: null,
+          pricingUnit: 'night',
+          travellerCategory: null,
+          roomCategory: row.roomCategory || null,
+          quantity: units,
+          sourceCurrency: 'USD',
+          sourceUnitCost: manual,
+          exchangeRateToUsd: 1,
+          unitCostUsd: manual,
+          originalUnitCostUsd: segments?.[0]?.resolved.unitCostUsd ?? null,
+          isManualOverride: true,
+          sortOrder: hotelSort++,
+        })
+      } else {
+        for (const seg of segments!) {
+          const segNights = Math.round(seg.units / Math.max(1, row.rooms))
+          hotelLines.push({
+            dayNumber: isoDiffDays(guest.startDate, seg.startDate) + 1,
             costCategory: 'accommodation',
-            description: `${label} — ${nights} night${nights === 1 ? '' : 's'} ${row.roomCategory || 'sharing'}${mealLabel} (manual price)`,
-            rateCardId: null,
-            supplierRateId: null,
-            pricingUnit: 'night',
+            description: `${label} — ${segNights} night${segNights === 1 ? '' : 's'} ${row.roomCategory || 'sharing'}${mealLabel}`
+              + (segments!.length > 1 && seg.resolved.seasonName ? ` (${seg.resolved.seasonName})` : ''),
+            rateCardId: seg.resolved.rateCardId,
+            supplierRateId: seg.resolved.supplierRateId,
+            pricingUnit: seg.resolved.pricingUnit,
             travellerCategory: null,
             roomCategory: row.roomCategory || null,
-            quantity: units,
-            sourceCurrency: 'USD',
-            sourceUnitCost: manual,
-            exchangeRateToUsd: 1,
-            unitCostUsd: manual,
-            originalUnitCostUsd: segments?.[0]?.resolved.unitCostUsd ?? null,
-            isManualOverride: true,
-            sortOrder: trackSort++,
+            quantity: seg.units,
+            sourceCurrency: seg.resolved.sourceCurrency,
+            sourceUnitCost: seg.resolved.sourceUnitCost,
+            exchangeRateToUsd: seg.resolved.exchangeRateToUsd,
+            unitCostUsd: seg.resolved.unitCostUsd,
+            originalUnitCostUsd: null,
+            isManualOverride: false,
+            sortOrder: hotelSort++,
           })
-        } else {
-          for (const seg of segments!) {
-            const segNights = Math.round(seg.units / Math.max(1, row.rooms))
-            trackLines[track].push({
-              dayNumber: isoDiffDays(guest.startDate, seg.startDate) + 1,
-              costCategory: 'accommodation',
-              description: `${label} — ${segNights} night${segNights === 1 ? '' : 's'} ${row.roomCategory || 'sharing'}${mealLabel}`
-                + (segments!.length > 1 && seg.resolved.seasonName ? ` (${seg.resolved.seasonName})` : ''),
-              rateCardId: seg.resolved.rateCardId,
-              supplierRateId: seg.resolved.supplierRateId,
-              pricingUnit: seg.resolved.pricingUnit,
-              travellerCategory: null,
-              roomCategory: row.roomCategory || null,
-              quantity: seg.units,
-              sourceCurrency: seg.resolved.sourceCurrency,
-              sourceUnitCost: seg.resolved.sourceUnitCost,
-              exchangeRateToUsd: seg.resolved.exchangeRateToUsd,
-              unitCostUsd: seg.resolved.unitCostUsd,
-              originalUnitCostUsd: null,
-              isManualOverride: false,
-              sortOrder: trackSort++,
-            })
-          }
         }
-        trackItems[track].push({
-          dayNumber: isoDiffDays(guest.startDate, row.checkIn) + 1,
-          itemType: 'accommodation',
-          entityId: row.accommodationId,
-          titleSnapshot: `${label} (${nights} night${nights === 1 ? '' : 's'}${mealLabel})`,
-          roomCategory: row.roomCategory || null,
-          sortOrder: trackItems[track].length,
-        })
       }
+      hotelItems.push({
+        dayNumber: isoDiffDays(guest.startDate, row.checkIn) + 1,
+        itemType: 'accommodation',
+        entityId: row.accommodationId,
+        titleSnapshot: `${label} (${nights} night${nights === 1 ? '' : 's'}${mealLabel})`,
+        roomCategory: row.roomCategory || null,
+        sortOrder: hotelItems.length,
+      })
     }
 
     if (gaps.length > 0) {
@@ -625,18 +623,17 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
 
     // ── Days: one per trip date ──
     const tripDays = isoDiffDays(guest.startDate, guest.endDate) + 1
-    const daysByTrack = (items: ItemDraft[]) =>
-      Array.from({ length: tripDays }, (_, i) => ({
-        dayNumber: i + 1,
-        dayDate: isoAddDays(guest.startDate, i),
-        title: null as string | null,
-        items: items
-          .concat(sharedItems)
-          .filter(it => it.dayNumber === i + 1)
-          .map(({ itemType, entityId, titleSnapshot, roomCategory, sortOrder }) => ({
-            itemType, entityId, titleSnapshot, roomCategory, sortOrder,
-          })),
-      }))
+    const days = Array.from({ length: tripDays }, (_, i) => ({
+      dayNumber: i + 1,
+      dayDate: isoAddDays(guest.startDate, i),
+      title: null as string | null,
+      items: hotelItems
+        .concat(sharedItems)
+        .filter(it => it.dayNumber === i + 1)
+        .map(({ itemType, entityId, titleSnapshot, roomCategory, sortOrder }) => ({
+          itemType, entityId, titleSnapshot, roomCategory, sortOrder,
+        })),
+    }))
 
     // ── Resolve client ──
     let clientId: string | null = null
@@ -667,55 +664,45 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
       }
     }
 
-    // ── Version targets: reuse mutable drafts, otherwise create new versions ──
-    const versionIds: Partial<Record<TrackKey, string | null>> = { ...input.versionIds }
-    let compareGroup: string | null = null
-    for (const track of ['standard', 'premium'] as TrackKey[]) {
-      const vid = versionIds[track]
-      if (!vid) { versionIds[track] = null; continue }
+    // ── Version target: reuse the mutable draft, otherwise create a new version ──
+    let versionId = input.versionId ?? null
+    if (versionId) {
       const { data: version } = await admin
         .from('quote_versions')
-        .select('id, status, compare_group')
-        .eq('id', vid)
+        .select('id, status')
+        .eq('id', versionId)
         .maybeSingle()
-      const v = version as { id: string; status: string; compare_group: string | null } | null
-      if (!v || !['draft', 'ready'].includes(v.status)) {
-        // Locked/sent versions are immutable — a re-save creates a new version.
-        versionIds[track] = null
-      } else {
-        compareGroup = compareGroup ?? v.compare_group
-      }
+      const v = version as { id: string; status: string } | null
+      // Locked/sent versions are immutable — a re-save creates a new version.
+      if (!v || !['draft', 'ready'].includes(v.status)) versionId = null
     }
 
-    // ── Track payloads with sale-price-derived markup ──
+    // ── Payload with sale-price-derived markup ──
     const round2 = (n: number) => Math.round(n * 100) / 100
-    const tracksPayload = (['standard', 'premium'] as TrackKey[]).map(track => {
-      const lines = [...trackLines[track], ...sharedLines]
-      const cost = round2(lines.reduce((s, l) => s + l.quantity * l.unitCostUsd, 0))
-      const sale = Number(state.salePrices[track])
-      const hasSale = Number.isFinite(sale) && sale > 0
-      const markupPct = hasSale && cost > 0 ? (sale / cost - 1) * 100 : 0
+    const lines = [...hotelLines, ...sharedLines]
+    const cost = round2(lines.reduce((s, l) => s + l.quantity * l.unitCostUsd, 0))
+    const sale = Number(state.salePrice)
+    const hasSale = Number.isFinite(sale) && sale > 0
+    const markupPct = hasSale && cost > 0 ? (sale / cost - 1) * 100 : 0
+    const priceLines = lines.map(l => {
+      const { totalCostUsd, totalSellingUsd } = calculateLineTotals(l.quantity, l.unitCostUsd, markupPct)
       return {
-        trackLabel: track,
-        versionId: versionIds[track] ?? null,
-        defaultMarkupPercent: round2(Math.max(0, markupPct)),
-        travellers,
-        days: daysByTrack(trackItems[track]),
-        priceLines: lines.map(l => {
-          const { totalCostUsd, totalSellingUsd } = calculateLineTotals(l.quantity, l.unitCostUsd, markupPct)
-          return {
-            ...l,
-            totalCostUsd: round2(totalCostUsd),
-            totalSellingUsd: round2(totalSellingUsd),
-          }
-        }),
+        ...l,
+        totalCostUsd: round2(totalCostUsd),
+        totalSellingUsd: round2(totalSellingUsd),
       }
     })
+    const trackPayload = {
+      versionId,
+      defaultMarkupPercent: round2(Math.max(0, markupPct)),
+      travellers,
+      days,
+      priceLines,
+    }
 
     const payload = {
       quoteId: input.quoteId ?? null,
       clientId,
-      compareGroup,
       title: state.title.trim() || `${guest.name.trim()} — ${guest.startDate}`,
       travelStartDate: guest.startDate,
       travelEndDate: guest.endDate,
@@ -725,17 +712,19 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
         snapshot_at: new Date().toISOString(),
       },
       builderState: state,
-      tracks: tracksPayload,
+      tracks: [trackPayload],
     }
 
     const { data: result, error: rpcError } = await admin.rpc('save_trip', { p_payload: payload })
     if (rpcError) throw new Error(rpcError.message)
-    const saved = result as {
-      quoteId: string
-      standardVersionId: string
-      premiumVersionId: string
-    } | null
+    const saved = result as { quoteId: string; versionId: string } | null
     if (!saved?.quoteId) throw new Error('Save failed — no quote returned.')
+
+    // Pricing is complete once it's saved — advance the draft straight to
+    // Ready so Preview/Send unlock without a separate manual step.
+    await admin.from('quote_versions').update({ status: 'ready' })
+      .eq('id', saved.versionId).eq('status', 'draft')
+    await syncQuoteStatus(admin, saved.quoteId)
 
     const { data: quoteRow } = await admin
       .from('quotes').select('quote_number').eq('id', saved.quoteId).maybeSingle()
@@ -743,25 +732,17 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
     revalidatePath('/admin/quotes')
     revalidatePath(`/admin/quotes/${saved.quoteId}`)
     revalidatePath(`/admin/trip-builder/${saved.quoteId}`)
-    revalidatePath(`/admin/quotes/${saved.quoteId}/versions/${saved.standardVersionId}`)
-    revalidatePath(`/admin/quotes/${saved.quoteId}/versions/${saved.premiumVersionId}`)
-
-    const totals = Object.fromEntries(
-      tracksPayload.map(t => [t.trackLabel, {
-        costUsd: round2(t.priceLines.reduce((s, l) => s + l.totalCostUsd, 0)),
-        sellingUsd: round2(t.priceLines.reduce((s, l) => s + l.totalSellingUsd, 0)),
-      }]),
-    ) as Record<TrackKey, { costUsd: number; sellingUsd: number }>
+    revalidatePath(`/admin/quotes/${saved.quoteId}/versions/${saved.versionId}`)
 
     return {
       ok: true,
       quoteId: saved.quoteId,
       quoteNumber: (quoteRow as { quote_number?: string } | null)?.quote_number ?? null,
-      versionIds: {
-        standard: saved.standardVersionId,
-        premium: saved.premiumVersionId,
+      versionId: saved.versionId,
+      totals: {
+        costUsd: round2(priceLines.reduce((s, l) => s + l.totalCostUsd, 0)),
+        sellingUsd: round2(priceLines.reduce((s, l) => s + l.totalSellingUsd, 0)),
       },
-      totals,
     }
   } catch (err) {
     return { ok: false, message: err instanceof Error ? err.message : 'Save failed.' }
