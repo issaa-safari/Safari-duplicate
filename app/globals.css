@@ -37,6 +37,97 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ── SafariOffice green design system (admin only) ─────────────────────────
+   Ported from the Lovable design pass (docs/lovable-enhancement.md).
+   Scoped under .admin-theme so the public site's earthy palette is untouched;
+   the legacy --admin-* / --olive tokens are re-pointed inside the scope so
+   every existing admin page picks up the new skin without per-page edits. */
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-text: var(--brand-text);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --color-status-new: var(--status-new);
+  --color-status-working: var(--status-working);
+  --color-status-open: var(--status-open);
+  --color-status-prebooked: var(--status-prebooked);
+  --color-status-booked: var(--status-booked);
+  --color-status-completed: var(--status-completed);
+  --color-status-notbooked: var(--status-notbooked);
+  --color-status-archive: var(--status-archive);
+}
+
+.admin-theme {
+  /* Brand green (oklch) */
+  --primary: oklch(0.7 0.22 143);
+  --primary-foreground: oklch(0.99 0 0);
+  --brand-ink: oklch(0.42 0.16 143);
+  --brand-text: oklch(0.55 0.19 143);
+
+  /* Surfaces & neutrals */
+  --surface: oklch(1 0 0);
+  --surface-alt: oklch(0.985 0.003 150);
+  --muted: oklch(0.955 0.008 150);
+  --muted-foreground: oklch(0.5 0.02 150);
+  --accent: oklch(0.94 0.06 143);
+  --accent-foreground: oklch(0.35 0.14 143);
+  --border: oklch(0.9 0.008 150);
+  --ring: oklch(0.7 0.22 143);
+  --destructive: oklch(0.6 0.24 27);
+  --warning: oklch(0.97 0.08 90);
+  --warning-foreground: oklch(0.4 0.12 70);
+
+  /* Pipeline status colors */
+  --status-new: oklch(0.7 0.15 240);
+  --status-working: oklch(0.75 0.15 80);
+  --status-open: oklch(0.7 0.18 200);
+  --status-prebooked: oklch(0.7 0.17 300);
+  --status-booked: oklch(0.7 0.22 143);
+  --status-completed: oklch(0.55 0.1 150);
+  --status-notbooked: oklch(0.65 0.02 150);
+  --status-archive: oklch(0.55 0.02 150);
+
+  /* Legacy admin tokens re-pointed to the green system */
+  --admin-bg: oklch(0.97 0.005 150);
+  --admin-surface: oklch(1 0 0);
+  --admin-border: oklch(0.9 0.008 150);
+  --admin-text: oklch(0.18 0.02 150);
+  --admin-text-muted: oklch(0.5 0.02 150);
+  --olive: oklch(0.7 0.22 143);
+  --olive-dk: oklch(0.42 0.16 143);
+  --olive-lt: oklch(0.88 0.07 143);
+  --sand: oklch(0.955 0.008 150);
+  --bush: oklch(0.2 0.03 150);
+
+  --background: var(--admin-bg);
+  --foreground: var(--admin-text);
+
+  font-family: var(--font-admin-sans), Inter, ui-sans-serif, system-ui, sans-serif;
+  color: var(--admin-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.admin-theme h1 {
+  font-family: var(--font-admin-display), "Playfair Display", Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+.admin-theme .font-display {
+  font-family: var(--font-admin-display), "Playfair Display", Georgia, serif;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
