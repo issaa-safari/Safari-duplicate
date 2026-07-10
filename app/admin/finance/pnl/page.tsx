@@ -39,7 +39,7 @@ export default async function PnlPage({
 
   const [{ data: acceptances }, expensesResult, usdToKes] = await Promise.all([
     admin.from('quote_acceptances')
-      .select('id, accepted_at, quote_id, quote_version_id, quote_versions(total_selling_usd, total_cost_usd, track_label), quotes(quote_number)')
+      .select('id, accepted_at, quote_id, quote_version_id, quote_versions(total_selling_usd, total_cost_usd), quotes(quote_number)')
       .gte('accepted_at', `${from}T00:00:00Z`)
       .lte('accepted_at', `${to}T23:59:59Z`)
       .order('accepted_at', { ascending: false }),
@@ -56,7 +56,6 @@ export default async function PnlPage({
     acceptedAt: a.accepted_at as string,
     quoteId: a.quote_id as string,
     quoteNumber: (a.quotes as any)?.quote_number ?? '—',
-    trackLabel: (a.quote_versions as any)?.track_label ?? null,
     sellingUsd: Number((a.quote_versions as any)?.total_selling_usd ?? 0),
     costUsd: Number((a.quote_versions as any)?.total_cost_usd ?? 0),
   }))
@@ -157,7 +156,7 @@ export default async function PnlPage({
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-700">Accepted in range</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Only the accepted version counts — superseded sibling tracks are excluded</p>
+          <p className="text-xs text-gray-400 mt-0.5">Only the accepted version counts</p>
         </div>
         {acceptedRows.length === 0 ? (
           <p className="p-10 text-center text-sm text-gray-400">No quotes accepted in this range.</p>
@@ -167,7 +166,6 @@ export default async function PnlPage({
               <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
                 <th className="px-5 py-3 font-medium">Quote</th>
                 <th className="px-3 py-3 font-medium">Accepted</th>
-                <th className="px-3 py-3 font-medium">Track</th>
                 <th className="px-3 py-3 font-medium text-right">Revenue</th>
                 <th className="px-3 py-3 font-medium text-right">Cost</th>
                 <th className="px-5 py-3 font-medium text-right">Margin</th>
@@ -182,11 +180,6 @@ export default async function PnlPage({
                     </Link>
                   </td>
                   <td data-label="Accepted" className="px-3 py-2.5 text-gray-500 text-xs">{new Date(r.acceptedAt).toLocaleDateString('en-GB')}</td>
-                  <td data-label="Track" className="px-3 py-2.5">
-                    {r.trackLabel ? (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 capitalize">{r.trackLabel}</span>
-                    ) : <span className="text-xs text-gray-300">—</span>}
-                  </td>
                   <td data-label="Revenue" className="px-3 py-2.5 text-right text-gray-800 tabular-nums">${fmt(r.sellingUsd)}</td>
                   <td data-label="Cost" className="px-3 py-2.5 text-right text-gray-500 tabular-nums">${fmt(r.costUsd)}</td>
                   <td data-label="Margin" className="px-5 py-2.5 text-right font-medium tabular-nums text-gray-900">${fmt(r.sellingUsd - r.costUsd)}</td>

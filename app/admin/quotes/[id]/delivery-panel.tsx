@@ -147,7 +147,7 @@ export default function DeliveryPanel({
 
       {deliveries.length === 0 ? (
         <div className="px-5 py-8 text-center text-sm text-gray-400">
-          No share links yet. Mark a version as Ready and generate a link above.
+          No share links yet. Save pricing, then generate a link above.
         </div>
       ) : (
         <div className="divide-y divide-gray-50">

@@ -256,18 +256,11 @@ export const setVersionStatus = safeAction(async (formData: FormData) => {
   if (!version) throw new Error('Version not found.')
 
   const transitions: Record<string, string[]> = {
-    draft: ['ready'],
     ready: ['draft', 'sent'],
     sent: ['ready'],
   }
   if (!transitions[version.status]?.includes(newStatus)) {
     throw new Error(`Cannot move from ${version.status} to ${newStatus}.`)
-  }
-
-  if (newStatus === 'ready') {
-    const { count } = await admin
-      .from('quote_days').select('id', { count: 'exact', head: true }).eq('quote_version_id', versionId)
-    if (!count) throw new Error('Add at least one itinerary day before marking this quote Ready.')
   }
 
   const { error } = await admin.from('quote_versions').update({ status: newStatus }).eq('id', versionId)

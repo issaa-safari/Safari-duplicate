@@ -122,7 +122,7 @@ export default async function QuotePrintPage({
     { data: settings },
   ] = await Promise.all([
     admin.from('quote_versions')
-      .select('id, version_number, title, language, travel_start_date, travel_end_date, valid_until, total_selling_usd, sharing_price_per_person_usd, single_price_per_person_usd, cost_base_usd, default_markup_percent, track_label, compare_group')
+      .select('id, version_number, title, language, travel_start_date, travel_end_date, valid_until, total_selling_usd, sharing_price_per_person_usd, single_price_per_person_usd, cost_base_usd, default_markup_percent')
       .eq('id', delivery.quote_version_id).single(),
     admin.from('quotes')
       .select('id, quote_number, mode, client_id, tour_id')
@@ -142,44 +142,6 @@ export default async function QuotePrintPage({
   ])
 
   if (!version || !quote) notFound()
-
-  // Dual-track proposal: sibling version = the other package (same itinerary,
-  // different hotels). The document shows both prices side by side.
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  let sibling: any = null
-  let siblingHotels: string[] = []
-  let versionHotels: string[] = []
-  if ((version as any).compare_group) {
-    const { data: siblings } = await admin
-      .from('quote_versions')
-      .select('id, status, track_label, total_selling_usd, sharing_price_per_person_usd, version_number')
-      .eq('quote_id', delivery.quote_id)
-      .eq('compare_group', (version as any).compare_group)
-      .neq('id', delivery.quote_version_id)
-      .not('track_label', 'is', null)
-      .in('status', ['draft', 'ready', 'sent', 'viewed', 'accepted'])
-      .order('version_number', { ascending: false })
-    sibling = (siblings ?? []).find((s: any) => s.track_label !== (version as any).track_label) ?? null
-    if (sibling) {
-      const [{ data: ownHotelLines }, { data: sibHotelLines }] = await Promise.all([
-        admin.from('quote_price_lines')
-          .select('description')
-          .eq('quote_version_id', delivery.quote_version_id)
-          .eq('cost_category', 'accommodation')
-          .eq('is_client_visible', true)
-          .order('sort_order'),
-        admin.from('quote_price_lines')
-          .select('description')
-          .eq('quote_version_id', sibling.id)
-          .eq('cost_category', 'accommodation')
-          .eq('is_client_visible', true)
-          .order('sort_order'),
-      ])
-      versionHotels = (ownHotelLines ?? []).map((l: any) => l.description as string)
-      siblingHotels = (sibHotelLines ?? []).map((l: any) => l.description as string)
-    }
-  }
-  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   const [{ data: client }, { data: quoteTravellers }] = await Promise.all([
     admin.from('clients')
@@ -664,59 +626,6 @@ export default async function QuotePrintPage({
               <p className="sm">{T.exclText}</p>
             </div>
           </div>
-
-          {/* Dual-track package comparison */}
-          {sibling && (() => {
-            const payingCount = (quoteTravellers ?? []).filter((t: any) => t.is_paying && !t.is_complimentary).length
-            const trackName = (t: string | null) => (t === 'premium' ? 'Premium' : t === 'standard' ? 'Standard' : 'Option')
-            const packages = [
-              {
-                id: version.id as string,
-                label: trackName((version as any).track_label),
-                total: totalSelling,
-                perPerson: sharingPp || (payingCount > 0 ? totalSelling / payingCount : 0),
-                hotels: versionHotels,
-              },
-              {
-                id: sibling.id as string,
-                label: trackName(sibling.track_label),
-                total: Number(sibling.total_selling_usd ?? 0),
-                perPerson: Number(sibling.sharing_price_per_person_usd ?? 0)
-                  || (payingCount > 0 ? Number(sibling.total_selling_usd ?? 0) / payingCount : 0),
-                hotels: siblingHotels,
-              },
-            ].sort(a => (a.label === 'Standard' ? -1 : 1))
-            return (
-              <div style={{ marginBottom: 24 }}>
-                <h3 style={{ fontSize: 16 }}>{isArabic ? 'اختر باقتك' : 'Choose Your Package'}</h3>
-                <p style={{ fontSize: 11, color: '#888', marginTop: -8, marginBottom: 12 }}>
-                  {isArabic
-                    ? 'نفس البرنامج والمواصلات ورسوم المنتزهات — يختلف مستوى الإقامة فقط.'
-                    : 'Both packages follow the same itinerary, transport and park entries — only the hotels differ.'}
-                </p>
-                <table className="cost-tbl nb">
-                  <thead>
-                    <tr>
-                      <th>{isArabic ? 'الباقة' : 'Package'}</th>
-                      <th>{isArabic ? 'الفنادق' : 'Hotels'}</th>
-                      <th className="r">{isArabic ? 'للشخص' : 'Per Person'}</th>
-                      <th className="r">{isArabic ? 'الإجمالي' : 'Total'}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {packages.map(p => (
-                      <tr key={p.id}>
-                        <td style={{ fontWeight: 600 }}>{p.label}</td>
-                        <td style={{ fontSize: 11 }}>{p.hotels.join('; ') || '—'}</td>
-                        <td className="r" style={{ fontWeight: 600 }}>${fmt(p.perPerson)}</td>
-                        <td className="r" style={{ fontWeight: 600 }}>${fmt(p.total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
-          })()}
 
           <h3 style={{ fontSize: 16 }}>{T.breakdown}</h3>
 

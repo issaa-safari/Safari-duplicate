@@ -1,7 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-// Higher rank wins when a quote has multiple versions (dual-track Standard/Premium).
-// 'superseded'/'cancelled' rank lowest so a losing track never masks the winner.
+// Higher rank wins when a quote has multiple versions (e.g. a cloned draft
+// alongside an older sent version). 'superseded'/'cancelled' rank lowest so a
+// stale version never masks the winner.
 const STATUS_RANK: Record<string, number> = {
   superseded: 0,
   cancelled: 0,

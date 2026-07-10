@@ -13,7 +13,6 @@ import {
   type ParkRowInput,
   type ResolveRowRequest,
   type ResolveRowResult,
-  type TrackKey,
   type TransportRowInput,
   type TripBuilderState,
 } from './types'
@@ -102,9 +101,10 @@ export default function TripBuilderForm({
   parks,
   usdToKes,
   initialQuoteId,
-  initialVersionIds,
+  initialVersionId,
   initialState,
   onDirtyChange,
+  onSaved,
 }: {
   destinations: LookupOption[]
   accommodations: AccommodationOption[]
@@ -112,10 +112,12 @@ export default function TripBuilderForm({
   parks: LookupOption[]
   usdToKes: number
   initialQuoteId?: string | null
-  initialVersionIds?: Partial<Record<TrackKey, string | null>>
+  initialVersionId?: string | null
   initialState?: TripBuilderState | null
   /** Reports unsaved-changes state to an embedding parent (e.g. for a navigation guard). */
   onDirtyChange?: (dirty: boolean) => void
+  /** Called after a successful save (e.g. to advance an embedding workspace to Preview). */
+  onSaved?: () => void
 }) {
   const [guest, setGuest] = useState<GuestDetails>(
     initialState?.guest ?? {
@@ -123,16 +125,14 @@ export default function TripBuilderForm({
     },
   )
   const [title, setTitle] = useState(initialState?.title ?? '')
-  const [hotelRows, setHotelRows] = useState<Record<TrackKey, HotelRowInput[]>>(
-    initialState?.hotelRows ?? { standard: [], premium: [] },
+  const [hotelRows, setHotelRows] = useState<HotelRowInput[]>(
+    initialState?.hotelRows ?? [],
   )
   const [transportRows, setTransportRows] = useState<TransportRowInput[]>(
     initialState?.transportRows ?? [],
   )
   const [parkRows, setParkRows] = useState<ParkRowInput[]>(initialState?.parkRows ?? [])
-  const [salePrices, setSalePrices] = useState<Record<TrackKey, string>>(
-    initialState?.salePrices ?? { standard: '', premium: '' },
-  )
+  const [salePrice, setSalePrice] = useState(initialState?.salePrice ?? '')
 
   // Lookups live in state so items added inline (saved to the Content
   // library) appear in the dropdowns immediately.
@@ -140,14 +140,11 @@ export default function TripBuilderForm({
   const [accommodationList, setAccommodationList] = useState<AccommodationOption[]>(accommodations)
   const [creating, setCreating] = useState<null | {
     kind: 'destination' | 'accommodation'
-    track: TrackKey
     rowKey: string
   }>(null)
 
   const [quoteId, setQuoteId] = useState<string | null>(initialQuoteId ?? null)
-  const [versionIds, setVersionIds] = useState<Partial<Record<TrackKey, string | null>>>(
-    initialVersionIds ?? {},
-  )
+  const [versionId, setVersionId] = useState<string | null>(initialVersionId ?? null)
   const [quoteNumber, setQuoteNumber] = useState<string | null>(null)
 
   const [resolutions, setResolutions] = useState<Resolutions>({})
@@ -164,26 +161,24 @@ export default function TripBuilderForm({
   useEffect(() => {
     if (isFirstPricingRender.current) { isFirstPricingRender.current = false; return }
     setDirty(true)
-  }, [guest, title, hotelRows, transportRows, parkRows, salePrices])
+  }, [guest, title, hotelRows, transportRows, parkRows, salePrice])
   useEffect(() => { onDirtyChange?.(dirty) }, [dirty, onDirtyChange])
 
   // ── Row rate resolution (fires when a row becomes complete or changes) ──
   useEffect(() => {
     const jobs: { key: string; req: ResolveRowRequest }[] = []
 
-    for (const track of ['standard', 'premium'] as TrackKey[]) {
-      for (const row of hotelRows[track]) {
-        if (row.accommodationId && row.checkIn && row.checkOut && row.checkOut > row.checkIn) {
-          jobs.push({
-            key: row.key,
-            req: {
-              kind: 'hotel', accommodationId: row.accommodationId,
-              checkIn: row.checkIn, checkOut: row.checkOut,
-              roomCategory: row.roomCategory, mealPlan: row.mealPlan,
-              rooms: row.rooms,
-            },
-          })
-        }
+    for (const row of hotelRows) {
+      if (row.accommodationId && row.checkIn && row.checkOut && row.checkOut > row.checkIn) {
+        jobs.push({
+          key: row.key,
+          req: {
+            kind: 'hotel', accommodationId: row.accommodationId,
+            checkIn: row.checkIn, checkOut: row.checkOut,
+            roomCategory: row.roomCategory, mealPlan: row.mealPlan,
+            rooms: row.rooms,
+          },
+        })
       }
     }
     for (const row of transportRows) {
@@ -256,18 +251,16 @@ export default function TripBuilderForm({
 
   const transportTotal = transportRows.reduce((s, r) => s + (effectiveTotal(r, transportUnits(r)) ?? 0), 0)
   const parksTotal = parkRows.reduce((s, r) => s + (effectiveTotal(r, parkUnits(r)) ?? 0), 0)
-  const trackSummary = (track: TrackKey) => {
-    const hotels = hotelRows[track].reduce((s, r) => s + (effectiveTotal(r, hotelUnits(r)) ?? 0), 0)
+  const summary = (() => {
+    const hotels = hotelRows.reduce((s, r) => s + (effectiveTotal(r, hotelUnits(r)) ?? 0), 0)
     const total = hotels + transportTotal + parksTotal
     return { hotels, total }
-  }
+  })()
   const payingGuests = guest.adults + guest.childAges.filter(a => a >= 3).length
 
   // Rows priced manually don't need a rate card — their gaps don't block saving.
   const manualKeys = new Set<string>()
-  for (const track of ['standard', 'premium'] as TrackKey[]) {
-    for (const r of hotelRows[track]) if (manualPriceOf(r.manualUnitCostUsd) !== null) manualKeys.add(r.key)
-  }
+  for (const r of hotelRows) if (manualPriceOf(r.manualUnitCostUsd) !== null) manualKeys.add(r.key)
   for (const r of transportRows) if (manualPriceOf(r.manualUnitCostUsd) !== null) manualKeys.add(r.key)
   for (const r of parkRows) if (manualPriceOf(r.manualUnitCostUsd) !== null) manualKeys.add(r.key)
 
@@ -288,15 +281,19 @@ export default function TripBuilderForm({
     setSaveError('')
     setSaveGaps([])
     setSavedOk(false)
-    const state: TripBuilderState = { guest, title, hotelRows, transportRows, parkRows, salePrices }
+    const state: TripBuilderState = { guest, title, hotelRows, transportRows, parkRows, salePrice }
     startSave(async () => {
-      const result = await saveTrip({ quoteId, versionIds, state })
+      const result = await saveTrip({ quoteId, versionId, state })
       if (result.ok) {
         setQuoteId(result.quoteId)
         setQuoteNumber(result.quoteNumber)
-        setVersionIds(result.versionIds)
-        setSavedOk(true)
+        setVersionId(result.versionId)
         setDirty(false)
+        if (onSaved) {
+          onSaved()
+        } else {
+          setSavedOk(true)
+        }
       } else {
         setSaveError(result.message)
         setSaveGaps(result.gaps ?? [])
@@ -310,22 +307,17 @@ export default function TripBuilderForm({
   // overrides); everything else is replaced by the fresh seed.
   const [resyncing, setResyncing] = useState(false)
   const [resyncError, setResyncError] = useState('')
-  async function handleResync(track: TrackKey) {
-    const versionId = versionIds[track] ?? versionIds.standard ?? versionIds.premium
+  async function handleResync() {
     if (!versionId) return
-    if (!confirm('Re-sync this track\'s hotel rows from the itinerary? Rows for stays no longer in the itinerary will be removed; matching rows keep their manual prices.')) return
+    if (!confirm('Re-sync hotel rows from the itinerary? Rows for stays no longer in the itinerary will be removed; matching rows keep their manual prices.')) return
     setResyncing(true); setResyncError('')
     try {
       const res = await resyncHotelRowsFromItinerary(versionId)
       if (!res.ok) { setResyncError(res.message); return }
-      setHotelRows(prev => {
-        const existing = prev[track]
-        const merged = res.rows.map((seed, i) => {
-          const match = existing.find(r => r.accommodationId === seed.accommodationId && r.checkIn === seed.checkIn)
-          return match ?? { ...seed, key: `resync-${track}-${Date.now()}-${i}` }
-        })
-        return { ...prev, [track]: merged }
-      })
+      setHotelRows(existing => res.rows.map((seed, i) => {
+        const match = existing.find(r => r.accommodationId === seed.accommodationId && r.checkIn === seed.checkIn)
+        return match ?? { ...seed, key: `resync-${Date.now()}-${i}` }
+      }))
     } catch (err) {
       setResyncError(err instanceof Error ? err.message : 'Re-sync failed.')
     } finally {
@@ -359,11 +351,8 @@ export default function TripBuilderForm({
       (!row.budgetTier || a.budget_tier === row.budgetTier),
     )
 
-  const updateHotelRow = (track: TrackKey, key: string, patch: Partial<HotelRowInput>) =>
-    setHotelRows(prev => ({
-      ...prev,
-      [track]: prev[track].map(r => (r.key === key ? { ...r, ...patch } : r)),
-    }))
+  const updateHotelRow = (key: string, patch: Partial<HotelRowInput>) =>
+    setHotelRows(prev => prev.map(r => (r.key === key ? { ...r, ...patch } : r)))
 
   // Rate cell: shows the rate-list price, and doubles as a manual override —
   // type a price to use it instead of the rate list, clear it to go back.
@@ -433,25 +422,22 @@ export default function TripBuilderForm({
   const addBtn = 'text-xs font-medium text-[var(--olive)] hover:text-[var(--olive-dk)]'
   const removeBtn = 'text-gray-300 hover:text-red-500 text-sm px-1'
 
-  function hotelSection(track: TrackKey, heading: string) {
-    const rows = hotelRows[track]
+  function hotelSection(heading: string) {
+    const rows = hotelRows
     const addRow = () =>
-      setHotelRows(prev => ({
-        ...prev,
-        [track]: [...prev[track], blankHotelRow(guest.startDate, guest.endDate)],
-      }))
+      setHotelRows(prev => [...prev, blankHotelRow(guest.startDate, guest.endDate)])
     const update = (key: string, patch: Partial<HotelRowInput>) =>
-      updateHotelRow(track, key, patch)
+      updateHotelRow(key, patch)
     const remove = (key: string) =>
-      setHotelRows(prev => ({ ...prev, [track]: prev[track].filter(r => r.key !== key) }))
+      setHotelRows(prev => prev.filter(r => r.key !== key))
 
     return (
       <div className={section} onKeyDown={sectionKeyDown(addRow)}>
         <div className={sectionHead}>
           <h2 className={sectionTitle}>{heading}</h2>
           <div className="flex items-center gap-2">
-            {(versionIds[track] ?? versionIds.standard ?? versionIds.premium) && (
-              <button type="button" onClick={() => handleResync(track)} disabled={resyncing}
+            {versionId && (
+              <button type="button" onClick={() => handleResync()} disabled={resyncing}
                 title="Re-pull hotel stays from this quote's itinerary"
                 className="text-xs text-gray-500 hover:text-[var(--olive-dk)] border border-gray-200 hover:border-[var(--olive-lt)] rounded px-2 py-1 disabled:opacity-50">
                 {resyncing ? 'Syncing…' : '↻ Re-sync from itinerary'}
@@ -490,7 +476,7 @@ export default function TripBuilderForm({
                       <td data-label="Location" className="px-3 py-1.5 min-w-[120px]">
                         <select className={inputCls} value={row.destinationId}
                           onChange={e => {
-                            if (e.target.value === '__add__') { setCreating({ kind: 'destination', track, rowKey: row.key }); return }
+                            if (e.target.value === '__add__') { setCreating({ kind: 'destination', rowKey: row.key }); return }
                             update(row.key, { destinationId: e.target.value, accommodationId: '' })
                           }}>
                           <option value="">Any</option>
@@ -508,7 +494,7 @@ export default function TripBuilderForm({
                       <td data-label="Hotel" className="px-2 py-1.5 min-w-[170px]">
                         <select className={inputCls} value={row.accommodationId}
                           onChange={e => {
-                            if (e.target.value === '__add__') { setCreating({ kind: 'accommodation', track, rowKey: row.key }); return }
+                            if (e.target.value === '__add__') { setCreating({ kind: 'accommodation', rowKey: row.key }); return }
                             update(row.key, { accommodationId: e.target.value })
                           }}>
                           <option value="">— select —</option>
@@ -564,11 +550,6 @@ export default function TripBuilderForm({
         )}
       </div>
     )
-  }
-
-  const summary = {
-    standard: trackSummary('standard'),
-    premium: trackSummary('premium'),
   }
 
   return (
@@ -638,15 +619,14 @@ export default function TripBuilderForm({
         )}
       </div>
 
-      {/* 2/3 ─ Hotels per track */}
-      {hotelSection('standard', '2 · Hotels — Standard track')}
-      {hotelSection('premium', '3 · Hotels — Premium track')}
+      {/* 2 ─ Hotels */}
+      {hotelSection('2 · Hotels')}
 
-      {/* 4 ─ Transport */}
+      {/* 3 ─ Transport */}
       <div className={section}
         onKeyDown={sectionKeyDown(() => setTransportRows(rows => [...rows, blankTransportRow(guest.startDate, guest.endDate)]))}>
         <div className={sectionHead}>
-          <h2 className={sectionTitle}>4 · Transport <span className="font-normal text-xs text-gray-400">(shared by both tracks)</span></h2>
+          <h2 className={sectionTitle}>3 · Transport</h2>
           <button type="button" className={addBtn}
             onClick={() => setTransportRows(rows => [...rows, blankTransportRow(guest.startDate, guest.endDate)])}>
             + Add vehicle row (↵)
@@ -721,7 +701,7 @@ export default function TripBuilderForm({
       <div className={section}
         onKeyDown={sectionKeyDown(() => setParkRows(rows => [...rows, blankParkRow(guest.startDate)]))}>
         <div className={sectionHead}>
-          <h2 className={sectionTitle}>5 · Park fees <span className="font-normal text-xs text-gray-400">(shared by both tracks)</span></h2>
+          <h2 className={sectionTitle}>4 · Park fees</h2>
           <button type="button" className={addBtn}
             onClick={() => setParkRows(rows => [...rows, blankParkRow(guest.startDate)])}>
             + Add park row (↵)
@@ -796,17 +776,16 @@ export default function TripBuilderForm({
         )}
       </div>
 
-      {/* 6 ─ Live summary */}
+      {/* 5 ─ Live summary */}
       <div className={section}>
         <div className={sectionHead}>
-          <h2 className={sectionTitle}>6 · Cost summary &amp; sale price</h2>
+          <h2 className={sectionTitle}>5 · Cost summary &amp; sale price</h2>
           <span className="text-xs text-gray-400">USD · KES @ {fmt0(usdToKes)}</span>
         </div>
         <div className="overflow-x-auto">
           <table className="stack-table w-full text-sm min-w-[720px]">
             <thead>
               <tr className="text-left text-[11px] text-gray-400 border-b border-gray-100">
-                <th className="px-4 py-2 font-medium">Track</th>
                 <th className="px-3 py-2 font-medium text-right">Hotels</th>
                 <th className="px-3 py-2 font-medium text-right">Transport</th>
                 <th className="px-3 py-2 font-medium text-right">Parks</th>
@@ -817,34 +796,32 @@ export default function TripBuilderForm({
               </tr>
             </thead>
             <tbody>
-              {(['standard', 'premium'] as TrackKey[]).map(track => {
-                const s = summary[track]
-                const sale = parseFloat(salePrices[track])
+              {(() => {
+                const sale = parseFloat(salePrice)
                 const hasSale = Number.isFinite(sale) && sale > 0
-                const margin = hasSale ? sale - s.total : null
-                const marginPct = hasSale && sale > 0 ? ((sale - s.total) / sale) * 100 : null
+                const margin = hasSale ? sale - summary.total : null
+                const marginPct = hasSale && sale > 0 ? ((sale - summary.total) / sale) * 100 : null
                 return (
-                  <tr key={track} className="border-b border-gray-50 last:border-0">
-                    <td data-label="Track" className="px-4 py-2.5 font-medium text-gray-800 capitalize">{track}</td>
-                    <td data-label="Hotels" className="px-3 py-2.5 text-right tabular-nums text-gray-700">${fmt(s.hotels)}</td>
+                  <tr className="border-b border-gray-50 last:border-0">
+                    <td data-label="Hotels" className="px-3 py-2.5 text-right tabular-nums text-gray-700">${fmt(summary.hotels)}</td>
                     <td data-label="Transport" className="px-3 py-2.5 text-right tabular-nums text-gray-700">${fmt(transportTotal)}</td>
                     <td data-label="Parks" className="px-3 py-2.5 text-right tabular-nums text-gray-700">${fmt(parksTotal)}</td>
                     <td data-label="Total cost" className="px-3 py-2.5 text-right tabular-nums font-semibold text-gray-900">
                       <span>
-                        ${fmt(s.total)}
-                        <span className="block text-[10px] text-gray-400 font-normal">KES {fmt0(s.total * usdToKes)}</span>
+                        ${fmt(summary.total)}
+                        <span className="block text-[10px] text-gray-400 font-normal">KES {fmt0(summary.total * usdToKes)}</span>
                       </span>
                     </td>
                     <td data-label="Per guest" className="px-3 py-2.5 text-right tabular-nums text-gray-700">
-                      {payingGuests > 0 ? `$${fmt(s.total / payingGuests)}` : '—'}
+                      {payingGuests > 0 ? `$${fmt(summary.total / payingGuests)}` : '—'}
                     </td>
                     <td data-label="Sale price" className="px-3 py-2.5 text-right">
                       <input
                         type="number" min={0} step="1"
                         className={inputCls + ' w-28 text-right tabular-nums inline-block'}
-                        value={salePrices[track]}
+                        value={salePrice}
                         placeholder="0"
-                        onChange={e => setSalePrices(p => ({ ...p, [track]: e.target.value }))}
+                        onChange={e => setSalePrice(e.target.value)}
                       />
                     </td>
                     <td data-label="Margin" className="px-3 py-2.5 text-right tabular-nums">
@@ -859,7 +836,7 @@ export default function TripBuilderForm({
                     </td>
                   </tr>
                 )
-              })}
+              })()}
             </tbody>
           </table>
         </div>
@@ -885,13 +862,13 @@ export default function TripBuilderForm({
       )}
       {savedOk && quoteId && (
         <p className="text-sm text-green-800 bg-green-50 rounded-lg border border-green-200 px-4 py-3">
-          Trip saved{quoteNumber ? <> as <span className="font-mono">{quoteNumber}</span></> : ''} — both tracks written.{' '}
+          Trip saved{quoteNumber ? <> as <span className="font-mono">{quoteNumber}</span></> : ''}.{' '}
           <Link href={`/admin/quotes/${quoteId}`} className="underline font-medium">Open quote</Link>
           <span className="text-green-600"> · Keep editing here and Save again to update the same draft.</span>
         </p>
       )}
 
-      {/* 7 ─ Save */}
+      {/* 6 ─ Save */}
       <div className="flex items-center gap-3 pb-8">
         <div>
           <label className={labelCls}>Quote title (optional)</label>
@@ -914,12 +891,12 @@ export default function TripBuilderForm({
           title={creating.kind === 'destination' ? 'New Destination' : 'New Accommodation'}
           onClose={() => setCreating(null)}
           onSubmit={async (name, en, ar) => {
-            const row = hotelRows[creating.track].find(r => r.key === creating.rowKey)
+            const row = hotelRows.find(r => r.key === creating.rowKey)
             if (creating.kind === 'destination') {
               const it = await createLookup('destination', name, { descriptionEn: en, descriptionAr: ar })
               setDestinationList(p =>
                 [...p, { id: it.id, name: it.name }].sort((a, b) => a.name.localeCompare(b.name)))
-              updateHotelRow(creating.track, creating.rowKey, { destinationId: it.id, accommodationId: '' })
+              updateHotelRow(creating.rowKey, { destinationId: it.id, accommodationId: '' })
             } else {
               const it = await createLookup('accommodation', name, {
                 destinationId: row?.destinationId || null,
@@ -934,7 +911,7 @@ export default function TripBuilderForm({
                   destination_id: it.destination_id ?? null,
                   budget_tier: (it as { budget_tier?: string | null }).budget_tier ?? null,
                 }].sort((a, b) => a.name.localeCompare(b.name)))
-              updateHotelRow(creating.track, creating.rowKey, { accommodationId: it.id })
+              updateHotelRow(creating.rowKey, { accommodationId: it.id })
             }
           }}
         />

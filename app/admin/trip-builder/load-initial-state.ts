@@ -1,10 +1,9 @@
 import type { createAdminClient } from '@/lib/supabase/admin'
-import type { HotelRowInput, TrackKey, TripBuilderState } from './types'
+import type { HotelRowInput, TripBuilderState } from './types'
 
-interface TrackVersionRow {
+interface VersionRow {
   id: string
   status: string
-  track_label: TrackKey
   version_number: number
   builder_state: TripBuilderState | null
 }
@@ -85,7 +84,7 @@ export function hotelRowsFromItinerary(
 export interface TripBuilderInitialState {
   initialState: TripBuilderState
   hasBuilderState: boolean
-  initialVersionIds: Partial<Record<TrackKey, string | null>>
+  initialVersionId: string | null
 }
 
 /**
@@ -106,20 +105,15 @@ export async function loadTripBuilderInitialState(
 
   const { data: versionsData } = await admin
     .from('quote_versions')
-    .select('id, status, track_label, version_number, builder_state')
+    .select('id, status, version_number, builder_state')
     .eq('quote_id', quoteId)
-    .not('track_label', 'is', null)
     .order('version_number', { ascending: false })
 
-  const versions = (versionsData ?? []) as TrackVersionRow[]
-  // Latest version per track — that's what a re-save updates (if still mutable).
-  const latestByTrack: Partial<Record<TrackKey, TrackVersionRow>> = {}
-  for (const v of versions) {
-    if (!latestByTrack[v.track_label]) latestByTrack[v.track_label] = v
-  }
+  const versions = (versionsData ?? []) as VersionRow[]
+  // Latest version — that's what a re-save updates (if still mutable).
+  const latestVersion = versions[0] ?? null
 
-  let initialState =
-    latestByTrack.standard?.builder_state ?? latestByTrack.premium?.builder_state ?? null
+  let initialState = latestVersion?.builder_state ?? null
   const hasBuilderState = initialState != null
 
   // Quotes created outside the builder (e.g. the new-quote wizard) have no
@@ -203,24 +197,16 @@ export async function loadTripBuilderInitialState(
         endDate: latestVersion?.travel_end_date ?? '',
       },
       title: latestVersion?.title ?? '',
-      // Both tracks start from the itinerary's picks; swap the premium
-      // track's hotels for upgrades as needed.
-      hotelRows: {
-        standard: seededRows.map((r, i) => ({ ...r, key: `seed-std-${i}` })),
-        premium: seededRows.map((r, i) => ({ ...r, key: `seed-prm-${i}` })),
-      },
+      hotelRows: seededRows.map((r, i) => ({ ...r, key: `seed-${i}` })),
       transportRows: [],
       parkRows: [],
-      salePrices: { standard: '', premium: '' },
+      salePrice: '',
     }
   }
 
   return {
     initialState,
     hasBuilderState,
-    initialVersionIds: {
-      standard: latestByTrack.standard?.id ?? null,
-      premium: latestByTrack.premium?.id ?? null,
-    },
+    initialVersionId: latestVersion?.id ?? null,
   }
 }

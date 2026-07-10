@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     // Check version can still be declined
     const { data: version } = await admin
       .from('quote_versions')
-      .select('id, status, compare_group')
+      .select('id, status')
       .eq('id', versionId)
       .eq('quote_id', quoteId)
       .single()
@@ -43,23 +43,9 @@ export async function POST(req: NextRequest) {
     await admin.from('quote_versions').update({ status: 'declined' }).eq('id', versionId)
     await admin.from('quotes').update({ status: 'declined' }).eq('id', quoteId)
 
-    // Best-effort: if no sibling dual-track version and no other live quote
-    // remain on the parent request, advance it to 'not_booked' so it doesn't
-    // sit stuck in 'open' forever. Mirrors the accept route's automation.
+    // Best-effort: if no other live quote remains on the parent request,
+    // advance it to 'not_booked' so it doesn't sit stuck in 'open' forever.
     try {
-      const ALIVE = ['draft', 'ready', 'sent', 'viewed']
-
-      if (version.compare_group) {
-        const { count: liveSiblings } = await admin
-          .from('quote_versions')
-          .select('id', { count: 'exact', head: true })
-          .eq('quote_id', quoteId)
-          .eq('compare_group', version.compare_group)
-          .neq('id', versionId)
-          .in('status', ALIVE)
-        if (liveSiblings) return NextResponse.json({ ok: true }) // sibling track still pending
-      }
-
       const { data: q } = await admin.from('quotes').select('request_id').eq('id', quoteId).single()
       if (q?.request_id) {
         const { count: liveOtherQuotes } = await admin
