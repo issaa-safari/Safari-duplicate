@@ -158,11 +158,18 @@ export default async function RequestDetailPage({
                 <span>Handled by: <span className="text-gray-700 font-medium">{handledBy}</span></span>
               </div>
             </div>
-            <Link
-              href={`/admin/quotes/new?request=${id}`}
-              className="shrink-0 rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
-              + Create Quote
-            </Link>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                href={`/admin/requests/${id}/edit`}
+                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Edit Request
+              </Link>
+              <Link
+                href={`/admin/quotes/new?request=${id}`}
+                className="rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
+                + Create Quote
+              </Link>
+            </div>
           </div>
 
           <StageSelector requestId={id} currentStage={request.stage} stages={STAGES} />
