@@ -5,9 +5,6 @@ import { setVersionStatus } from './actions'
 import StatusBadge from '@/components/admin/status-badge'
 
 const TRANSITIONS: Record<string, { to: string; label: string; style: string }[]> = {
-  draft: [
-    { to: 'ready', label: 'Mark as Ready', style: 'bg-blue-600 hover:bg-blue-700 text-white' },
-  ],
   ready: [
     { to: 'draft', label: 'Revert to Draft', style: 'border border-gray-300 text-gray-600 hover:bg-gray-50' },
     { to: 'sent', label: 'Mark as Sent', style: 'bg-purple-600 hover:bg-purple-700 text-white' },

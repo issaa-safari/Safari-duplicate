@@ -2,31 +2,21 @@
 
 import { useState, useTransition } from 'react'
 
-interface TrackOption {
-  versionId: string
-  label: string
-  totalUsd: number
-}
-
 export default function AcceptForm({
   deliveryId,
   versionId,
   quoteId,
   clientName,
-  tracks,
 }: {
   deliveryId: string
   versionId: string
   quoteId: string
   clientName: string
-  /** Dual-track proposals: the client picks which package to accept */
-  tracks?: TrackOption[]
 }) {
   const [name, setName] = useState(clientName)
   const [agreed, setAgreed] = useState(false)
   const [error, setError] = useState('')
   const [declined, setDeclined] = useState(false)
-  const [chosenVersionId, setChosenVersionId] = useState(versionId)
   const [pending, startTransition] = useTransition()
   const [decliningPending, startDeclineTransition] = useTransition()
 
@@ -41,7 +31,7 @@ export default function AcceptForm({
         const res = await fetch('/api/quote/accept', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deliveryId, versionId: chosenVersionId, quoteId, clientName: name }),
+          body: JSON.stringify({ deliveryId, versionId, quoteId, clientName: name }),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error ?? 'Failed to accept quote.')
@@ -82,35 +72,6 @@ export default function AcceptForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {tracks && tracks.length > 1 && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Which package would you like?</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {tracks.map(t => (
-              <label
-                key={t.versionId}
-                className={`flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition ${
-                  chosenVersionId === t.versionId
-                    ? 'border-[#7A9A4A] bg-[#7A9A4A]/5'
-                    : 'border-gray-200 hover:border-[#7A9A4A]/50'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="track"
-                  checked={chosenVersionId === t.versionId}
-                  onChange={() => setChosenVersionId(t.versionId)}
-                  className="h-4 w-4 text-[#7A9A4A] focus:ring-[#7A9A4A]"
-                />
-                <span className="text-sm font-medium text-gray-800">{t.label}</span>
-                <span className="ml-auto text-sm font-semibold text-gray-900">
-                  ${t.totalUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                </span>
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Your name</label>
         <input

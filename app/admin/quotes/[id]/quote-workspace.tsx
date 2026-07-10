@@ -6,7 +6,7 @@ import VersionEditorForm from './versions/[versionId]/form'
 import VersionStatusControls from './versions/[versionId]/version-status-controls'
 import TripBuilderForm, { type LookupOption, type AccommodationOption } from '../../trip-builder/trip-builder-form'
 import DeliveryPanel from './delivery-panel'
-import type { TrackKey, TripBuilderState } from '../../trip-builder/types'
+import type { TripBuilderState } from '../../trip-builder/types'
 
 type Step = 'itinerary' | 'pricing' | 'preview' | 'send'
 
@@ -18,7 +18,6 @@ interface VersionRow {
   travel_start_date: string | null
   travel_end_date: string | null
   valid_until: string | null
-  track_label: string | null
   language?: string | null
 }
 
@@ -36,8 +35,6 @@ const STEPS: { key: Step; label: string }[] = [
   { key: 'send', label: 'Send' },
 ]
 
-const TRACK_LABELS: Record<string, string> = { standard: 'Standard', premium: 'Premium' }
-
 export default function QuoteWorkspace({
   quoteId,
   initialStep,
@@ -54,7 +51,7 @@ export default function QuoteWorkspace({
   itineraryByVersion,
   tripBuilderLookups,
   tripBuilderInitialState,
-  tripBuilderInitialVersionIds,
+  tripBuilderInitialVersionId,
   deliveries,
   baseUrl,
 }: {
@@ -79,7 +76,7 @@ export default function QuoteWorkspace({
     usdToKes: number
   }
   tripBuilderInitialState: TripBuilderState | null
-  tripBuilderInitialVersionIds: Partial<Record<TrackKey, string | null>>
+  tripBuilderInitialVersionId: string | null
   deliveries: any[]
   baseUrl: string
 }) {
@@ -142,9 +139,7 @@ export default function QuoteWorkspace({
                   (activeVersionId === v.id
                     ? 'bg-[var(--olive)]/10 border-[var(--olive)] text-[var(--olive-dk)]'
                     : 'border-gray-200 text-gray-500 hover:bg-gray-50')}>
-                {v.track_label
-                  ? `${TRACK_LABELS[v.track_label] ?? v.track_label} (v${v.version_number})`
-                  : `v${v.version_number}`}
+                {`v${v.version_number}`}
               </button>
             ))}
           </div>
@@ -191,9 +186,10 @@ export default function QuoteWorkspace({
         <TripBuilderForm
           {...tripBuilderLookups}
           initialQuoteId={quoteId}
-          initialVersionIds={tripBuilderInitialVersionIds}
+          initialVersionId={tripBuilderInitialVersionId}
           initialState={tripBuilderInitialState ?? undefined}
           onDirtyChange={setPricingDirty}
+          onSaved={() => setStep('preview')}
         />
       </div>
 

@@ -84,7 +84,7 @@ export default async function QuotePortalPage({
     { data: settings },
   ] = await Promise.all([
     admin.from('quote_versions')
-      .select('id, version_number, status, title, language, travel_start_date, travel_end_date, valid_until, total_selling_usd, sharing_price_per_person_usd, single_price_per_person_usd, cost_base_usd, default_markup_percent, client_snapshot, track_label, compare_group')
+      .select('id, version_number, status, title, language, travel_start_date, travel_end_date, valid_until, total_selling_usd, sharing_price_per_person_usd, single_price_per_person_usd, cost_base_usd, default_markup_percent, client_snapshot')
       .eq('id', delivery.quote_version_id)
       .single(),
     admin.from('quotes')
@@ -119,45 +119,6 @@ export default async function QuotePortalPage({
     await syncQuoteStatus(admin, delivery.quote_id)
   }
 
-  // Dual-track proposal: a sibling version sharing this compare_group carries
-  // the other package (Standard vs Premium). Same transport/parks — only the
-  // accommodation differs — so the client picks one price.
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  let sibling: any = null
-  let siblingHotels: string[] = []
-  let versionHotels: string[] = []
-  if ((version as any).compare_group) {
-    const { data: siblings } = await admin
-      .from('quote_versions')
-      .select('id, status, track_label, total_selling_usd, sharing_price_per_person_usd, version_number')
-      .eq('quote_id', delivery.quote_id)
-      .eq('compare_group', (version as any).compare_group)
-      .neq('id', version.id)
-      .not('track_label', 'is', null)
-      .in('status', ['draft', 'ready', 'sent', 'viewed', 'accepted'])
-      .order('version_number', { ascending: false })
-    sibling = (siblings ?? []).find((s: any) => s.track_label !== (version as any).track_label) ?? null
-    if (sibling) {
-      const [{ data: ownHotelLines }, { data: sibHotelLines }] = await Promise.all([
-        admin.from('quote_price_lines')
-          .select('description')
-          .eq('quote_version_id', version.id)
-          .eq('cost_category', 'accommodation')
-          .eq('is_client_visible', true)
-          .order('sort_order'),
-        admin.from('quote_price_lines')
-          .select('description')
-          .eq('quote_version_id', sibling.id)
-          .eq('cost_category', 'accommodation')
-          .eq('is_client_visible', true)
-          .order('sort_order'),
-      ])
-      versionHotels = (ownHotelLines ?? []).map((l: any) => l.description as string)
-      siblingHotels = (sibHotelLines ?? []).map((l: any) => l.description as string)
-    }
-  }
-  /* eslint-enable @typescript-eslint/no-explicit-any */
-
   const [
     { data: client },
     { data: quoteTravellers },
@@ -178,15 +139,6 @@ export default async function QuotePortalPage({
   const isDeclined = version.status === 'declined'
   const isExpired = version.status === 'expired'
   const canAccept = !isAccepted && !isDeclined && !isExpired && ['sent', 'viewed', 'ready'].includes(version.status)
-
-  const trackTitle = (t: string | null) => (t === 'premium' ? 'Premium' : t === 'standard' ? 'Standard' : null)
-  const acceptedTrackLabel = acceptance
-    ? (acceptance as { quote_version_id?: string }).quote_version_id === version.id
-      ? trackTitle((version as any).track_label)
-      : sibling && (acceptance as { quote_version_id?: string }).quote_version_id === sibling.id
-        ? trackTitle(sibling.track_label)
-        : null
-    : null
 
   const totalSelling = Number(version.total_selling_usd ?? 0)
   const sharingPp = Number(version.sharing_price_per_person_usd ?? 0)
@@ -354,7 +306,6 @@ export default async function QuotePortalPage({
             <div className="mt-4 rounded-lg bg-green-50 border border-green-200 px-4 py-3">
               <p className="text-sm font-semibold text-green-800">
                 {isArabic ? AR.accepted : 'Quote accepted'}
-                {acceptedTrackLabel ? ` — ${acceptedTrackLabel} package` : ''}
               </p>
               <p className="text-xs text-green-600 mt-0.5">
                 {isArabic ? AR.acceptedBy : 'Accepted by'} {acceptance.client_name} {isArabic ? AR.on : 'on'} {fmtDate(acceptance.accepted_at)}.
@@ -632,62 +583,6 @@ export default async function QuotePortalPage({
           </section>
         )}
 
-        {/* Dual-track package comparison */}
-        {sibling && (() => {
-          const payingCount = payingTravellers.length
-          const cards = [
-            {
-              id: version.id as string,
-              label: trackTitle((version as any).track_label) ?? 'Option A',
-              total: totalSelling,
-              perPerson: Number(version.sharing_price_per_person_usd ?? 0)
-                || (payingCount > 0 ? totalSelling / payingCount : 0),
-              hotels: versionHotels,
-            },
-            {
-              id: sibling.id as string,
-              label: trackTitle(sibling.track_label) ?? 'Option B',
-              total: Number(sibling.total_selling_usd ?? 0),
-              perPerson: Number(sibling.sharing_price_per_person_usd ?? 0)
-                || (payingCount > 0 ? Number(sibling.total_selling_usd ?? 0) / payingCount : 0),
-              hotels: siblingHotels,
-            },
-          ].sort(a => (a.label === 'Standard' ? -1 : 1))
-          return (
-            <section>
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                {isArabic ? 'اختر باقتك' : 'Choose Your Package'}
-              </h2>
-              <p className="text-sm text-gray-600 mb-3">
-                {isArabic
-                  ? 'نفس البرنامج والمواصلات ورسوم المنتزهات — يختلف مستوى الإقامة فقط.'
-                  : 'Both packages follow the same itinerary, transport and park entries — only the hotels differ.'}
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {cards.map(c => (
-                  <div key={c.id} className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col">
-                    <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#7A9A4A' }}>
-                      {c.label} {isArabic ? 'باقة' : 'package'}
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">
-                      ${fmt(c.perPerson)}
-                      <span className="text-sm font-normal text-gray-400"> {isArabic ? 'للشخص' : 'per person'}</span>
-                    </p>
-                    <p className="text-xs text-gray-400 mb-3">${fmt(c.total)} {isArabic ? 'إجمالي' : 'total'}</p>
-                    {c.hotels.length > 0 && (
-                      <ul className="text-sm text-gray-600 space-y-1 mt-auto">
-                        {c.hotels.map((h, i) => (
-                          <li key={i} className="flex gap-2"><span style={{ color: '#7A9A4A' }}>◆</span>{h}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )
-        })()}
-
         {/* Accept */}
         {canAccept && (
           <section>
@@ -703,18 +598,6 @@ export default async function QuotePortalPage({
                 versionId={version.id}
                 quoteId={quote.id}
                 clientName={clientName}
-                tracks={sibling ? [
-                  {
-                    versionId: version.id as string,
-                    label: trackTitle((version as any).track_label) ?? 'Option A',
-                    totalUsd: totalSelling,
-                  },
-                  {
-                    versionId: sibling.id as string,
-                    label: trackTitle(sibling.track_label) ?? 'Option B',
-                    totalUsd: Number(sibling.total_selling_usd ?? 0),
-                  },
-                ].sort(a => (a.label === 'Standard' ? -1 : 1)) : undefined}
               />
             </div>
           </section>

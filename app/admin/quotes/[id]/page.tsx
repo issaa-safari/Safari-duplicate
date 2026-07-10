@@ -54,7 +54,7 @@ export default async function QuoteDetailPage({
       ? admin.from('departures').select('start_date, end_date').eq('id', quote.departure_id).single()
       : Promise.resolve({ data: null }),
     admin.from('quote_versions')
-      .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until, default_markup_percent, sharing_price_per_person_usd, single_price_per_person_usd, single_supplement_usd, total_cost_usd, total_selling_usd, gross_margin_percent, locked_at, sent_at, created_at, track_label, compare_group, language')
+      .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until, default_markup_percent, sharing_price_per_person_usd, single_price_per_person_usd, single_supplement_usd, total_cost_usd, total_selling_usd, gross_margin_percent, locked_at, sent_at, created_at, language')
       .eq('quote_id', id)
       .order('version_number', { ascending: false }),
     admin.from('quote_deliveries')
@@ -68,13 +68,10 @@ export default async function QuoteDetailPage({
   const latestVersion = versions[0]
   const deliveries: any[] = deliveryRows ?? []
 
-  // Which versions need itinerary data loaded: every dual-track version, or
-  // just the latest single-track one — plus any version explicitly requested
-  // via ?version= (e.g. a redirect from the old per-version route).
-  const trackedVersions = versions.filter((v: any) => v.track_label)
-  const versionsNeedingItinerary = trackedVersions.length > 1
-    ? [...trackedVersions]
-    : (latestVersion ? [latestVersion] : [])
+  // Which versions need itinerary data loaded: the latest version, plus any
+  // version explicitly requested via ?version= (e.g. a redirect from the old
+  // per-version route).
+  const versionsNeedingItinerary = latestVersion ? [latestVersion] : []
   const requestedVersion = versionParam
     ? versions.find((v: any) => v.id === versionParam)
     : null
@@ -263,13 +260,6 @@ export default async function QuoteDetailPage({
                         className="text-[var(--olive)] hover:underline font-medium text-sm">
                         v{v.version_number}
                       </Link>
-                      {v.track_label && (
-                        <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wide ${
-                          v.track_label === 'premium' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {v.track_label}
-                        </span>
-                      )}
                       <div className="mt-0.5"><StatusBadge status={v.status} /></div>
                     </div>
                     <CloneVersionButton quoteId={id} versionId={v.id} />
@@ -303,7 +293,7 @@ export default async function QuoteDetailPage({
               itineraryByVersion={itineraryByVersion}
               tripBuilderLookups={tripBuilderLookups}
               tripBuilderInitialState={tripBuilderInit?.initialState ?? null}
-              tripBuilderInitialVersionIds={tripBuilderInit?.initialVersionIds ?? {}}
+              tripBuilderInitialVersionId={tripBuilderInit?.initialVersionId ?? null}
               deliveries={deliveries}
               baseUrl={baseUrl}
             />
