@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Readex_Pro, IBM_Plex_Sans, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { Geist, Geist_Mono, Readex_Pro, IBM_Plex_Sans, IBM_Plex_Sans_Arabic, Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,6 +30,20 @@ const ibmPlexSansAr = IBM_Plex_Sans_Arabic({
   subsets: ["arabic"],
   variable: "--font-body-ar",
   weight: ["400", "500", "600"],
+  display: "swap",
+});
+
+// Admin-only fonts, consumed by the .admin-theme scope in globals.css
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-admin-sans",
+  display: "swap",
+});
+
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-admin-display",
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -76,7 +90,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${readexPro.variable} ${ibmPlexSans.variable} ${ibmPlexSansAr.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${readexPro.variable} ${ibmPlexSans.variable} ${ibmPlexSansAr.variable} ${inter.variable} ${playfairDisplay.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-body, 'IBM Plex Sans', sans-serif)" }}>
         {children}

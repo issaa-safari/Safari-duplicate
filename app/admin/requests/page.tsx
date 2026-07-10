@@ -4,14 +4,14 @@ import Link from 'next/link'
 import StatusBadge from '@/components/admin/status-badge'
 
 const STAGES = [
-  { key: 'new',        label: 'New' },
-  { key: 'working_on', label: 'Working On' },
-  { key: 'open',       label: 'Open' },
-  { key: 'pre_booked', label: 'Pre-Booked' },
-  { key: 'booked',     label: 'Booked' },
-  { key: 'completed',  label: 'Completed' },
-  { key: 'not_booked', label: 'Not Booked' },
-  { key: 'archived',   label: 'Archive' },
+  { key: 'new',        label: 'New',        color: 'var(--status-new)' },
+  { key: 'working_on', label: 'Working On', color: 'var(--status-working)' },
+  { key: 'open',       label: 'Open',       color: 'var(--status-open)' },
+  { key: 'pre_booked', label: 'Pre-Booked', color: 'var(--status-prebooked)' },
+  { key: 'booked',     label: 'Booked',     color: 'var(--status-booked)' },
+  { key: 'completed',  label: 'Completed',  color: 'var(--status-completed)' },
+  { key: 'not_booked', label: 'Not Booked', color: 'var(--status-notbooked)' },
+  { key: 'archived',   label: 'Archive',    color: 'var(--status-archive)' },
 ]
 
 export default async function RequestsPage({
@@ -50,13 +50,26 @@ export default async function RequestsPage({
             href={"/admin/requests?stage=" + stage.key}
             className={"flex items-center justify-between rounded-md px-3 py-2 text-sm transition " +
               (activeStage === stage.key
-                ? 'bg-[var(--olive)]/10 text-[var(--olive-dk)] font-medium'
-                : 'text-gray-600 hover:bg-gray-50')}>
-            <span>{stage.label}</span>
+                ? 'font-medium'
+                : 'text-gray-600 hover:bg-gray-50')}
+            style={activeStage === stage.key
+              ? {
+                  backgroundColor: `color-mix(in oklab, ${stage.color} 12%, transparent)`,
+                  color: `color-mix(in oklab, ${stage.color} 65%, black)`,
+                }
+              : undefined}>
+            <span className="flex items-center gap-2">
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: stage.color }} />
+              {stage.label}
+            </span>
             <span className={"text-xs font-medium px-2 py-0.5 rounded-full " +
-              (activeStage === stage.key
-                ? 'bg-[var(--olive)] text-white'
-                : 'bg-gray-100 text-gray-600')}>
+              (activeStage === stage.key ? '' : 'bg-gray-100 text-gray-600')}
+              style={activeStage === stage.key
+                ? {
+                    backgroundColor: `color-mix(in oklab, ${stage.color} 22%, white)`,
+                    color: `color-mix(in oklab, ${stage.color} 70%, black)`,
+                  }
+                : undefined}>
               {stageCounts[stage.key] ?? 0}
             </span>
           </Link>

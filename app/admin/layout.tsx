@@ -21,12 +21,12 @@ export default async function AdminLayout({
   if (!adminProfile) return <>{children}</>
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--admin-bg)' }}>
+    <div className="admin-theme min-h-screen bg-background">
       <AdminSidebar
         fullName={adminProfile?.full_name ?? user.email ?? 'Admin'}
         role={adminProfile?.role ?? 'admin'}
       />
-      <main className="min-h-[calc(100vh-88px)]">
+      <main className="min-h-[calc(100vh-108px)]">
         {children}
       </main>
     </div>

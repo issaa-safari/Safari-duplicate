@@ -4,26 +4,25 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useTransition, useRef } from 'react'
-import {
-  LayoutDashboard, Inbox, Map, Library, FileText,
-  CalendarDays, BookOpen, Users, DollarSign, BarChart3,
-  Search, Leaf, Calculator, Truck,
-} from 'lucide-react'
+import { Search, MoreHorizontal } from 'lucide-react'
 import type { SearchResults, SearchQuote, SearchClient, SearchRequest } from '@/lib/types'
 
-const NAV_ITEMS = [
-  { label: 'Dashboard',      href: '/admin/dashboard',   Icon: LayoutDashboard },
-  { label: 'Requests',       href: '/admin/requests',    Icon: Inbox },
-  { label: 'Tour Templates', href: '/admin/tours',       Icon: Map },
-  { label: 'Content',        href: '/admin/content',     Icon: Library },
-  { label: 'Quotes',         href: '/admin/quotes',      Icon: FileText },
-  { label: 'Trip Builder',   href: '/admin/trip-builder', Icon: Calculator },
-  { label: 'Departures',     href: '/admin/departures',  Icon: CalendarDays },
-  { label: 'Bookings',       href: '/admin/bookings',    Icon: BookOpen },
-  { label: 'Clients',        href: '/admin/clients',     Icon: Users },
-  { label: 'Suppliers',      href: '/admin/suppliers',   Icon: Truck },
-  { label: 'Finance',        href: '/admin/finance',     Icon: DollarSign },
-  { label: 'Analytics',      href: '/admin/analytics',   Icon: BarChart3 },
+const PRIMARY_NAV = [
+  { label: 'Dashboard',    href: '/admin/dashboard' },
+  { label: 'Requests',     href: '/admin/requests' },
+  { label: 'Quotes',       href: '/admin/quotes' },
+  { label: 'Trip Builder', href: '/admin/trip-builder' },
+  { label: 'Bookings',     href: '/admin/bookings' },
+  { label: 'Clients',      href: '/admin/clients' },
+  { label: 'Finance',      href: '/admin/finance' },
+]
+
+const OVERFLOW_NAV = [
+  { label: 'Tour Templates', href: '/admin/tours' },
+  { label: 'Content',        href: '/admin/content' },
+  { label: 'Departures',     href: '/admin/departures' },
+  { label: 'Suppliers',      href: '/admin/suppliers' },
+  { label: 'Analytics',      href: '/admin/analytics' },
 ]
 
 function SearchModal({ onClose }: { onClose: () => void }) {
@@ -168,6 +167,10 @@ export default function AdminSidebar({
   const router = useRouter()
   const supabase = createClient()
   const [searchOpen, setSearchOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
+  const [userOpen, setUserOpen] = useState(false)
+  const moreRef = useRef<HTMLDivElement>(null)
+  const userRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -180,91 +183,178 @@ export default function AdminSidebar({
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  useEffect(() => {
+    function onMouseDown(e: MouseEvent) {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false)
+      if (userRef.current && !userRef.current.contains(e.target as Node)) setUserOpen(false)
+    }
+    document.addEventListener('mousedown', onMouseDown)
+    return () => document.removeEventListener('mousedown', onMouseDown)
+  }, [])
+
   async function handleLogout() {
     await supabase.auth.signOut()
     router.push('/admin/login')
     router.refresh()
   }
 
+  function isActive(href: string) {
+    return pathname === href || pathname.startsWith(href + '/')
+  }
+  const overflowActive = OVERFLOW_NAV.some(item => isActive(item.href))
+  const initials = fullName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(word => word[0])
+    .join('')
+    .toUpperCase() || 'A'
+
   return (
     <>
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
 
-      <header className="sticky top-0 z-30" style={{ boxShadow: '0 2px 8px rgba(32,39,26,0.12)' }}>
-        {/* Brand bar */}
-        <div style={{ backgroundColor: 'var(--bush)' }}>
-          <div className="mx-auto flex h-10 max-w-7xl items-center justify-between px-4">
-            <Link href="/admin/dashboard" className="flex items-center gap-2.5">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-olive hover:bg-olive-dk">
-                <Leaf size={13} color="#fff" />
+      <header className="sticky top-0 z-30">
+        {/* Utility bar */}
+        <div className="h-11 border-b border-border bg-surface">
+          <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4">
+            <span className="truncate text-xs text-muted-foreground">
+              Alamoudy Group · Safari Adventure Riders
+            </span>
+            <div className="flex shrink-0 items-center gap-2.5">
+              <span className="hidden text-xs text-muted-foreground md:block">{fullName}</span>
+              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold capitalize text-brand-text">
+                {role}
               </span>
-              <span className="text-sm font-bold text-white tracking-wide">Safari Adventure Tours</span>
-              <span className="hidden sm:block rounded text-[10px] font-semibold px-2 py-0.5"
-                style={{ backgroundColor: 'var(--gold)', color: 'var(--bush)' }}>
-                Admin
-              </span>
-            </Link>
-
-            <div className="flex items-center gap-3">
-              <span className="hidden md:block text-xs text-white/60">{fullName}</span>
-              <Link href="/admin/settings"
-                className="rounded px-2.5 py-1 text-xs text-white/80 hover:text-white transition"
-                style={{ border: '1px solid rgba(255,255,255,0.15)' }}>
-                Settings
-              </Link>
-              <button onClick={handleLogout}
-                className="text-xs text-white/50 hover:text-white/80 transition">
-                Log out
-              </button>
             </div>
           </div>
         </div>
 
-        {/* Nav strip */}
-        <nav style={{ backgroundColor: 'var(--admin-surface)', borderBottom: '2px solid var(--admin-border)' }}>
-          <div className="mx-auto flex h-11 max-w-7xl items-center gap-0 overflow-x-auto px-2">
+        {/* Primary nav */}
+        <nav className="h-16 border-b border-border bg-surface/95 backdrop-blur">
+          <div className="mx-auto flex h-full max-w-7xl items-center gap-4 px-4 lg:gap-6">
+            {/* Brand mark */}
+            <Link href="/admin/dashboard" className="flex shrink-0 items-center gap-2.5">
+              <span className="font-display flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-lg font-bold text-primary-foreground">
+                S
+              </span>
+              <span className="hidden leading-tight xl:block">
+                <span className="block text-sm font-semibold text-brand-ink">Safari Adventure Tours</span>
+                <span className="block text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                  Tour Operator Suite
+                </span>
+              </span>
+            </Link>
 
-            {/* Search pill */}
-            <button
-              onClick={() => setSearchOpen(true)}
-              className="flex shrink-0 items-center gap-2 mr-3 px-3 h-7 rounded-full text-xs transition"
-              style={{
-                backgroundColor: 'var(--admin-bg)',
-                border: '1px solid var(--admin-border)',
-                color: 'var(--admin-text-muted)',
-              }}
-              title="Search (⌘K)"
-            >
-              <Search size={12} />
-              <span className="hidden md:inline">Search</span>
-              <kbd className="hidden lg:inline ml-1 text-[10px] opacity-50">⌘K</kbd>
-            </button>
-
-            {NAV_ITEMS.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-              return (
+            {/* Nav links */}
+            <div className="flex h-full min-w-0 items-center overflow-x-auto">
+              {PRIMARY_NAV.map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  title={item.label}
-                  className="flex h-full shrink-0 items-center gap-1.5 border-b-2 px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
-                  style={isActive
-                    ? { borderBottomColor: 'var(--olive)', color: 'var(--olive-dk)', backgroundColor: 'rgba(122,154,74,0.08)' }
-                    : { borderBottomColor: 'transparent', color: 'var(--admin-text-muted)' }
-                  }
-                  onMouseEnter={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.color = 'var(--olive-dk)' } }}
-                  onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.color = 'var(--admin-text-muted)' } }}
+                  className={`relative flex h-full shrink-0 items-center whitespace-nowrap px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                    isActive(item.href)
+                      ? 'text-brand-ink'
+                      : 'text-muted-foreground hover:text-brand-ink'
+                  }`}
                 >
-                  <item.Icon size={14} className="opacity-70 shrink-0" />
-                  <span className="hidden sm:block">{item.label}</span>
+                  {item.label}
+                  {isActive(item.href) && (
+                    <span aria-hidden className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary" />
+                  )}
                 </Link>
-              )
-            })}
+              ))}
+            </div>
 
-            <span className="ml-auto hidden text-xs lg:block pr-1 capitalize"
-              style={{ color: 'var(--admin-text-muted)' }}>
-              {role}
-            </span>
+            {/* Overflow dropdown (outside the scroll container so the menu isn't clipped) */}
+            <div ref={moreRef} className="relative -ml-4 h-full shrink-0 lg:-ml-6">
+                <button
+                  onClick={() => setMoreOpen(v => !v)}
+                  aria-label="More modules"
+                  aria-expanded={moreOpen}
+                  className={`relative flex h-full items-center px-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                    overflowActive || moreOpen
+                      ? 'text-brand-ink'
+                      : 'text-muted-foreground hover:text-brand-ink'
+                  }`}
+                >
+                  <MoreHorizontal size={18} />
+                  {overflowActive && (
+                    <span aria-hidden className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary" />
+                  )}
+                </button>
+                {moreOpen && (
+                  <div className="absolute left-0 top-full z-40 mt-1 w-48 rounded-lg border border-border bg-surface py-1 shadow-lg">
+                    {OVERFLOW_NAV.map((item) => (
+                      <Link
+                        key={item.label}
+                        href={item.href}
+                        onClick={() => setMoreOpen(false)}
+                        className={`block px-3 py-2 text-sm transition-colors hover:bg-muted ${
+                          isActive(item.href)
+                            ? 'font-medium text-brand-ink'
+                            : 'text-muted-foreground hover:text-brand-ink'
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+            </div>
+
+            {/* Search + avatar */}
+            <div className="ml-auto flex shrink-0 items-center gap-3">
+              <button
+                onClick={() => setSearchOpen(true)}
+                title="Search (⌘K)"
+                className="hidden items-center gap-2 rounded-lg border border-border bg-muted px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:border-ring/50 sm:flex sm:w-48 lg:w-64"
+              >
+                <Search size={14} className="shrink-0" />
+                <span className="flex-1 truncate">Search requests, clients, lodges…</span>
+                <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] font-medium">⌘K</kbd>
+              </button>
+              <button
+                onClick={() => setSearchOpen(true)}
+                title="Search (⌘K)"
+                aria-label="Search"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground sm:hidden"
+              >
+                <Search size={16} />
+              </button>
+
+              <div ref={userRef} className="relative">
+                <button
+                  onClick={() => setUserOpen(v => !v)}
+                  aria-label="Account menu"
+                  aria-expanded={userOpen}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  {initials}
+                </button>
+                {userOpen && (
+                  <div className="absolute right-0 top-full z-40 mt-2 w-52 rounded-lg border border-border bg-surface py-1 shadow-lg">
+                    <div className="border-b border-border px-3 py-2">
+                      <p className="truncate text-sm font-medium">{fullName}</p>
+                      <p className="text-xs capitalize text-muted-foreground">{role}</p>
+                    </div>
+                    <Link
+                      href="/admin/settings"
+                      onClick={() => setUserOpen(false)}
+                      className="block px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-brand-ink"
+                    >
+                      Settings
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+                    >
+                      Log out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </nav>
       </header>
