@@ -57,7 +57,7 @@ export default function RoomsPanel({ accommodationId, rooms: initial }: { accomm
 
   return (
     <div className="max-w-2xl mx-auto px-4 pb-8">
-      <div className="bg-white rounded-lg border border-gray-200 p-5">
+      <div className="bg-surface rounded-xl border border-border p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-sm font-semibold text-gray-900">Rooms</h2>

@@ -27,7 +27,7 @@ export default async function PayablesPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">Finance</h1>
+        <h1 className="text-2xl font-semibold text-brand-ink">Finance</h1>
         <p className="text-sm text-gray-500 mt-0.5">
           Supplier payables — owed from ACCEPTED quote versions only, minus payments made
         </p>
@@ -42,17 +42,17 @@ export default async function PayablesPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="bg-surface rounded-xl border border-border p-5">
               <p className="text-xs text-gray-500">Owed to suppliers</p>
               <p className="text-2xl font-semibold text-gray-900 mt-1">${fmt(payables.totalOwedUsd)}</p>
               <p className="text-xs text-gray-400 mt-1">costs on accepted versions</p>
             </div>
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="bg-surface rounded-xl border border-border p-5">
               <p className="text-xs text-gray-500">Paid out</p>
               <p className="text-2xl font-semibold text-green-700 mt-1">${fmt(payables.totalPaidUsd)}</p>
               <p className="text-xs text-gray-400 mt-1">supplier payments recorded</p>
             </div>
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="bg-surface rounded-xl border border-border p-5">
               <p className="text-xs text-gray-500">Balance payable</p>
               <p className={`text-2xl font-semibold mt-1 ${payables.totalBalanceUsd > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
                 ${fmt(payables.totalBalanceUsd)}
@@ -68,7 +68,7 @@ export default async function PayablesPage() {
             </p>
           )}
 
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100">
               <h2 className="text-sm font-semibold text-gray-700">Per-supplier balances</h2>
               <p className="text-xs text-gray-400 mt-0.5">Click a supplier for the per-quote breakdown or to record a payment</p>

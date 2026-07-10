@@ -25,7 +25,7 @@ export default async function ToursPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Tour Templates</h1>
+          <h1 className="text-2xl font-semibold text-brand-ink">Tour Templates</h1>
           <p className="text-sm text-gray-500 mt-0.5">Manage your bilingual tour templates and itineraries</p>
         </div>
         <ButtonLink href="/admin/tours/new" size="sm">Create Your Template</ButtonLink>
@@ -40,7 +40,7 @@ export default async function ToursPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {tours.map((tour: any) => (
             <div key={tour.id}
-              className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-[var(--olive)] hover:shadow-sm transition flex flex-col">
+              className="bg-surface rounded-xl border border-border overflow-hidden hover:border-[var(--olive)] hover:shadow-sm transition flex flex-col">
 
               {/* Card image / colour band */}
               <div className="h-28 bg-gradient-to-br from-[var(--olive-dk)] to-[var(--olive)] relative flex items-start justify-between p-3">

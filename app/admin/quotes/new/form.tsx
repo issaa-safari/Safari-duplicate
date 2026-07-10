@@ -71,13 +71,13 @@ export default function NewQuoteForm({
         <Link href="/admin/quotes" className="text-sm text-gray-500 hover:text-gray-700">
           ← Back to Quotes
         </Link>
-        <h1 className="text-lg font-semibold text-gray-900">New Quote</h1>
+        <h1 className="text-2xl font-semibold text-brand-ink">New Quote</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
         {/* Step 1 — Mode */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-3">
+        <div className="bg-surface rounded-xl border border-border p-6 space-y-3">
           <h2 className="text-sm font-semibold text-gray-700">Quote Type</h2>
           <input type="hidden" name="mode" value={mode} />
           <div className="grid grid-cols-2 gap-3">
@@ -106,7 +106,7 @@ export default function NewQuoteForm({
 
         {/* Step 2 — Client & context (shown once mode chosen) */}
         {mode && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+          <div className="bg-surface rounded-xl border border-border p-6 space-y-4">
             <h2 className="text-sm font-semibold text-gray-700">Client</h2>
 
             <div>
@@ -166,7 +166,7 @@ export default function NewQuoteForm({
 
         {/* Fixed departure — pick departure */}
         {mode === 'fixed_departure' && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+          <div className="bg-surface rounded-xl border border-border p-6 space-y-4">
             <h2 className="text-sm font-semibold text-gray-700">Departure</h2>
             <div>
               <label className={labelCls}>Departure <span className="text-red-500">*</span></label>
@@ -186,7 +186,7 @@ export default function NewQuoteForm({
 
         {/* Custom — optionally pin to a tour template */}
         {mode === 'custom' && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+          <div className="bg-surface rounded-xl border border-border p-6 space-y-4">
             <h2 className="text-sm font-semibold text-gray-700">Tour Template <span className="text-gray-400 font-normal text-xs">(optional)</span></h2>
             <p className="text-xs text-gray-400 -mt-2">Link to a tour to copy its itinerary as a starting point.</p>
             <div>

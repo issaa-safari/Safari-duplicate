@@ -170,7 +170,7 @@ export default async function QuoteDetailPage({
             <span className="text-gray-300">/</span>
             <span className="text-sm font-mono text-gray-500">{quote.quote_number}</span>
           </div>
-          <h1 className="text-lg font-semibold text-gray-900">
+          <h1 className="text-2xl font-semibold text-brand-ink">
             {latestVersion?.title || clientName}
           </h1>
           <div className="flex items-center gap-2 mt-1.5">
@@ -186,7 +186,7 @@ export default async function QuoteDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left — client + context */}
         <div className="space-y-4">
-          <div className="bg-white rounded-lg border border-gray-200 p-5">
+          <div className="bg-surface rounded-xl border border-border p-5">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Client</h2>
             {client ? (
               <>
@@ -225,7 +225,7 @@ export default async function QuoteDetailPage({
           </div>
 
           {requestRow && (
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="bg-surface rounded-xl border border-border p-5">
               <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Linked Request</h2>
               <Link
                 href={`/admin/requests/${(requestRow as any).id}`}
@@ -236,14 +236,14 @@ export default async function QuoteDetailPage({
           )}
 
           {tourRow && (
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="bg-surface rounded-xl border border-border p-5">
               <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Tour Template</h2>
               <p className="text-sm text-gray-700">{(tourRow as any).title_en}</p>
             </div>
           )}
 
           {/* Versions history */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="bg-surface rounded-xl border border-border overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-700">Versions</h2>
               <span className="text-xs text-gray-400">{versions.length}</span>
@@ -273,7 +273,7 @@ export default async function QuoteDetailPage({
         {/* Right — the unified workspace */}
         <div className="lg:col-span-3">
           {versions.length === 0 || !latestVersion ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-10 text-center text-sm text-gray-400">
+            <div className="bg-surface rounded-xl border border-border p-10 text-center text-sm text-gray-400">
               This quote has no version yet.
             </div>
           ) : (

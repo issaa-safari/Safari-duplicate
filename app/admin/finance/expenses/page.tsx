@@ -30,7 +30,7 @@ export default async function ExpensesPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">Finance</h1>
+        <h1 className="text-2xl font-semibold text-brand-ink">Finance</h1>
         <p className="text-sm text-gray-500 mt-0.5">Expense log — overheads that feed the P&amp;L (salaries, rent, fuel, …)</p>
       </div>
 
@@ -43,11 +43,11 @@ export default async function ExpensesPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="bg-surface rounded-xl border border-border p-5">
               <p className="text-xs text-gray-500">This month</p>
               <p className="text-2xl font-semibold text-gray-900 mt-1">${fmt(totalMtd)}</p>
             </div>
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="bg-surface rounded-xl border border-border p-5">
               <p className="text-xs text-gray-500">All logged</p>
               <p className="text-2xl font-semibold text-gray-900 mt-1">${fmt(total)}</p>
               <p className="text-xs text-gray-400 mt-1">{rows.length} entr{rows.length === 1 ? 'y' : 'ies'}</p>

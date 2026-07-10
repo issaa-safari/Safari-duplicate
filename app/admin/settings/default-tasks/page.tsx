@@ -19,10 +19,10 @@ export default async function DefaultTasksPage() {
     <div className="p-6 max-w-2xl mx-auto">
       <div className="mb-6">
         <Link href="/admin/settings" className="text-xs text-gray-400 hover:text-gray-600">← Settings</Link>
-        <h1 className="text-lg font-semibold text-gray-900 mt-2">Default Tasks</h1>
+        <h1 className="text-2xl font-semibold text-brand-ink mt-2">Default Tasks</h1>
         <p className="text-sm text-gray-500 mt-0.5">The checklist auto-created when a request is booked</p>
       </div>
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-surface rounded-xl border border-border p-6">
         <DefaultTaskManager tasks={tasks ?? []} />
       </div>
     </div>

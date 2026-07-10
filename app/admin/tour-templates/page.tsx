@@ -24,14 +24,14 @@ export default async function TourTemplatesPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">Tour Templates</h1>
+        <h1 className="text-2xl font-semibold text-brand-ink">Tour Templates</h1>
         <p className="text-sm text-gray-500 mt-0.5">
           Reusable quotes you can copy into any request — itinerary and pricing included.
         </p>
       </div>
 
       {rows.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+        <div className="bg-surface rounded-xl border border-border p-8 text-center">
           <p className="text-sm text-gray-500">No templates yet.</p>
           <p className="text-xs text-gray-400 mt-2 max-w-md mx-auto">
             Open any quote and choose <span className="font-medium">“Save as template”</span> to add it here.
@@ -45,7 +45,7 @@ export default async function TourTemplatesPage() {
             const latest = (t.quote_versions ?? []).sort((a: any, b: any) => b.version_number - a.version_number)[0]
             return (
               <Link key={t.id} href={`/admin/quotes/${t.id}`}
-                className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-[var(--olive)] hover:shadow-sm transition">
+                className="block bg-surface rounded-xl border border-border p-4 hover:border-[var(--olive)] hover:shadow-sm transition">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1">

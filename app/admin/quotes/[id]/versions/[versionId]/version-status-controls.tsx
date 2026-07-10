@@ -45,7 +45,7 @@ export default function VersionStatusControls({
   if (actions.length === 0) return null
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
+    <div className="bg-surface rounded-xl border border-border p-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500">Status:</span>

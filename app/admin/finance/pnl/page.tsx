@@ -79,7 +79,7 @@ export default async function PnlPage({
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">Finance</h1>
+        <h1 className="text-2xl font-semibold text-brand-ink">Finance</h1>
         <p className="text-sm text-gray-500 mt-0.5">
           Profit &amp; loss over a date range — revenue and direct costs from versions accepted in the range, overheads from the expense log
         </p>
@@ -88,7 +88,7 @@ export default async function PnlPage({
       <FinanceNav active="/admin/finance/pnl" />
 
       {/* Date range */}
-      <form method="get" className="flex flex-wrap items-end gap-3 mb-6 bg-white rounded-lg border border-gray-200 p-4">
+      <form method="get" className="flex flex-wrap items-end gap-3 mb-6 bg-surface rounded-xl border border-border p-4">
         <div>
           <label className="block text-xs text-gray-500 mb-1">From</label>
           <input type="date" name="from" defaultValue={from}
@@ -107,7 +107,7 @@ export default async function PnlPage({
       </form>
 
       {/* P&L statement */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden mb-6">
         <table className="w-full text-sm">
           <tbody>
             <tr className="border-b border-gray-100">
@@ -153,7 +153,7 @@ export default async function PnlPage({
       )}
 
       {/* Accepted quotes in range */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-700">Accepted in range</h2>
           <p className="text-xs text-gray-400 mt-0.5">Only the accepted version counts</p>

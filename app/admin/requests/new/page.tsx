@@ -34,7 +34,7 @@ export default async function NewRequestPage({
         <Link href="/admin/requests" className="text-sm text-gray-500 hover:text-gray-700">
           Back to Requests
         </Link>
-        <h1 className="text-lg font-semibold text-gray-900">New Request</h1>
+        <h1 className="text-2xl font-semibold text-brand-ink">New Request</h1>
       </div>
       <RequestForm clients={clients} initialClientId={preselectedClientId ?? null} />
     </div>

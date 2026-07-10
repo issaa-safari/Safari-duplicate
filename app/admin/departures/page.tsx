@@ -29,7 +29,7 @@ export default async function DeparturesPage({
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Departures</h1>
+          <h1 className="text-2xl font-semibold text-brand-ink">Departures</h1>
           <p className="text-sm text-gray-500 mt-0.5">Scheduled fixed-date trips and seat inventory</p>
         </div>
         <ButtonLink href="/admin/departures/new" size="sm">+ New Departure</ButtonLink>
@@ -57,7 +57,7 @@ export default async function DeparturesPage({
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         {!departures || departures.length === 0 ? (
           <div className="p-10 text-center">
             <p className="text-sm text-gray-500 mb-4">

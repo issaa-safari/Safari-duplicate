@@ -16,7 +16,7 @@ function ContentCard({ href, title, description, count, icon }: CardProps) {
   return (
     <Link
       href={href}
-      className="bg-white rounded-lg border border-gray-200 p-5 hover:border-[var(--olive)] hover:shadow-sm transition-all group">
+      className="bg-surface rounded-xl border border-border p-5 hover:border-[var(--olive)] hover:shadow-sm transition-all group">
       <div className="flex items-start justify-between mb-3">
         <span className="text-2xl">{icon}</span>
         {count !== null && (

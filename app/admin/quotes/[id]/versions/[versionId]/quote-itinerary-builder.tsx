@@ -475,7 +475,7 @@ export default function QuoteItineraryBuilder({
 
   if (days.length === 0) {
     return (
-      <section className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+      <section className="bg-surface rounded-xl border border-border p-8 text-center">
         <p className="text-sm text-gray-500 mb-5">No itinerary days yet.</p>
         <div className="flex flex-col items-center gap-3">
           {tourDays.length > 0 && (
@@ -560,7 +560,7 @@ export default function QuoteItineraryBuilder({
           {/* Day rows */}
           {days.map((day, i) => (
             <div key={day._key}
-              className="stack-grid grid gap-3 bg-white rounded-lg border border-gray-200 p-3 items-start"
+              className="stack-grid grid gap-3 bg-surface rounded-xl border border-border p-3 items-start"
               style={{ gridTemplateColumns: GRID_COLS }}>
 
               {/* Day # + Date */}

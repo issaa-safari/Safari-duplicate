@@ -27,7 +27,7 @@ export default async function SettingsPage() {
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">Settings</h1>
+        <h1 className="text-2xl font-semibold text-brand-ink">Settings</h1>
         <p className="text-sm text-gray-500 mt-0.5">Company information, banking, and booking defaults</p>
       </div>
       <div className="mb-4">

@@ -79,7 +79,7 @@ export default function SuppliersTable({
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         {suppliers.length === 0 ? (
           <p className="p-10 text-center text-sm text-gray-400">
             No suppliers yet — add the first one below. Rate cards link to suppliers so Payables knows who is owed.

@@ -87,7 +87,7 @@ export default function ExpensesTable({ expenses }: { expenses: ExpenseRow[] }) 
 
       {error && <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>}
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         {expenses.length === 0 ? (
           <p className="p-10 text-center text-sm text-gray-400">No expenses logged yet.</p>
         ) : (

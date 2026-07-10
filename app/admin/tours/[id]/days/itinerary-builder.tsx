@@ -221,7 +221,7 @@ export default function ItineraryBuilder({
   return (
     <div className="space-y-4">
       {days.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-10 text-center space-y-4">
+        <div className="bg-surface rounded-xl border border-border p-10 text-center space-y-4">
           <p className="text-sm text-gray-500">No itinerary days yet.</p>
           <div className="flex items-center justify-center gap-3">
             <button onClick={generateDays} className="rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
@@ -248,7 +248,7 @@ export default function ItineraryBuilder({
               const dayActs = activities.filter((a) => day.activity_ids.includes(a.id))
               const availActs = activities.filter((a) => !day.activity_ids.includes(a.id))
               return (
-                <div key={day._key} className="stack-grid grid gap-3 bg-white rounded-lg border border-gray-200 p-3 items-start" style={{ gridTemplateColumns: GRID_COLS }}>
+                <div key={day._key} className="stack-grid grid gap-3 bg-surface rounded-xl border border-border p-3 items-start" style={{ gridTemplateColumns: GRID_COLS }}>
                   <div data-label="Days" className="space-y-2">
                     <span className="text-sm font-semibold text-gray-900">
                       Day {day.day_number}{day.day_number_end ? `–${day.day_number_end}` : ''}

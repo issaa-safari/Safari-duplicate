@@ -61,7 +61,7 @@ export default function ContentShell({
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
       <div className="mb-6 border-b border-gray-200 bg-white px-4 py-4">
-        <h1 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-brand-ink">
           <span className="text-xl text-gray-500">{icon}</span>
           {title}
         </h1>

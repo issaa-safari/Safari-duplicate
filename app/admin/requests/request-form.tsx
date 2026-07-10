@@ -91,7 +91,7 @@ export default function RequestForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-surface rounded-xl border border-border p-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h2 className="text-sm font-semibold text-gray-900">Client Information</h2>
           <div className="flex rounded-md border border-gray-200 overflow-hidden text-xs font-medium">
@@ -195,7 +195,7 @@ export default function RequestForm({
         )}
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-surface rounded-xl border border-border p-6">
         <h2 className="text-sm font-semibold text-gray-900 mb-4">Request Details</h2>
         <div className="space-y-4">
           <div>

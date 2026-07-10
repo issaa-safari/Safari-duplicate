@@ -27,11 +27,11 @@ export default function NewTourPage() {
         <Link href="/admin/tours" className="text-sm text-gray-500 hover:text-gray-700">
           Back to Tours
         </Link>
-        <h1 className="text-lg font-semibold text-gray-900">New Tour</h1>
+        <h1 className="text-2xl font-semibold text-brand-ink">New Tour</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <div className="bg-surface rounded-xl border border-border p-6 space-y-4">
           <p className="text-sm text-gray-500">
             Give the tour a name, type, and length to create it as a draft. You&apos;ll add
             the rest of the details on the next screen.

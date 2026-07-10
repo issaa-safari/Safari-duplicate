@@ -54,7 +54,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
         <Link href="/admin/departures" className="text-sm text-gray-500 hover:text-gray-700">
           ← Back to Departures
         </Link>
-        <h1 className="text-lg font-semibold text-gray-900">Edit Departure</h1>
+        <h1 className="text-2xl font-semibold text-brand-ink">Edit Departure</h1>
       </div>
 
       {departure.tours && (
@@ -74,7 +74,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <div className="bg-surface rounded-xl border border-border p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
@@ -156,7 +156,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
         </div>
 
         {/* Itinerary Status */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-surface rounded-xl border border-border p-6">
           <h3 className="font-semibold text-gray-900 mb-4">Itinerary Status</h3>
           {tourDays && tourDays.length > 0 ? (
             <div className="space-y-2">

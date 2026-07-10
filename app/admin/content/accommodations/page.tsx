@@ -38,7 +38,7 @@ export default async function AccommodationsPage({
     <ContentShell active="accommodations" title="Accommodations" icon="⌂">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Accommodations</h1>
+          <h1 className="text-2xl font-semibold text-brand-ink">Accommodations</h1>
           <p className="text-sm text-gray-500 mt-0.5">Manage lodges, camps, and hotels used in itineraries</p>
         </div>
         <ButtonLink href="/admin/content/accommodations/new" size="sm">+ New Accommodation</ButtonLink>
@@ -66,7 +66,7 @@ export default async function AccommodationsPage({
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         {shown.length === 0 ? (
           <div className="p-10 text-center">
             <p className="text-sm text-gray-500 mb-4">

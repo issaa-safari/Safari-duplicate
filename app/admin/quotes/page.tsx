@@ -65,7 +65,7 @@ export default async function QuotesPage({
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Quotes</h1>
+          <h1 className="text-2xl font-semibold text-brand-ink">Quotes</h1>
           <p className="text-sm text-gray-500 mt-0.5">Build and send pricing proposals to clients</p>
         </div>
         <ButtonLink href="/admin/quotes/new" size="sm">+ New Quote</ButtonLink>
@@ -91,7 +91,7 @@ export default async function QuotesPage({
 
       {/* Quote list */}
       {!quotes || quotes.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-10 text-center">
+        <div className="bg-surface rounded-xl border border-border p-10 text-center">
           <p className="text-sm text-gray-500 mb-4">No {activeStatus} quotes.</p>
           {activeStatus === 'draft' && (
             <Link
@@ -115,7 +115,7 @@ export default async function QuotesPage({
               <Link
                 key={q.id}
                 href={`/admin/quotes/${q.id}`}
-                className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-[var(--olive)] hover:shadow-sm transition">
+                className="block bg-surface rounded-xl border border-border p-4 hover:border-[var(--olive)] hover:shadow-sm transition">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
