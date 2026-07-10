@@ -37,4 +37,23 @@ reference for this repo's production implementation.
 
 ## Outcome
 
-_(filled in after the agent run completes)_
+Completed 2026-07-10 (Lovable commit `e8e2a9e`, 5 credits). Build is green; the agent
+shipped:
+
+- **Extended mock data** — full domain entities (accommodations with room types,
+  destinations, activities, vehicles, staff, quotes with itinerary days, bookings,
+  departures, receivables/payables/expenses, templates) with realistic Kenya/Tanzania
+  pricing.
+- **`/dashboard`** (new landing) — greeting header, KPI cards (active requests,
+  conversion rate, avg quote value, days-to-booking), pipeline breakdown with per-stage
+  values, upcoming departures panel.
+- **`/requests/$id`** — request detail workspace with stage-advance stepper, tabs for
+  Overview / Quotes / Tasks / Activity, client card sidebar; kanban cards and table rows
+  now navigate here.
+- **`/quotes` + `/quotes/$id`** — quote list across requests, and the day-by-day builder:
+  draggable day list (add/duplicate/remove), per-day destination/accommodation/room/
+  activities/vehicle selectors, live pricing panel (accommodation, park fees, activities,
+  vehicles, net cost, 0–40% markup slider, gross and per-person totals).
+- **New module routes** — `/bookings`, `/tripbuilder`, `/departures` (seat-fill
+  progress), `/finance` (Receivables / Payables / Expenses / P&L tabs with AR/AP KPI
+  cards), `/settings`.
