@@ -81,7 +81,7 @@ export default function ActivitiesModal({
   }
 
   const cell = 'px-2 py-1 align-top'
-  const sel = 'w-full rounded border border-gray-300 px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#7A9A4A]'
+  const sel = 'w-full rounded border border-border px-2 py-1 text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-[#7A9A4A]'
 
   return (
     <Dialog
@@ -93,7 +93,7 @@ export default function ActivitiesModal({
       footer={
         <>
           <button type="button" onClick={onClose}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white">
+            className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface">
             Cancel
           </button>
           <button type="button" onClick={save}
@@ -106,7 +106,7 @@ export default function ActivitiesModal({
       <div className="p-4 max-h-[60vh] overflow-y-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-gray-500 uppercase tracking-wide">
+              <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide">
                 <th className="px-2 py-1 w-8"></th>
                 <th className="px-2 py-1">Activity Type</th>
                 <th className="px-2 py-1">Location</th>
@@ -117,13 +117,13 @@ export default function ActivitiesModal({
             </thead>
             <tbody>
               {rows.map((row, i) => (
-                <tr key={i} className="border-t border-gray-100">
+                <tr key={i} className="border-t border-border/70">
                   <td className={cell}>
                     <div className="flex flex-col">
                       <button type="button" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up"
-                        className="text-muted-foreground hover:text-gray-700 disabled:opacity-30 text-xs">↑</button>
+                        className="text-muted-foreground hover:text-foreground disabled:opacity-30 text-xs">↑</button>
                       <button type="button" onClick={() => move(i, 1)} disabled={i === rows.length - 1} aria-label="Move down"
-                        className="text-muted-foreground hover:text-gray-700 disabled:opacity-30 text-xs">↓</button>
+                        className="text-muted-foreground hover:text-foreground disabled:opacity-30 text-xs">↓</button>
                     </div>
                   </td>
                   <td className={cell}>
@@ -150,7 +150,7 @@ export default function ActivitiesModal({
                   </td>
                   <td className={cell + ' text-center'}>
                     <button type="button" onClick={() => update(i, { optional: !row.optional })}
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${row.optional ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${row.optional ? 'bg-amber-100 text-warning-foreground' : 'bg-muted text-muted-foreground'}`}>
                       {row.optional ? 'Optional' : 'Included'}
                     </button>
                   </td>

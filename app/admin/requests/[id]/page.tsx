@@ -129,39 +129,39 @@ export default async function RequestDetailPage({
   const handledBy = user.email?.split('@')[0] ?? 'Admin'
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface-alt">
 
       {/* Page header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-surface border-b border-border px-6 py-4">
         <div className="max-w-5xl mx-auto">
-          <Link href="/admin/requests" className="text-xs text-muted-foreground hover:text-gray-600">
+          <Link href="/admin/requests" className="text-xs text-muted-foreground hover:text-foreground">
             ← Back
           </Link>
           <div className="flex items-start justify-between gap-4 mt-2 mb-3">
             <div>
-              <h1 className="text-base font-semibold text-gray-900">
-                Request from <span className="text-[var(--olive)]">{clientName}</span>
+              <h1 className="text-base font-semibold text-foreground">
+                Request from <span className="text-brand-text">{clientName}</span>
                 {request.priority && (
-                  <span className="ml-2 text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full align-middle">Priority</span>
+                  <span className="ml-2 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full align-middle">Priority</span>
                 )}
               </h1>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-1 text-xs text-gray-500">
-                <span>Reference: <span className="font-mono text-gray-700">{request.reference}</span></span>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-1 text-xs text-muted-foreground">
+                <span>Reference: <span className="font-mono text-foreground">{request.reference}</span></span>
                 <span>Date received:{' '}
                   {new Date(request.created_at).toLocaleDateString('en-GB', {
                     day: 'numeric', month: 'long', year: 'numeric',
                   })}
                 </span>
                 {request.source && (
-                  <span>Source: <span className="capitalize text-gray-700">{request.source}</span></span>
+                  <span>Source: <span className="capitalize text-foreground">{request.source}</span></span>
                 )}
-                <span>Handled by: <span className="text-gray-700 font-medium">{handledBy}</span></span>
+                <span>Handled by: <span className="text-foreground font-medium">{handledBy}</span></span>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <Link
                 href={`/admin/requests/${id}/edit`}
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
                 Edit Request
               </Link>
               <Link
@@ -177,7 +177,7 @@ export default async function RequestDetailPage({
       </div>
 
       {/* Tab navigation */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-surface border-b border-border sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6">
           <div className="flex gap-0 overflow-x-auto">
             {TABS.map(t => (
@@ -186,15 +186,15 @@ export default async function RequestDetailPage({
                 href={`/admin/requests/${id}?tab=${t.key}`}
                 className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
                   activeTab === t.key
-                    ? 'border-[var(--olive)] text-[var(--olive)]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    ? 'border-primary-strong text-brand-text'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}>
                 {t.label}
                 {t.count !== null && (
                   <span className={`ml-1.5 text-xs rounded-full px-1.5 py-0.5 ${
                     activeTab === t.key
-                      ? 'bg-[var(--olive)]/10 text-[var(--olive)]'
-                      : 'bg-gray-100 text-gray-500'
+                      ? 'bg-accent text-brand-text'
+                      : 'bg-muted text-muted-foreground'
                   }`}>
                     {t.count}
                   </span>
@@ -212,64 +212,64 @@ export default async function RequestDetailPage({
         {activeTab === 'info' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="space-y-4">
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold text-gray-900">Client</h2>
+                  <h2 className="text-sm font-semibold text-foreground">Client</h2>
                   {client && (
                     <Link href={`/admin/clients/${client.id}`}
-                      className="text-xs text-[var(--olive)] hover:underline">
+                      className="text-xs text-brand-text hover:underline">
                       View profile
                     </Link>
                   )}
                 </div>
                 <div className="space-y-1.5 text-sm">
-                  <p className="font-medium text-gray-900">{clientName}</p>
-                  {client?.email && <p className="text-gray-500">{client.email}</p>}
-                  {client?.whatsapp && <p className="text-gray-500">WhatsApp: {client.whatsapp}</p>}
-                  {client?.phone && <p className="text-gray-500">Phone: {client.phone}</p>}
-                  {client?.country && <p className="text-gray-500">Country: {client.country}</p>}
+                  <p className="font-medium text-foreground">{clientName}</p>
+                  {client?.email && <p className="text-muted-foreground">{client.email}</p>}
+                  {client?.whatsapp && <p className="text-muted-foreground">WhatsApp: {client.whatsapp}</p>}
+                  {client?.phone && <p className="text-muted-foreground">Phone: {client.phone}</p>}
+                  {client?.country && <p className="text-muted-foreground">Country: {client.country}</p>}
                   {client?.preferred_language && (
-                    <span className="inline-block text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                    <span className="inline-block text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                       {client.preferred_language === 'ar' ? 'Arabic' : 'English'}
                     </span>
                   )}
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h2 className="text-sm font-semibold text-gray-900 mb-3">Request Details</h2>
+              <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+                <h2 className="text-sm font-semibold text-foreground mb-3">Request Details</h2>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Adults</span>
-                    <span className="text-gray-700">{request.travelers_adults}</span>
+                    <span className="text-muted-foreground">Adults</span>
+                    <span className="text-foreground">{request.travelers_adults}</span>
                   </div>
                   {(request.travelers_children_older ?? 0) > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Children 12–18</span>
-                      <span className="text-gray-700">{request.travelers_children_older}</span>
+                      <span className="text-muted-foreground">Children 12–18</span>
+                      <span className="text-foreground">{request.travelers_children_older}</span>
                     </div>
                   )}
                   {(request.travelers_children_younger ?? 0) > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Children 2–12</span>
-                      <span className="text-gray-700">{request.travelers_children_younger}</span>
+                      <span className="text-muted-foreground">Children 2–12</span>
+                      <span className="text-foreground">{request.travelers_children_younger}</span>
                     </div>
                   )}
                   {request.preferred_start_date && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Preferred date</span>
-                      <span className="text-gray-700">
+                      <span className="text-muted-foreground">Preferred date</span>
+                      <span className="text-foreground">
                         {new Date(request.preferred_start_date).toLocaleDateString('en-GB')}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Source</span>
-                    <span className="text-gray-700 capitalize">{request.source ?? 'Unknown'}</span>
+                    <span className="text-muted-foreground">Source</span>
+                    <span className="text-foreground capitalize">{request.source ?? 'Unknown'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Received</span>
-                    <span className="text-gray-700">
+                    <span className="text-muted-foreground">Received</span>
+                    <span className="text-foreground">
                       {new Date(request.created_at).toLocaleDateString('en-GB')}
                     </span>
                   </div>
@@ -277,19 +277,19 @@ export default async function RequestDetailPage({
               </div>
 
               {request.client_question && (
-                <div className="bg-amber-50 rounded-lg border border-amber-200 p-4">
-                  <h2 className="text-sm font-semibold text-amber-800 mb-2">Client Message</h2>
-                  <p className="text-sm text-amber-700">{request.client_question}</p>
+                <div className="rounded-xl border border-warning-foreground/20 bg-warning/50 p-4">
+                  <h2 className="text-sm font-semibold text-warning-foreground mb-2">Client Message</h2>
+                  <p className="text-sm text-warning-foreground">{request.client_question}</p>
                 </div>
               )}
             </div>
 
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h2 className="text-sm font-semibold text-gray-900 mb-4">
+              <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+                <h2 className="text-sm font-semibold text-foreground mb-4">
                   Communication Log
                   {commLogs.length > 0 && (
-                    <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                    <span className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                       {commLogs.length}
                     </span>
                   )}
@@ -304,8 +304,8 @@ export default async function RequestDetailPage({
         {activeTab === 'quotes' && (
           <div className="space-y-6">
             {allVersions.length === 0 ? (
-              <div className="bg-white rounded-lg border border-gray-200 p-10 text-center">
-                <p className="text-sm text-gray-500 mb-4">No quotes yet for this request.</p>
+              <div className="rounded-xl border border-border bg-surface shadow-sm p-10 text-center">
+                <p className="text-sm text-muted-foreground mb-4">No quotes yet for this request.</p>
                 <div className="flex items-center justify-center gap-2 flex-wrap">
                   <Link
                     href={`/admin/quotes/new?request=${id}`}
@@ -319,23 +319,23 @@ export default async function RequestDetailPage({
               <>
                 {STATUS_ORDER.filter(s => byStatus[s]?.length).map(statusKey => (
                   <div key={statusKey}>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                    <h3 className="text-sm font-semibold text-foreground mb-3">
                       Quotes in {statusKey.charAt(0).toUpperCase() + statusKey.slice(1)}
                     </h3>
                     <div className="space-y-3">
                       {byStatus[statusKey].map(({ quote, version }) => (
                         <div key={version.id}
-                          className="bg-white rounded-lg border border-gray-200 p-4 flex items-start justify-between gap-4">
+                          className="rounded-xl border border-border bg-surface shadow-sm p-4 flex items-start justify-between gap-4">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span className="text-xs text-muted-foreground">Version</span>
-                              <span className="text-sm font-semibold text-gray-900 font-mono">
+                              <span className="text-sm font-semibold text-foreground font-mono">
                                 #{quote.quote_number}.{version.version_number}
                               </span>
                               <StatusBadge status={version.status} />
                             </div>
                             {(version.title || (quote.tours as any)?.title_en) && (
-                              <p className="text-sm text-gray-600 truncate">
+                              <p className="text-sm text-muted-foreground truncate">
                                 Tour: {version.title || (quote.tours as any)?.title_en}
                               </p>
                             )}
@@ -356,7 +356,7 @@ export default async function RequestDetailPage({
                             </Link>
                             <Link
                               href={`/admin/quotes/${quote.id}`}
-                              className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
+                              className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted">
                               Create New Version
                             </Link>
                           </div>
@@ -368,7 +368,7 @@ export default async function RequestDetailPage({
                 <div className="flex items-center gap-3 flex-wrap">
                   <Link
                     href={`/admin/quotes/new?request=${id}`}
-                    className="text-sm font-medium text-[var(--olive)] hover:text-[var(--olive-dk)]">
+                    className="text-sm font-medium text-brand-text hover:text-brand-ink">
                     + Create Another Quote
                   </Link>
                   <StartFromTemplate requestId={id} templates={templateOptions} />
@@ -381,61 +381,61 @@ export default async function RequestDetailPage({
         {/* ── TOUR INFORMATION ──────────────────────────────────────── */}
         {activeTab === 'tour' && (
           <div className="max-w-lg">
-            <div className="bg-white rounded-lg border border-gray-200 p-5 space-y-4">
-              <h2 className="text-sm font-semibold text-gray-900">Tour Information</h2>
+            <div className="rounded-xl border border-border bg-surface shadow-sm p-5 space-y-4">
+              <h2 className="text-sm font-semibold text-foreground">Tour Information</h2>
               {linkedTour ? (
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Tour</span>
+                    <span className="text-muted-foreground">Tour</span>
                     <Link href={`/admin/tours/${request.tour_id}`}
-                      className="text-[var(--olive)] hover:underline font-medium text-right max-w-[260px]">
+                      className="text-brand-text hover:underline font-medium text-right max-w-[260px]">
                       {linkedTour.title_en}
                     </Link>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Type</span>
-                    <span className="text-gray-700 capitalize">{linkedTour.type}</span>
+                    <span className="text-muted-foreground">Type</span>
+                    <span className="text-foreground capitalize">{linkedTour.type}</span>
                   </div>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No tour linked to this request.</p>
               )}
-              <div className="border-t border-gray-100 pt-4 space-y-2 text-sm">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Group Size</p>
+              <div className="border-t border-border/70 pt-4 space-y-2 text-sm">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Group Size</p>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Adults</span>
-                  <span className="text-gray-700">{request.travelers_adults}</span>
+                  <span className="text-muted-foreground">Adults</span>
+                  <span className="text-foreground">{request.travelers_adults}</span>
                 </div>
                 {(request.travelers_children_older ?? 0) > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Children 12–18</span>
-                    <span className="text-gray-700">{request.travelers_children_older}</span>
+                    <span className="text-muted-foreground">Children 12–18</span>
+                    <span className="text-foreground">{request.travelers_children_older}</span>
                   </div>
                 )}
                 {(request.travelers_children_younger ?? 0) > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Children 2–12</span>
-                    <span className="text-gray-700">{request.travelers_children_younger}</span>
+                    <span className="text-muted-foreground">Children 2–12</span>
+                    <span className="text-foreground">{request.travelers_children_younger}</span>
                   </div>
                 )}
                 {request.preferred_start_date && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Preferred start</span>
-                    <span className="text-gray-700">
+                    <span className="text-muted-foreground">Preferred start</span>
+                    <span className="text-foreground">
                       {new Date(request.preferred_start_date).toLocaleDateString('en-GB')}
                     </span>
                   </div>
                 )}
                 {request.trip_length_nights && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Trip length</span>
-                    <span className="text-gray-700">{request.trip_length_nights} nights</span>
+                    <span className="text-muted-foreground">Trip length</span>
+                    <span className="text-foreground">{request.trip_length_nights} nights</span>
                   </div>
                 )}
                 {request.preferred_room_type && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Preferred room type</span>
-                    <span className="text-gray-700 capitalize">{request.preferred_room_type}</span>
+                    <span className="text-muted-foreground">Preferred room type</span>
+                    <span className="text-foreground capitalize">{request.preferred_room_type}</span>
                   </div>
                 )}
               </div>
@@ -446,11 +446,11 @@ export default async function RequestDetailPage({
         {/* ── LOGISTICS ─────────────────────────────────────────────── */}
         {activeTab === 'logistics' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
               <FlightsManager requestId={id} flights={flights as any} />
             </div>
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <h2 className="text-sm font-semibold text-gray-900 mb-4">Staff &amp; Vehicles</h2>
+            <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+              <h2 className="text-sm font-semibold text-foreground mb-4">Staff &amp; Vehicles</h2>
               <AssignmentManager
                 requestId={id}
                 staffAssignments={staffAssignments as any}
@@ -465,7 +465,7 @@ export default async function RequestDetailPage({
         {/* ── TASKS ─────────────────────────────────────────────────── */}
         {activeTab === 'tasks' && (
           <div className="max-w-lg">
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
               <TaskManager requestId={id} tasks={tasks ?? []} />
             </div>
           </div>
@@ -474,8 +474,8 @@ export default async function RequestDetailPage({
         {/* ── NOTES ─────────────────────────────────────────────────── */}
         {activeTab === 'notes' && (
           <div className="max-w-lg">
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <h2 className="text-sm font-semibold text-gray-900 mb-4">Notes</h2>
+            <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+              <h2 className="text-sm font-semibold text-foreground mb-4">Notes</h2>
               <CommunicationLog requestId={id} logs={notes} noteOnly />
             </div>
           </div>

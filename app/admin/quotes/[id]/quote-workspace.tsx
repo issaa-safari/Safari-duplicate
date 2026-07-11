@@ -116,7 +116,7 @@ export default function QuoteWorkspace({
               className={'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ' +
                 (step === s.key
                   ? 'bg-[var(--olive)] text-white'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200')}>
+                  : 'bg-muted text-muted-foreground hover:bg-gray-200')}>
               {i + 1} · {s.label}
             </button>
             {i < STEPS.length - 1 && <span className="text-gray-300 text-xs">→</span>}
@@ -129,7 +129,7 @@ export default function QuoteWorkspace({
       <div className={step === 'itinerary' ? '' : 'hidden'}>
         {showVersionPills && (
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xs text-gray-500">Editing:</span>
+            <span className="text-xs text-muted-foreground">Editing:</span>
             {versionsWithItinerary.map(v => (
               <button
                 key={v.id}
@@ -137,8 +137,8 @@ export default function QuoteWorkspace({
                 onClick={() => setActiveVersionId(v.id)}
                 className={'px-3 py-1 rounded-full text-xs font-medium border ' +
                   (activeVersionId === v.id
-                    ? 'bg-[var(--olive)]/10 border-[var(--olive)] text-[var(--olive-dk)]'
-                    : 'border-gray-200 text-gray-500 hover:bg-gray-50')}>
+                    ? 'bg-accent border-primary-strong text-[var(--olive-dk)]'
+                    : 'border-border text-muted-foreground hover:bg-muted')}>
                 {`v${v.version_number}`}
               </button>
             ))}
@@ -228,7 +228,7 @@ function ReadinessChecklist({
     { ok: daysMissingAccom === 0, label: daysMissingAccom === 0 ? 'Accommodation picked for every day' : `${daysMissingAccom} day${daysMissingAccom === 1 ? '' : 's'} missing accommodation` },
   ]
   return (
-    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
       {items.map((it, i) => (
         <span key={i} className={it.ok ? 'text-[var(--olive-dk)]' : 'text-amber-600'}>
           {it.ok ? '✓' : '⚠'} {it.label}

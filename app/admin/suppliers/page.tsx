@@ -29,13 +29,13 @@ export default async function SuppliersPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">Suppliers</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h1 className="text-lg font-semibold text-foreground">Suppliers</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
           Hotels, park authorities and vehicle providers you owe money to. Link rate cards to a supplier so Payables can track balances.
         </p>
       </div>
       {error ? (
-        <p className="text-sm text-amber-700 bg-amber-50 rounded-lg border border-amber-200 px-4 py-3">
+        <p className="text-sm text-warning-foreground rounded-xl border border-warning-foreground/20 bg-warning/50 px-4 py-3">
           Suppliers table not available — apply migration group_33_supplier_finance.sql first. ({error.message})
         </p>
       ) : (

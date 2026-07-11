@@ -30,26 +30,26 @@ export default async function ExpensesPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">Finance</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Expense log — overheads that feed the P&amp;L (salaries, rent, fuel, …)</p>
+        <h1 className="text-lg font-semibold text-foreground">Finance</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Expense log — overheads that feed the P&amp;L (salaries, rent, fuel, …)</p>
       </div>
 
       <FinanceNav active="/admin/finance/expenses" />
 
       {error ? (
-        <p className="text-sm text-amber-700 bg-amber-50 rounded-lg border border-amber-200 px-4 py-3">
+        <p className="text-sm text-warning-foreground rounded-xl border border-warning-foreground/20 bg-warning/50 px-4 py-3">
           Expenses table not available — apply migration group_33_supplier_finance.sql first. ({error.message})
         </p>
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <p className="text-xs text-gray-500">This month</p>
-              <p className="text-2xl font-semibold text-gray-900 mt-1">${fmt(totalMtd)}</p>
+            <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+              <p className="text-xs text-muted-foreground">This month</p>
+              <p className="text-2xl font-semibold text-foreground mt-1">${fmt(totalMtd)}</p>
             </div>
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <p className="text-xs text-gray-500">All logged</p>
-              <p className="text-2xl font-semibold text-gray-900 mt-1">${fmt(total)}</p>
+            <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+              <p className="text-xs text-muted-foreground">All logged</p>
+              <p className="text-2xl font-semibold text-foreground mt-1">${fmt(total)}</p>
               <p className="text-xs text-muted-foreground mt-1">{rows.length} entr{rows.length === 1 ? 'y' : 'ies'}</p>
             </div>
           </div>

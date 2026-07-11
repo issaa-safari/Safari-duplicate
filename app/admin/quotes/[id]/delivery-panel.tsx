@@ -109,21 +109,21 @@ export default function DeliveryPanel({
   }
 
   return (
-    <div id="delivery" className="bg-white rounded-lg border border-gray-200 overflow-hidden scroll-mt-6">
-      <div className="px-5 py-4 border-b border-gray-100">
-        <h2 className="text-sm font-semibold text-gray-700">Preview &amp; Send</h2>
+    <div id="delivery" className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden scroll-mt-6">
+      <div className="px-5 py-4 border-b border-border/70">
+        <h2 className="text-sm font-semibold text-foreground">Preview &amp; Send</h2>
         <p className="text-xs text-muted-foreground mt-0.5">Generate a link to preview exactly what the client will see, then send it for viewing and acceptance.</p>
       </div>
 
       {shareableVersions.length > 0 && (
-        <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+        <div className="px-5 py-4 border-b border-border/70 bg-surface-alt/50">
           <div className="flex gap-3 flex-wrap items-end">
             <div className="flex-1 min-w-[160px]">
-              <label htmlFor="version-to-share" className="block text-xs text-gray-500 mb-1">Version to share</label>
+              <label htmlFor="version-to-share" className="block text-xs text-muted-foreground mb-1">Version to share</label>
               <select id="version-to-share"
                 value={selectedVersionId}
                 onChange={e => setSelectedVersionId(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+                className="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
               >
                 {shareableVersions.map(v => (
                   <option key={v.id} value={v.id}>
@@ -141,7 +141,7 @@ export default function DeliveryPanel({
               {pending ? 'Creating…' : 'Generate Link'}
             </button>
           </div>
-          {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+          {error && <p className="text-xs text-destructive mt-2">{error}</p>}
         </div>
       )}
 
@@ -159,9 +159,9 @@ export default function DeliveryPanel({
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <span className="text-xs font-medium text-gray-600">{versionLabel(d.quote_version_id)}</span>
+                      <span className="text-xs font-medium text-muted-foreground">{versionLabel(d.quote_version_id)}</span>
                       {isRevoked ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-500">Revoked</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-red-500">Revoked</span>
                       ) : (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700">Active</span>
                       )}
@@ -173,7 +173,7 @@ export default function DeliveryPanel({
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <code className="text-xs text-gray-500 truncate flex-1 min-w-0 bg-gray-50 px-2 py-1 rounded">
+                      <code className="text-xs text-muted-foreground truncate flex-1 min-w-0 bg-surface-alt px-2 py-1 rounded">
                         {link}
                       </code>
                       {!isRevoked && (
@@ -181,7 +181,7 @@ export default function DeliveryPanel({
                           href={link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="shrink-0 text-xs px-2.5 py-1 rounded border border-gray-200 hover:border-[var(--olive)] text-gray-600 hover:text-[var(--olive-dk)] transition"
+                          className="shrink-0 text-xs px-2.5 py-1 rounded border border-border hover:border-primary-strong text-muted-foreground hover:text-brand-ink transition"
                         >
                           Preview
                         </a>
@@ -190,7 +190,7 @@ export default function DeliveryPanel({
                         <button
                           type="button"
                           onClick={() => copyLink(d.access_token)}
-                          className="shrink-0 text-xs px-2.5 py-1 rounded border border-gray-200 hover:border-[var(--olive)] text-gray-600 hover:text-[var(--olive-dk)] transition"
+                          className="shrink-0 text-xs px-2.5 py-1 rounded border border-border hover:border-primary-strong text-muted-foreground hover:text-brand-ink transition"
                         >
                           {copiedToken === d.access_token ? 'Copied!' : 'Copy'}
                         </button>
@@ -203,7 +203,7 @@ export default function DeliveryPanel({
                       type="button"
                       onClick={() => handleRevoke(d.id)}
                       disabled={pending}
-                      className="shrink-0 text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-100 hover:border-red-300 disabled:opacity-40"
+                      className="shrink-0 text-xs text-red-500 hover:opacity-80 px-2 py-1 rounded border border-red-100 hover:border-red-300 disabled:opacity-40"
                     >
                       Revoke
                     </button>

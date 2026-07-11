@@ -54,8 +54,8 @@ const METHOD_LABELS: Record<string, string> = {
   percentage: '% of adult rate', fixed: 'Fixed price', free: 'Free (no charge)',
 }
 
-const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
-const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
+const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const labelCls = 'block text-sm font-medium text-foreground mb-1'
 
 function blankTravellerForm(ageBands: AgeBand[]) {
   const adultBand = ageBands.find(b => b.code === 'adult') ?? ageBands[ageBands.length - 1]
@@ -341,7 +341,7 @@ export default function VersionEditorForm({
         </div>
 
         {/* Pricing */}
-        <div className="rounded-md bg-gray-50 border border-gray-200 px-4 py-3 flex flex-wrap items-end gap-4">
+        <div className="rounded-md bg-surface-alt border border-border px-4 py-3 flex flex-wrap items-end gap-4">
           <div>
             <p className="text-xs text-muted-foreground mb-1">Pricing method</p>
             <div className="flex gap-2 flex-wrap">
@@ -352,8 +352,8 @@ export default function VersionEditorForm({
                   onClick={() => set({ pricingMethod: m })}
                   className={`px-3 py-1 rounded-full text-xs font-medium border transition ${
                     f.pricingMethod === m
-                      ? 'border-[var(--olive)] bg-[var(--olive)]/10 text-[var(--olive-dk)]'
-                      : 'border-gray-300 text-gray-500 hover:border-gray-400'
+                      ? 'border-primary-strong bg-accent text-[var(--olive-dk)]'
+                      : 'border-border text-muted-foreground hover:border-gray-400'
                   }`}
                 >
                   {METHOD_LABELS[m]}
@@ -370,11 +370,11 @@ export default function VersionEditorForm({
                   min={0}
                   max={200}
                   step={0.5}
-                  className="w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+                  className="w-20 rounded-md border border-border px-2 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
                   value={f.pricingPercent}
                   onChange={e => set({ pricingPercent: e.target.value })}
                 />
-                <span className="text-sm text-gray-500">%</span>
+                <span className="text-sm text-muted-foreground">%</span>
               </div>
             </div>
           )}
@@ -382,12 +382,12 @@ export default function VersionEditorForm({
             <div>
               <label htmlFor="fixed-rate" className="block text-xs text-muted-foreground mb-1">Fixed rate</label>
               <div className="flex items-center gap-1">
-                <span className="text-sm text-gray-500">USD</span>
+                <span className="text-sm text-muted-foreground">USD</span>
                 <input id="fixed-rate"
                   type="number"
                   min={0}
                   step={0.01}
-                  className="w-28 rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+                  className="w-28 rounded-md border border-border px-2 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
                   value={f.pricingPercent}
                   onChange={e => set({ pricingPercent: e.target.value })}
                   placeholder="0.00"
@@ -416,18 +416,18 @@ export default function VersionEditorForm({
                 type="checkbox"
                 checked={f.isPaying}
                 onChange={e => set({ isPaying: e.target.checked })}
-                className="h-4 w-4 rounded border-gray-300 text-[var(--olive)] focus:ring-[var(--olive)]"
+                className="h-4 w-4 rounded border-border text-brand-text focus:ring-[var(--olive)]"
               />
-              <span className="text-sm text-gray-700">Paying traveller</span>
+              <span className="text-sm text-foreground">Paying traveller</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={f.isComplimentary}
                 onChange={e => set({ isComplimentary: e.target.checked })}
-                className="h-4 w-4 rounded border-gray-300 text-[var(--olive)] focus:ring-[var(--olive)]"
+                className="h-4 w-4 rounded border-border text-brand-text focus:ring-[var(--olive)]"
               />
-              <span className="text-sm text-gray-700">Complimentary</span>
+              <span className="text-sm text-foreground">Complimentary</span>
             </label>
           </div>
         </div>
@@ -439,8 +439,8 @@ export default function VersionEditorForm({
     <div className="space-y-6">
 
       {/* ── Trip Dates ─────────────────────────────────────────────────── */}
-      <section className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4">Trip Dates</h2>
+      <section className="rounded-xl border border-border bg-surface shadow-sm p-6">
+        <h2 className="text-sm font-semibold text-foreground mb-4">Trip Dates</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label htmlFor="travel-start-date" className={labelCls}>Travel start date</label>
@@ -465,7 +465,7 @@ export default function VersionEditorForm({
           </div>
         </div>
         {datesError && (
-          <p className="text-sm text-red-600 bg-red-50 rounded-md px-3 py-2 mb-3">{datesError}</p>
+          <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2 mb-3">{datesError}</p>
         )}
         {!isLocked && (
           <div className="flex items-center gap-3 flex-wrap">
@@ -484,8 +484,8 @@ export default function VersionEditorForm({
         )}
 
         {/* Language / direction */}
-        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-3 flex-wrap">
-          <span className="text-sm text-gray-500">Quote language <span className="text-muted-foreground text-xs">(auto-set from client)</span>:</span>
+        <div className="mt-4 pt-4 border-t border-border/70 flex items-center gap-3 flex-wrap">
+          <span className="text-sm text-muted-foreground">Quote language <span className="text-muted-foreground text-xs">(auto-set from client)</span>:</span>
           {(['en', 'ar'] as const).map(lang => (
             <button
               key={lang}
@@ -494,8 +494,8 @@ export default function VersionEditorForm({
               onClick={() => handleSaveLang(lang)}
               className={`px-3 py-1 rounded-full text-xs font-medium border transition disabled:opacity-50 ${
                 language === lang
-                  ? 'border-[var(--olive)] bg-[var(--olive)]/10 text-[var(--olive-dk)]'
-                  : 'border-gray-300 text-gray-500 hover:border-gray-400'
+                  ? 'border-primary-strong bg-accent text-[var(--olive-dk)]'
+                  : 'border-border text-muted-foreground hover:border-gray-400'
               }`}
             >
               {lang === 'en' ? '🇬🇧 English' : '🇸🇦 Arabic (RTL)'}
@@ -505,16 +505,16 @@ export default function VersionEditorForm({
             <span className="text-xs text-green-600">Saved</span>
           )}
           {langError && (
-            <span className="text-xs text-red-600">{langError}</span>
+            <span className="text-xs text-destructive">{langError}</span>
           )}
         </div>
       </section>
 
       {/* ── Travellers ─────────────────────────────────────────────────── */}
-      <section className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <section className="rounded-xl border border-border bg-surface shadow-sm">
+        <div className="px-6 py-4 border-b border-border/70 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-gray-900">Travellers</h2>
+            <h2 className="text-sm font-semibold text-foreground">Travellers</h2>
             {travellers.length > 0 && (
               <p className="text-xs text-muted-foreground mt-0.5">
                 {travellers.filter(t => t.is_paying).length} paying
@@ -527,7 +527,7 @@ export default function VersionEditorForm({
             <button
               type="button"
               onClick={() => { setShowAdd(true); setAddError('') }}
-              className="text-sm font-medium text-[var(--olive)] hover:text-[var(--olive-dk)]"
+              className="text-sm font-medium text-brand-text hover:text-brand-ink"
             >
               + Add Traveller
             </button>
@@ -553,7 +553,7 @@ export default function VersionEditorForm({
                         set={patch => setEditForm(f => ({ ...f, ...patch }))}
                       />
                       {editError && (
-                        <p className="text-sm text-red-600 bg-red-50 rounded-md px-3 py-2">{editError}</p>
+                        <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">{editError}</p>
                       )}
                       <div className="flex gap-2">
                         <button
@@ -567,7 +567,7 @@ export default function VersionEditorForm({
                         <button
                           type="button"
                           onClick={() => setEditingId(null)}
-                          className="rounded-md px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50"
+                          className="rounded-md px-4 py-2 text-sm font-medium text-muted-foreground border border-border hover:bg-muted"
                         >
                           Cancel
                         </button>
@@ -576,11 +576,11 @@ export default function VersionEditorForm({
                   ) : (
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-500 shrink-0 mt-0.5">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground shrink-0 mt-0.5">
                           {idx + 1}
                         </span>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-foreground">
                             {t.display_name || <span className="text-muted-foreground">Unnamed</span>}
                             {t.age_on_travel_date != null && (
                               <span className="text-muted-foreground font-normal ml-1">· age {t.age_on_travel_date}</span>
@@ -590,11 +590,11 @@ export default function VersionEditorForm({
                             <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-medium capitalize">
                               {bandName}
                             </span>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                               {ROOM_LABELS[t.room_category] ?? t.room_category}
                             </span>
                             {method === 'percentage' && pct != null && (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-warning-foreground">
                                 {pct}%
                               </span>
                             )}
@@ -602,7 +602,7 @@ export default function VersionEditorForm({
                               <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700">Free</span>
                             )}
                             {!t.is_paying && (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Non-paying</span>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Non-paying</span>
                             )}
                             {t.is_complimentary && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700">Comp</span>
@@ -615,7 +615,7 @@ export default function VersionEditorForm({
                           <button
                             type="button"
                             onClick={() => openEdit(t)}
-                            className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:border-gray-300"
+                            className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded border border-border hover:border-border"
                           >
                             Edit
                           </button>
@@ -623,7 +623,7 @@ export default function VersionEditorForm({
                             type="button"
                             onClick={() => handleDelete(t.id)}
                             disabled={deletePending}
-                            className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-100 hover:border-red-300 disabled:opacity-40"
+                            className="text-xs text-red-500 hover:opacity-80 px-2 py-1 rounded border border-red-100 hover:border-red-300 disabled:opacity-40"
                           >
                             Remove
                           </button>
@@ -638,7 +638,7 @@ export default function VersionEditorForm({
         )}
 
         {deleteError && (
-          <p className="text-sm text-red-600 bg-red-50 rounded-md px-3 py-2 mx-6 my-3">{deleteError}</p>
+          <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2 mx-6 my-3">{deleteError}</p>
         )}
 
         {travellers.length === 0 && !showAdd && (
@@ -649,14 +649,14 @@ export default function VersionEditorForm({
 
         {/* Add traveller form */}
         {showAdd && !isLocked && (
-          <div className="px-6 py-5 border-t border-gray-100 bg-gray-50/50">
-            <p className="text-sm font-medium text-gray-700 mb-4">New traveller</p>
+          <div className="px-6 py-5 border-t border-border/70 bg-surface-alt/50">
+            <p className="text-sm font-medium text-foreground mb-4">New traveller</p>
             <TravellerFormFields
               f={addForm}
               set={patch => setAddForm(f => ({ ...f, ...patch }))}
             />
             {addError && (
-              <p className="text-sm text-red-600 bg-red-50 rounded-md px-3 py-2 mt-3">{addError}</p>
+              <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2 mt-3">{addError}</p>
             )}
             <div className="flex gap-2 mt-4">
               <button
@@ -670,7 +670,7 @@ export default function VersionEditorForm({
               <button
                 type="button"
                 onClick={() => { setShowAdd(false); setAddError('') }}
-                className="rounded-md px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50"
+                className="rounded-md px-4 py-2 text-sm font-medium text-muted-foreground border border-border hover:bg-muted"
               >
                 Cancel
               </button>

@@ -38,14 +38,14 @@ export default function PaymentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="text-xs text-gray-500 mb-1">
+      <div className="text-xs text-muted-foreground mb-1">
         Quote <span className="font-mono">{quoteNumber}</span> — outstanding:{' '}
-        <span className="font-semibold text-gray-800">${outstanding.toLocaleString()}</span>
+        <span className="font-semibold text-foreground">${outstanding.toLocaleString()}</span>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label htmlFor="amount" className="block text-xs text-gray-500 mb-1">Amount (USD)</label>
+          <label htmlFor="amount" className="block text-xs text-muted-foreground mb-1">Amount (USD)</label>
           <input id="amount"
             name="amount"
             type="number"
@@ -53,27 +53,27 @@ export default function PaymentForm({
             min="0.01"
             defaultValue={outstanding > 0 ? outstanding.toFixed(2) : ''}
             required
-            className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
+            className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
           />
         </div>
         <div>
-          <label htmlFor="receivedAt" className="block text-xs text-gray-500 mb-1">Date received</label>
+          <label htmlFor="receivedAt" className="block text-xs text-muted-foreground mb-1">Date received</label>
           <input id="receivedAt"
             name="receivedAt"
             type="date"
             defaultValue={new Date().toISOString().slice(0, 10)}
             required
-            className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
+            className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label htmlFor="paymentType" className="block text-xs text-gray-500 mb-1">Type</label>
+          <label htmlFor="paymentType" className="block text-xs text-muted-foreground mb-1">Type</label>
           <select id="paymentType"
             name="paymentType"
-            className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
+            className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
           >
             <option value="deposit">Deposit</option>
             <option value="balance">Balance</option>
@@ -83,10 +83,10 @@ export default function PaymentForm({
           </select>
         </div>
         <div>
-          <label htmlFor="method" className="block text-xs text-gray-500 mb-1">Method</label>
+          <label htmlFor="method" className="block text-xs text-muted-foreground mb-1">Method</label>
           <select id="method"
             name="method"
-            className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
+            className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
           >
             <option value="">— select —</option>
             <option value="bank_transfer">Bank transfer</option>
@@ -100,12 +100,12 @@ export default function PaymentForm({
       </div>
 
       <div>
-        <label htmlFor="reference" className="block text-xs text-gray-500 mb-1">Reference / notes</label>
+        <label htmlFor="reference" className="block text-xs text-muted-foreground mb-1">Reference / notes</label>
         <input id="reference"
           name="reference"
           type="text"
           placeholder="Bank ref, receipt no, etc."
-          className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
+          className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
         />
       </div>
 
@@ -122,7 +122,7 @@ export default function PaymentForm({
         <button
           type="button"
           onClick={onDone}
-          className="px-4 rounded py-2 text-sm text-gray-600 border border-gray-200 hover:bg-gray-50"
+          className="px-4 rounded py-2 text-sm text-muted-foreground border border-border hover:bg-muted"
         >
           Cancel
         </button>

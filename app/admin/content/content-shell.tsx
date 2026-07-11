@@ -23,7 +23,7 @@ function NavGroup({
 }) {
   return (
     <div className="mb-7">
-      <h3 className="mb-2 text-xs font-semibold text-gray-700">{title}</h3>
+      <h3 className="mb-2 text-xs font-semibold text-foreground">{title}</h3>
       <div className="space-y-0.5">
         {items.map((item) => {
           const isActive = active === item.key
@@ -31,10 +31,10 @@ function NavGroup({
             <Link
               key={item.key}
               href={item.href}
-              className={`flex items-center gap-2 border-b border-gray-200 px-2 py-2 text-sm transition ${
+              className={`flex items-center gap-2 border-b border-border px-2 py-2 text-sm transition ${
                 isActive
-                  ? 'bg-[var(--olive)]/10 font-semibold text-[var(--olive-dk)]'
-                  : 'text-gray-600 hover:bg-white hover:text-gray-900'
+                  ? 'bg-accent font-semibold text-[var(--olive-dk)]'
+                  : 'text-muted-foreground hover:bg-surface hover:text-foreground'
               }`}
             >
               <span className="w-4 text-center text-muted-foreground">{item.icon}</span>
@@ -60,9 +60,9 @@ export default function ContentShell({
 }) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
-      <div className="mb-6 border-b border-gray-200 bg-white px-4 py-4">
-        <h1 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-          <span className="text-xl text-gray-500">{icon}</span>
+      <div className="mb-6 border-b border-border bg-surface px-4 py-4">
+        <h1 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+          <span className="text-xl text-muted-foreground">{icon}</span>
           {title}
         </h1>
       </div>
@@ -72,10 +72,10 @@ export default function ContentShell({
           <NavGroup title="Main Content" items={MAIN_CONTENT} active={active} />
           <NavGroup title="Company Content" items={COMPANY_CONTENT} active={active} />
           <div>
-            <h3 className="mb-2 text-xs font-semibold text-gray-700">Other</h3>
+            <h3 className="mb-2 text-xs font-semibold text-foreground">Other</h3>
             <Link
               href="/admin/settings"
-              className="flex items-center gap-2 border-b border-gray-200 px-2 py-2 text-sm text-gray-600 hover:bg-white hover:text-gray-900"
+              className="flex items-center gap-2 border-b border-border px-2 py-2 text-sm text-muted-foreground hover:bg-surface hover:text-foreground"
             >
               <span className="w-4 text-center text-muted-foreground">⚙</span>
               <span>Your Library Settings</span>

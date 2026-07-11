@@ -6,7 +6,7 @@ import { createSupplier, setSupplierActive, updateSupplier } from './actions'
 import { SUPPLIER_TYPES, type SupplierRow } from './constants'
 
 const inputCls =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+  'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
 
 function typeLabel(t: string) {
   return t.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())
@@ -79,7 +79,7 @@ export default function SuppliersTable({
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden">
         {suppliers.length === 0 ? (
           <p className="p-10 text-center text-sm text-muted-foreground">
             No suppliers yet — add the first one below. Rate cards link to suppliers so Payables knows who is owed.
@@ -87,7 +87,7 @@ export default function SuppliersTable({
         ) : (
           <table className="stack-table w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-muted-foreground border-b border-gray-100">
+              <tr className="text-left text-xs text-muted-foreground border-b border-border/70">
                 <th className="px-5 py-3 font-medium">Name</th>
                 <th className="px-3 py-3 font-medium">Type</th>
                 <th className="px-3 py-3 font-medium">Contact</th>
@@ -105,7 +105,7 @@ export default function SuppliersTable({
                         <SupplierFields supplier={s} />
                         <div className="flex gap-2 justify-end">
                           <button type="button" onClick={() => setEditingId(null)}
-                            className="rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">
+                            className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground border border-border hover:bg-muted">
                             Cancel
                           </button>
                           <button type="submit" disabled={pending}
@@ -118,12 +118,12 @@ export default function SuppliersTable({
                   </tr>
                 ) : (
                   <tr key={s.id} className="border-b border-gray-50 last:border-0">
-                    <td data-label="Name" className="px-5 py-3 font-medium text-gray-800">
+                    <td data-label="Name" className="px-5 py-3 font-medium text-foreground">
                       {s.name}
                       {s.notes && <p className="text-xs text-muted-foreground font-normal mt-0.5">{s.notes}</p>}
                     </td>
-                    <td data-label="Type" className="px-3 py-3 text-gray-600">{typeLabel(s.supplier_type)}</td>
-                    <td data-label="Contact" className="px-3 py-3 text-gray-500 text-xs">
+                    <td data-label="Type" className="px-3 py-3 text-muted-foreground">{typeLabel(s.supplier_type)}</td>
+                    <td data-label="Contact" className="px-3 py-3 text-muted-foreground text-xs">
                       {s.contact_email && <p>{s.contact_email}</p>}
                       {s.contact_phone && <p>{s.contact_phone}</p>}
                       {!s.contact_email && !s.contact_phone && '—'}
@@ -131,26 +131,26 @@ export default function SuppliersTable({
                     <td data-label="Rates" className="px-3 py-3 text-xs">
                       {(rateCardCounts[s.id] ?? 0) > 0 ? (
                         <Link href={`/admin/content/rates?supplierId=${s.id}`}
-                          className="text-[var(--olive)] hover:text-[var(--olive-dk)] font-medium">
+                          className="text-brand-text hover:text-brand-ink font-medium">
                           {rateCardCounts[s.id]} rate card{rateCardCounts[s.id] === 1 ? '' : 's'}
                         </Link>
                       ) : (
                         <Link href={`/admin/content/rates/new?supplierId=${s.id}`}
-                          className="text-muted-foreground hover:text-gray-600">
+                          className="text-muted-foreground hover:text-foreground">
                           Add rates
                         </Link>
                       )}
                     </td>
                     <td data-label="Status" className="px-3 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${s.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${s.is_active ? 'bg-green-50 text-green-700' : 'bg-muted text-muted-foreground'}`}>
                         {s.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-right whitespace-nowrap">
                       <button type="button" onClick={() => setEditingId(s.id)}
-                        className="text-xs text-[var(--olive)] hover:text-[var(--olive-dk)] mr-3">Edit</button>
+                        className="text-xs text-brand-text hover:text-brand-ink mr-3">Edit</button>
                       <button type="button" onClick={() => toggleActive(s)} disabled={pending}
-                        className="text-xs text-muted-foreground hover:text-gray-600">
+                        className="text-xs text-muted-foreground hover:text-foreground">
                         {s.is_active ? 'Deactivate' : 'Reactivate'}
                       </button>
                     </td>
@@ -162,8 +162,8 @@ export default function SuppliersTable({
         )}
       </div>
 
-      <form onSubmit={submitNew} className="bg-[var(--olive)]/5 rounded-lg border border-[var(--olive)]/30 p-4 space-y-3">
-        <p className="text-sm font-medium text-gray-700">Add supplier</p>
+      <form onSubmit={submitNew} className="bg-[var(--olive)]/5 rounded-lg border border-primary-strong/30 p-4 space-y-3">
+        <p className="text-sm font-medium text-foreground">Add supplier</p>
         <SupplierFields />
         <div className="flex justify-end">
           <button type="submit" disabled={pending}
@@ -173,7 +173,7 @@ export default function SuppliersTable({
         </div>
       </form>
 
-      {error && <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>}
+      {error && <p className="text-sm text-destructive bg-destructive/10 rounded px-3 py-2">{error}</p>}
       {message && <p className="text-sm text-green-700 bg-green-50 rounded px-3 py-2">{message}</p>}
     </div>
   )

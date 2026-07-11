@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ImageUpload, GalleryUpload } from '@/components/admin/image-upload'
 
-const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
 
 const linesToArr = (s: string) => s.split('\n').map(l => l.trim()).filter(Boolean)
 const arrToLines = (a: any) => (Array.isArray(a) ? a.join('\n') : '')
@@ -101,13 +101,13 @@ export default function TourEditForm({ tour }: { tour: any }) {
   }
 
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div className="bg-white rounded-lg border border-gray-200 p-5 space-y-4">
-      <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+    <div className="rounded-xl border border-border bg-surface shadow-sm p-5 space-y-4">
+      <h2 className="text-sm font-semibold text-foreground">{title}</h2>
       {children}
     </div>
   )
   const Label = ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
-    <label htmlFor={htmlFor} className="block text-sm font-medium text-gray-700 mb-1">{children}</label>
+    <label htmlFor={htmlFor} className="block text-sm font-medium text-foreground mb-1">{children}</label>
   )
 
   return (
@@ -173,9 +173,9 @@ export default function TourEditForm({ tour }: { tour: any }) {
       <Section title="FAQs">
         <div className="space-y-4">
           {faqs.map((f, i) => (
-            <div key={i} className="rounded-md border border-gray-200 p-3 space-y-2">
+            <div key={i} className="rounded-md border border-border p-3 space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-semibold text-gray-500">FAQ {i + 1}</span>
+                <span className="text-xs font-semibold text-muted-foreground">FAQ {i + 1}</span>
                 <button type="button" onClick={() => setFaqs(faqs.filter((_, idx) => idx !== i))} className="text-xs text-red-500 hover:underline">Remove</button>
               </div>
               <div className="grid sm:grid-cols-2 gap-2">
@@ -187,7 +187,7 @@ export default function TourEditForm({ tour }: { tour: any }) {
             </div>
           ))}
           <button type="button" onClick={() => setFaqs([...faqs, { q_en: '', a_en: '', q_ar: '', a_ar: '' }])}
-            className="text-sm font-medium text-[var(--olive)] hover:underline">+ Add FAQ</button>
+            className="text-sm font-medium text-brand-text hover:underline">+ Add FAQ</button>
         </div>
       </Section>
 
@@ -210,12 +210,12 @@ export default function TourEditForm({ tour }: { tour: any }) {
           <div><Label htmlFor="tf-depositPercent">Deposit %</Label><input id="tf-depositPercent" type="number" value={depositPercent} onChange={e => setDepositPercent(Number(e.target.value))} className={inputCls} /></div>
         </div>
         <div className="flex items-center gap-6">
-          <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)} className="rounded border-gray-300" /> Featured on homepage</label>
-          <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={showOnWebsite} onChange={e => setShowOnWebsite(e.target.checked)} className="rounded border-gray-300" /> Show on website</label>
+          <label className="flex items-center gap-2 text-sm text-foreground"><input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)} className="rounded border-border" /> Featured on homepage</label>
+          <label className="flex items-center gap-2 text-sm text-foreground"><input type="checkbox" checked={showOnWebsite} onChange={e => setShowOnWebsite(e.target.checked)} className="rounded border-border" /> Show on website</label>
         </div>
       </Section>
 
-      {error && <p className="text-sm text-red-600 bg-red-50 rounded-md px-4 py-3">{error}</p>}
+      {error && <p className="text-sm text-destructive bg-destructive/10 rounded-md px-4 py-3">{error}</p>}
       {saved && <p className="text-sm text-green-600 bg-green-50 rounded-md px-4 py-3">Saved successfully.</p>}
 
       <div className="sticky bottom-4">

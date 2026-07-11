@@ -29,20 +29,20 @@ export default async function DeparturesPage({
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Departures</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Scheduled fixed-date trips and seat inventory</p>
+          <h1 className="text-lg font-semibold text-foreground">Departures</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Scheduled fixed-date trips and seat inventory</p>
         </div>
         <ButtonLink href="/admin/departures/new" size="sm">+ New Departure</ButtonLink>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
+      <div className="flex gap-1 mb-6 border-b border-border">
         <Link
           href="/admin/departures"
           className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
             !showArchived
-              ? 'border-[var(--olive)] text-[var(--olive)]'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              ? 'border-primary-strong text-brand-text'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}>
           Published
         </Link>
@@ -50,22 +50,22 @@ export default async function DeparturesPage({
           href="/admin/departures?show=archived"
           className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
             showArchived
-              ? 'border-[var(--olive)] text-[var(--olive)]'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              ? 'border-primary-strong text-brand-text'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}>
           Archived
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden">
         {!departures || departures.length === 0 ? (
           <div className="p-10 text-center">
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               {showArchived ? 'No archived departures.' : 'No departures scheduled yet.'}
             </p>
             {!showArchived && (
               <Link href="/admin/departures/new"
-                className="text-sm font-medium text-[var(--olive)] hover:underline">
+                className="text-sm font-medium text-brand-text hover:underline">
                 Schedule your first departure
               </Link>
             )}
@@ -73,7 +73,7 @@ export default async function DeparturesPage({
         ) : (
           <table className="stack-table w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="px-4 py-3 font-medium">Tour</th>
                 <th className="px-4 py-3 font-medium">Dates</th>
                 <th className="px-4 py-3 font-medium">Seats</th>
@@ -88,23 +88,23 @@ export default async function DeparturesPage({
                 const tour = dep.tours as any
                 const available = dep.max_seats - dep.booked_seats
                 return (
-                  <tr key={dep.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <tr key={dep.id} className="border-b border-border/70 hover:bg-muted">
                     <td data-label="Tour" className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{tour?.title_en ?? 'Untitled tour'}</p>
+                      <p className="font-medium text-foreground">{tour?.title_en ?? 'Untitled tour'}</p>
                       {tour?.type && <p className="text-xs text-muted-foreground capitalize">{tour.type}</p>}
                     </td>
-                    <td data-label="Dates" className="px-4 py-3 text-gray-600">
+                    <td data-label="Dates" className="px-4 py-3 text-muted-foreground">
                       {new Date(dep.start_date).toLocaleDateString('en-GB')}
                       {' → '}
                       {new Date(dep.end_date).toLocaleDateString('en-GB')}
                     </td>
                     <td data-label="Seats" className="px-4 py-3">
-                      <span className={available <= 0 ? 'text-red-600 font-medium' : 'text-gray-700'}>
+                      <span className={available <= 0 ? 'text-destructive font-medium' : 'text-foreground'}>
                         {available} / {dep.max_seats}
                       </span>
                       <span className="text-xs text-muted-foreground block">{dep.booked_seats} booked</span>
                     </td>
-                    <td data-label="Price" className="px-4 py-3 text-gray-600 hidden md:table-cell">
+                    <td data-label="Price" className="px-4 py-3 text-muted-foreground hidden md:table-cell">
                       ${Number(dep.price_usd).toLocaleString()}
                     </td>
                     <td data-label="Status" className="px-4 py-3">
@@ -120,7 +120,7 @@ export default async function DeparturesPage({
                           </button>
                         ) : (
                           <button type="submit"
-                            className="text-xs px-2.5 py-1 rounded-full font-medium bg-gray-100 text-gray-500 hover:bg-green-100 hover:text-green-700"
+                            className="text-xs px-2.5 py-1 rounded-full font-medium bg-muted text-muted-foreground hover:bg-green-100 hover:text-green-700"
                             title="Hidden from website — click to publish">
                             ○ Publish
                           </button>
@@ -129,7 +129,7 @@ export default async function DeparturesPage({
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link href={"/admin/departures/" + dep.id}
-                        className="text-xs text-[var(--olive)] hover:underline">
+                        className="text-xs text-brand-text hover:underline">
                         Edit
                       </Link>
                     </td>

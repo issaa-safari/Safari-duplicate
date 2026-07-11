@@ -17,7 +17,7 @@ const CATEGORIES = ['salaries', 'rent', 'fuel', 'marketing', 'office', 'maintena
 const METHODS = ['bank_transfer', 'card', 'cash', 'mpesa', 'cheque', 'other']
 
 const inputCls =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+  'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
 
 function fmt(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -60,8 +60,8 @@ export default function ExpensesTable({ expenses }: { expenses: ExpenseRow[] }) 
 
   return (
     <div className="space-y-4">
-      <form onSubmit={submitNew} className="bg-[var(--olive)]/5 rounded-lg border border-[var(--olive)]/30 p-4">
-        <p className="text-sm font-medium text-gray-700 mb-3">Log expense</p>
+      <form onSubmit={submitNew} className="bg-[var(--olive)]/5 rounded-lg border border-primary-strong/30 p-4">
+        <p className="text-sm font-medium text-foreground mb-3">Log expense</p>
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <div className="col-span-2">
             <input name="description" required placeholder="Description *" className={inputCls} />
@@ -85,15 +85,15 @@ export default function ExpensesTable({ expenses }: { expenses: ExpenseRow[] }) 
         </div>
       </form>
 
-      {error && <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>}
+      {error && <p className="text-sm text-destructive bg-destructive/10 rounded px-3 py-2">{error}</p>}
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden">
         {expenses.length === 0 ? (
           <p className="p-10 text-center text-sm text-muted-foreground">No expenses logged yet.</p>
         ) : (
           <table className="stack-table w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-muted-foreground border-b border-gray-100">
+              <tr className="text-left text-xs text-muted-foreground border-b border-border/70">
                 <th className="px-5 py-3 font-medium">Date</th>
                 <th className="px-3 py-3 font-medium">Category</th>
                 <th className="px-3 py-3 font-medium">Description</th>
@@ -105,18 +105,18 @@ export default function ExpensesTable({ expenses }: { expenses: ExpenseRow[] }) 
             <tbody>
               {expenses.map(x => (
                 <tr key={x.id} className="border-b border-gray-50 last:border-0">
-                  <td data-label="Date" className="px-5 py-2.5 text-gray-600 whitespace-nowrap">
+                  <td data-label="Date" className="px-5 py-2.5 text-muted-foreground whitespace-nowrap">
                     {new Date(x.expense_date).toLocaleDateString('en-GB')}
                   </td>
                   <td data-label="Category" className="px-3 py-2.5">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{label(x.category)}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{label(x.category)}</span>
                   </td>
-                  <td data-label="Description" className="px-3 py-2.5 text-gray-800">
+                  <td data-label="Description" className="px-3 py-2.5 text-foreground">
                     {x.description}
                     {x.reference && <span className="text-xs text-muted-foreground ml-2">({x.reference})</span>}
                   </td>
-                  <td data-label="Method" className="px-3 py-2.5 text-gray-500 text-xs">{x.method ? label(x.method) : '—'}</td>
-                  <td data-label="Amount" className="px-3 py-2.5 text-right font-medium text-gray-900 tabular-nums">${fmt(Number(x.amount_usd))}</td>
+                  <td data-label="Method" className="px-3 py-2.5 text-muted-foreground text-xs">{x.method ? label(x.method) : '—'}</td>
+                  <td data-label="Amount" className="px-3 py-2.5 text-right font-medium text-foreground tabular-nums">${fmt(Number(x.amount_usd))}</td>
                   <td className="px-3 py-2.5 text-right">
                     <button type="button" onClick={() => remove(x.id)} disabled={pending}
                       className="text-xs text-gray-300 hover:text-red-500">✕</button>

@@ -18,8 +18,8 @@ type Rate = {
   pricing_unit: string; amount: number; min_group_size: number | null; max_group_size: number | null
 }
 
-const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
-const smallInputCls = 'w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const smallInputCls = 'w-full rounded-md border border-border px-2 py-1.5 text-xs text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
 const linkedTypes = new Set(['accommodation', 'activity', 'vehicle', 'staff', 'destination', 'park_fee'])
 const roomCategories = ['sharing', 'single', 'triple', 'extra_bed', 'no_bed']
 
@@ -65,36 +65,36 @@ export default function RateCardEditor({ card, rates, ageBands, entities, suppli
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center gap-4"><Link href="/admin/content/rates" className="text-sm text-gray-500 hover:text-gray-700">← Supplier Rates</Link><h1 className="text-lg font-semibold text-gray-900">{card.name}</h1></div>
+      <div className="flex items-center gap-4"><Link href="/admin/content/rates" className="text-sm text-muted-foreground hover:text-foreground">← Supplier Rates</Link><h1 className="text-lg font-semibold text-foreground">{card.name}</h1></div>
 
-      <form onSubmit={cardSubmit} className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+      <form onSubmit={cardSubmit} className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
         <input type="hidden" name="cardId" value={card.id} />
-        <h2 className="text-sm font-semibold text-gray-900">Rate Card Details</h2>
+        <h2 className="text-sm font-semibold text-foreground">Rate Card Details</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label><input id="name" name="name" required defaultValue={card.name} className={inputCls} /></div>
+          <div><label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">Name</label><input id="name" name="name" required defaultValue={card.name} className={inputCls} /></div>
           <div>
-            <label htmlFor="supplierId" className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+            <label htmlFor="supplierId" className="block text-sm font-medium text-foreground mb-1">Supplier</label>
             <select id="supplierId" name="supplierId" defaultValue={card.supplier_id ?? ''} className={inputCls}>
               <option value="">— no supplier —</option>
               {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             {!card.supplier_id && card.supplier_name && <p className="text-xs text-amber-600 mt-1">Legacy supplier text: “{card.supplier_name}” — pick a real supplier to include this card in Payables.</p>}
           </div>
-          <div><label htmlFor="entityType" className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label><select id="entityType" name="entityType" value={entityType} onChange={e => setEntityType(e.target.value)} className={inputCls}>{ENTITY_TYPES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
-          <div><label htmlFor="costCategory" className="block text-sm font-medium text-gray-700 mb-1">Cost Category</label><select id="costCategory" name="costCategory" defaultValue={card.cost_category} className={inputCls}>{COST_CATEGORIES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
-          {linkedTypes.has(entityType) && <div><label htmlFor="entityId" className="block text-sm font-medium text-gray-700 mb-1">Linked Content</label><select id="entityId" name="entityId" defaultValue={entityType === card.entity_type ? card.entity_id ?? '' : ''} className={inputCls}><option value="">No linked item</option>{(entities[entityType] ?? []).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>}
-          <div><label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">Currency</label><input id="currency" name="currency" defaultValue={card.currency} maxLength={3} required className={inputCls} /></div>
-          <div><label htmlFor="validFrom" className="block text-sm font-medium text-gray-700 mb-1">Valid From</label><input id="validFrom" type="date" name="validFrom" defaultValue={card.valid_from} required className={inputCls} /></div>
-          <div><label htmlFor="validTo" className="block text-sm font-medium text-gray-700 mb-1">Valid To</label><input id="validTo" type="date" name="validTo" defaultValue={card.valid_to} required className={inputCls} /></div>
+          <div><label htmlFor="entityType" className="block text-sm font-medium text-foreground mb-1">Entity Type</label><select id="entityType" name="entityType" value={entityType} onChange={e => setEntityType(e.target.value)} className={inputCls}>{ENTITY_TYPES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
+          <div><label htmlFor="costCategory" className="block text-sm font-medium text-foreground mb-1">Cost Category</label><select id="costCategory" name="costCategory" defaultValue={card.cost_category} className={inputCls}>{COST_CATEGORIES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
+          {linkedTypes.has(entityType) && <div><label htmlFor="entityId" className="block text-sm font-medium text-foreground mb-1">Linked Content</label><select id="entityId" name="entityId" defaultValue={entityType === card.entity_type ? card.entity_id ?? '' : ''} className={inputCls}><option value="">No linked item</option>{(entities[entityType] ?? []).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>}
+          <div><label htmlFor="currency" className="block text-sm font-medium text-foreground mb-1">Currency</label><input id="currency" name="currency" defaultValue={card.currency} maxLength={3} required className={inputCls} /></div>
+          <div><label htmlFor="validFrom" className="block text-sm font-medium text-foreground mb-1">Valid From</label><input id="validFrom" type="date" name="validFrom" defaultValue={card.valid_from} required className={inputCls} /></div>
+          <div><label htmlFor="validTo" className="block text-sm font-medium text-foreground mb-1">Valid To</label><input id="validTo" type="date" name="validTo" defaultValue={card.valid_to} required className={inputCls} /></div>
         </div>
-        <div><label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label><textarea id="notes" name="notes" defaultValue={card.notes ?? ''} rows={2} className={inputCls} /></div>
-        <div className="flex items-center justify-between"><label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} className="accent-[var(--olive)]" />Active</label><Button type="submit" size="sm" loading={pending} loadingText="Saving…">Save Card</Button></div>
+        <div><label htmlFor="notes" className="block text-sm font-medium text-foreground mb-1">Notes</label><textarea id="notes" name="notes" defaultValue={card.notes ?? ''} rows={2} className={inputCls} /></div>
+        <div className="flex items-center justify-between"><label className="flex items-center gap-2 text-sm text-foreground"><input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} className="accent-[var(--olive)]" />Active</label><Button type="submit" size="sm" loading={pending} loadingText="Saving…">Save Card</Button></div>
       </form>
 
       <section className="space-y-3">
-        <div><h2 className="text-sm font-semibold text-gray-900">Rates</h2><p className="text-xs text-gray-500">Use blank traveller or room categories when the rate applies to all.</p></div>
-        {rates.map(rate => <form key={rate.id} onSubmit={event => rateSubmit(event, rate.id)} className="bg-white rounded-lg border border-gray-200 p-4"><div className="grid grid-cols-2 md:grid-cols-7 gap-2"><RateFields rate={rate} ageBands={ageBands} /></div><div className="flex justify-end gap-2 mt-3"><Button type="button" variant="danger-text" size="sm" onClick={() => removeRate(rate.id)} disabled={pending}>Delete</Button><Button type="submit" size="sm" loading={pending} loadingText="Saving…">Save Rate</Button></div></form>)}
-        <form onSubmit={event => rateSubmit(event)} className="bg-[var(--olive)]/5 rounded-lg border border-[var(--olive)]/30 p-4"><p className="text-sm font-medium text-gray-700 mb-3">Add Rate</p><div className="grid grid-cols-2 md:grid-cols-7 gap-2"><RateFields ageBands={ageBands} /></div><div className="flex justify-end mt-3"><Button type="submit" loading={pending} loadingText="Adding…">+ Add Rate</Button></div></form>
+        <div><h2 className="text-sm font-semibold text-foreground">Rates</h2><p className="text-xs text-muted-foreground">Use blank traveller or room categories when the rate applies to all.</p></div>
+        {rates.map(rate => <form key={rate.id} onSubmit={event => rateSubmit(event, rate.id)} className="rounded-xl border border-border bg-surface shadow-sm p-4"><div className="grid grid-cols-2 md:grid-cols-7 gap-2"><RateFields rate={rate} ageBands={ageBands} /></div><div className="flex justify-end gap-2 mt-3"><Button type="button" variant="danger-text" size="sm" onClick={() => removeRate(rate.id)} disabled={pending}>Delete</Button><Button type="submit" size="sm" loading={pending} loadingText="Saving…">Save Rate</Button></div></form>)}
+        <form onSubmit={event => rateSubmit(event)} className="bg-[var(--olive)]/5 rounded-lg border border-primary-strong/30 p-4"><p className="text-sm font-medium text-foreground mb-3">Add Rate</p><div className="grid grid-cols-2 md:grid-cols-7 gap-2"><RateFields ageBands={ageBands} /></div><div className="flex justify-end mt-3"><Button type="submit" loading={pending} loadingText="Adding…">+ Add Rate</Button></div></form>
       </section>
 
       {error && <Alert variant="error">{error}</Alert>}

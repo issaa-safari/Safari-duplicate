@@ -164,13 +164,13 @@ export default async function QuoteDetailPage({
       <div className="flex items-start justify-between mb-6">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/admin/quotes" className="text-sm text-gray-500 hover:text-gray-700">
+            <Link href="/admin/quotes" className="text-sm text-muted-foreground hover:text-foreground">
               ← Quotes
             </Link>
             <span className="text-gray-300">/</span>
-            <span className="text-sm font-mono text-gray-500">{quote.quote_number}</span>
+            <span className="text-sm font-mono text-muted-foreground">{quote.quote_number}</span>
           </div>
-          <h1 className="text-lg font-semibold text-gray-900">
+          <h1 className="text-lg font-semibold text-foreground">
             {latestVersion?.title || clientName}
           </h1>
           <div className="flex items-center gap-2 mt-1.5">
@@ -186,15 +186,15 @@ export default async function QuoteDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left — client + context */}
         <div className="space-y-4">
-          <div className="bg-white rounded-lg border border-gray-200 p-5">
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Client</h2>
             {client ? (
               <>
                 <Link href={`/admin/clients/${quote.client_id}`}
-                  className="font-medium text-gray-900 hover:text-[var(--olive-dk)]">
+                  className="font-medium text-foreground hover:text-brand-ink">
                   {client.first_name} {client.last_name}
                 </Link>
-                <p className="text-sm text-gray-500 mt-0.5">{client.email}</p>
+                <p className="text-sm text-muted-foreground mt-0.5">{client.email}</p>
                 {client.country && <p className="text-xs text-muted-foreground mt-0.5">🌍 {client.country}</p>}
                 <div className="flex flex-wrap gap-2 mt-3">
                   {client.phone && (
@@ -225,27 +225,27 @@ export default async function QuoteDetailPage({
           </div>
 
           {requestRow && (
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
               <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Linked Request</h2>
               <Link
                 href={`/admin/requests/${(requestRow as any).id}`}
-                className="text-sm text-[var(--olive)] hover:underline font-mono">
+                className="text-sm text-brand-text hover:underline font-mono">
                 {(requestRow as any).reference}
               </Link>
             </div>
           )}
 
           {tourRow && (
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
               <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Tour Template</h2>
-              <p className="text-sm text-gray-700">{(tourRow as any).title_en}</p>
+              <p className="text-sm text-foreground">{(tourRow as any).title_en}</p>
             </div>
           )}
 
           {/* Versions history */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-700">Versions</h2>
+          <div className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden">
+            <div className="px-5 py-3 border-b border-border/70 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-foreground">Versions</h2>
               <span className="text-xs text-muted-foreground">{versions.length}</span>
             </div>
             {versions.length === 0 ? (
@@ -257,7 +257,7 @@ export default async function QuoteDetailPage({
                     <div className="min-w-0">
                       <Link
                         href={`/admin/quotes/${quote.id}?step=itinerary&version=${v.id}`}
-                        className="text-[var(--olive)] hover:underline font-medium text-sm">
+                        className="text-brand-text hover:underline font-medium text-sm">
                         v{v.version_number}
                       </Link>
                       <div className="mt-0.5"><StatusBadge status={v.status} /></div>
@@ -273,7 +273,7 @@ export default async function QuoteDetailPage({
         {/* Right — the unified workspace */}
         <div className="lg:col-span-3">
           {versions.length === 0 || !latestVersion ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-10 text-center text-sm text-muted-foreground">
+            <div className="rounded-xl border border-border bg-surface shadow-sm p-10 text-center text-sm text-muted-foreground">
               This quote has no version yet.
             </div>
           ) : (

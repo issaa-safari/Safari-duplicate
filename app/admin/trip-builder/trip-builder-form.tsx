@@ -37,10 +37,10 @@ const RESIDENCIES = [
 ] as const
 
 const inputCls =
-  'w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--olive)] disabled:bg-gray-50 disabled:text-muted-foreground'
-const labelCls = 'block text-[11px] text-gray-500 mb-0.5'
+  'w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--olive)] disabled:bg-surface-alt disabled:text-muted-foreground'
+const labelCls = 'block text-[11px] text-muted-foreground mb-0.5'
 const readonlyCls =
-  'w-full rounded-md border border-gray-100 bg-gray-50 px-2 py-1.5 text-sm text-right text-gray-700 tabular-nums'
+  'w-full rounded-md border border-border/70 bg-surface-alt px-2 py-1.5 text-sm text-right text-foreground tabular-nums'
 
 function fmt(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -394,7 +394,7 @@ export default function TripBuilderForm({
           manual ? (
             <span className="text-[10px] text-amber-600">no rate card — manual price used</span>
           ) : (
-            <span className="inline-block rounded-full bg-red-50 border border-red-200 text-red-700 text-[11px] px-2 py-0.5 whitespace-nowrap">
+            <span className="inline-block rounded-full bg-destructive/10 border border-destructive/30 text-destructive text-[11px] px-2 py-0.5 whitespace-nowrap">
               {res.message}
             </span>
           )
@@ -408,7 +408,7 @@ export default function TripBuilderForm({
     const manual = manualPriceOf(row.manualUnitCostUsd) !== null
     return total !== null
       ? (
-        <span className="tabular-nums font-medium text-gray-900">
+        <span className="tabular-nums font-medium text-foreground">
           ${fmt(total)}
           {manual && <span className="block text-[10px] font-normal text-amber-600">manual</span>}
         </span>
@@ -416,10 +416,10 @@ export default function TripBuilderForm({
       : <span className="text-xs text-gray-300">—</span>
   }
 
-  const section = 'bg-white rounded-lg border border-gray-200'
-  const sectionHead = 'px-4 py-2.5 border-b border-gray-100 flex items-center justify-between'
-  const sectionTitle = 'text-sm font-semibold text-gray-800'
-  const addBtn = 'text-xs font-medium text-[var(--olive)] hover:text-[var(--olive-dk)]'
+  const section = 'rounded-xl border border-border bg-surface shadow-sm'
+  const sectionHead = 'px-4 py-2.5 border-b border-border/70 flex items-center justify-between'
+  const sectionTitle = 'text-sm font-semibold text-foreground'
+  const addBtn = 'text-xs font-medium text-brand-text hover:text-brand-ink'
   const removeBtn = 'text-gray-300 hover:text-red-500 text-sm px-1'
 
   function hotelSection(heading: string) {
@@ -439,21 +439,21 @@ export default function TripBuilderForm({
             {versionId && (
               <button type="button" onClick={() => handleResync()} disabled={resyncing}
                 title="Re-pull hotel stays from this quote's itinerary"
-                className="text-xs text-gray-500 hover:text-[var(--olive-dk)] border border-gray-200 hover:border-[var(--olive-lt)] rounded px-2 py-1 disabled:opacity-50">
+                className="text-xs text-muted-foreground hover:text-brand-ink border border-border hover:border-[var(--olive-lt)] rounded px-2 py-1 disabled:opacity-50">
                 {resyncing ? 'Syncing…' : '↻ Re-sync from itinerary'}
               </button>
             )}
             <button type="button" onClick={addRow} className={addBtn}>+ Add hotel row (↵)</button>
           </div>
         </div>
-        {resyncError && <p className="px-4 pt-2 text-xs text-red-600">{resyncError}</p>}
+        {resyncError && <p className="px-4 pt-2 text-xs text-destructive">{resyncError}</p>}
         {rows.length === 0 ? (
           <p className="px-4 py-4 text-sm text-muted-foreground">No hotel rows yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="stack-table w-full text-sm min-w-[1080px]">
               <thead>
-                <tr className="text-left text-[11px] text-muted-foreground border-b border-gray-100">
+                <tr className="text-left text-[11px] text-muted-foreground border-b border-border/70">
                   <th className="px-3 py-2 font-medium">Location</th>
                   <th className="px-2 py-2 font-medium">Budget</th>
                   <th className="px-2 py-2 font-medium">Hotel</th>
@@ -610,9 +610,9 @@ export default function TripBuilderForm({
               </div>
             ))}
             {tripDays && (
-              <p className="text-xs text-gray-500 pb-2 ml-auto">
-                <span className="font-semibold text-gray-700">{tripDays}</span> day{tripDays === 1 ? '' : 's'} ·{' '}
-                <span className="font-semibold text-gray-700">{tripDays - 1}</span> night{tripDays - 1 === 1 ? '' : 's'}
+              <p className="text-xs text-muted-foreground pb-2 ml-auto">
+                <span className="font-semibold text-foreground">{tripDays}</span> day{tripDays === 1 ? '' : 's'} ·{' '}
+                <span className="font-semibold text-foreground">{tripDays - 1}</span> night{tripDays - 1 === 1 ? '' : 's'}
               </p>
             )}
           </div>
@@ -638,7 +638,7 @@ export default function TripBuilderForm({
           <div className="overflow-x-auto">
             <table className="stack-table w-full text-sm min-w-[760px]">
               <thead>
-                <tr className="text-left text-[11px] text-muted-foreground border-b border-gray-100">
+                <tr className="text-left text-[11px] text-muted-foreground border-b border-border/70">
                   <th className="px-3 py-2 font-medium">Vehicle</th>
                   <th className="px-2 py-2 font-medium">Count</th>
                   <th className="px-2 py-2 font-medium">Start</th>
@@ -713,7 +713,7 @@ export default function TripBuilderForm({
           <div className="overflow-x-auto">
             <table className="stack-table w-full text-sm min-w-[760px]">
               <thead>
-                <tr className="text-left text-[11px] text-muted-foreground border-b border-gray-100">
+                <tr className="text-left text-[11px] text-muted-foreground border-b border-border/70">
                   <th className="px-3 py-2 font-medium">Park</th>
                   <th className="px-2 py-2 font-medium">Category</th>
                   <th className="px-2 py-2 font-medium">Group</th>
@@ -785,7 +785,7 @@ export default function TripBuilderForm({
         <div className="overflow-x-auto">
           <table className="stack-table w-full text-sm min-w-[720px]">
             <thead>
-              <tr className="text-left text-[11px] text-muted-foreground border-b border-gray-100">
+              <tr className="text-left text-[11px] text-muted-foreground border-b border-border/70">
                 <th className="px-3 py-2 font-medium text-right">Hotels</th>
                 <th className="px-3 py-2 font-medium text-right">Transport</th>
                 <th className="px-3 py-2 font-medium text-right">Parks</th>
@@ -803,16 +803,16 @@ export default function TripBuilderForm({
                 const marginPct = hasSale && sale > 0 ? ((sale - summary.total) / sale) * 100 : null
                 return (
                   <tr className="border-b border-gray-50 last:border-0">
-                    <td data-label="Hotels" className="px-3 py-2.5 text-right tabular-nums text-gray-700">${fmt(summary.hotels)}</td>
-                    <td data-label="Transport" className="px-3 py-2.5 text-right tabular-nums text-gray-700">${fmt(transportTotal)}</td>
-                    <td data-label="Parks" className="px-3 py-2.5 text-right tabular-nums text-gray-700">${fmt(parksTotal)}</td>
-                    <td data-label="Total cost" className="px-3 py-2.5 text-right tabular-nums font-semibold text-gray-900">
+                    <td data-label="Hotels" className="px-3 py-2.5 text-right tabular-nums text-foreground">${fmt(summary.hotels)}</td>
+                    <td data-label="Transport" className="px-3 py-2.5 text-right tabular-nums text-foreground">${fmt(transportTotal)}</td>
+                    <td data-label="Parks" className="px-3 py-2.5 text-right tabular-nums text-foreground">${fmt(parksTotal)}</td>
+                    <td data-label="Total cost" className="px-3 py-2.5 text-right tabular-nums font-semibold text-foreground">
                       <span>
                         ${fmt(summary.total)}
                         <span className="block text-[10px] text-muted-foreground font-normal">KES {fmt0(summary.total * usdToKes)}</span>
                       </span>
                     </td>
-                    <td data-label="Per guest" className="px-3 py-2.5 text-right tabular-nums text-gray-700">
+                    <td data-label="Per guest" className="px-3 py-2.5 text-right tabular-nums text-foreground">
                       {payingGuests > 0 ? `$${fmt(summary.total / payingGuests)}` : '—'}
                     </td>
                     <td data-label="Sale price" className="px-3 py-2.5 text-right">
@@ -828,7 +828,7 @@ export default function TripBuilderForm({
                       {margin === null ? (
                         <span className="text-gray-300">—</span>
                       ) : (
-                        <span className={margin >= 0 ? 'text-green-700 font-medium' : 'text-red-600 font-medium'}>
+                        <span className={margin >= 0 ? 'text-green-700 font-medium' : 'text-destructive font-medium'}>
                           ${fmt(margin)}
                           <span className="block text-[10px] font-normal">{marginPct!.toFixed(1)}%</span>
                         </span>
@@ -849,16 +849,16 @@ export default function TripBuilderForm({
 
       {/* Gap + error surface */}
       {(gapMessages.length > 0 || saveGaps.length > 0) && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm font-medium text-red-700 mb-1">Missing rates block saving:</p>
-          <ul className="text-sm text-red-600 list-disc pl-5 space-y-0.5">
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3">
+          <p className="text-sm font-medium text-destructive mb-1">Missing rates block saving:</p>
+          <ul className="text-sm text-destructive list-disc pl-5 space-y-0.5">
             {[...new Set([...gapMessages, ...saveGaps])].map(m => <li key={m}>{m}</li>)}
           </ul>
           <p className="text-xs text-red-500 mt-1.5">Add the missing rate cards in Content → Supplier Rates, then re-price.</p>
         </div>
       )}
       {saveError && !saveGaps.length && (
-        <p className="text-sm text-red-600 bg-red-50 rounded-lg border border-red-200 px-4 py-3">{saveError}</p>
+        <p className="text-sm text-destructive bg-destructive/10 rounded-lg border border-destructive/30 px-4 py-3">{saveError}</p>
       )}
       {savedOk && quoteId && (
         <p className="text-sm text-green-800 bg-green-50 rounded-lg border border-green-200 px-4 py-3">

@@ -88,29 +88,29 @@ export default async function ReceiptsPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">Finance</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Customer receipts — invoiced vs received per accepted quote</p>
+        <h1 className="text-lg font-semibold text-foreground">Finance</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Customer receipts — invoiced vs received per accepted quote</p>
       </div>
 
       <FinanceNav active="/admin/finance/receipts" />
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <p className="text-xs text-gray-500">Invoiced</p>
-          <p className="text-2xl font-semibold text-gray-900 mt-1">${fmt(totalInvoiced)}</p>
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+          <p className="text-xs text-muted-foreground">Invoiced</p>
+          <p className="text-2xl font-semibold text-foreground mt-1">${fmt(totalInvoiced)}</p>
           <p className="text-xs text-muted-foreground mt-1">{rows.length} accepted quote{rows.length !== 1 ? 's' : ''} + {directRows.length} direct booking{directRows.length !== 1 ? 's' : ''}</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <p className="text-xs text-gray-500">Received</p>
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+          <p className="text-xs text-muted-foreground">Received</p>
           <p className="text-2xl font-semibold text-green-700 mt-1">${fmt(totalReceived)}</p>
           <p className="text-xs text-muted-foreground mt-1">
             {totalInvoiced > 0 ? Math.round((totalReceived / totalInvoiced) * 100) : 0}% collected
           </p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <p className="text-xs text-gray-500">Balance due</p>
-          <p className={`text-2xl font-semibold mt-1 ${totalOutstanding > 0 ? 'text-amber-700' : 'text-muted-foreground'}`}>
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+          <p className="text-xs text-muted-foreground">Balance due</p>
+          <p className={`text-2xl font-semibold mt-1 ${totalOutstanding > 0 ? 'text-warning-foreground' : 'text-muted-foreground'}`}>
             ${fmt(totalOutstanding)}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
@@ -120,9 +120,9 @@ export default async function ReceiptsPage() {
       </div>
 
       {/* Quote-based receipts */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700">Accepted quotes</h2>
+      <div className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-border/70">
+          <h2 className="text-sm font-semibold text-foreground">Accepted quotes</h2>
           <p className="text-xs text-muted-foreground mt-0.5">Click a row to see receipts or record a new one — received can never exceed invoiced</p>
         </div>
         {rows.length === 0 ? (
@@ -135,9 +135,9 @@ export default async function ReceiptsPage() {
       </div>
 
       {/* Direct website bookings */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-4">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700">Direct website bookings</h2>
+      <div className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden mt-4">
+        <div className="px-5 py-4 border-b border-border/70">
+          <h2 className="text-sm font-semibold text-foreground">Direct website bookings</h2>
           <p className="text-xs text-muted-foreground mt-0.5">Confirmed bookings made without a quote — revenue only, no cost breakdown available</p>
         </div>
         {directRows.length === 0 ? (
@@ -147,7 +147,7 @@ export default async function ReceiptsPage() {
         ) : (
           <table className="stack-table w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-muted-foreground border-b border-gray-100">
+              <tr className="text-left text-xs text-muted-foreground border-b border-border/70">
                 <th className="px-5 py-3 font-medium">Tour / Departure</th>
                 <th className="px-5 py-3 font-medium text-right">Amount Due</th>
                 <th className="px-5 py-3 font-medium text-right">Received</th>
@@ -160,14 +160,14 @@ export default async function ReceiptsPage() {
                 return (
                   <tr key={r.bookingId} className="border-b border-gray-50 last:border-0">
                     <td data-label="Tour / Departure" className="px-5 py-3">
-                      <p className="font-medium text-gray-800">{r.tourTitle}</p>
+                      <p className="font-medium text-foreground">{r.tourTitle}</p>
                       {r.startDate && (
                         <p className="text-xs text-muted-foreground">{new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                       )}
                     </td>
-                    <td data-label="Amount Due" className="px-5 py-3 text-right text-gray-700">${fmt(r.amountDue)}</td>
+                    <td data-label="Amount Due" className="px-5 py-3 text-right text-foreground">${fmt(r.amountDue)}</td>
                     <td data-label="Received" className="px-5 py-3 text-right text-green-700">${fmt(r.amountReceived)}</td>
-                    <td data-label="Outstanding" className={`px-5 py-3 text-right font-semibold ${outstanding > 0 ? 'text-amber-700' : 'text-muted-foreground'}`}>
+                    <td data-label="Outstanding" className={`px-5 py-3 text-right font-semibold ${outstanding > 0 ? 'text-warning-foreground' : 'text-muted-foreground'}`}>
                       ${fmt(outstanding)}
                     </td>
                   </tr>

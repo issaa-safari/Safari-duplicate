@@ -98,27 +98,27 @@ export default async function ClientDetailPage({
   return (
     <div className="p-6 max-w-5xl">
       <div className="mb-6">
-        <Link href="/admin/clients" className="text-sm text-gray-500 hover:text-gray-700">
+        <Link href="/admin/clients" className="text-sm text-muted-foreground hover:text-foreground">
           Back to Clients
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
+      <div className="rounded-xl border border-border bg-surface shadow-sm p-5 mb-6">
         <div className="flex items-start gap-4">
-          <div className="h-14 w-14 rounded-full bg-[var(--olive)]/10 flex items-center justify-center text-xl font-semibold text-[var(--olive-dk)] shrink-0">
+          <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center text-xl font-semibold text-[var(--olive-dk)] shrink-0">
             {initials}
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-semibold text-gray-900">{clientName}</h1>
+              <h1 className="text-xl font-semibold text-foreground">{clientName}</h1>
               {client.language === 'ar' && (
                 <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Arabic</span>
               )}
               {client.total_bookings >= 2 && (
-                <span className="text-xs bg-[var(--olive)]/10 text-[var(--olive-dk)] px-2 py-0.5 rounded-full">Repeat Booker</span>
+                <span className="text-xs bg-accent text-[var(--olive-dk)] px-2 py-0.5 rounded-full">Repeat Booker</span>
               )}
             </div>
-            <p className="text-gray-500 text-sm mt-1">{client.email}</p>
+            <p className="text-muted-foreground text-sm mt-1">{client.email}</p>
             <div className="flex flex-wrap gap-2 mt-3">
               {client.phone && (
                 <a href={`tel:${client.phone}`}
@@ -142,15 +142,15 @@ export default async function ClientDetailPage({
                   ✉ Email
                 </a>
               )}
-              {client.country && <span className="text-sm text-gray-500 self-center ml-1">🌍 {client.country}</span>}
+              {client.country && <span className="text-sm text-muted-foreground self-center ml-1">🌍 {client.country}</span>}
             </div>
           </div>
           <div className="text-right text-sm shrink-0">
-            <p className="text-2xl font-semibold text-gray-900">
+            <p className="text-2xl font-semibold text-foreground">
               ${Number(client.total_spent_usd ?? 0).toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground">Total spent</p>
-            <p className="text-lg font-medium text-gray-700 mt-2">{client.total_bookings ?? 0}</p>
+            <p className="text-lg font-medium text-foreground mt-2">{client.total_bookings ?? 0}</p>
             <p className="text-xs text-muted-foreground">Bookings</p>
           </div>
         </div>
@@ -158,12 +158,12 @@ export default async function ClientDetailPage({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="space-y-4">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Contact Details</h2>
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+            <h2 className="text-sm font-semibold text-foreground mb-3">Contact Details</h2>
             <div className="space-y-2 text-sm">
               <div>
                 <p className="text-xs text-muted-foreground">Email</p>
-                <p className="text-gray-700">{client.email}</p>
+                <p className="text-foreground">{client.email}</p>
               </div>
               {client.phone && (
                 <div>
@@ -182,24 +182,24 @@ export default async function ClientDetailPage({
               {client.country && (
                 <div>
                   <p className="text-xs text-muted-foreground">Country</p>
-                  <p className="text-gray-700">{client.country}</p>
+                  <p className="text-foreground">{client.country}</p>
                 </div>
               )}
               {client.language && (
                 <div>
                   <p className="text-xs text-muted-foreground">Language</p>
-                  <p className="text-gray-700">{client.language === 'ar' ? 'Arabic' : 'English'}</p>
+                  <p className="text-foreground">{client.language === 'ar' ? 'Arabic' : 'English'}</p>
                 </div>
               )}
               {client.source && (
                 <div>
                   <p className="text-xs text-muted-foreground">Source</p>
-                  <p className="text-gray-700 capitalize">{client.source}</p>
+                  <p className="text-foreground capitalize">{client.source}</p>
                 </div>
               )}
               <div>
                 <p className="text-xs text-muted-foreground">Client since</p>
-                <p className="text-gray-700">
+                <p className="text-foreground">
                   {new Date(client.created_at).toLocaleDateString('en-GB', {
                     day: 'numeric', month: 'long', year: 'numeric'
                   })}
@@ -209,14 +209,14 @@ export default async function ClientDetailPage({
           </div>
 
           {client.notes && (
-            <div className="bg-amber-50 rounded-lg border border-amber-200 p-4">
-              <h2 className="text-sm font-semibold text-amber-800 mb-2">Notes</h2>
-              <p className="text-sm text-amber-700">{client.notes}</p>
+            <div className="rounded-xl border border-warning-foreground/20 bg-warning/50 p-4">
+              <h2 className="text-sm font-semibold text-warning-foreground mb-2">Notes</h2>
+              <p className="text-sm text-warning-foreground">{client.notes}</p>
             </div>
           )}
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h2>
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+            <h2 className="text-sm font-semibold text-foreground mb-3">Quick Actions</h2>
             <div className="space-y-2">
               <Link
                 href={`/admin/requests/new?client=${client.id}`}
@@ -228,10 +228,10 @@ export default async function ClientDetailPage({
         </div>
 
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+            <h2 className="text-sm font-semibold text-foreground mb-3">
               Requests
-              <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+              <span className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                 {requests?.length ?? 0}
               </span>
             </h2>
@@ -239,15 +239,15 @@ export default async function ClientDetailPage({
               <div className="space-y-2">
                 {requests.map((req: any) => (
                   <Link key={req.id} href={"/admin/requests/" + req.id}
-                    className="flex items-center justify-between p-3 rounded-md border border-gray-100 hover:border-[var(--olive)] hover:bg-gray-50 transition">
+                    className="flex items-center justify-between p-3 rounded-md border border-border/70 hover:border-primary-strong hover:bg-muted transition">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-foreground">
                         {req.tours?.title_en ?? 'No tour selected'}
                       </p>
                       <p className="text-xs text-muted-foreground font-mono">{req.reference}</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                         {req.stage.replace('_', ' ')}
                       </span>
                       <p className="text-xs text-muted-foreground mt-1">
@@ -262,10 +262,10 @@ export default async function ClientDetailPage({
             )}
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+            <h2 className="text-sm font-semibold text-foreground mb-3">
               Quotes
-              <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+              <span className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                 {quotes?.length ?? 0}
               </span>
             </h2>
@@ -273,16 +273,16 @@ export default async function ClientDetailPage({
               <div className="space-y-2">
                 {quotes.map((quote) => (
                   <Link key={quote.id} href={"/admin/quotes/" + quote.id}
-                    className="flex items-center justify-between p-3 rounded-md border border-gray-100 hover:border-[var(--olive)] hover:bg-gray-50 transition">
+                    className="flex items-center justify-between p-3 rounded-md border border-border/70 hover:border-primary-strong hover:bg-muted transition">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{quote.tour_title ?? 'Custom quote'}</p>
+                      <p className="text-sm font-medium text-foreground">{quote.tour_title ?? 'Custom quote'}</p>
                       <p className="text-xs text-muted-foreground font-mono">{quote.quote_number}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-foreground">
                         ${quote.total.toLocaleString()}
                       </p>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 capitalize">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
                         {quote.status}
                       </span>
                     </div>
@@ -294,10 +294,10 @@ export default async function ClientDetailPage({
             )}
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+            <h2 className="text-sm font-semibold text-foreground mb-3">
               Bookings
-              <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+              <span className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                 {bookings?.length ?? 0}
               </span>
             </h2>
@@ -305,9 +305,9 @@ export default async function ClientDetailPage({
               <div className="space-y-2">
                 {bookings.map((booking: any) => (
                   <Link key={booking.id} href={"/admin/bookings/" + booking.id}
-                    className="flex items-center justify-between p-3 rounded-md border border-gray-100 hover:border-[var(--olive)] hover:bg-gray-50 transition">
+                    className="flex items-center justify-between p-3 rounded-md border border-border/70 hover:border-primary-strong hover:bg-muted transition">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-foreground">
                         {booking.departures?.tours?.title_en ?? booking.quotes?.tours?.title_en ?? 'Tour'}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -317,10 +317,10 @@ export default async function ClientDetailPage({
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-foreground">
                         ${Number(booking.total_price_usd ?? 0).toLocaleString()}
                       </p>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 capitalize">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
                         {booking.status}
                       </span>
                     </div>
@@ -333,10 +333,10 @@ export default async function ClientDetailPage({
           </div>
 
           {logs && logs.length > 0 && (
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h2 className="text-sm font-semibold text-gray-900 mb-3">
+            <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+              <h2 className="text-sm font-semibold text-foreground mb-3">
                 Recent Communication
-                <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                <span className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                   {logs.length}
                 </span>
               </h2>
@@ -350,7 +350,7 @@ export default async function ClientDetailPage({
                        log.type === 'meeting' ? 'Meeting' : 'Note'}
                     </span>
                     <div>
-                      <p className="text-gray-700">{log.summary}</p>
+                      <p className="text-foreground">{log.summary}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {new Date(log.created_at).toLocaleDateString('en-GB')}
                       </p>

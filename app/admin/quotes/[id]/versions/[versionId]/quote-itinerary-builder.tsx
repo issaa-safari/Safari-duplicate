@@ -56,20 +56,20 @@ const ITEM_LABELS: Record<string, string> = {
 }
 const ITEM_COLORS: Record<string, string> = {
   accommodation: 'bg-blue-50 text-blue-700',
-  activity:      'bg-[var(--olive)]/10 text-[var(--olive-dk)]',
-  vehicle:       'bg-amber-50 text-amber-700',
+  activity:      'bg-accent text-[var(--olive-dk)]',
+  vehicle:       'bg-amber-50 text-warning-foreground',
   staff:         'bg-purple-50 text-purple-700',
 }
 
 const uid = () => Math.random().toString(36).slice(2)
 
-const inputCls = 'w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
-const smallSelectCls = 'w-full rounded border border-gray-200 px-1.5 py-1 text-xs text-gray-600 bg-white focus:outline-none focus:ring-1 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-2 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const smallSelectCls = 'w-full rounded border border-border px-1.5 py-1 text-xs text-muted-foreground bg-surface focus:outline-none focus:ring-1 focus:ring-[var(--olive)]'
 
 const MealPill = ({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) => (
   <button type="button" onClick={onClick}
     className={'h-7 w-7 rounded-md text-xs font-semibold border transition ' +
-      (on ? 'bg-[var(--olive)] text-white border-[var(--olive)]' : 'bg-white text-muted-foreground border-gray-300')}>
+      (on ? 'bg-[var(--olive)] text-white border-primary-strong' : 'bg-surface text-muted-foreground border-border')}>
     {label}
   </button>
 )
@@ -475,8 +475,8 @@ export default function QuoteItineraryBuilder({
 
   if (days.length === 0) {
     return (
-      <section className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-        <p className="text-sm text-gray-500 mb-5">No itinerary days yet.</p>
+      <section className="rounded-xl border border-border bg-surface shadow-sm p-8 text-center">
+        <p className="text-sm text-muted-foreground mb-5">No itinerary days yet.</p>
         <div className="flex flex-col items-center gap-3">
           {tourDays.length > 0 && (
             <button
@@ -503,13 +503,13 @@ export default function QuoteItineraryBuilder({
               placeholder="Days"
               value={genCount}
               onChange={e => setGenCount(e.target.value)}
-              className="w-20 rounded-md border border-gray-300 px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+              className="w-20 rounded-md border border-border px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
             />
             <button
               type="button"
               onClick={() => { const n = parseInt(genCount); if (n > 0) generateBlankDays(n) }}
               disabled={!genCount || parseInt(genCount) < 1}
-              className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+              className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-40"
             >
               Generate blank days
             </button>
@@ -527,18 +527,18 @@ export default function QuoteItineraryBuilder({
       <div className="flex items-center gap-2 flex-wrap">
         {tourDays.length > 0 && (
           <button type="button" onClick={prefillFromTour}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
+            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted">
             Re-fill from template ({tourDays.length} days)
           </button>
         )}
         {travelStartDate && (
           <button type="button" onClick={autoComputeDates}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
+            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted">
             Auto-set dates
           </button>
         )}
         <button type="button" onClick={renumber}
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
+          className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted">
           Renumber
         </button>
       </div>
@@ -547,7 +547,7 @@ export default function QuoteItineraryBuilder({
         <div className="stack-grid-wrap space-y-3" style={{ minWidth: 940 }}>
 
           {/* Header */}
-          <div className="stack-grid-header grid gap-3 px-2 text-xs font-medium text-gray-500"
+          <div className="stack-grid-header grid gap-3 px-2 text-xs font-medium text-muted-foreground"
             style={{ gridTemplateColumns: GRID_COLS }}>
             <div>Day / Date</div>
             <div>Main Destination</div>
@@ -560,12 +560,12 @@ export default function QuoteItineraryBuilder({
           {/* Day rows */}
           {days.map((day, i) => (
             <div key={day._key}
-              className="stack-grid grid gap-3 bg-white rounded-lg border border-gray-200 p-3 items-start"
+              className="stack-grid grid gap-3 rounded-xl border border-border bg-surface shadow-sm p-3 items-start"
               style={{ gridTemplateColumns: GRID_COLS }}>
 
               {/* Day # + Date */}
               <div data-label="Day / Date" className="space-y-1.5">
-                <p className="text-sm font-semibold text-gray-900">Day {day.dayNumber}</p>
+                <p className="text-sm font-semibold text-foreground">Day {day.dayNumber}</p>
                 <input type="number" min={1} value={day.dayNumber}
                   onChange={e => update(i, { dayNumber: Number(e.target.value) })}
                   className={inputCls} disabled={isLocked} />
@@ -598,7 +598,7 @@ export default function QuoteItineraryBuilder({
                 </select>
                 <select value={accomIdFor(day, true)}
                   onChange={e => onAccomSelect(i, e.target.value, true)}
-                  className={inputCls + ' text-gray-500'} disabled={isLocked}>
+                  className={inputCls + ' text-muted-foreground'} disabled={isLocked}>
                   <option value="">+ Alternative (optional)</option>
                   {accommodations.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   <option value="__add__">+ Add new accommodation…</option>
@@ -608,13 +608,13 @@ export default function QuoteItineraryBuilder({
               {/* Activities & Details */}
               <div data-label="Activities & Details" className="space-y-1.5">
                 <button type="button" onClick={() => setActivityModal(i)} disabled={isLocked}
-                  className="w-full rounded-md border border-dashed border-[var(--olive)] text-[var(--olive-dk)] px-2 py-1 text-xs font-medium hover:bg-[var(--olive)]/5 disabled:opacity-50">
+                  className="w-full rounded-md border border-dashed border-primary-strong text-[var(--olive-dk)] px-2 py-1 text-xs font-medium hover:bg-accent/60 disabled:opacity-50">
                   + Add Activities{day.items.filter(it => it.itemType === 'activity').length > 0 ? ` (${day.items.filter(it => it.itemType === 'activity').length})` : ''}
                 </button>
                 {day.items.filter(it => it.itemType === 'activity').length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {day.items.filter(it => it.itemType === 'activity').map(item => (
-                      <span key={item._key} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-[var(--olive)]/10 text-[var(--olive-dk)]">
+                      <span key={item._key} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-accent text-[var(--olive-dk)]">
                         {item.titleSnapshot}
                         {(item.contentSnapshot?.moment as string) ? <span className="opacity-60">· {item.contentSnapshot.moment as string}</span> : null}
                         {item.contentSnapshot?.optional ? <span className="text-amber-600">· opt</span> : null}
@@ -639,7 +639,7 @@ export default function QuoteItineraryBuilder({
                   onClick={() => setArOpenIndices(prev => {
                     const next = new Set(prev); next.has(i) ? next.delete(i) : next.add(i); return next
                   })}
-                  className="text-[10px] text-muted-foreground hover:text-[var(--olive)] transition">
+                  className="text-[10px] text-muted-foreground hover:text-brand-text transition">
                   {arOpenIndices.has(i) ? '▲ Hide Arabic' : '🇸🇦 + Arabic'}
                 </button>
                 {arOpenIndices.has(i) && (
@@ -659,12 +659,12 @@ export default function QuoteItineraryBuilder({
                     onClick={() => setPhotoOpenIndices(prev => {
                       const next = new Set(prev); next.has(i) ? next.delete(i) : next.add(i); return next
                     })}
-                    className="text-[10px] text-muted-foreground hover:text-[var(--olive)] transition">
+                    className="text-[10px] text-muted-foreground hover:text-brand-text transition">
                     {photoOpenIndices.has(i) ? '▲ Hide Photos' : `📷 + Photos${day.photos.length ? ` (${day.photos.length})` : ''}`}
                   </button>
                 )}
                 {photoOpenIndices.has(i) && (
-                  <div className="mt-1 pt-1 border-t border-gray-100">
+                  <div className="mt-1 pt-1 border-t border-border/70">
                     <GalleryUpload
                       value={day.photos}
                       onChange={photos => update(i, { photos })}
@@ -678,7 +678,7 @@ export default function QuoteItineraryBuilder({
                   <div className="flex flex-wrap gap-1">
                     {day.items.filter(it => it.itemType === 'vehicle' || it.itemType === 'staff').map(item => (
                       <span key={item._key}
-                        className={'inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ' + (ITEM_COLORS[item.itemType] ?? 'bg-gray-100 text-gray-600')}>
+                        className={'inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ' + (ITEM_COLORS[item.itemType] ?? 'bg-muted text-muted-foreground')}>
                         <span className="text-[10px] opacity-60">{ITEM_LABELS[item.itemType]}</span>
                         {item.titleSnapshot}
                         {!isLocked && <button onClick={() => removeItem(i, item._key)} className="ml-0.5 opacity-50 hover:opacity-100">×</button>}
@@ -727,12 +727,12 @@ export default function QuoteItineraryBuilder({
               {/* Controls */}
               <div className="flex flex-col max-sm:flex-row max-sm:justify-end items-center gap-1 pt-0.5">
                 <button onClick={() => move(i, -1)} disabled={i === 0}
-                  className="px-1.5 py-0.5 text-xs text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30">↑</button>
+                  className="px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted rounded disabled:opacity-30">↑</button>
                 <button onClick={() => move(i, 1)} disabled={i === days.length - 1}
-                  className="px-1.5 py-0.5 text-xs text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30">↓</button>
+                  className="px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted rounded disabled:opacity-30">↓</button>
                 {!isLocked && (
                   <button onClick={() => removeDay(i)}
-                    className="px-1.5 py-0.5 text-xs text-red-500 hover:bg-red-50 rounded">✕</button>
+                    className="px-1.5 py-0.5 text-xs text-red-500 hover:bg-destructive/10 rounded">✕</button>
                 )}
               </div>
             </div>
@@ -744,7 +744,7 @@ export default function QuoteItineraryBuilder({
       {!isLocked && (
         <div className="flex items-center gap-3 flex-wrap">
           <button type="button" onClick={addBlankDay}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
             + Add Day
           </button>
         </div>
@@ -781,7 +781,7 @@ export default function QuoteItineraryBuilder({
         />
       )}
 
-      {error && <p className="text-sm text-red-600 bg-red-50 rounded-md px-4 py-3">{error}</p>}
+      {error && <p className="text-sm text-destructive bg-destructive/10 rounded-md px-4 py-3">{error}</p>}
       {saved && <p className="text-sm text-green-600 bg-green-50 rounded-md px-4 py-3">Itinerary saved.</p>}
 
       {!isLocked && (
@@ -792,7 +792,7 @@ export default function QuoteItineraryBuilder({
           </button>
           {onContinueToPricing && (
             <button type="button" onClick={saveAndContinue} disabled={loading}
-              className="rounded-md px-6 py-2.5 text-sm font-medium shadow-lg disabled:opacity-60 border border-[var(--olive)] text-[var(--olive-dk)] bg-white hover:bg-[var(--olive)]/5">
+              className="rounded-md px-6 py-2.5 text-sm font-medium shadow-lg disabled:opacity-60 border border-primary-strong text-[var(--olive-dk)] bg-surface hover:bg-accent/60">
               Save &amp; Continue to Pricing →
             </button>
           )}

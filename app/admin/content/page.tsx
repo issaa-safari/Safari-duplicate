@@ -16,17 +16,17 @@ function ContentCard({ href, title, description, count, icon }: CardProps) {
   return (
     <Link
       href={href}
-      className="bg-white rounded-lg border border-gray-200 p-5 hover:border-[var(--olive)] hover:shadow-sm transition-all group">
+      className="rounded-xl border border-border bg-surface shadow-sm p-5 hover:border-primary-strong hover:shadow-sm transition-all group">
       <div className="flex items-start justify-between mb-3">
         <span className="text-2xl">{icon}</span>
         {count !== null && (
-          <span className="text-xs font-medium text-muted-foreground bg-gray-100 rounded-full px-2 py-0.5">
+          <span className="text-xs font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">
             {count}
           </span>
         )}
       </div>
-      <h3 className="font-semibold text-gray-900 group-hover:text-[var(--olive)] transition-colors">{title}</h3>
-      <p className="text-sm text-gray-500 mt-0.5">{description}</p>
+      <h3 className="font-semibold text-foreground group-hover:text-brand-text transition-colors">{title}</h3>
+      <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
     </Link>
   )
 }
@@ -57,7 +57,7 @@ export default async function ContentLibraryPage() {
   return (
     <ContentShell title="Your Content Library">
       <div className="mb-8">
-        <p className="text-sm text-gray-500">Manage the reusable content that powers tour pages and itineraries</p>
+        <p className="text-sm text-muted-foreground">Manage the reusable content that powers tour pages and itineraries</p>
       </div>
 
       {/* Main Content */}

@@ -46,20 +46,20 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
     }
   }
 
-  const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+  const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
 
   return (
     <div className="p-6 max-w-xl mx-auto">
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/admin/departures" className="text-sm text-gray-500 hover:text-gray-700">
+        <Link href="/admin/departures" className="text-sm text-muted-foreground hover:text-foreground">
           ← Back to Departures
         </Link>
-        <h1 className="text-lg font-semibold text-gray-900">Edit Departure</h1>
+        <h1 className="text-lg font-semibold text-foreground">Edit Departure</h1>
       </div>
 
       {departure.tours && (
         <div className="mb-6">
-          <p className="text-sm text-gray-500 mb-2">
+          <p className="text-sm text-muted-foreground mb-2">
             {departure.tours.title_en}
             {departure.tours.type ? ` · ${departure.tours.type}` : ''}
           </p>
@@ -74,10 +74,10 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+              <label htmlFor="startDate" className="block text-sm font-medium text-foreground mb-1">Start Date</label>
               <input id="startDate"
                 type="date"
                 name="startDate"
@@ -87,7 +87,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
               />
             </div>
             <div>
-              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+              <label htmlFor="endDate" className="block text-sm font-medium text-foreground mb-1">End Date</label>
               <input id="endDate"
                 type="date"
                 name="endDate"
@@ -100,7 +100,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="maxSeats" className="block text-sm font-medium text-gray-700 mb-1">Max Seats</label>
+              <label htmlFor="maxSeats" className="block text-sm font-medium text-foreground mb-1">Max Seats</label>
               <input id="maxSeats"
                 type="number"
                 name="maxSeats"
@@ -111,8 +111,8 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
               />
             </div>
             <div>
-              <span className="block text-sm font-medium text-gray-700 mb-1">Booked Seats</span>
-              <div className={`${inputCls} bg-gray-50 text-gray-500 cursor-default`}>
+              <span className="block text-sm font-medium text-foreground mb-1">Booked Seats</span>
+              <div className={`${inputCls} bg-surface-alt text-muted-foreground cursor-default`}>
                 {departure.booked_seats}
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">Computed from confirmed bookings — not editable here.</p>
@@ -121,7 +121,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="priceUsd" className="block text-sm font-medium text-gray-700 mb-1">Price per Seat (USD)</label>
+              <label htmlFor="priceUsd" className="block text-sm font-medium text-foreground mb-1">Price per Seat (USD)</label>
               <input id="priceUsd"
                 type="number"
                 name="priceUsd"
@@ -133,7 +133,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
               />
             </div>
             <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label htmlFor="status" className="block text-sm font-medium text-foreground mb-1">Status</label>
               <select id="status" name="status" defaultValue={departure.status} className={inputCls}>
                 <option value="available">Available</option>
                 <option value="full">Full</option>
@@ -144,7 +144,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
           </div>
 
           <div>
-            <label htmlFor="internalNotes" className="block text-sm font-medium text-gray-700 mb-1">Internal Notes</label>
+            <label htmlFor="internalNotes" className="block text-sm font-medium text-foreground mb-1">Internal Notes</label>
             <textarea id="internalNotes"
               name="internalNotes"
               rows={2}
@@ -156,37 +156,37 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
         </div>
 
         {/* Itinerary Status */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Itinerary Status</h3>
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-6">
+          <h3 className="font-semibold text-foreground mb-4">Itinerary Status</h3>
           {tourDays && tourDays.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 This departure includes <strong>{tourDays.length} day{tourDays.length !== 1 ? 's' : ''}</strong>:
               </p>
               <div className="space-y-1">
                 {tourDays.map((day: any) => (
                   <div key={day.id} className="flex items-start gap-2 text-sm">
                     <span className="text-green-600">✓</span>
-                    <span className="text-gray-700">
+                    <span className="text-foreground">
                       <strong>Day {day.day_number}:</strong> {day.title_en}
-                      {day.description_en && <span className="text-gray-600"> — {day.description_en.substring(0, 50)}...</span>}
+                      {day.description_en && <span className="text-muted-foreground"> — {day.description_en.substring(0, 50)}...</span>}
                     </span>
                   </div>
                 ))}
               </div>
               <Link
                 href={`/admin/tours/${departure.tours?.id}/days`}
-                className="inline-block text-sm font-medium text-[var(--olive)] hover:underline mt-3"
+                className="inline-block text-sm font-medium text-brand-text hover:underline mt-3"
               >
                 → Edit Itinerary
               </Link>
             </div>
           ) : (
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-muted-foreground">
               <p className="mb-3">No itinerary days found for this tour.</p>
               <Link
                 href={`/admin/tours/${departure.tours?.id}/days`}
-                className="inline-block font-medium text-[var(--olive)] hover:underline"
+                className="inline-block font-medium text-brand-text hover:underline"
               >
                 → Create Tour Days
               </Link>

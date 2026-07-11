@@ -16,7 +16,7 @@ export default function CloneVersionButton({ quoteId, versionId }: { quoteId: st
       onClick={handle}
       disabled={pending}
       title="Clone this version as a new draft"
-      className="text-xs text-muted-foreground hover:text-[var(--olive-dk)] disabled:opacity-40 px-2 py-1 rounded border border-gray-200 hover:border-[var(--olive-lt)] transition"
+      className="text-xs text-muted-foreground hover:text-brand-ink disabled:opacity-40 px-2 py-1 rounded border border-border hover:border-[var(--olive-lt)] transition"
     >
       {pending ? '…' : '⎘ Clone'}
     </button>
