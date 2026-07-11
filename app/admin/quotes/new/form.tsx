@@ -11,7 +11,7 @@ interface Request { id: string; reference: string; client_id: string }
 interface Tour { id: string; title_en: string; type: string }
 interface Departure { id: string; start_date: string; end_date: string; tours: { title_en: string }[] | null }
 
-const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 const labelCls = 'block text-sm font-medium text-foreground mb-1'
 
 export default function NewQuoteForm({
@@ -86,7 +86,7 @@ export default function NewQuoteForm({
               onClick={() => setMode('custom')}
               className={'rounded-lg border-2 p-4 text-left transition ' +
                 (mode === 'custom'
-                  ? 'border-primary-strong bg-[var(--olive)]/5'
+                  ? 'border-primary-strong bg-accent/50'
                   : 'border-border hover:border-border')}>
               <p className="font-medium text-foreground text-sm">Custom Safari</p>
               <p className="text-xs text-muted-foreground mt-1">Build a bespoke itinerary and price from scratch</p>
@@ -96,7 +96,7 @@ export default function NewQuoteForm({
               onClick={() => setMode('fixed_departure')}
               className={'rounded-lg border-2 p-4 text-left transition ' +
                 (mode === 'fixed_departure'
-                  ? 'border-primary-strong bg-[var(--olive)]/5'
+                  ? 'border-primary-strong bg-accent/50'
                   : 'border-border hover:border-border')}>
               <p className="font-medium text-foreground text-sm">Fixed Departure</p>
               <p className="text-xs text-muted-foreground mt-1">Price a client into a scheduled group departure</p>
@@ -110,7 +110,7 @@ export default function NewQuoteForm({
             <h2 className="text-sm font-semibold text-foreground">Client</h2>
 
             <div>
-              <label htmlFor="clientId" className={labelCls}>Client <span className="text-red-500">*</span></label>
+              <label htmlFor="clientId" className={labelCls}>Client <span className="text-destructive">*</span></label>
               <select id="clientId"
                 name="clientId"
                 required
@@ -169,7 +169,7 @@ export default function NewQuoteForm({
           <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
             <h2 className="text-sm font-semibold text-foreground">Departure</h2>
             <div>
-              <label htmlFor="departureId" className={labelCls}>Departure <span className="text-red-500">*</span></label>
+              <label htmlFor="departureId" className={labelCls}>Departure <span className="text-destructive">*</span></label>
               <select id="departureId" name="departureId" required defaultValue="" className={inputCls}>
                 <option value="" disabled>Select a departure…</option>
                 {departures.map((d) => (

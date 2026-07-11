@@ -8,7 +8,7 @@ interface VehicleAssignment { id: string; seats_used: number | null; vehicles: {
 interface StaffOption { id: string; name: string; role: string }
 interface VehicleOption { id: string; name: string; type: string; seats: number }
 
-const inputCls = 'rounded-md border border-border px-3 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'rounded-md border border-border px-3 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
 export default function AssignmentManager({
   requestId, staffAssignments, vehicleAssignments, staffOptions, vehicleOptions,

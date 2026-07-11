@@ -17,7 +17,7 @@ const CATEGORIES = ['salaries', 'rent', 'fuel', 'marketing', 'office', 'maintena
 const METHODS = ['bank_transfer', 'card', 'cash', 'mpesa', 'cheque', 'other']
 
 const inputCls =
-  'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+  'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
 function fmt(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -60,7 +60,7 @@ export default function ExpensesTable({ expenses }: { expenses: ExpenseRow[] }) 
 
   return (
     <div className="space-y-4">
-      <form onSubmit={submitNew} className="bg-[var(--olive)]/5 rounded-lg border border-primary-strong/30 p-4">
+      <form onSubmit={submitNew} className="bg-accent/50 rounded-lg border border-primary-strong/30 p-4">
         <p className="text-sm font-medium text-foreground mb-3">Log expense</p>
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <div className="col-span-2">
@@ -119,7 +119,7 @@ export default function ExpensesTable({ expenses }: { expenses: ExpenseRow[] }) 
                   <td data-label="Amount" className="px-3 py-2.5 text-right font-medium text-foreground tabular-nums">${fmt(Number(x.amount_usd))}</td>
                   <td className="px-3 py-2.5 text-right">
                     <button type="button" onClick={() => remove(x.id)} disabled={pending}
-                      className="text-xs text-gray-300 hover:text-red-500">✕</button>
+                      className="text-xs text-gray-300 hover:text-destructive">✕</button>
                   </td>
                 </tr>
               ))}

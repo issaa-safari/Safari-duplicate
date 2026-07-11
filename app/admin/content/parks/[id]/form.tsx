@@ -16,7 +16,7 @@ const PARK_TYPES = [
   { value: 'other',          label: 'Other' },
 ]
 
-const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
 interface Park {
   id: string
@@ -76,7 +76,7 @@ export default function ParkEditForm({ park }: { park: Park }) {
           <h2 className="text-sm font-semibold text-foreground">Details</h2>
 
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">Name <span className="text-red-500">*</span></label>
+            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">Name <span className="text-destructive">*</span></label>
             <input id="name" type="text" name="name" required defaultValue={park.name} className={inputCls} />
           </div>
 

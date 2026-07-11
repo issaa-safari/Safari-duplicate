@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ImageUpload, GalleryUpload } from '@/components/admin/image-upload'
 
-const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
 const linesToArr = (s: string) => s.split('\n').map(l => l.trim()).filter(Boolean)
 const arrToLines = (a: any) => (Array.isArray(a) ? a.join('\n') : '')
@@ -176,7 +176,7 @@ export default function TourEditForm({ tour }: { tour: any }) {
             <div key={i} className="rounded-md border border-border p-3 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-xs font-semibold text-muted-foreground">FAQ {i + 1}</span>
-                <button type="button" onClick={() => setFaqs(faqs.filter((_, idx) => idx !== i))} className="text-xs text-red-500 hover:underline">Remove</button>
+                <button type="button" onClick={() => setFaqs(faqs.filter((_, idx) => idx !== i))} className="text-xs text-destructive hover:underline">Remove</button>
               </div>
               <div className="grid sm:grid-cols-2 gap-2">
                 <input value={f.q_en} onChange={e => setFaqs(faqs.map((x, idx) => idx === i ? { ...x, q_en: e.target.value } : x))} placeholder="Question (EN)" className={inputCls} />
@@ -216,7 +216,7 @@ export default function TourEditForm({ tour }: { tour: any }) {
       </Section>
 
       {error && <p className="text-sm text-destructive bg-destructive/10 rounded-md px-4 py-3">{error}</p>}
-      {saved && <p className="text-sm text-green-600 bg-green-50 rounded-md px-4 py-3">Saved successfully.</p>}
+      {saved && <p className="text-sm text-accent-foreground bg-accent rounded-md px-4 py-3">Saved successfully.</p>}
 
       <div className="sticky bottom-4">
         <button type="submit" disabled={loading}

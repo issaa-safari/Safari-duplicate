@@ -37,7 +37,7 @@ const RESIDENCIES = [
 ] as const
 
 const inputCls =
-  'w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--olive)] disabled:bg-surface-alt disabled:text-muted-foreground'
+  'w-full rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 disabled:bg-surface-alt disabled:text-muted-foreground'
 const labelCls = 'block text-[11px] text-muted-foreground mb-0.5'
 const readonlyCls =
   'w-full rounded-md border border-border/70 bg-surface-alt px-2 py-1.5 text-sm text-right text-foreground tabular-nums'
@@ -379,7 +379,7 @@ export default function TripBuilderForm({
           <span className="text-[10px] text-muted-foreground tabular-nums"
             title={resolvedOk.segments.map(s => `${s.label}: ${s.units} × $${fmt(s.unitCostUsd)}`).join('\n')}>
             rate list ${fmt(resolvedOk.unitCostUsd)}{perUnitSuffix}
-            {resolvedOk.segments.length > 1 && <span className="text-amber-600 ml-1" title="Season split">≀</span>}
+            {resolvedOk.segments.length > 1 && <span className="text-warning-foreground ml-1" title="Season split">≀</span>}
             {resolvedOk.segments[0]?.sourceCurrency === 'KES' && (
               <span className="ml-1">KES {fmt0(resolvedOk.segments[0].sourceUnitCost)}</span>
             )}
@@ -392,7 +392,7 @@ export default function TripBuilderForm({
         )}
         {res && res !== 'pending' && !res.ok && (
           manual ? (
-            <span className="text-[10px] text-amber-600">no rate card — manual price used</span>
+            <span className="text-[10px] text-warning-foreground">no rate card — manual price used</span>
           ) : (
             <span className="inline-block rounded-full bg-destructive/10 border border-destructive/30 text-destructive text-[11px] px-2 py-0.5 whitespace-nowrap">
               {res.message}
@@ -410,7 +410,7 @@ export default function TripBuilderForm({
       ? (
         <span className="tabular-nums font-medium text-foreground">
           ${fmt(total)}
-          {manual && <span className="block text-[10px] font-normal text-amber-600">manual</span>}
+          {manual && <span className="block text-[10px] font-normal text-warning-foreground">manual</span>}
         </span>
       )
       : <span className="text-xs text-gray-300">—</span>
@@ -420,7 +420,7 @@ export default function TripBuilderForm({
   const sectionHead = 'px-4 py-2.5 border-b border-border/70 flex items-center justify-between'
   const sectionTitle = 'text-sm font-semibold text-foreground'
   const addBtn = 'text-xs font-medium text-brand-text hover:text-brand-ink'
-  const removeBtn = 'text-gray-300 hover:text-red-500 text-sm px-1'
+  const removeBtn = 'text-gray-300 hover:text-destructive text-sm px-1'
 
   function hotelSection(heading: string) {
     const rows = hotelRows
@@ -439,7 +439,7 @@ export default function TripBuilderForm({
             {versionId && (
               <button type="button" onClick={() => handleResync()} disabled={resyncing}
                 title="Re-pull hotel stays from this quote's itinerary"
-                className="text-xs text-muted-foreground hover:text-brand-ink border border-border hover:border-[var(--olive-lt)] rounded px-2 py-1 disabled:opacity-50">
+                className="text-xs text-muted-foreground hover:text-brand-ink border border-border hover:border-ring/40 rounded px-2 py-1 disabled:opacity-50">
                 {resyncing ? 'Syncing…' : '↻ Re-sync from itinerary'}
               </button>
             )}
@@ -854,7 +854,7 @@ export default function TripBuilderForm({
           <ul className="text-sm text-destructive list-disc pl-5 space-y-0.5">
             {[...new Set([...gapMessages, ...saveGaps])].map(m => <li key={m}>{m}</li>)}
           </ul>
-          <p className="text-xs text-red-500 mt-1.5">Add the missing rate cards in Content → Supplier Rates, then re-price.</p>
+          <p className="text-xs text-destructive mt-1.5">Add the missing rate cards in Content → Supplier Rates, then re-price.</p>
         </div>
       )}
       {saveError && !saveGaps.length && (

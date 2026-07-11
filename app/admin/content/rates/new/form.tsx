@@ -9,7 +9,7 @@ import { COST_CATEGORIES, ENTITY_TYPES, label } from '../constants'
 
 type Entity = { id: string; name: string }
 type Entities = Record<string, Entity[]>
-const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 const linkedTypes = new Set(['accommodation', 'activity', 'vehicle', 'staff', 'destination', 'park_fee'])
 
 export default function NewRateCardForm({

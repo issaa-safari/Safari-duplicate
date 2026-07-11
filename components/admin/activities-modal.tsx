@@ -156,7 +156,7 @@ export default function ActivitiesModal({
                   </td>
                   <td className={cell}>
                     <button type="button" onClick={() => remove(i)} aria-label="Remove activity"
-                      className="text-gray-300 hover:text-red-500 text-lg leading-none">×</button>
+                      className="text-gray-300 hover:text-destructive text-lg leading-none">×</button>
                   </td>
                 </tr>
               ))}

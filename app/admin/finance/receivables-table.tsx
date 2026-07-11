@@ -76,7 +76,7 @@ export default function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
                     <span className="text-xs text-muted-foreground">{pct}%</span>
                   </div>
                   {outstanding > 0 ? (
-                    <p className={`text-xs mt-0.5 font-medium ${overdue ? 'text-destructive' : 'text-amber-600'}`}>
+                    <p className={`text-xs mt-0.5 font-medium ${overdue ? 'text-destructive' : 'text-warning-foreground'}`}>
                       Due ${fmt(outstanding)}{overdue ? ' — overdue' : ''}
                     </p>
                   ) : (
@@ -136,7 +136,7 @@ export default function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
                       <button
                         type="button"
                         onClick={() => setPaying(row.quoteId)}
-                        className="text-sm font-medium text-[var(--olive-dk)] hover:text-brand-text border border-primary-strong/30 rounded px-3 py-1.5 hover:bg-accent/60 transition"
+                        className="text-sm font-medium text-brand-ink hover:text-brand-text border border-primary-strong/30 rounded px-3 py-1.5 hover:bg-accent/60 transition"
                       >
                         + Record payment
                       </button>

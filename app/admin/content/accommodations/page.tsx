@@ -114,13 +114,13 @@ export default async function AccommodationsPage({
                     </td>
                     <td data-label="Description" className="px-4 py-3 text-center hidden md:table-cell">
                       <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium ${
-                        hasDesc ? 'bg-green-50 text-green-700' : 'bg-muted text-muted-foreground'}`}>
+                        hasDesc ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>
                         {hasDesc}
                       </span>
                     </td>
                     <td data-label="Image" className="px-4 py-3 text-center hidden md:table-cell">
                       <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium ${
-                        hasImg ? 'bg-green-50 text-green-700' : 'bg-muted text-muted-foreground'}`}>
+                        hasImg ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>
                         {hasImg}
                       </span>
                     </td>

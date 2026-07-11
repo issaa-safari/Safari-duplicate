@@ -53,7 +53,7 @@ export default function PaymentForm({
             min="0.01"
             defaultValue={outstanding > 0 ? outstanding.toFixed(2) : ''}
             required
-            className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
+            className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring/50"
           />
         </div>
         <div>
@@ -63,7 +63,7 @@ export default function PaymentForm({
             type="date"
             defaultValue={new Date().toISOString().slice(0, 10)}
             required
-            className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
+            className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring/50"
           />
         </div>
       </div>
@@ -73,7 +73,7 @@ export default function PaymentForm({
           <label htmlFor="paymentType" className="block text-xs text-muted-foreground mb-1">Type</label>
           <select id="paymentType"
             name="paymentType"
-            className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
+            className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring/50"
           >
             <option value="deposit">Deposit</option>
             <option value="balance">Balance</option>
@@ -86,7 +86,7 @@ export default function PaymentForm({
           <label htmlFor="method" className="block text-xs text-muted-foreground mb-1">Method</label>
           <select id="method"
             name="method"
-            className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
+            className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring/50"
           >
             <option value="">— select —</option>
             <option value="bank_transfer">Bank transfer</option>
@@ -105,7 +105,7 @@ export default function PaymentForm({
           name="reference"
           type="text"
           placeholder="Bank ref, receipt no, etc."
-          className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
+          className="w-full rounded border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring/50"
         />
       </div>
 

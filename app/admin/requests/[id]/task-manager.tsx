@@ -111,12 +111,12 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Task description…"
-            className="w-full rounded-md border border-border px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+            className="w-full rounded-md border border-border px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
           />
           <select
             value={type}
             onChange={e => setType(e.target.value)}
-            className="w-full rounded-md border border-border px-3 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+            className="w-full rounded-md border border-border px-3 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50"
           >
             <option value="other">General</option>
             <option value="payment">Payment</option>
@@ -161,7 +161,7 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
               <span className="flex-1 text-sm text-foreground flex items-center gap-1.5 flex-wrap">
                 {task.title}
                 <TypeChip t={task.type} />
-                {task.auto_generated && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">auto</span>}
+                {task.auto_generated && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-warning-foreground border border-amber-200">auto</span>}
               </span>
               <button
                 type="button"

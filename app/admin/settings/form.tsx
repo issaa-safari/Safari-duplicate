@@ -49,7 +49,7 @@ const ARCHIVE_STAGE_OPTIONS = [
   { key: 'pre_booked', label: 'Pre-Booked' },
 ]
 
-const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 const labelCls = 'block text-sm font-medium text-foreground mb-1'
 
 function Field({ label, name, value, type = 'text', ...props }: {

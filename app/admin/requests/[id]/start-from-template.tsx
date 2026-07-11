@@ -36,7 +36,7 @@ export default function StartFromTemplate({ requestId, templates }: { requestId:
   if (!open) {
     return (
       <button onClick={() => setOpen(true)}
-        className="rounded-md border border-primary-strong/40 px-4 py-2 text-sm font-medium text-[var(--olive-dk)] hover:bg-accent/60">
+        className="rounded-md border border-primary-strong/40 px-4 py-2 text-sm font-medium text-brand-ink hover:bg-accent/60">
         Start from template
       </button>
     )
@@ -45,7 +45,7 @@ export default function StartFromTemplate({ requestId, templates }: { requestId:
   return (
     <form onSubmit={go} className="flex flex-col sm:flex-row items-start gap-2 rounded-xl border border-border bg-surface shadow-sm p-3">
       <select value={selected} onChange={e => setSelected(e.target.value)}
-        className="rounded-md border border-border px-3 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)] min-w-[220px]">
+        className="rounded-md border border-border px-3 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50 min-w-[220px]">
         <option value="">Choose a template…</option>
         {templates.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
       </select>

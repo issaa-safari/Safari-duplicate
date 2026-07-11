@@ -6,7 +6,7 @@ import { recordSupplierPayment } from './actions'
 import type { SupplierPayable } from '@/lib/server/finance'
 
 const inputCls =
-  'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+  'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
 function fmt(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -164,7 +164,7 @@ export default function PayablesTable({ suppliers }: { suppliers: SupplierPayabl
                     <button
                       type="button"
                       onClick={() => setPaying(s.supplierId)}
-                      className="text-sm font-medium text-[var(--olive-dk)] hover:text-brand-text border border-primary-strong/30 rounded px-3 py-1.5 hover:bg-accent/60 transition"
+                      className="text-sm font-medium text-brand-ink hover:text-brand-text border border-primary-strong/30 rounded px-3 py-1.5 hover:bg-accent/60 transition"
                     >
                       + Record payment
                     </button>

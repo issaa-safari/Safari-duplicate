@@ -109,10 +109,10 @@ export default function DefaultTaskManager({ tasks: initial }: { tasks: DefaultT
           value={description}
           onChange={e => setDescription(e.target.value)}
           placeholder="New default task…"
-          className="flex-1 rounded-md border border-border px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+          className="flex-1 rounded-md border border-border px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
         />
         <select value={type} onChange={e => setType(e.target.value)}
-          className="rounded-md border border-border px-3 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]">
+          className="rounded-md border border-border px-3 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50">
           <option value="other">General</option>
           <option value="payment">Payment</option>
           <option value="accommodation">Accommodation</option>

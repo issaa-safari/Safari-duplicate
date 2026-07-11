@@ -36,7 +36,7 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
     }
   }
 
-  const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+  const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">

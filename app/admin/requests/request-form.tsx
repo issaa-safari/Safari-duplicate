@@ -24,7 +24,7 @@ export interface RequestFormInitial {
 }
 
 const inputCls =
-  'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+  'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
 export default function RequestForm({
   clients,
@@ -98,14 +98,14 @@ export default function RequestForm({
             <button type="button"
               onClick={() => setClientMode('existing')}
               className={clientMode === 'existing'
-                ? 'px-3 py-1.5 bg-[var(--olive)] text-white'
+                ? 'px-3 py-1.5 bg-primary-strong text-white'
                 : 'px-3 py-1.5 bg-surface text-muted-foreground hover:bg-muted'}>
               Existing client
             </button>
             <button type="button"
               onClick={() => setClientMode('new')}
               className={clientMode === 'new'
-                ? 'px-3 py-1.5 bg-[var(--olive)] text-white'
+                ? 'px-3 py-1.5 bg-primary-strong text-white'
                 : 'px-3 py-1.5 bg-surface text-muted-foreground hover:bg-muted'}>
               New client
             </button>
@@ -115,7 +115,7 @@ export default function RequestForm({
         {clientMode === 'existing' ? (
           <div className="space-y-3">
             {selectedClient ? (
-              <div className="flex items-center justify-between rounded-md border border-primary-strong bg-[var(--olive)]/5 px-4 py-3">
+              <div className="flex items-center justify-between rounded-md border border-primary-strong bg-accent/50 px-4 py-3">
                 <div>
                   <p className="text-sm font-medium text-foreground">{selectedClient.name}</p>
                   {selectedClient.email && (

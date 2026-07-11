@@ -123,7 +123,7 @@ export default function DeliveryPanel({
               <select id="version-to-share"
                 value={selectedVersionId}
                 onChange={e => setSelectedVersionId(e.target.value)}
-                className="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+                className="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
               >
                 {shareableVersions.map(v => (
                   <option key={v.id} value={v.id}>
@@ -161,9 +161,9 @@ export default function DeliveryPanel({
                     <div className="flex flex-wrap items-center gap-2 mb-1.5">
                       <span className="text-xs font-medium text-muted-foreground">{versionLabel(d.quote_version_id)}</span>
                       {isRevoked ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-red-500">Revoked</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">Revoked</span>
                       ) : (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700">Active</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-accent text-accent-foreground">Active</span>
                       )}
                       {d.view_count > 0 && (
                         <span className="text-xs text-muted-foreground">
@@ -203,7 +203,7 @@ export default function DeliveryPanel({
                       type="button"
                       onClick={() => handleRevoke(d.id)}
                       disabled={pending}
-                      className="shrink-0 text-xs text-red-500 hover:opacity-80 px-2 py-1 rounded border border-red-100 hover:border-red-300 disabled:opacity-40"
+                      className="shrink-0 text-xs text-destructive hover:opacity-80 px-2 py-1 rounded border border-red-100 hover:border-red-300 disabled:opacity-40"
                     >
                       Revoke
                     </button>

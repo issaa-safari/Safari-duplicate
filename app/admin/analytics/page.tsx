@@ -293,7 +293,7 @@ export default async function AnalyticsPage() {
               </div>
               <div className="flex justify-between text-sm mt-1">
                 <span className="text-muted-foreground">Gross Margin</span>
-                <span className={`font-semibold ${overallMargin >= 20 ? 'text-green-700' : overallMargin >= 10 ? 'text-amber-600' : 'text-destructive'}`}>
+                <span className={`font-semibold ${overallMargin >= 20 ? 'text-green-700' : overallMargin >= 10 ? 'text-warning-foreground' : 'text-destructive'}`}>
                   {overallMargin.toFixed(1)}%
                 </span>
               </div>
@@ -322,7 +322,7 @@ export default async function AnalyticsPage() {
                       <span className="font-medium text-foreground">{CATEGORY_LABELS[cat] ?? cat}</span>
                       <span className="tabular-nums">
                         ${fmt(rev)}
-                        <span className={`ml-2 ${margin >= 20 ? 'text-green-600' : margin >= 10 ? 'text-amber-500' : 'text-red-500'}`}>
+                        <span className={`ml-2 ${margin >= 20 ? 'text-green-600' : margin >= 10 ? 'text-amber-500' : 'text-destructive'}`}>
                           {margin.toFixed(0)}%
                         </span>
                       </span>

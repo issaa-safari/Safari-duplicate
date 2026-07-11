@@ -82,7 +82,7 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
         <div>
           <label htmlFor="tour" className="block text-sm font-medium text-foreground mb-1">Tour *</label>
           <select id="tour" required value={tourId} onChange={e => handleTourChange(e.target.value)}
-            className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]">
+            className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50">
             <option value="">Select a tour...</option>
             {tours.map(tour => (
               <option key={tour.id} value={tour.id}>
@@ -97,13 +97,13 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
             <label htmlFor="start-date" className="block text-sm font-medium text-foreground mb-1">Start Date *</label>
             <input id="start-date" type="date" required value={startDate}
               onChange={e => handleStartDateChange(e.target.value)}
-              className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
+              className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50" />
           </div>
           <div>
             <label htmlFor="end-date" className="block text-sm font-medium text-foreground mb-1">End Date *</label>
             <input id="end-date" type="date" required value={endDate}
               onChange={e => setEndDate(e.target.value)}
-              className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
+              className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50" />
             <p className="text-xs text-muted-foreground mt-1">Auto-calculated from tour duration</p>
           </div>
         </div>
@@ -113,21 +113,21 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
             <label htmlFor="max-seats" className="block text-sm font-medium text-foreground mb-1">Max Seats *</label>
             <input id="max-seats" type="number" required min={1} value={maxSeats}
               onChange={e => setMaxSeats(Number(e.target.value))}
-              className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
+              className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50" />
           </div>
           <div>
             <label htmlFor="price-per-person-usd" className="block text-sm font-medium text-foreground mb-1">Price Per Person (USD) *</label>
             <input id="price-per-person-usd" type="number" required min={0} value={priceUsd}
               onChange={e => setPriceUsd(e.target.value)}
               placeholder="e.g. 1350"
-              className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
+              className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50" />
           </div>
         </div>
 
         <div>
           <label htmlFor="status" className="block text-sm font-medium text-foreground mb-1">Status</label>
           <select id="status" value={status} onChange={e => setStatus(e.target.value)}
-            className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]">
+            className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50">
             <option value="available">Available</option>
             <option value="limited">Limited</option>
             <option value="full">Full</option>
@@ -139,7 +139,7 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
           <label htmlFor="internal-notes" className="block text-sm font-medium text-foreground mb-1">Internal Notes</label>
           <textarea id="internal-notes" value={notes} onChange={e => setNotes(e.target.value)} rows={2}
             placeholder="Any private notes about this departure..."
-            className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
+            className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50" />
         </div>
       </div>
 

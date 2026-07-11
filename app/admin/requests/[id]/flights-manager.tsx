@@ -14,7 +14,7 @@ interface Flight {
   notes: string | null
 }
 
-const inputCls = 'w-full rounded-md border border-border px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50'
 
 export default function FlightsManager({ requestId, flights: initial }: { requestId: string; flights: Flight[] }) {
   const [flights, setFlights] = useState(initial)

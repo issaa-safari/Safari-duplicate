@@ -63,7 +63,7 @@ export default function CommunicationLog({
                 onClick={() => setType(t.key)}
                 className={`rounded-full px-3 py-1 text-xs font-medium border transition ${
                   type === t.key
-                    ? 'bg-[var(--olive)] text-white border-primary-strong'
+                    ? 'bg-primary-strong text-white border-primary-strong'
                     : 'bg-surface text-muted-foreground border-border hover:border-border'
                 }`}
               >
@@ -77,7 +77,7 @@ export default function CommunicationLog({
           onChange={e => setSummary(e.target.value)}
           rows={2}
           placeholder="Log a note, call summary, or WhatsApp message..."
-          className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+          className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50"
         />
         <button
           type="submit"

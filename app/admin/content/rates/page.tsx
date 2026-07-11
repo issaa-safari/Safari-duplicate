@@ -36,7 +36,7 @@ export default async function SupplierRatesPage({
           <p className="text-sm text-muted-foreground mt-0.5">Seasonal costs used by the Trip Builder</p>
           {supplierId && (
             <p className="text-xs mt-1.5">
-              <span className="inline-flex items-center gap-2 rounded-full px-2.5 py-1 bg-accent text-[var(--olive-dk)]">
+              <span className="inline-flex items-center gap-2 rounded-full px-2.5 py-1 bg-accent text-brand-ink">
                 Filtered by supplier{filterSupplier ? `: ${filterSupplier.name}` : ''}
                 <Link href="/admin/content/rates" className="font-semibold hover:underline">× clear</Link>
               </span>

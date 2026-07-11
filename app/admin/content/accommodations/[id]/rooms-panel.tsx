@@ -12,7 +12,7 @@ interface Room {
   amenities: string[]
 }
 
-const inputCls = 'rounded-md border border-border px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'rounded-md border border-border px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50'
 
 export default function RoomsPanel({ accommodationId, rooms: initial }: { accommodationId: string; rooms: Room[] }) {
   const [rooms, setRooms] = useState(initial)

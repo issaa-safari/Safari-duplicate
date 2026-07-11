@@ -56,20 +56,25 @@ const ITEM_LABELS: Record<string, string> = {
 }
 const ITEM_COLORS: Record<string, string> = {
   accommodation: 'bg-blue-50 text-blue-700',
-  activity:      'bg-accent text-[var(--olive-dk)]',
+  activity:      'bg-accent text-brand-ink',
   vehicle:       'bg-amber-50 text-warning-foreground',
   staff:         'bg-purple-50 text-purple-700',
 }
 
 const uid = () => Math.random().toString(36).slice(2)
 
-const inputCls = 'w-full rounded-md border border-border px-2 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
-const smallSelectCls = 'w-full rounded border border-border px-1.5 py-1 text-xs text-muted-foreground bg-surface focus:outline-none focus:ring-1 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-2 py-1.5 text-sm text-foreground bg-surface transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-ring/50'
+const smallSelectCls = 'w-full rounded border border-border px-1.5 py-1 text-xs text-muted-foreground bg-surface transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-ring/50'
+
+const MEAL_NAMES: Record<string, string> = { B: 'Breakfast', L: 'Lunch', D: 'Dinner' }
 
 const MealPill = ({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) => (
   <button type="button" onClick={onClick}
-    className={'h-7 w-7 rounded-md text-xs font-semibold border transition ' +
-      (on ? 'bg-[var(--olive)] text-white border-primary-strong' : 'bg-surface text-muted-foreground border-border')}>
+    aria-pressed={on}
+    aria-label={MEAL_NAMES[label] ?? label}
+    title={MEAL_NAMES[label] ?? label}
+    className={'h-7 w-7 rounded-md text-xs font-semibold border transition-colors duration-150 ' +
+      (on ? 'bg-primary-strong text-white border-primary-strong' : 'bg-surface text-muted-foreground border-border hover:bg-muted')}>
     {label}
   </button>
 )
@@ -503,7 +508,7 @@ export default function QuoteItineraryBuilder({
               placeholder="Days"
               value={genCount}
               onChange={e => setGenCount(e.target.value)}
-              className="w-20 rounded-md border border-border px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+              className="w-20 rounded-md border border-border px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-ring/50"
             />
             <button
               type="button"
@@ -608,16 +613,16 @@ export default function QuoteItineraryBuilder({
               {/* Activities & Details */}
               <div data-label="Activities & Details" className="space-y-1.5">
                 <button type="button" onClick={() => setActivityModal(i)} disabled={isLocked}
-                  className="w-full rounded-md border border-dashed border-primary-strong text-[var(--olive-dk)] px-2 py-1 text-xs font-medium hover:bg-accent/60 disabled:opacity-50">
+                  className="w-full rounded-md border border-dashed border-primary-strong text-brand-ink px-2 py-1 text-xs font-medium hover:bg-accent/60 disabled:opacity-50">
                   + Add Activities{day.items.filter(it => it.itemType === 'activity').length > 0 ? ` (${day.items.filter(it => it.itemType === 'activity').length})` : ''}
                 </button>
                 {day.items.filter(it => it.itemType === 'activity').length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {day.items.filter(it => it.itemType === 'activity').map(item => (
-                      <span key={item._key} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-accent text-[var(--olive-dk)]">
+                      <span key={item._key} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-accent text-brand-ink">
                         {item.titleSnapshot}
                         {(item.contentSnapshot?.moment as string) ? <span className="opacity-60">· {item.contentSnapshot.moment as string}</span> : null}
-                        {item.contentSnapshot?.optional ? <span className="text-amber-600">· opt</span> : null}
+                        {item.contentSnapshot?.optional ? <span className="text-warning-foreground">· opt</span> : null}
                       </span>
                     ))}
                   </div>
@@ -636,14 +641,15 @@ export default function QuoteItineraryBuilder({
                   className={inputCls + ' resize-none'} disabled={isLocked} />
 
                 <button type="button"
+                  aria-expanded={arOpenIndices.has(i)}
                   onClick={() => setArOpenIndices(prev => {
                     const next = new Set(prev); next.has(i) ? next.delete(i) : next.add(i); return next
                   })}
-                  className="text-[10px] text-muted-foreground hover:text-brand-text transition">
-                  {arOpenIndices.has(i) ? '▲ Hide Arabic' : '🇸🇦 + Arabic'}
+                  className="text-[11px] font-medium text-muted-foreground transition-colors duration-150 hover:text-brand-ink">
+                  {arOpenIndices.has(i) ? 'Hide Arabic' : '+ Arabic'}
                 </button>
                 {arOpenIndices.has(i) && (
-                  <div className="mt-1 pt-1 border-t border-amber-100 space-y-1.5" dir="rtl">
+                  <div className="mt-1 space-y-1.5 border-t border-border/70 pt-1" dir="rtl">
                     <input type="text" value={day.titleAr}
                       onChange={e => update(i, { titleAr: e.target.value })}
                       placeholder="عنوان اليوم" className={inputCls + ' text-right'} disabled={isLocked} />
@@ -656,11 +662,12 @@ export default function QuoteItineraryBuilder({
 
                 {!isLocked && (
                   <button type="button"
+                    aria-expanded={photoOpenIndices.has(i)}
                     onClick={() => setPhotoOpenIndices(prev => {
                       const next = new Set(prev); next.has(i) ? next.delete(i) : next.add(i); return next
                     })}
-                    className="text-[10px] text-muted-foreground hover:text-brand-text transition">
-                    {photoOpenIndices.has(i) ? '▲ Hide Photos' : `📷 + Photos${day.photos.length ? ` (${day.photos.length})` : ''}`}
+                    className="text-[11px] font-medium text-muted-foreground transition-colors duration-150 hover:text-brand-ink">
+                    {photoOpenIndices.has(i) ? 'Hide Photos' : `+ Photos${day.photos.length ? ` (${day.photos.length})` : ''}`}
                   </button>
                 )}
                 {photoOpenIndices.has(i) && (
@@ -727,12 +734,15 @@ export default function QuoteItineraryBuilder({
               {/* Controls */}
               <div className="flex flex-col max-sm:flex-row max-sm:justify-end items-center gap-1 pt-0.5">
                 <button onClick={() => move(i, -1)} disabled={i === 0}
-                  className="px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted rounded disabled:opacity-30">↑</button>
+                  aria-label={`Move day ${day.dayNumber} up`}
+                  className="rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted disabled:opacity-30">↑</button>
                 <button onClick={() => move(i, 1)} disabled={i === days.length - 1}
-                  className="px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted rounded disabled:opacity-30">↓</button>
+                  aria-label={`Move day ${day.dayNumber} down`}
+                  className="rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted disabled:opacity-30">↓</button>
                 {!isLocked && (
                   <button onClick={() => removeDay(i)}
-                    className="px-1.5 py-0.5 text-xs text-red-500 hover:bg-destructive/10 rounded">✕</button>
+                    aria-label={`Remove day ${day.dayNumber}`}
+                    className="rounded px-1.5 py-0.5 text-xs text-destructive transition-colors duration-150 hover:bg-destructive/10">✕</button>
                 )}
               </div>
             </div>
@@ -781,20 +791,23 @@ export default function QuoteItineraryBuilder({
         />
       )}
 
-      {error && <p className="text-sm text-destructive bg-destructive/10 rounded-md px-4 py-3">{error}</p>}
-      {saved && <p className="text-sm text-green-600 bg-green-50 rounded-md px-4 py-3">Itinerary saved.</p>}
+      {error && <p role="alert" className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p>}
+      {saved && <p role="status" className="rounded-md bg-accent px-4 py-3 text-sm text-accent-foreground">Itinerary saved.</p>}
 
       {!isLocked && (
-        <div className="sticky bottom-4 flex gap-2">
+        <div className="sticky bottom-0 -mx-1 flex flex-wrap items-center gap-2 border-t border-border bg-surface/95 px-1 py-3 backdrop-blur">
           <button type="button" onClick={() => save()} disabled={loading}
-            className="rounded-md px-6 py-2.5 text-sm font-medium text-white shadow-lg disabled:opacity-60 bg-olive hover:bg-olive-dk">
+            className="rounded-md bg-primary-strong px-6 py-2.5 text-sm font-medium text-white shadow-sm transition-colors duration-150 hover:bg-primary-strong-hover disabled:opacity-60">
             {loading ? 'Saving…' : 'Save Itinerary'}
           </button>
           {onContinueToPricing && (
             <button type="button" onClick={saveAndContinue} disabled={loading}
-              className="rounded-md px-6 py-2.5 text-sm font-medium shadow-lg disabled:opacity-60 border border-primary-strong text-[var(--olive-dk)] bg-surface hover:bg-accent/60">
+              className="rounded-md border border-primary-strong bg-surface px-6 py-2.5 text-sm font-medium text-brand-ink shadow-sm transition-colors duration-150 hover:bg-accent/60 disabled:opacity-60">
               Save &amp; Continue to Pricing →
             </button>
+          )}
+          {dirty && !loading && (
+            <span className="text-xs text-warning-foreground" role="status">Unsaved changes</span>
           )}
         </div>
       )}

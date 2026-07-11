@@ -34,7 +34,7 @@ export default async function EntityRatesPanel({
             <p className="text-xs text-muted-foreground mt-0.5">Used by the Trip Builder to price this item.</p>
           </div>
           <Link href={newHref}
-            className="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium text-[var(--olive-dk)] border border-primary-strong/40 hover:bg-accent/60">
+            className="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium text-brand-ink border border-primary-strong/40 hover:bg-accent/60">
             + Add rate card
           </Link>
         </div>

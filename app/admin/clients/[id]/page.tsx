@@ -105,7 +105,7 @@ export default async function ClientDetailPage({
 
       <div className="rounded-xl border border-border bg-surface shadow-sm p-5 mb-6">
         <div className="flex items-start gap-4">
-          <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center text-xl font-semibold text-[var(--olive-dk)] shrink-0">
+          <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center text-xl font-semibold text-brand-ink shrink-0">
             {initials}
           </div>
           <div className="flex-1">
@@ -115,7 +115,7 @@ export default async function ClientDetailPage({
                 <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Arabic</span>
               )}
               {client.total_bookings >= 2 && (
-                <span className="text-xs bg-accent text-[var(--olive-dk)] px-2 py-0.5 rounded-full">Repeat Booker</span>
+                <span className="text-xs bg-accent text-brand-ink px-2 py-0.5 rounded-full">Repeat Booker</span>
               )}
             </div>
             <p className="text-muted-foreground text-sm mt-1">{client.email}</p>
@@ -168,7 +168,7 @@ export default async function ClientDetailPage({
               {client.phone && (
                 <div>
                   <p className="text-xs text-muted-foreground">Phone</p>
-                  <a href={`tel:${client.phone}`} className="text-[var(--olive-dk)] hover:underline text-sm">{client.phone}</a>
+                  <a href={`tel:${client.phone}`} className="text-brand-ink hover:underline text-sm">{client.phone}</a>
                 </div>
               )}
               {client.whatsapp && (
@@ -176,7 +176,7 @@ export default async function ClientDetailPage({
                   <p className="text-xs text-muted-foreground">WhatsApp</p>
                   <a href={`https://wa.me/${client.whatsapp.replace(/\D/g, '')}`}
                     target="_blank" rel="noopener noreferrer"
-                    className="text-[var(--olive-dk)] hover:underline text-sm">{client.whatsapp}</a>
+                    className="text-brand-ink hover:underline text-sm">{client.whatsapp}</a>
                 </div>
               )}
               {client.country && (

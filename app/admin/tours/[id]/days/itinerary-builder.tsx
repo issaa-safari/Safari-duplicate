@@ -107,7 +107,7 @@ export default function ItineraryBuilder({
   const [activityModal, setActivityModal] = useState<number | null>(null)
   const [adding, setAdding] = useState<{ index: number; kind: 'destination' | 'accommodation' | 'accommodation_alt' | 'activity' } | null>(null)
 
-  const inputCls = 'w-full rounded-md border border-border px-2 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+  const inputCls = 'w-full rounded-md border border-border px-2 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
   function update(i: number, patch: Partial<Day>) {
     setDays((prev) => prev.map((d, idx) => (idx === i ? { ...d, ...patch } : d)))
@@ -213,7 +213,7 @@ export default function ItineraryBuilder({
   const MealPill = ({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) => (
     <button type="button" onClick={onClick}
       className={'h-7 w-7 rounded-md text-xs font-semibold border ' +
-        (on ? 'bg-[var(--olive)] text-white border-primary-strong' : 'bg-surface text-muted-foreground border-border')}>
+        (on ? 'bg-primary-strong text-white border-primary-strong' : 'bg-surface text-muted-foreground border-border')}>
       {label}
     </button>
   )
@@ -311,17 +311,17 @@ export default function ItineraryBuilder({
                         {day.activities.map((da, ai) => {
                           const act = activities.find(a => a.id === da.activity_id)
                           return (
-                            <span key={ai} className="inline-flex items-center gap-1 text-xs bg-accent text-[var(--olive-dk)] px-2 py-0.5 rounded-full">
+                            <span key={ai} className="inline-flex items-center gap-1 text-xs bg-accent text-brand-ink px-2 py-0.5 rounded-full">
                               {act?.name ?? 'Activity'}
                               {da.moment ? <span className="opacity-60">· {da.moment}</span> : null}
-                              {da.optional ? <span className="text-amber-600">· optional</span> : null}
+                              {da.optional ? <span className="text-warning-foreground">· optional</span> : null}
                             </span>
                           )
                         })}
                       </div>
                     )}
                     <button type="button" onClick={() => setActivityModal(i)}
-                      className="w-full rounded-md border border-dashed border-primary-strong text-[var(--olive-dk)] px-3 py-2 text-sm font-medium hover:bg-accent/60">
+                      className="w-full rounded-md border border-dashed border-primary-strong text-brand-ink px-3 py-2 text-sm font-medium hover:bg-accent/60">
                       + Add Activities{day.activities.length > 0 ? ` (${day.activities.length})` : ''}
                     </button>
                     <input type="text" value={day.title_en}
@@ -365,7 +365,7 @@ export default function ItineraryBuilder({
                     <button onClick={() => move(i, 1)} disabled={i === days.length - 1}
                       className="px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted rounded disabled:opacity-30">↓</button>
                     <button onClick={() => removeDay(i)}
-                      className="px-2 py-0.5 text-xs text-red-500 hover:bg-destructive/10 rounded">✕</button>
+                      className="px-2 py-0.5 text-xs text-destructive hover:bg-destructive/10 rounded">✕</button>
                   </div>
                 </div>
               )
@@ -417,7 +417,7 @@ export default function ItineraryBuilder({
       )}
 
       {error && <p className="text-sm text-destructive bg-destructive/10 rounded-md px-4 py-3">{error}</p>}
-      {saved && <p className="text-sm text-green-600 bg-green-50 rounded-md px-4 py-3">Itinerary saved.</p>}
+      {saved && <p className="text-sm text-accent-foreground bg-accent rounded-md px-4 py-3">Itinerary saved.</p>}
 
       {days.length > 0 && (
         <div className="sticky bottom-4">

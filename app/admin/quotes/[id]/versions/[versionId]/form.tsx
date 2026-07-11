@@ -54,7 +54,7 @@ const METHOD_LABELS: Record<string, string> = {
   percentage: '% of adult rate', fixed: 'Fixed price', free: 'Free (no charge)',
 }
 
-const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 const labelCls = 'block text-sm font-medium text-foreground mb-1'
 
 function blankTravellerForm(ageBands: AgeBand[]) {
@@ -352,7 +352,7 @@ export default function VersionEditorForm({
                   onClick={() => set({ pricingMethod: m })}
                   className={`px-3 py-1 rounded-full text-xs font-medium border transition ${
                     f.pricingMethod === m
-                      ? 'border-primary-strong bg-accent text-[var(--olive-dk)]'
+                      ? 'border-primary-strong bg-accent text-brand-ink'
                       : 'border-border text-muted-foreground hover:border-gray-400'
                   }`}
                 >
@@ -370,7 +370,7 @@ export default function VersionEditorForm({
                   min={0}
                   max={200}
                   step={0.5}
-                  className="w-20 rounded-md border border-border px-2 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+                  className="w-20 rounded-md border border-border px-2 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50"
                   value={f.pricingPercent}
                   onChange={e => set({ pricingPercent: e.target.value })}
                 />
@@ -387,7 +387,7 @@ export default function VersionEditorForm({
                   type="number"
                   min={0}
                   step={0.01}
-                  className="w-28 rounded-md border border-border px-2 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+                  className="w-28 rounded-md border border-border px-2 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50"
                   value={f.pricingPercent}
                   onChange={e => set({ pricingPercent: e.target.value })}
                   placeholder="0.00"
@@ -494,7 +494,7 @@ export default function VersionEditorForm({
               onClick={() => handleSaveLang(lang)}
               className={`px-3 py-1 rounded-full text-xs font-medium border transition disabled:opacity-50 ${
                 language === lang
-                  ? 'border-primary-strong bg-accent text-[var(--olive-dk)]'
+                  ? 'border-primary-strong bg-accent text-brand-ink'
                   : 'border-border text-muted-foreground hover:border-gray-400'
               }`}
             >
@@ -599,7 +599,7 @@ export default function VersionEditorForm({
                               </span>
                             )}
                             {method === 'free' && (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700">Free</span>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-accent text-accent-foreground">Free</span>
                             )}
                             {!t.is_paying && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Non-paying</span>
@@ -623,7 +623,7 @@ export default function VersionEditorForm({
                             type="button"
                             onClick={() => handleDelete(t.id)}
                             disabled={deletePending}
-                            className="text-xs text-red-500 hover:opacity-80 px-2 py-1 rounded border border-red-100 hover:border-red-300 disabled:opacity-40"
+                            className="text-xs text-destructive hover:opacity-80 px-2 py-1 rounded border border-red-100 hover:border-red-300 disabled:opacity-40"
                           >
                             Remove
                           </button>

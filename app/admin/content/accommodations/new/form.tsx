@@ -9,7 +9,7 @@ import { Toggle } from '@/components/ui/toggle'
 
 interface Destination { id: string; name: string }
 
-const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
 export default function NewAccommodationForm({ destinations }: { destinations: Destination[] }) {
   const [error, setError] = useState('')
@@ -44,7 +44,7 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
           <h2 className="text-sm font-semibold text-foreground">Details</h2>
 
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">Name <span className="text-red-500">*</span></label>
+            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">Name <span className="text-destructive">*</span></label>
             <input id="name" type="text" name="name" required placeholder="e.g. Mahali Mzuri" className={inputCls} />
           </div>
 

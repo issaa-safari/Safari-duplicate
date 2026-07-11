@@ -18,8 +18,8 @@ type Rate = {
   pricing_unit: string; amount: number; min_group_size: number | null; max_group_size: number | null
 }
 
-const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
-const smallInputCls = 'w-full rounded-md border border-border px-2 py-1.5 text-xs text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
+const smallInputCls = 'w-full rounded-md border border-border px-2 py-1.5 text-xs text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 const linkedTypes = new Set(['accommodation', 'activity', 'vehicle', 'staff', 'destination', 'park_fee'])
 const roomCategories = ['sharing', 'single', 'triple', 'extra_bed', 'no_bed']
 
@@ -78,7 +78,7 @@ export default function RateCardEditor({ card, rates, ageBands, entities, suppli
               <option value="">— no supplier —</option>
               {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
-            {!card.supplier_id && card.supplier_name && <p className="text-xs text-amber-600 mt-1">Legacy supplier text: “{card.supplier_name}” — pick a real supplier to include this card in Payables.</p>}
+            {!card.supplier_id && card.supplier_name && <p className="text-xs text-warning-foreground mt-1">Legacy supplier text: “{card.supplier_name}” — pick a real supplier to include this card in Payables.</p>}
           </div>
           <div><label htmlFor="entityType" className="block text-sm font-medium text-foreground mb-1">Entity Type</label><select id="entityType" name="entityType" value={entityType} onChange={e => setEntityType(e.target.value)} className={inputCls}>{ENTITY_TYPES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
           <div><label htmlFor="costCategory" className="block text-sm font-medium text-foreground mb-1">Cost Category</label><select id="costCategory" name="costCategory" defaultValue={card.cost_category} className={inputCls}>{COST_CATEGORIES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
@@ -94,7 +94,7 @@ export default function RateCardEditor({ card, rates, ageBands, entities, suppli
       <section className="space-y-3">
         <div><h2 className="text-sm font-semibold text-foreground">Rates</h2><p className="text-xs text-muted-foreground">Use blank traveller or room categories when the rate applies to all.</p></div>
         {rates.map(rate => <form key={rate.id} onSubmit={event => rateSubmit(event, rate.id)} className="rounded-xl border border-border bg-surface shadow-sm p-4"><div className="grid grid-cols-2 md:grid-cols-7 gap-2"><RateFields rate={rate} ageBands={ageBands} /></div><div className="flex justify-end gap-2 mt-3"><Button type="button" variant="danger-text" size="sm" onClick={() => removeRate(rate.id)} disabled={pending}>Delete</Button><Button type="submit" size="sm" loading={pending} loadingText="Saving…">Save Rate</Button></div></form>)}
-        <form onSubmit={event => rateSubmit(event)} className="bg-[var(--olive)]/5 rounded-lg border border-primary-strong/30 p-4"><p className="text-sm font-medium text-foreground mb-3">Add Rate</p><div className="grid grid-cols-2 md:grid-cols-7 gap-2"><RateFields ageBands={ageBands} /></div><div className="flex justify-end mt-3"><Button type="submit" loading={pending} loadingText="Adding…">+ Add Rate</Button></div></form>
+        <form onSubmit={event => rateSubmit(event)} className="bg-accent/50 rounded-lg border border-primary-strong/30 p-4"><p className="text-sm font-medium text-foreground mb-3">Add Rate</p><div className="grid grid-cols-2 md:grid-cols-7 gap-2"><RateFields ageBands={ageBands} /></div><div className="flex justify-end mt-3"><Button type="submit" loading={pending} loadingText="Adding…">+ Add Rate</Button></div></form>
       </section>
 
       {error && <Alert variant="error">{error}</Alert>}

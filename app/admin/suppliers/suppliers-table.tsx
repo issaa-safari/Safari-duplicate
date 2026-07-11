@@ -6,7 +6,7 @@ import { createSupplier, setSupplierActive, updateSupplier } from './actions'
 import { SUPPLIER_TYPES, type SupplierRow } from './constants'
 
 const inputCls =
-  'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+  'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
 function typeLabel(t: string) {
   return t.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())
@@ -99,7 +99,7 @@ export default function SuppliersTable({
             <tbody>
               {suppliers.map(s => (
                 editingId === s.id ? (
-                  <tr key={s.id} className="border-b border-gray-50 bg-[var(--olive)]/5">
+                  <tr key={s.id} className="border-b border-gray-50 bg-accent/50">
                     <td colSpan={6} className="px-5 py-4">
                       <form onSubmit={e => submitEdit(e, s.id)} className="space-y-3">
                         <SupplierFields supplier={s} />
@@ -142,7 +142,7 @@ export default function SuppliersTable({
                       )}
                     </td>
                     <td data-label="Status" className="px-3 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${s.is_active ? 'bg-green-50 text-green-700' : 'bg-muted text-muted-foreground'}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${s.is_active ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>
                         {s.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
@@ -162,7 +162,7 @@ export default function SuppliersTable({
         )}
       </div>
 
-      <form onSubmit={submitNew} className="bg-[var(--olive)]/5 rounded-lg border border-primary-strong/30 p-4 space-y-3">
+      <form onSubmit={submitNew} className="bg-accent/50 rounded-lg border border-primary-strong/30 p-4 space-y-3">
         <p className="text-sm font-medium text-foreground">Add supplier</p>
         <SupplierFields />
         <div className="flex justify-end">
