@@ -62,7 +62,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
         style={{ backgroundColor: 'var(--admin-surface)', border: '1px solid var(--admin-border)' }}>
         <div className="flex items-center gap-3 px-4 py-3"
           style={{ borderBottom: '1px solid var(--admin-border)' }}>
-          <Search size={15} className="text-gray-400 shrink-0" />
+          <Search size={15} className="text-muted-foreground shrink-0" />
           <input
             ref={inputRef}
             className="flex-1 bg-transparent text-sm outline-none placeholder-gray-400"
@@ -71,26 +71,26 @@ function SearchModal({ onClose }: { onClose: () => void }) {
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Escape' && onClose()}
           />
-          {searching && <span className="text-xs text-gray-400 animate-pulse">…</span>}
-          <button onClick={onClose} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded border border-gray-200">
+          {searching && <span className="text-xs text-muted-foreground animate-pulse">…</span>}
+          <button onClick={onClose} className="text-xs text-muted-foreground hover:text-gray-600 px-2 py-1 rounded border border-gray-200">
             Esc
           </button>
         </div>
 
         <div className="max-h-96 overflow-y-auto">
           {query.length < 2 && (
-            <div className="px-4 py-6 text-center text-sm text-gray-400">
+            <div className="px-4 py-6 text-center text-sm text-muted-foreground">
               Type at least 2 characters to search…
             </div>
           )}
 
           {query.length >= 2 && !searching && !hasResults && (
-            <div className="px-4 py-6 text-center text-sm text-gray-400">No results for &ldquo;{query}&rdquo;</div>
+            <div className="px-4 py-6 text-center text-sm text-muted-foreground">No results for &ldquo;{query}&rdquo;</div>
           )}
 
           {(results?.quotes?.length ?? 0) > 0 && (
             <div>
-              <p className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide"
+              <p className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
                 style={{ backgroundColor: 'var(--admin-bg)' }}>Quotes</p>
               {results?.quotes.map((q: SearchQuote) => (
                 <button key={q.id} onClick={() => go(`/admin/quotes/${q.id}`)}
@@ -99,7 +99,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--admin-bg)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
                   <div>
-                    <span className="font-mono text-xs text-gray-400 mr-2">{q.quote_number}</span>
+                    <span className="font-mono text-xs text-muted-foreground mr-2">{q.quote_number}</span>
                     <span className="font-medium text-gray-800">{q.client_name ?? q.title ?? 'Quote'}</span>
                   </div>
                   <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 capitalize">{q.status}</span>
@@ -110,7 +110,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
 
           {(results?.clients?.length ?? 0) > 0 && (
             <div>
-              <p className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide"
+              <p className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
                 style={{ backgroundColor: 'var(--admin-bg)' }}>Clients</p>
               {results?.clients.map((c: SearchClient) => (
                 <button key={c.id} onClick={() => go(`/admin/clients/${c.id}`)}
@@ -118,7 +118,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--admin-bg)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
                   <span className="font-medium text-gray-800">{c.first_name} {c.last_name}</span>
-                  <span className="text-xs text-gray-400">{c.email}</span>
+                  <span className="text-xs text-muted-foreground">{c.email}</span>
                 </button>
               ))}
             </div>
@@ -126,7 +126,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
 
           {(results?.requests?.length ?? 0) > 0 && (
             <div>
-              <p className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide"
+              <p className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
                 style={{ backgroundColor: 'var(--admin-bg)' }}>Requests</p>
               {results?.requests.map((r: SearchRequest) => (
                 <button key={r.id} onClick={() => go(`/admin/requests/${r.id}`)}
@@ -134,7 +134,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--admin-bg)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
                   <div>
-                    <span className="font-mono text-xs text-gray-400 mr-2">{r.reference}</span>
+                    <span className="font-mono text-xs text-muted-foreground mr-2">{r.reference}</span>
                     <span className="font-medium text-gray-800">{r.client_name ?? r.reference}</span>
                   </div>
                   <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 capitalize">
@@ -146,7 +146,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        <div className="px-4 py-2 text-xs text-gray-400 flex gap-4"
+        <div className="px-4 py-2 text-xs text-muted-foreground flex gap-4"
           style={{ borderTop: '1px solid var(--admin-border)', backgroundColor: 'var(--admin-bg)' }}>
           <span>↵ to open</span>
           <span>Esc to close</span>

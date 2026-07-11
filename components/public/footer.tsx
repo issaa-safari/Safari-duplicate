@@ -1,11 +1,10 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Suspense } from 'react'
 import { useLocale } from '@/lib/use-locale'
 import { site, whatsappLink } from '@/lib/site'
-
-const G = '#7A9A4A'
 
 export default function PublicFooter() {
   return (
@@ -55,21 +54,21 @@ function FooterInner() {
   }
 
   return (
-    <footer className="bg-gray-900 text-gray-300 mt-20" dir={isAr ? 'rtl' : 'ltr'}>
+    <footer className="bg-bush text-sand/80 mt-20" dir={isAr ? 'rtl' : 'ltr'}>
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                style={{ backgroundColor: G }}
-              >
-                🦁
-              </div>
+            <div className="flex items-center gap-2.5 mb-3">
+              <Image
+                src="/logo-safari-riders.png"
+                alt="Safari Adventure Riders logo"
+                width={28}
+                height={40}
+              />
               <span className="font-bold text-white">Safari Adventure Riders</span>
             </div>
-            <p className="text-sm text-gray-400">{t.tagline}</p>
+            <p className="text-sm text-sand/60">{t.tagline}</p>
           </div>
 
           {/* Quick Links */}
@@ -89,7 +88,7 @@ function FooterInner() {
             <ul className="space-y-2 text-sm">
               <li><Link href={withLang('/contact')} className="hover:text-white transition">{t.contactUs}</Link></li>
               <li><Link href={withLang('/privacy')} className="hover:text-white transition">{t.privacy}</Link></li>
-              <li><a href="#" className="hover:text-white transition">{t.terms}</a></li>
+              <li><Link href={withLang('/terms')} className="hover:text-white transition">{t.terms}</Link></li>
             </ul>
           </div>
 
@@ -119,7 +118,7 @@ function FooterInner() {
           </div>
         </div>
 
-        <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
+        <div className="border-t border-sand/15 pt-8 text-center text-sm text-sand/60">
           <p>&copy; {new Date().getFullYear()} {site.name}. {t.rights}</p>
         </div>
       </div>

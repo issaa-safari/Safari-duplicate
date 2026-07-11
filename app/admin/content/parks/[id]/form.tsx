@@ -76,18 +76,18 @@ export default function ParkEditForm({ park }: { park: Park }) {
           <h2 className="text-sm font-semibold text-gray-700">Details</h2>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-            <input type="text" name="name" required defaultValue={park.name} className={inputCls} />
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+            <input id="name" type="text" name="name" required defaultValue={park.name} className={inputCls} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-              <input type="text" name="country" defaultValue={park.country} className={inputCls} />
+              <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+              <input id="country" type="text" name="country" defaultValue={park.country} className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-              <select name="parkType" defaultValue={park.park_type} className={inputCls}>
+              <label htmlFor="parkType" className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <select id="parkType" name="parkType" defaultValue={park.park_type} className={inputCls}>
                 {PARK_TYPES.map(t => (
                   <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
@@ -96,8 +96,8 @@ export default function ParkEditForm({ park }: { park: Park }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
-            <input type="url" name="coverImageUrl" defaultValue={park.cover_image_url ?? ''} placeholder="https://…" className={inputCls} />
+            <label htmlFor="coverImageUrl" className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
+            <input id="coverImageUrl" type="url" name="coverImageUrl" defaultValue={park.cover_image_url ?? ''} placeholder="https://…" className={inputCls} />
           </div>
 
           <Toggle checked={isActive} onChange={() => setIsActive(!isActive)} label="Active (appears in rate picker)" />
@@ -106,8 +106,8 @@ export default function ParkEditForm({ park }: { park: Park }) {
         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700">Description</h2>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
-            <textarea name="descriptionEn" rows={4} defaultValue={park.description_en ?? ''} placeholder="Brief description of the park…" className={inputCls} />
+            <label htmlFor="descriptionEn" className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
+            <textarea id="descriptionEn" name="descriptionEn" rows={4} defaultValue={park.description_en ?? ''} placeholder="Brief description of the park…" className={inputCls} />
           </div>
         </div>
 

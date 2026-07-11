@@ -71,7 +71,7 @@ export default function AssignmentManager({
       <div>
         <h3 className="text-sm font-semibold text-gray-900 mb-3">Staff</h3>
         <ul className="space-y-1.5 mb-3">
-          {staff.length === 0 && <li className="text-xs text-gray-400">No staff assigned.</li>}
+          {staff.length === 0 && <li className="text-xs text-muted-foreground">No staff assigned.</li>}
           {staff.map(a => (
             <li key={a.id} className="flex items-center gap-2 group text-sm">
               <span className="flex-1 text-gray-700">
@@ -98,13 +98,13 @@ export default function AssignmentManager({
       <div>
         <h3 className="text-sm font-semibold text-gray-900 mb-3">Vehicles</h3>
         <ul className="space-y-1.5 mb-3">
-          {vehicles.length === 0 && <li className="text-xs text-gray-400">No vehicles assigned.</li>}
+          {vehicles.length === 0 && <li className="text-xs text-muted-foreground">No vehicles assigned.</li>}
           {vehicles.map(a => (
             <li key={a.id} className="flex items-center gap-2 group text-sm">
               <span className="flex-1 text-gray-700">
                 {a.vehicles?.name ?? 'Unknown'}
                 {a.vehicles?.type && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 capitalize">{a.vehicles.type}</span>}
-                {a.vehicles?.seats != null && <span className="ml-1 text-xs text-gray-400">{a.vehicles.seats} seats</span>}
+                {a.vehicles?.seats != null && <span className="ml-1 text-xs text-muted-foreground">{a.vehicles.seats} seats</span>}
               </span>
               <button onClick={() => removeVehicle(a.id)} disabled={pending}
                 className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-xs" aria-label="Remove">✕</button>

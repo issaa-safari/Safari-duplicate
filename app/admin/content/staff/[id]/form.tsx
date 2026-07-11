@@ -53,12 +53,12 @@ export default function StaffEditForm({ member }: { member: StaffMember }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-              <input type="text" name="name" required defaultValue={member.name} className={inputCls} />
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+              <input id="name" type="text" name="name" required defaultValue={member.name} className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-              <select name="role" defaultValue={member.role} className={inputCls}>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+              <select id="role" name="role" defaultValue={member.role} className={inputCls}>
                 <option value="guide">Guide</option>
                 <option value="driver">Driver</option>
                 <option value="chef">Chef</option>
@@ -69,18 +69,18 @@ export default function StaffEditForm({ member }: { member: StaffMember }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-              <input type="tel" name="phone" defaultValue={member.phone ?? ''} placeholder="+254…" className={inputCls} />
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input id="phone" type="tel" name="phone" defaultValue={member.phone ?? ''} placeholder="+254…" className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input type="email" name="email" defaultValue={member.email ?? ''} placeholder="name@example.com" className={inputCls} />
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input id="email" type="email" name="email" defaultValue={member.email ?? ''} placeholder="name@example.com" className={inputCls} />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-            <textarea name="notes" rows={3} defaultValue={member.notes ?? ''}
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <textarea id="notes" name="notes" rows={3} defaultValue={member.notes ?? ''}
               placeholder="Languages, certifications, availability notes…" className={inputCls} />
           </div>
 

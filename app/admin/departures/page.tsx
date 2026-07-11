@@ -91,7 +91,7 @@ export default async function DeparturesPage({
                   <tr key={dep.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td data-label="Tour" className="px-4 py-3">
                       <p className="font-medium text-gray-900">{tour?.title_en ?? 'Untitled tour'}</p>
-                      {tour?.type && <p className="text-xs text-gray-400 capitalize">{tour.type}</p>}
+                      {tour?.type && <p className="text-xs text-muted-foreground capitalize">{tour.type}</p>}
                     </td>
                     <td data-label="Dates" className="px-4 py-3 text-gray-600">
                       {new Date(dep.start_date).toLocaleDateString('en-GB')}
@@ -102,7 +102,7 @@ export default async function DeparturesPage({
                       <span className={available <= 0 ? 'text-red-600 font-medium' : 'text-gray-700'}>
                         {available} / {dep.max_seats}
                       </span>
-                      <span className="text-xs text-gray-400 block">{dep.booked_seats} booked</span>
+                      <span className="text-xs text-muted-foreground block">{dep.booked_seats} booked</span>
                     </td>
                     <td data-label="Price" className="px-4 py-3 text-gray-600 hidden md:table-cell">
                       ${Number(dep.price_usd).toLocaleString()}

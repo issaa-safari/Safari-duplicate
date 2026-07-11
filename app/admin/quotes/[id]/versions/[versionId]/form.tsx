@@ -304,8 +304,8 @@ export default function VersionEditorForm({
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className={labelCls}>Name <span className="text-gray-400 font-normal">(optional)</span></label>
-            <input
+            <label htmlFor="name-optional" className={labelCls}>Name <span className="text-muted-foreground font-normal">(optional)</span></label>
+            <input id="name-optional"
               className={inputCls}
               placeholder="e.g. John"
               value={f.displayName}
@@ -313,8 +313,8 @@ export default function VersionEditorForm({
             />
           </div>
           <div>
-            <label className={labelCls}>Age on travel date <span className="text-gray-400 font-normal">(optional)</span></label>
-            <input
+            <label htmlFor="age-on-travel-date-optional" className={labelCls}>Age on travel date <span className="text-muted-foreground font-normal">(optional)</span></label>
+            <input id="age-on-travel-date-optional"
               type="number"
               min={0}
               max={120}
@@ -325,8 +325,8 @@ export default function VersionEditorForm({
             />
           </div>
           <div>
-            <label className={labelCls}>Category</label>
-            <select
+            <label htmlFor="category" className={labelCls}>Category</label>
+            <select id="category"
               className={inputCls}
               value={f.ageBandId}
               onChange={e => set(applyBandChange(e.target.value))}
@@ -343,7 +343,7 @@ export default function VersionEditorForm({
         {/* Pricing */}
         <div className="rounded-md bg-gray-50 border border-gray-200 px-4 py-3 flex flex-wrap items-end gap-4">
           <div>
-            <p className="text-xs text-gray-400 mb-1">Pricing method</p>
+            <p className="text-xs text-muted-foreground mb-1">Pricing method</p>
             <div className="flex gap-2 flex-wrap">
               {(['percentage', 'fixed', 'free'] as const).map(m => (
                 <button
@@ -363,9 +363,9 @@ export default function VersionEditorForm({
           </div>
           {f.pricingMethod === 'percentage' && (
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Percentage</label>
+              <label htmlFor="percentage" className="block text-xs text-muted-foreground mb-1">Percentage</label>
               <div className="flex items-center gap-1">
-                <input
+                <input id="percentage"
                   type="number"
                   min={0}
                   max={200}
@@ -380,10 +380,10 @@ export default function VersionEditorForm({
           )}
           {f.pricingMethod === 'fixed' && (
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Fixed rate</label>
+              <label htmlFor="fixed-rate" className="block text-xs text-muted-foreground mb-1">Fixed rate</label>
               <div className="flex items-center gap-1">
                 <span className="text-sm text-gray-500">USD</span>
-                <input
+                <input id="fixed-rate"
                   type="number"
                   min={0}
                   step={0.01}
@@ -399,8 +399,8 @@ export default function VersionEditorForm({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className={labelCls}>Room category</label>
-            <select
+            <label htmlFor="room-category" className={labelCls}>Room category</label>
+            <select id="room-category"
               className={inputCls}
               value={f.roomCategory}
               onChange={e => set({ roomCategory: e.target.value })}
@@ -443,8 +443,8 @@ export default function VersionEditorForm({
         <h2 className="text-sm font-semibold text-gray-900 mb-4">Trip Dates</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className={labelCls}>Travel start date</label>
-            <input
+            <label htmlFor="travel-start-date" className={labelCls}>Travel start date</label>
+            <input id="travel-start-date"
               type="date"
               className={inputCls}
               value={startDate}
@@ -453,8 +453,8 @@ export default function VersionEditorForm({
             />
           </div>
           <div>
-            <label className={labelCls}>Travel end date</label>
-            <input
+            <label htmlFor="travel-end-date" className={labelCls}>Travel end date</label>
+            <input id="travel-end-date"
               type="date"
               className={inputCls}
               value={endDate}
@@ -485,7 +485,7 @@ export default function VersionEditorForm({
 
         {/* Language / direction */}
         <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-3 flex-wrap">
-          <span className="text-sm text-gray-500">Quote language <span className="text-gray-400 text-xs">(auto-set from client)</span>:</span>
+          <span className="text-sm text-gray-500">Quote language <span className="text-muted-foreground text-xs">(auto-set from client)</span>:</span>
           {(['en', 'ar'] as const).map(lang => (
             <button
               key={lang}
@@ -516,7 +516,7 @@ export default function VersionEditorForm({
           <div>
             <h2 className="text-sm font-semibold text-gray-900">Travellers</h2>
             {travellers.length > 0 && (
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {travellers.filter(t => t.is_paying).length} paying
                 {travellers.some(t => t.is_complimentary) &&
                   ` · ${travellers.filter(t => t.is_complimentary).length} complimentary`}
@@ -581,9 +581,9 @@ export default function VersionEditorForm({
                         </span>
                         <div>
                           <p className="text-sm font-medium text-gray-900">
-                            {t.display_name || <span className="text-gray-400">Unnamed</span>}
+                            {t.display_name || <span className="text-muted-foreground">Unnamed</span>}
                             {t.age_on_travel_date != null && (
-                              <span className="text-gray-400 font-normal ml-1">· age {t.age_on_travel_date}</span>
+                              <span className="text-muted-foreground font-normal ml-1">· age {t.age_on_travel_date}</span>
                             )}
                           </p>
                           <div className="flex flex-wrap gap-1.5 mt-1">
@@ -642,7 +642,7 @@ export default function VersionEditorForm({
         )}
 
         {travellers.length === 0 && !showAdd && (
-          <div className="px-6 py-10 text-center text-sm text-gray-400">
+          <div className="px-6 py-10 text-center text-sm text-muted-foreground">
             No travellers added yet.
           </div>
         )}

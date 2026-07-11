@@ -39,6 +39,17 @@ export const VARIANT_CLASSES: Record<StatusVariant, string> = {
   muted:   'bg-gray-50 text-gray-400',
 }
 
+// Saturated accent per variant, for dots/markers next to VARIANT_CLASSES chips.
+export const VARIANT_DOT: Record<StatusVariant, string> = {
+  neutral: 'bg-gray-400',
+  info:    'bg-blue-500',
+  active:  'bg-indigo-500',
+  warning: 'bg-amber-500',
+  success: 'bg-green-500',
+  danger:  'bg-red-500',
+  muted:   'bg-gray-300',
+}
+
 export const STAGE_LABELS: Record<string, string> = {
   new:         'New',
   working_on:  'Working On',

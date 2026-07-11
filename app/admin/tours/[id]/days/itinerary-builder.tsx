@@ -213,7 +213,7 @@ export default function ItineraryBuilder({
   const MealPill = ({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) => (
     <button type="button" onClick={onClick}
       className={'h-7 w-7 rounded-md text-xs font-semibold border ' +
-        (on ? 'bg-[var(--olive)] text-white border-[var(--olive)]' : 'bg-white text-gray-400 border-gray-300')}>
+        (on ? 'bg-[var(--olive)] text-white border-[var(--olive)]' : 'bg-white text-muted-foreground border-gray-300')}>
       {label}
     </button>
   )
@@ -327,7 +327,7 @@ export default function ItineraryBuilder({
                     <input type="text" value={day.title_en}
                       onChange={(e) => update(i, { title_en: e.target.value })}
                       placeholder="Day title (required)" className={inputCls} />
-                    <p className="text-[10px] text-gray-400 leading-snug">
+                    <p className="text-[10px] text-muted-foreground leading-snug">
                       Day description is pulled automatically from the selected destination
                       in the Content library (English/Arabic by client language).
                     </p>
@@ -337,7 +337,7 @@ export default function ItineraryBuilder({
                         next.has(i) ? next.delete(i) : next.add(i)
                         return next
                       })}
-                      className="text-[10px] text-gray-400 hover:text-[var(--olive)] transition">
+                      className="text-[10px] text-muted-foreground hover:text-[var(--olive)] transition">
                       {arOpen.has(i) ? '▲ Hide Arabic' : '🇸🇦 + Arabic title'}
                     </button>
                     {arOpen.has(i) && (
@@ -348,7 +348,7 @@ export default function ItineraryBuilder({
                       </div>
                     )}
                     <div className="pt-1">
-                      <span className="block text-[10px] text-gray-400 mb-1">Day photo</span>
+                      <span className="block text-[10px] text-muted-foreground mb-1">Day photo</span>
                       <ImageUpload value={day.image_url} onChange={(url) => update(i, { image_url: url })} folder="tour-days" label="Day photo" />
                     </div>
                   </div>

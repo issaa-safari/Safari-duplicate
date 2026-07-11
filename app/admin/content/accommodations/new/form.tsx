@@ -44,13 +44,13 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
           <h2 className="text-sm font-semibold text-gray-700">Details</h2>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-            <input type="text" name="name" required placeholder="e.g. Mahali Mzuri" className={inputCls} />
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+            <input id="name" type="text" name="name" required placeholder="e.g. Mahali Mzuri" className={inputCls} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
-            <select name="destinationId" defaultValue="" className={inputCls}>
+            <label htmlFor="destinationId" className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+            <select id="destinationId" name="destinationId" defaultValue="" className={inputCls}>
               <option value="">No destination</option>
               {destinations.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
@@ -60,8 +60,8 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-              <select name="type" defaultValue="hotel" className={inputCls}>
+              <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <select id="type" name="type" defaultValue="hotel" className={inputCls}>
                 <option value="hotel">Hotel</option>
                 <option value="lodge">Lodge</option>
                 <option value="camp">Camp</option>
@@ -70,8 +70,8 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Budget Tier</label>
-              <select name="budgetTier" defaultValue="luxury" className={inputCls}>
+              <label htmlFor="budgetTier" className="block text-sm font-medium text-gray-700 mb-1">Budget Tier</label>
+              <select id="budgetTier" name="budgetTier" defaultValue="luxury" className={inputCls}>
                 <option value="budget">Budget</option>
                 <option value="midrange">Mid-range</option>
                 <option value="luxury">Luxury</option>
@@ -82,12 +82,12 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1–5)</label>
-              <input type="number" name="rating" min={1} max={5} defaultValue={4} className={inputCls} />
+              <label htmlFor="rating" className="block text-sm font-medium text-gray-700 mb-1">Rating (1–5)</label>
+              <input id="rating" type="number" name="rating" min={1} max={5} defaultValue={4} className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
-              <input type="url" name="coverImageUrl" placeholder="https://…" className={inputCls} />
+              <label htmlFor="coverImageUrl" className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
+              <input id="coverImageUrl" type="url" name="coverImageUrl" placeholder="https://…" className={inputCls} />
             </div>
           </div>
 
@@ -96,16 +96,16 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
 
         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700">Content</h2>
-          <p className="text-xs text-gray-400 -mt-2">Filling in a description or cover image marks this as "With Content".</p>
+          <p className="text-xs text-muted-foreground -mt-2">Filling in a description or cover image marks this as "With Content".</p>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
-            <textarea name="descriptionEn" rows={4} placeholder="Describe this accommodation…" className={inputCls} />
+            <label htmlFor="descriptionEn" className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
+            <textarea id="descriptionEn" name="descriptionEn" rows={4} placeholder="Describe this accommodation…" className={inputCls} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description (Arabic)</label>
-            <textarea name="descriptionAr" rows={4} placeholder="وصف مكان الإقامة…" dir="rtl" className={inputCls} />
+            <label htmlFor="descriptionAr" className="block text-sm font-medium text-gray-700 mb-1">Description (Arabic)</label>
+            <textarea id="descriptionAr" name="descriptionAr" rows={4} placeholder="وصف مكان الإقامة…" dir="rtl" className={inputCls} />
           </div>
         </div>
 

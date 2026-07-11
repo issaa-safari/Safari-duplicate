@@ -50,8 +50,8 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tour</label>
-            <select name="tourId" required defaultValue="" className={inputCls}
+            <label htmlFor="tourId" className="block text-sm font-medium text-gray-700 mb-1">Tour</label>
+            <select id="tourId" name="tourId" required defaultValue="" className={inputCls}
               onChange={(e) => onTourChange(e.target.value)}>
               <option value="" disabled>Select a tour…</option>
               {tours.map((t) => (
@@ -64,38 +64,38 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-              <input type="date" name="startDate" required className={inputCls} />
+              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+              <input id="startDate" type="date" name="startDate" required className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-              <input type="date" name="endDate" required className={inputCls} />
+              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+              <input id="endDate" type="date" name="endDate" required className={inputCls} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Max Seats</label>
-              <input type="number" name="maxSeats" min={1} value={maxSeats}
+              <label htmlFor="maxSeats" className="block text-sm font-medium text-gray-700 mb-1">Max Seats</label>
+              <input id="maxSeats" type="number" name="maxSeats" min={1} value={maxSeats}
                 onChange={(e) => setMaxSeats(e.target.value)} required className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Already-booked seats</label>
-              <input type="number" name="bookedSeats" min={0} defaultValue={0} className={inputCls} />
-              <p className="text-[11px] text-gray-400 mt-1">Only for migrating existing bookings — leave at 0 for new departures.</p>
+              <label htmlFor="bookedSeats" className="block text-sm font-medium text-gray-700 mb-1">Already-booked seats</label>
+              <input id="bookedSeats" type="number" name="bookedSeats" min={0} defaultValue={0} className={inputCls} />
+              <p className="text-[11px] text-muted-foreground mt-1">Only for migrating existing bookings — leave at 0 for new departures.</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price per Seat (USD)</label>
-              <input type="number" name="priceUsd" min={0} step="0.01" required placeholder="e.g. 4500"
+              <label htmlFor="priceUsd" className="block text-sm font-medium text-gray-700 mb-1">Price per Seat (USD)</label>
+              <input id="priceUsd" type="number" name="priceUsd" min={0} step="0.01" required placeholder="e.g. 4500"
                 value={price} onChange={(e) => setPrice(e.target.value)} className={inputCls} />
-              <p className="text-[11px] text-gray-400 mt-1">Shown on the website &amp; charged at booking. Pre-filled from the template, editable per departure.</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Shown on the website &amp; charged at booking. Pre-filled from the template, editable per departure.</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select name="status" defaultValue="available" className={inputCls}>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select id="status" name="status" defaultValue="available" className={inputCls}>
                 <option value="available">Available</option>
                 <option value="full">Full</option>
                 <option value="closed">Closed</option>
@@ -105,8 +105,8 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Internal Notes</label>
-            <textarea name="internalNotes" rows={2} placeholder="Not shown to clients" className={inputCls} />
+            <label htmlFor="internalNotes" className="block text-sm font-medium text-gray-700 mb-1">Internal Notes</label>
+            <textarea id="internalNotes" name="internalNotes" rows={2} placeholder="Not shown to clients" className={inputCls} />
           </div>
         </div>
 

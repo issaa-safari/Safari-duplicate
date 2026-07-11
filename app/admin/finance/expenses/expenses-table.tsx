@@ -89,11 +89,11 @@ export default function ExpensesTable({ expenses }: { expenses: ExpenseRow[] }) 
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {expenses.length === 0 ? (
-          <p className="p-10 text-center text-sm text-gray-400">No expenses logged yet.</p>
+          <p className="p-10 text-center text-sm text-muted-foreground">No expenses logged yet.</p>
         ) : (
           <table className="stack-table w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
+              <tr className="text-left text-xs text-muted-foreground border-b border-gray-100">
                 <th className="px-5 py-3 font-medium">Date</th>
                 <th className="px-3 py-3 font-medium">Category</th>
                 <th className="px-3 py-3 font-medium">Description</th>
@@ -113,7 +113,7 @@ export default function ExpensesTable({ expenses }: { expenses: ExpenseRow[] }) 
                   </td>
                   <td data-label="Description" className="px-3 py-2.5 text-gray-800">
                     {x.description}
-                    {x.reference && <span className="text-xs text-gray-400 ml-2">({x.reference})</span>}
+                    {x.reference && <span className="text-xs text-muted-foreground ml-2">({x.reference})</span>}
                   </td>
                   <td data-label="Method" className="px-3 py-2.5 text-gray-500 text-xs">{x.method ? label(x.method) : '—'}</td>
                   <td data-label="Amount" className="px-3 py-2.5 text-right font-medium text-gray-900 tabular-nums">${fmt(Number(x.amount_usd))}</td>

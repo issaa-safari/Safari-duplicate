@@ -37,7 +37,7 @@ const RESIDENCIES = [
 ] as const
 
 const inputCls =
-  'w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--olive)] disabled:bg-gray-50 disabled:text-gray-400'
+  'w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--olive)] disabled:bg-gray-50 disabled:text-muted-foreground'
 const labelCls = 'block text-[11px] text-gray-500 mb-0.5'
 const readonlyCls =
   'w-full rounded-md border border-gray-100 bg-gray-50 px-2 py-1.5 text-sm text-right text-gray-700 tabular-nums'
@@ -374,9 +374,9 @@ export default function TripBuilderForm({
           title="Type a price to override the rate list; clear it to use the saved rate"
           onChange={e => onManual(e.target.value)}
         />
-        {res === 'pending' && <span className="text-[10px] text-gray-400 animate-pulse">resolving…</span>}
+        {res === 'pending' && <span className="text-[10px] text-muted-foreground animate-pulse">resolving…</span>}
         {resolvedOk && !manual && (
-          <span className="text-[10px] text-gray-400 tabular-nums"
+          <span className="text-[10px] text-muted-foreground tabular-nums"
             title={resolvedOk.segments.map(s => `${s.label}: ${s.units} × $${fmt(s.unitCostUsd)}`).join('\n')}>
             rate list ${fmt(resolvedOk.unitCostUsd)}{perUnitSuffix}
             {resolvedOk.segments.length > 1 && <span className="text-amber-600 ml-1" title="Season split">≀</span>}
@@ -386,7 +386,7 @@ export default function TripBuilderForm({
           </span>
         )}
         {resolvedOk && manual && (
-          <span className="text-[10px] text-gray-400 tabular-nums line-through">
+          <span className="text-[10px] text-muted-foreground tabular-nums line-through">
             ${fmt(resolvedOk.unitCostUsd)}{perUnitSuffix}
           </span>
         )}
@@ -448,12 +448,12 @@ export default function TripBuilderForm({
         </div>
         {resyncError && <p className="px-4 pt-2 text-xs text-red-600">{resyncError}</p>}
         {rows.length === 0 ? (
-          <p className="px-4 py-4 text-sm text-gray-400">No hotel rows yet.</p>
+          <p className="px-4 py-4 text-sm text-muted-foreground">No hotel rows yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="stack-table w-full text-sm min-w-[1080px]">
               <thead>
-                <tr className="text-left text-[11px] text-gray-400 border-b border-gray-100">
+                <tr className="text-left text-[11px] text-muted-foreground border-b border-gray-100">
                   <th className="px-3 py-2 font-medium">Location</th>
                   <th className="px-2 py-2 font-medium">Budget</th>
                   <th className="px-2 py-2 font-medium">Hotel</th>
@@ -559,41 +559,41 @@ export default function TripBuilderForm({
         <div className={sectionHead}>
           <h2 className={sectionTitle}>1 · Guest details</h2>
           {quoteId && (
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-muted-foreground">
               Editing draft {quoteNumber ? <span className="font-mono">{quoteNumber}</span> : 'quote'}
             </span>
           )}
         </div>
         <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
           <div className="col-span-2">
-            <label className={labelCls}>Guest name *</label>
-            <input className={inputCls} value={guest.name}
+            <label htmlFor="guest-name" className={labelCls}>Guest name *</label>
+            <input id="guest-name" className={inputCls} value={guest.name}
               onChange={e => setGuest(g => ({ ...g, name: e.target.value }))}
               placeholder="e.g. Amina Hassan" />
           </div>
           <div className="col-span-2">
-            <label className={labelCls}>Email (links CRM client)</label>
-            <input className={inputCls} type="email" value={guest.email}
+            <label htmlFor="email-links-crm-client" className={labelCls}>Email (links CRM client)</label>
+            <input id="email-links-crm-client" className={inputCls} type="email" value={guest.email}
               onChange={e => setGuest(g => ({ ...g, email: e.target.value }))} />
           </div>
           <div>
-            <label className={labelCls}>Adults</label>
-            <input className={inputCls} type="number" min={1} value={guest.adults}
+            <label htmlFor="adults" className={labelCls}>Adults</label>
+            <input id="adults" className={inputCls} type="number" min={1} value={guest.adults}
               onChange={e => setGuest(g => ({ ...g, adults: Math.max(1, parseInt(e.target.value) || 1) }))} />
           </div>
           <div>
-            <label className={labelCls}>Children</label>
-            <input className={inputCls} type="number" min={0} max={12} value={guest.childAges.length}
+            <label htmlFor="children" className={labelCls}>Children</label>
+            <input id="children" className={inputCls} type="number" min={0} max={12} value={guest.childAges.length}
               onChange={e => updateChildCount(parseInt(e.target.value) || 0)} />
           </div>
           <div>
-            <label className={labelCls}>Trip start *</label>
-            <input className={inputCls} type="date" value={guest.startDate}
+            <label htmlFor="trip-start" className={labelCls}>Trip start *</label>
+            <input id="trip-start" className={inputCls} type="date" value={guest.startDate}
               onChange={e => setGuest(g => ({ ...g, startDate: e.target.value }))} />
           </div>
           <div>
-            <label className={labelCls}>Trip end *</label>
-            <input className={inputCls} type="date" value={guest.endDate} min={guest.startDate || undefined}
+            <label htmlFor="trip-end" className={labelCls}>Trip end *</label>
+            <input id="trip-end" className={inputCls} type="date" value={guest.endDate} min={guest.startDate || undefined}
               onChange={e => setGuest(g => ({ ...g, endDate: e.target.value }))} />
           </div>
         </div>
@@ -601,8 +601,8 @@ export default function TripBuilderForm({
           <div className="px-4 pb-3 flex flex-wrap items-end gap-3">
             {guest.childAges.map((age, i) => (
               <div key={i}>
-                <label className={labelCls}>Child {i + 1} age</label>
-                <input className={inputCls + ' w-16'} type="number" min={0} max={17} value={age}
+                <label htmlFor={`child-age-${i}`} className={labelCls}>Child {i + 1} age</label>
+                <input id={`child-age-${i}`} className={inputCls + ' w-16'} type="number" min={0} max={17} value={age}
                   onChange={e => setGuest(g => ({
                     ...g,
                     childAges: g.childAges.map((a, j) => (j === i ? Math.max(0, Math.min(17, parseInt(e.target.value) || 0)) : a)),
@@ -633,12 +633,12 @@ export default function TripBuilderForm({
           </button>
         </div>
         {transportRows.length === 0 ? (
-          <p className="px-4 py-4 text-sm text-gray-400">No transport rows yet.</p>
+          <p className="px-4 py-4 text-sm text-muted-foreground">No transport rows yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="stack-table w-full text-sm min-w-[760px]">
               <thead>
-                <tr className="text-left text-[11px] text-gray-400 border-b border-gray-100">
+                <tr className="text-left text-[11px] text-muted-foreground border-b border-gray-100">
                   <th className="px-3 py-2 font-medium">Vehicle</th>
                   <th className="px-2 py-2 font-medium">Count</th>
                   <th className="px-2 py-2 font-medium">Start</th>
@@ -708,12 +708,12 @@ export default function TripBuilderForm({
           </button>
         </div>
         {parkRows.length === 0 ? (
-          <p className="px-4 py-4 text-sm text-gray-400">No park rows yet.</p>
+          <p className="px-4 py-4 text-sm text-muted-foreground">No park rows yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="stack-table w-full text-sm min-w-[760px]">
               <thead>
-                <tr className="text-left text-[11px] text-gray-400 border-b border-gray-100">
+                <tr className="text-left text-[11px] text-muted-foreground border-b border-gray-100">
                   <th className="px-3 py-2 font-medium">Park</th>
                   <th className="px-2 py-2 font-medium">Category</th>
                   <th className="px-2 py-2 font-medium">Group</th>
@@ -780,12 +780,12 @@ export default function TripBuilderForm({
       <div className={section}>
         <div className={sectionHead}>
           <h2 className={sectionTitle}>5 · Cost summary &amp; sale price</h2>
-          <span className="text-xs text-gray-400">USD · KES @ {fmt0(usdToKes)}</span>
+          <span className="text-xs text-muted-foreground">USD · KES @ {fmt0(usdToKes)}</span>
         </div>
         <div className="overflow-x-auto">
           <table className="stack-table w-full text-sm min-w-[720px]">
             <thead>
-              <tr className="text-left text-[11px] text-gray-400 border-b border-gray-100">
+              <tr className="text-left text-[11px] text-muted-foreground border-b border-gray-100">
                 <th className="px-3 py-2 font-medium text-right">Hotels</th>
                 <th className="px-3 py-2 font-medium text-right">Transport</th>
                 <th className="px-3 py-2 font-medium text-right">Parks</th>
@@ -809,7 +809,7 @@ export default function TripBuilderForm({
                     <td data-label="Total cost" className="px-3 py-2.5 text-right tabular-nums font-semibold text-gray-900">
                       <span>
                         ${fmt(summary.total)}
-                        <span className="block text-[10px] text-gray-400 font-normal">KES {fmt0(summary.total * usdToKes)}</span>
+                        <span className="block text-[10px] text-muted-foreground font-normal">KES {fmt0(summary.total * usdToKes)}</span>
                       </span>
                     </td>
                     <td data-label="Per guest" className="px-3 py-2.5 text-right tabular-nums text-gray-700">
@@ -841,7 +841,7 @@ export default function TripBuilderForm({
           </table>
         </div>
         {payingGuests > 0 && (
-          <p className="px-4 py-2 text-[11px] text-gray-400 border-t border-gray-50">
+          <p className="px-4 py-2 text-[11px] text-muted-foreground border-t border-gray-50">
             Per guest = total ÷ {payingGuests} paying guest{payingGuests === 1 ? '' : 's'} (infants under 3 excluded).
           </p>
         )}
@@ -871,8 +871,8 @@ export default function TripBuilderForm({
       {/* 6 ─ Save */}
       <div className="flex items-center gap-3 pb-8">
         <div>
-          <label className={labelCls}>Quote title (optional)</label>
-          <input className={inputCls + ' w-72'} value={title}
+          <label htmlFor="quote-title-optional" className={labelCls}>Quote title (optional)</label>
+          <input id="quote-title-optional" className={inputCls + ' w-72'} value={title}
             onChange={e => setTitle(e.target.value)} placeholder="e.g. Hassan family — Christmas safari" />
         </div>
         <button
@@ -883,7 +883,7 @@ export default function TripBuilderForm({
         >
           {saving ? 'Saving…' : quoteId ? 'Save changes' : 'Save quote'}
         </button>
-        {anyPending && <span className="mt-4 text-xs text-gray-400 animate-pulse">Resolving rates…</span>}
+        {anyPending && <span className="mt-4 text-xs text-muted-foreground animate-pulse">Resolving rates…</span>}
       </div>
 
       {creating && (

@@ -211,12 +211,12 @@ export default async function AdminDashboardPage() {
                       }}
                     />
                   </div>
-                  <p className="text-[10px] text-gray-400">{m.label}</p>
+                  <p className="text-[10px] text-muted-foreground">{m.label}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 py-10 text-center">Fills in as quotes are accepted.</p>
+            <p className="text-sm text-muted-foreground py-10 text-center">Fills in as quotes are accepted.</p>
           )}
         </div>
 
@@ -231,14 +231,14 @@ export default async function AdminDashboardPage() {
                 <Link key={d.id} href={`/admin/departures/${d.id}`} className="flex items-center justify-between text-sm hover:bg-gray-50 -mx-2 px-2 py-1 rounded">
                   <div>
                     <p className="text-gray-800 font-medium">{(d.tours as any)?.title_en ?? 'Departure'}</p>
-                    <p className="text-xs text-gray-400">{new Date(d.start_date).toLocaleDateString('en-GB')}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(d.start_date).toLocaleDateString('en-GB')}</p>
                   </div>
                   <span className="text-xs text-gray-500 shrink-0">{d.booked_seats ?? 0}/{d.max_seats ?? '?'} seats</span>
                 </Link>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-gray-400 py-10 text-center">No upcoming departures yet.</p>
+            <p className="text-sm text-muted-foreground py-10 text-center">No upcoming departures yet.</p>
           )}
         </div>
       </div>
@@ -269,21 +269,21 @@ export default async function AdminDashboardPage() {
                   <Link href={`/admin/quotes/${(v.quotes as any)?.id}`} className="text-sm text-amber-700 hover:underline font-medium">
                     {(v.quotes as any)?.quote_number ?? 'Quote'}
                   </Link>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Expires {new Date(v.valid_until).toLocaleDateString('en-GB')} · {v.status}
                   </p>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-gray-400 py-10 text-center">Nothing needs attention right now.</p>
+            <p className="text-sm text-muted-foreground py-10 text-center">Nothing needs attention right now.</p>
           )}
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-3">Recent Activity</h2>
           {((recentAcceptances?.length ?? 0) + (recentRequests?.length ?? 0)) === 0 ? (
-            <p className="text-sm text-gray-400 py-10 text-center">Activity appears here as things happen.</p>
+            <p className="text-sm text-muted-foreground py-10 text-center">Activity appears here as things happen.</p>
           ) : (
             <ul className="space-y-3">
               {(recentAcceptances ?? []).map((a: any) => (
@@ -296,7 +296,7 @@ export default async function AdminDashboardPage() {
                       </Link>
                       {' '}accepted by {a.client_name}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       {formatUSD(Number((a.quote_versions as any)?.total_selling_usd ?? 0))} · {new Date(a.accepted_at).toLocaleDateString('en-GB')}
                     </p>
                   </div>
@@ -312,7 +312,7 @@ export default async function AdminDashboardPage() {
                         {(r.clients as any)?.first_name} {(r.clients as any)?.last_name}
                       </Link>
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       {r.reference} · {new Date(r.created_at).toLocaleDateString('en-GB')}
                     </p>
                   </div>
@@ -331,7 +331,7 @@ function KpiCard({ label, value, sub, urgent }: { label: string; value: string; 
     <div className={`bg-white rounded-lg border p-5 ${urgent ? 'border-amber-300' : 'border-gray-200'}`}>
       <p className="text-xs text-gray-500">{label}</p>
       <p className={`text-2xl font-semibold mt-1 ${urgent ? 'text-amber-700' : 'text-gray-900'}`}>{value}</p>
-      <p className="text-xs text-gray-400 mt-1">{sub}</p>
+      <p className="text-xs text-muted-foreground mt-1">{sub}</p>
     </div>
   )
 }

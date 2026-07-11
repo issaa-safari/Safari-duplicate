@@ -27,7 +27,7 @@ function formatDate(dateStr: string, locale: string = 'en') {
   if (!dateStr) return '—'
   const date = new Date(dateStr)
   if (locale === 'ar') {
-    return date.toLocaleDateString('ar-SA', { day: 'numeric', month: 'long', year: 'numeric' })
+    return date.toLocaleDateString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'long', year: 'numeric' })
   }
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 }
@@ -101,7 +101,7 @@ export default async function DeparturesPage({
 
   return (
     <>
-      <PublicHeader />
+      <PublicHeader initialLang={locale} />
       <main>
         {/* Page Header */}
         <section

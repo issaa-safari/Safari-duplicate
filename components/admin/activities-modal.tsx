@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Dialog from '@/components/ui/dialog'
 import CreateLookupDialog from './create-lookup-dialog'
 
 const G = '#7A9A4A'
@@ -83,16 +84,26 @@ export default function ActivitiesModal({
   const sel = 'w-full rounded border border-gray-300 px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#7A9A4A]'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 px-4"
-      style={{ backgroundColor: 'rgba(26,46,19,0.55)' }}
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="w-full max-w-3xl rounded-xl bg-white shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Activities — {dayLabel}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl leading-none">×</button>
-        </div>
-
-        <div className="p-4 max-h-[60vh] overflow-y-auto">
+    <Dialog
+      title={`Activities — ${dayLabel}`}
+      titleClass="text-lg"
+      maxWidth="max-w-3xl"
+      overlayClass="z-50 pt-12"
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" onClick={onClose}
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white">
+            Cancel
+          </button>
+          <button type="button" onClick={save}
+            className="rounded-md bg-olive px-5 py-2 text-sm font-medium text-white">
+            Save Activities
+          </button>
+        </>
+      }
+    >
+      <div className="p-4 max-h-[60vh] overflow-y-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-500 uppercase tracking-wide">
@@ -109,14 +120,14 @@ export default function ActivitiesModal({
                 <tr key={i} className="border-t border-gray-100">
                   <td className={cell}>
                     <div className="flex flex-col">
-                      <button type="button" onClick={() => move(i, -1)} disabled={i === 0}
-                        className="text-gray-400 hover:text-gray-700 disabled:opacity-30 text-xs">↑</button>
-                      <button type="button" onClick={() => move(i, 1)} disabled={i === rows.length - 1}
-                        className="text-gray-400 hover:text-gray-700 disabled:opacity-30 text-xs">↓</button>
+                      <button type="button" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up"
+                        className="text-muted-foreground hover:text-gray-700 disabled:opacity-30 text-xs">↑</button>
+                      <button type="button" onClick={() => move(i, 1)} disabled={i === rows.length - 1} aria-label="Move down"
+                        className="text-muted-foreground hover:text-gray-700 disabled:opacity-30 text-xs">↓</button>
                     </div>
                   </td>
                   <td className={cell}>
-                    <select className={sel} value={row.activity_id}
+                    <select className={sel} value={row.activity_id} aria-label="Activity type"
                       onChange={e => handleActivitySelect(i, e.target.value)}>
                       <option value="">Select activity…</option>
                       {allActivities.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -124,7 +135,7 @@ export default function ActivitiesModal({
                     </select>
                   </td>
                   <td className={cell}>
-                    <select className={sel} value={row.destination_id ?? ''}
+                    <select className={sel} value={row.destination_id ?? ''} aria-label="Location"
                       onChange={e => handleLocationSelect(i, e.target.value)}>
                       <option value="">{dayDestinationId ? 'Day destination' : '— none —'}</option>
                       {allDestinations.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -132,7 +143,7 @@ export default function ActivitiesModal({
                     </select>
                   </td>
                   <td className={cell}>
-                    <select className={sel} value={row.moment}
+                    <select className={sel} value={row.moment} aria-label="Moment"
                       onChange={e => update(i, { moment: e.target.value as DayActivity['moment'] })}>
                       {MOMENTS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </select>
@@ -144,7 +155,7 @@ export default function ActivitiesModal({
                     </button>
                   </td>
                   <td className={cell}>
-                    <button type="button" onClick={() => remove(i)}
+                    <button type="button" onClick={() => remove(i)} aria-label="Remove activity"
                       className="text-gray-300 hover:text-red-500 text-lg leading-none">×</button>
                   </td>
                 </tr>
@@ -157,18 +168,6 @@ export default function ActivitiesModal({
             + Add activity
           </button>
         </div>
-
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
-          <button type="button" onClick={onClose}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white">
-            Cancel
-          </button>
-          <button type="button" onClick={save}
-            className="rounded-md px-5 py-2 text-sm font-medium text-white" style={{ backgroundColor: G }}>
-            Save Activities
-          </button>
-        </div>
-      </div>
 
       {creating && (
         <CreateLookupDialog
@@ -185,6 +184,6 @@ export default function ActivitiesModal({
           }}
         />
       )}
-    </div>
+    </Dialog>
   )
 }

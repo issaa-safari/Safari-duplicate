@@ -51,11 +51,11 @@ export default function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-xs text-gray-400">{row.quoteNumber}</span>
+                    <span className="font-mono text-xs text-muted-foreground">{row.quoteNumber}</span>
                     <span className="font-medium text-gray-900 text-sm">{row.clientName}</span>
                   </div>
                   {row.acceptedAt && (
-                    <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-2">
+                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
                       <span>Accepted {new Date(row.acceptedAt).toLocaleDateString('en-GB')}</span>
                       {daysOutstanding !== null && (
                         <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold ${
@@ -73,7 +73,7 @@ export default function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
                     <div className="w-20 h-1.5 rounded-full bg-gray-100 overflow-hidden">
                       <div className="h-full rounded-full bg-[var(--olive)]" style={{ width: `${pct}%` }} />
                     </div>
-                    <span className="text-xs text-gray-400">{pct}%</span>
+                    <span className="text-xs text-muted-foreground">{pct}%</span>
                   </div>
                   {outstanding > 0 ? (
                     <p className={`text-xs mt-0.5 font-medium ${overdue ? 'text-red-600' : 'text-amber-600'}`}>
@@ -104,7 +104,7 @@ export default function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
                       <div className="overflow-x-auto">
                       <table className="stack-table w-full text-sm mb-3 min-w-[420px]">
                         <thead>
-                          <tr className="text-xs text-gray-400 text-left border-b border-gray-100">
+                          <tr className="text-xs text-muted-foreground text-left border-b border-gray-100">
                             <th className="pb-1 font-medium">Date</th>
                             <th className="pb-1 font-medium">Type</th>
                             <th className="pb-1 font-medium">Method</th>
@@ -120,7 +120,7 @@ export default function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
                               </td>
                               <td data-label="Type" className="py-1.5 text-gray-600 capitalize">{p.payment_type}</td>
                               <td data-label="Method" className="py-1.5 text-gray-500">{p.method ?? '—'}</td>
-                              <td data-label="Ref" className="py-1.5 text-gray-400 text-xs">{p.reference ?? '—'}</td>
+                              <td data-label="Ref" className="py-1.5 text-muted-foreground text-xs">{p.reference ?? '—'}</td>
                               <td data-label="Amount" className="py-1.5 text-right font-medium text-gray-900">
                                 ${fmt(Number(p.amount_usd))}
                               </td>
@@ -130,7 +130,7 @@ export default function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
                       </table>
                       </div>
                     ) : (
-                      <p className="text-xs text-gray-400 mb-3">No payments recorded yet.</p>
+                      <p className="text-xs text-muted-foreground mb-3">No payments recorded yet.</p>
                     )}
                     {outstanding > 0 && (
                       <button

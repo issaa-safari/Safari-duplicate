@@ -99,21 +99,21 @@ export default async function ReceiptsPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <p className="text-xs text-gray-500">Invoiced</p>
           <p className="text-2xl font-semibold text-gray-900 mt-1">${fmt(totalInvoiced)}</p>
-          <p className="text-xs text-gray-400 mt-1">{rows.length} accepted quote{rows.length !== 1 ? 's' : ''} + {directRows.length} direct booking{directRows.length !== 1 ? 's' : ''}</p>
+          <p className="text-xs text-muted-foreground mt-1">{rows.length} accepted quote{rows.length !== 1 ? 's' : ''} + {directRows.length} direct booking{directRows.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <p className="text-xs text-gray-500">Received</p>
           <p className="text-2xl font-semibold text-green-700 mt-1">${fmt(totalReceived)}</p>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             {totalInvoiced > 0 ? Math.round((totalReceived / totalInvoiced) * 100) : 0}% collected
           </p>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <p className="text-xs text-gray-500">Balance due</p>
-          <p className={`text-2xl font-semibold mt-1 ${totalOutstanding > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
+          <p className={`text-2xl font-semibold mt-1 ${totalOutstanding > 0 ? 'text-amber-700' : 'text-muted-foreground'}`}>
             ${fmt(totalOutstanding)}
           </p>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             {rows.filter(r => r.totalSelling - r.totalReceived > 0).length} with balance due
           </p>
         </div>
@@ -123,10 +123,10 @@ export default async function ReceiptsPage() {
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-700">Accepted quotes</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Click a row to see receipts or record a new one — received can never exceed invoiced</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Click a row to see receipts or record a new one — received can never exceed invoiced</p>
         </div>
         {rows.length === 0 ? (
-          <div className="p-10 text-center text-sm text-gray-400">
+          <div className="p-10 text-center text-sm text-muted-foreground">
             No accepted quotes yet. Receipts are tracked once a client accepts a quote.
           </div>
         ) : (
@@ -138,16 +138,16 @@ export default async function ReceiptsPage() {
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-4">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-700">Direct website bookings</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Confirmed bookings made without a quote — revenue only, no cost breakdown available</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Confirmed bookings made without a quote — revenue only, no cost breakdown available</p>
         </div>
         {directRows.length === 0 ? (
-          <div className="p-10 text-center text-sm text-gray-400">
+          <div className="p-10 text-center text-sm text-muted-foreground">
             No confirmed direct bookings yet.
           </div>
         ) : (
           <table className="stack-table w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
+              <tr className="text-left text-xs text-muted-foreground border-b border-gray-100">
                 <th className="px-5 py-3 font-medium">Tour / Departure</th>
                 <th className="px-5 py-3 font-medium text-right">Amount Due</th>
                 <th className="px-5 py-3 font-medium text-right">Received</th>
@@ -162,12 +162,12 @@ export default async function ReceiptsPage() {
                     <td data-label="Tour / Departure" className="px-5 py-3">
                       <p className="font-medium text-gray-800">{r.tourTitle}</p>
                       {r.startDate && (
-                        <p className="text-xs text-gray-400">{new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(r.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                       )}
                     </td>
                     <td data-label="Amount Due" className="px-5 py-3 text-right text-gray-700">${fmt(r.amountDue)}</td>
                     <td data-label="Received" className="px-5 py-3 text-right text-green-700">${fmt(r.amountReceived)}</td>
-                    <td data-label="Outstanding" className={`px-5 py-3 text-right font-semibold ${outstanding > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
+                    <td data-label="Outstanding" className={`px-5 py-3 text-right font-semibold ${outstanding > 0 ? 'text-amber-700' : 'text-muted-foreground'}`}>
                       ${fmt(outstanding)}
                     </td>
                   </tr>

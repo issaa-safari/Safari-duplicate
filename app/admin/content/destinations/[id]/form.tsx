@@ -54,18 +54,18 @@ export default function DestinationEditForm({ destination }: { destination: Dest
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-              <input type="text" name="name" required defaultValue={destination.name} className={inputCls} />
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+              <input id="name" type="text" name="name" required defaultValue={destination.name} className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-              <input type="text" name="country" defaultValue={destination.country} className={inputCls} />
+              <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+              <input id="country" type="text" name="country" defaultValue={destination.country} className={inputCls} />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
-            <input
+            <label htmlFor="coverImageUrl" className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
+            <input id="coverImageUrl"
               type="url"
               name="coverImageUrl"
               defaultValue={destination.cover_image_url ?? ''}
@@ -80,11 +80,11 @@ export default function DestinationEditForm({ destination }: { destination: Dest
         {/* Content */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700">Content</h2>
-          <p className="text-xs text-gray-400 -mt-2">Filling in a description or cover image will mark this destination as "With Content".</p>
+          <p className="text-xs text-muted-foreground -mt-2">Filling in a description or cover image will mark this destination as "With Content".</p>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
-            <textarea
+            <label htmlFor="descriptionEn" className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
+            <textarea id="descriptionEn"
               name="descriptionEn"
               rows={4}
               defaultValue={destination.description_en ?? ''}
@@ -94,8 +94,8 @@ export default function DestinationEditForm({ destination }: { destination: Dest
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description (Arabic)</label>
-            <textarea
+            <label htmlFor="descriptionAr" className="block text-sm font-medium text-gray-700 mb-1">Description (Arabic)</label>
+            <textarea id="descriptionAr"
               name="descriptionAr"
               rows={4}
               defaultValue={destination.description_ar ?? ''}

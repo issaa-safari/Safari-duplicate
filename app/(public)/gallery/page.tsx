@@ -60,7 +60,7 @@ export default async function GalleryPage({
 
   return (
     <div dir={isAr ? 'rtl' : 'ltr'}>
-      <PublicHeader />
+      <PublicHeader initialLang={locale} />
       <main>
         <section
           className="bg-gray-900 text-white py-16 md:py-24 bg-cover bg-center"

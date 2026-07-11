@@ -33,7 +33,7 @@ export default async function TourTemplatesPage() {
       {rows.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
           <p className="text-sm text-gray-500">No templates yet.</p>
-          <p className="text-xs text-gray-400 mt-2 max-w-md mx-auto">
+          <p className="text-xs text-muted-foreground mt-2 max-w-md mx-auto">
             Open any quote and choose <span className="font-medium">“Save as template”</span> to add it here.
             Then, on a request’s Quotes tab, pick <span className="font-medium">“Start from template”</span> to
             copy it into a new quote.
@@ -50,11 +50,11 @@ export default async function TourTemplatesPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs bg-[var(--olive)]/10 text-[var(--olive-dk)] px-2 py-0.5 rounded-full font-medium">Template</span>
-                      <span className="text-xs text-gray-400 font-mono">{t.quote_number}</span>
+                      <span className="text-xs text-muted-foreground font-mono">{t.quote_number}</span>
                     </div>
                     <p className="font-medium text-gray-900">{latest?.title || 'Untitled template'}</p>
                     {latest?.travel_start_date && (
-                      <p className="text-xs text-gray-400 mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         Sample dates: {new Date(latest.travel_start_date).toLocaleDateString('en-GB')}
                         {latest.travel_end_date ? ` – ${new Date(latest.travel_end_date).toLocaleDateString('en-GB')}` : ''}
                       </p>

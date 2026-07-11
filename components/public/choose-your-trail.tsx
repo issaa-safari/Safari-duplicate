@@ -85,12 +85,12 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
       imageUrl: bikeCard.imageUrl,
       seed: bikeCard.tourId ?? 'bike',
       badge: isAr ? 'جولات الدراجات' : 'Group Bike Tours',
-      heading: isAr ? 'اركب البرية' : 'MOTORBIKE ADVENTURE',
+      heading: isAr ? 'مغامرة الدراجات النارية' : 'MOTORBIKE ADVENTURE',
       body: isAr
         ? 'جولات دراجات جماعية بقيادة خبراء من نيروبي إلى الساحل. مدعومة بالكامل، ممتازة للمغامرين.'
         : 'Expert-led group rides from Nairobi to the coast. Fully supported, KTM-grade adventure for serious riders.',
       cta: isAr ? 'استكشف جولات الدراجات' : 'Explore Bike Tours',
-      href: `/tours?lang=${locale}`,
+      href: `/tours?lang=${locale}&type=bike`,
     },
     {
       accent: GOLD,
@@ -102,7 +102,7 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
         ? 'مسارات مخصصة، مخيمات حصرية، مجموعتك وحدها فقط. سفاري مصمم حول تفضيلاتك.'
         : 'Custom itineraries, exclusive camps, your group only. Safari built entirely around your preferences.',
       cta: isAr ? 'استكشف السفاري الخاص' : 'Explore Private Safaris',
-      href: `/tours?lang=${locale}`,
+      href: `/tours?lang=${locale}&type=private`,
     },
   ]
 
@@ -192,8 +192,9 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
                     padding: '4px 14px',
                     fontSize: '0.72rem',
                     fontWeight: 700,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase' as const,
+                    // Letter-spacing breaks Arabic joining; uppercase is Latin-only
+                    letterSpacing: isAr ? undefined : '0.1em',
+                    textTransform: isAr ? undefined : ('uppercase' as const),
                     color: '#fff',
                     fontFamily: 'var(--font-body, sans-serif)',
                     marginBottom: 14,

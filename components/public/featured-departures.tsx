@@ -9,7 +9,7 @@ const G = '#7A9A4A'
 function formatDate(dateStr: string, locale: string) {
   if (!dateStr) return '—'
   const d = new Date(dateStr)
-  return d.toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-GB', {
+  return d.toLocaleDateString(locale === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB', {
     day: 'numeric', month: 'short', year: 'numeric',
   })
 }
@@ -40,7 +40,6 @@ export default function FeaturedDepartures({ lang }: { lang: string }) {
     spotsLeft: 'مقاعد متبقية',
     full: 'مكتمل',
     days: 'أيام',
-    none: 'لا توجد رحلات منشورة حالياً. تحقق قريباً!',
   } : {
     heading: 'Upcoming Departures',
     subheading: 'Reserve your place on one of our fixed-date safari adventures',
@@ -50,7 +49,6 @@ export default function FeaturedDepartures({ lang }: { lang: string }) {
     spotsLeft: 'spots left',
     full: 'Fully booked',
     days: 'days',
-    none: 'No departures published yet. Check back soon!',
   }
 
   if (departures === null) {

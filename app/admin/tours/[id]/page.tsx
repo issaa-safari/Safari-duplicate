@@ -45,7 +45,7 @@ export default async function TourDetailPage({
                'bg-gray-100 text-gray-600')}>
               {tour.status}
             </span>
-            <span className="text-xs text-gray-400">{tour.type}</span>
+            <span className="text-xs text-muted-foreground">{tour.type}</span>
           </div>
         </div>
         <Link href={"/admin/tours/" + tour.id + "/days"}
@@ -107,7 +107,7 @@ export default async function TourDetailPage({
                 ))}
               </ul>
             ) : (
-              <p className="text-xs text-gray-400">No itinerary built yet.</p>
+              <p className="text-xs text-muted-foreground">No itinerary built yet.</p>
             )}
             <Link href={"/admin/tours/" + tour.id + "/days"}
               className="mt-3 block text-xs text-[var(--olive)] hover:underline">

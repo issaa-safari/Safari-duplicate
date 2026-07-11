@@ -80,8 +80,8 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
       <div className="bg-white rounded-lg border border-gray-200 p-5 space-y-4">
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tour *</label>
-          <select required value={tourId} onChange={e => handleTourChange(e.target.value)}
+          <label htmlFor="tour" className="block text-sm font-medium text-gray-700 mb-1">Tour *</label>
+          <select id="tour" required value={tourId} onChange={e => handleTourChange(e.target.value)}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]">
             <option value="">Select a tour...</option>
             {tours.map(tour => (
@@ -94,30 +94,30 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
-            <input type="date" required value={startDate}
+            <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
+            <input id="start-date" type="date" required value={startDate}
               onChange={e => handleStartDateChange(e.target.value)}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date *</label>
-            <input type="date" required value={endDate}
+            <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-1">End Date *</label>
+            <input id="end-date" type="date" required value={endDate}
               onChange={e => setEndDate(e.target.value)}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
-            <p className="text-xs text-gray-400 mt-1">Auto-calculated from tour duration</p>
+            <p className="text-xs text-muted-foreground mt-1">Auto-calculated from tour duration</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Max Seats *</label>
-            <input type="number" required min={1} value={maxSeats}
+            <label htmlFor="max-seats" className="block text-sm font-medium text-gray-700 mb-1">Max Seats *</label>
+            <input id="max-seats" type="number" required min={1} value={maxSeats}
               onChange={e => setMaxSeats(Number(e.target.value))}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price Per Person (USD) *</label>
-            <input type="number" required min={0} value={priceUsd}
+            <label htmlFor="price-per-person-usd" className="block text-sm font-medium text-gray-700 mb-1">Price Per Person (USD) *</label>
+            <input id="price-per-person-usd" type="number" required min={0} value={priceUsd}
               onChange={e => setPriceUsd(e.target.value)}
               placeholder="e.g. 1350"
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
@@ -125,8 +125,8 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-          <select value={status} onChange={e => setStatus(e.target.value)}
+          <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select id="status" value={status} onChange={e => setStatus(e.target.value)}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]">
             <option value="available">Available</option>
             <option value="limited">Limited</option>
@@ -136,8 +136,8 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Internal Notes</label>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+          <label htmlFor="internal-notes" className="block text-sm font-medium text-gray-700 mb-1">Internal Notes</label>
+          <textarea id="internal-notes" value={notes} onChange={e => setNotes(e.target.value)} rows={2}
             placeholder="Any private notes about this departure..."
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
         </div>

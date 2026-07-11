@@ -95,7 +95,7 @@ export default async function DashboardPage({
 
   return (
     <div dir={isAr ? 'rtl' : 'ltr'}>
-      <PublicHeader />
+      <PublicHeader initialLang={locale} />
       <main className="min-h-screen bg-[#F5F0E8] py-12">
         <div className="max-w-6xl mx-auto px-4">
           {/* Header */}

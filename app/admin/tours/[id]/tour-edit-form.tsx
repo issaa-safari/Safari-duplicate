@@ -106,27 +106,27 @@ export default function TourEditForm({ tour }: { tour: any }) {
       {children}
     </div>
   )
-  const Label = ({ children }: { children: React.ReactNode }) => (
-    <label className="block text-sm font-medium text-gray-700 mb-1">{children}</label>
+  const Label = ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
+    <label htmlFor={htmlFor} className="block text-sm font-medium text-gray-700 mb-1">{children}</label>
   )
 
   return (
     <form onSubmit={handleSave} className="space-y-4 max-w-3xl">
       <Section title="Basic Details">
         <div className="grid sm:grid-cols-2 gap-3">
-          <div><Label>Title (English)</Label><input value={titleEn} onChange={e => setTitleEn(e.target.value)} className={inputCls} /></div>
-          <div><Label>Title (Arabic)</Label><input value={titleAr} onChange={e => setTitleAr(e.target.value)} dir="rtl" className={inputCls} /></div>
-          <div><Label>Subtitle (English)</Label><input value={subtitleEn} onChange={e => setSubtitleEn(e.target.value)} className={inputCls} /></div>
-          <div><Label>Subtitle (Arabic)</Label><input value={subtitleAr} onChange={e => setSubtitleAr(e.target.value)} dir="rtl" className={inputCls} /></div>
+          <div><Label htmlFor="tf-titleEn">Title (English)</Label><input id="tf-titleEn" value={titleEn} onChange={e => setTitleEn(e.target.value)} className={inputCls} /></div>
+          <div><Label htmlFor="tf-titleAr">Title (Arabic)</Label><input id="tf-titleAr" value={titleAr} onChange={e => setTitleAr(e.target.value)} dir="rtl" className={inputCls} /></div>
+          <div><Label htmlFor="tf-subtitleEn">Subtitle (English)</Label><input id="tf-subtitleEn" value={subtitleEn} onChange={e => setSubtitleEn(e.target.value)} className={inputCls} /></div>
+          <div><Label htmlFor="tf-subtitleAr">Subtitle (Arabic)</Label><input id="tf-subtitleAr" value={subtitleAr} onChange={e => setSubtitleAr(e.target.value)} dir="rtl" className={inputCls} /></div>
         </div>
         <div className="grid sm:grid-cols-3 gap-3">
-          <div><Label>Countries Visited</Label><input value={countriesVisited} onChange={e => setCountriesVisited(e.target.value)} placeholder="Kenya, Tanzania" className={inputCls} /></div>
-          <div><Label>Start Destination</Label><input value={startDestination} onChange={e => setStartDestination(e.target.value)} placeholder="Nairobi" className={inputCls} /></div>
-          <div><Label>End Destination</Label><input value={endDestination} onChange={e => setEndDestination(e.target.value)} placeholder="Nairobi" className={inputCls} /></div>
+          <div><Label htmlFor="tf-countriesVisited">Countries Visited</Label><input id="tf-countriesVisited" value={countriesVisited} onChange={e => setCountriesVisited(e.target.value)} placeholder="Kenya, Tanzania" className={inputCls} /></div>
+          <div><Label htmlFor="tf-startDestination">Start Destination</Label><input id="tf-startDestination" value={startDestination} onChange={e => setStartDestination(e.target.value)} placeholder="Nairobi" className={inputCls} /></div>
+          <div><Label htmlFor="tf-endDestination">End Destination</Label><input id="tf-endDestination" value={endDestination} onChange={e => setEndDestination(e.target.value)} placeholder="Nairobi" className={inputCls} /></div>
         </div>
         <div className="grid sm:grid-cols-2 gap-3">
-          <div><Label>Overview (English)</Label><textarea value={overviewEn} onChange={e => setOverviewEn(e.target.value)} rows={5} className={inputCls} /></div>
-          <div><Label>Overview (Arabic)</Label><textarea value={overviewAr} onChange={e => setOverviewAr(e.target.value)} rows={5} dir="rtl" className={inputCls} /></div>
+          <div><Label htmlFor="tf-overviewEn">Overview (English)</Label><textarea id="tf-overviewEn" value={overviewEn} onChange={e => setOverviewEn(e.target.value)} rows={5} className={inputCls} /></div>
+          <div><Label htmlFor="tf-overviewAr">Overview (Arabic)</Label><textarea id="tf-overviewAr" value={overviewAr} onChange={e => setOverviewAr(e.target.value)} rows={5} dir="rtl" className={inputCls} /></div>
         </div>
       </Section>
 
@@ -138,35 +138,35 @@ export default function TourEditForm({ tour }: { tour: any }) {
 
       <Section title="At a Glance">
         <div className="grid sm:grid-cols-2 gap-3">
-          <div><Label>Terrain</Label><input value={terrain} onChange={e => setTerrain(e.target.value)} placeholder="Tarmac, gravel, savannah trails" className={inputCls} /></div>
-          <div><Label>Vehicle / Bike</Label><input value={vehicle} onChange={e => setVehicle(e.target.value)} placeholder="4x4 Land Cruiser / adventure bike" className={inputCls} /></div>
-          <div><Label>Accommodation Level</Label><input value={accommodationLevel} onChange={e => setAccommodationLevel(e.target.value)} placeholder="3–4★ lodges &amp; camps" className={inputCls} /></div>
-          <div><Label>Total Distance (km)</Label><input type="number" value={totalDistanceKm} onChange={e => setTotalDistanceKm(e.target.value)} className={inputCls} /></div>
+          <div><Label htmlFor="tf-terrain">Terrain</Label><input id="tf-terrain" value={terrain} onChange={e => setTerrain(e.target.value)} placeholder="Tarmac, gravel, savannah trails" className={inputCls} /></div>
+          <div><Label htmlFor="tf-vehicle">Vehicle / Bike</Label><input id="tf-vehicle" value={vehicle} onChange={e => setVehicle(e.target.value)} placeholder="4x4 Land Cruiser / adventure bike" className={inputCls} /></div>
+          <div><Label htmlFor="tf-accommodationLevel">Accommodation Level</Label><input id="tf-accommodationLevel" value={accommodationLevel} onChange={e => setAccommodationLevel(e.target.value)} placeholder="3–4★ lodges &amp; camps" className={inputCls} /></div>
+          <div><Label htmlFor="tf-totalDistanceKm">Total Distance (km)</Label><input id="tf-totalDistanceKm" type="number" value={totalDistanceKm} onChange={e => setTotalDistanceKm(e.target.value)} className={inputCls} /></div>
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
-          <div><Label>Difficulty ({difficultyRating}/10)</Label><input type="range" min={1} max={10} value={difficultyRating} onChange={e => setDifficultyRating(Number(e.target.value))} className="w-full accent-[var(--olive)]" /></div>
-          <div><Label>Comfort ({comfortRating}/10)</Label><input type="range" min={1} max={10} value={comfortRating} onChange={e => setComfortRating(Number(e.target.value))} className="w-full accent-[var(--olive)]" /></div>
+          <div><Label htmlFor="tf-difficultyRating">Difficulty ({difficultyRating}/10)</Label><input id="tf-difficultyRating" type="range" min={1} max={10} value={difficultyRating} onChange={e => setDifficultyRating(Number(e.target.value))} className="w-full accent-[var(--olive)]" /></div>
+          <div><Label htmlFor="tf-comfortRating">Comfort ({comfortRating}/10)</Label><input id="tf-comfortRating" type="range" min={1} max={10} value={comfortRating} onChange={e => setComfortRating(Number(e.target.value))} className="w-full accent-[var(--olive)]" /></div>
         </div>
       </Section>
 
       <Section title="Highlights (one per line)">
         <div className="grid sm:grid-cols-2 gap-3">
-          <div><Label>English</Label><textarea value={highlightsEn} onChange={e => setHighlightsEn(e.target.value)} rows={5} placeholder="Big Five game drives&#10;Maasai Mara sundowner" className={inputCls} /></div>
-          <div><Label>Arabic</Label><textarea value={highlightsAr} onChange={e => setHighlightsAr(e.target.value)} rows={5} dir="rtl" className={inputCls} /></div>
+          <div><Label htmlFor="tf-highlightsEn">English</Label><textarea id="tf-highlightsEn" value={highlightsEn} onChange={e => setHighlightsEn(e.target.value)} rows={5} placeholder="Big Five game drives&#10;Maasai Mara sundowner" className={inputCls} /></div>
+          <div><Label htmlFor="tf-highlightsAr">Arabic</Label><textarea id="tf-highlightsAr" value={highlightsAr} onChange={e => setHighlightsAr(e.target.value)} rows={5} dir="rtl" className={inputCls} /></div>
         </div>
       </Section>
 
       <Section title="What's Included (one per line)">
         <div className="grid sm:grid-cols-2 gap-3">
-          <div><Label>English</Label><textarea value={includedEn} onChange={e => setIncludedEn(e.target.value)} rows={5} className={inputCls} /></div>
-          <div><Label>Arabic</Label><textarea value={includedAr} onChange={e => setIncludedAr(e.target.value)} rows={5} dir="rtl" className={inputCls} /></div>
+          <div><Label htmlFor="tf-includedEn">English</Label><textarea id="tf-includedEn" value={includedEn} onChange={e => setIncludedEn(e.target.value)} rows={5} className={inputCls} /></div>
+          <div><Label htmlFor="tf-includedAr">Arabic</Label><textarea id="tf-includedAr" value={includedAr} onChange={e => setIncludedAr(e.target.value)} rows={5} dir="rtl" className={inputCls} /></div>
         </div>
       </Section>
 
       <Section title="What's Excluded (one per line)">
         <div className="grid sm:grid-cols-2 gap-3">
-          <div><Label>English</Label><textarea value={excludedEn} onChange={e => setExcludedEn(e.target.value)} rows={4} className={inputCls} /></div>
-          <div><Label>Arabic</Label><textarea value={excludedAr} onChange={e => setExcludedAr(e.target.value)} rows={4} dir="rtl" className={inputCls} /></div>
+          <div><Label htmlFor="tf-excludedEn">English</Label><textarea id="tf-excludedEn" value={excludedEn} onChange={e => setExcludedEn(e.target.value)} rows={4} className={inputCls} /></div>
+          <div><Label htmlFor="tf-excludedAr">Arabic</Label><textarea id="tf-excludedAr" value={excludedAr} onChange={e => setExcludedAr(e.target.value)} rows={4} dir="rtl" className={inputCls} /></div>
         </div>
       </Section>
 
@@ -194,20 +194,20 @@ export default function TourEditForm({ tour }: { tour: any }) {
       <Section title="Publishing &amp; Pricing">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <Label>Status</Label>
-            <select value={status} onChange={e => setStatus(e.target.value)} className={inputCls}>
+            <Label htmlFor="tf-status">Status</Label>
+            <select id="tf-status" value={status} onChange={e => setStatus(e.target.value)} className={inputCls}>
               <option value="draft">Draft</option>
               <option value="active">Active</option>
               <option value="archived">Archived</option>
             </select>
           </div>
           <div>
-            <Label>Default / Starting Price (USD)</Label>
-            <input type="number" value={basePrice} onChange={e => setBasePrice(e.target.value)} className={inputCls} />
-            <p className="text-[11px] text-gray-400 mt-1">Suggested price — pre-fills new departures. The departure&apos;s own price is what shows on the website.</p>
+            <Label htmlFor="tf-basePrice">Default / Starting Price (USD)</Label>
+            <input id="tf-basePrice" type="number" value={basePrice} onChange={e => setBasePrice(e.target.value)} className={inputCls} />
+            <p className="text-[11px] text-muted-foreground mt-1">Suggested price — pre-fills new departures. The departure&apos;s own price is what shows on the website.</p>
           </div>
-          <div><Label>Max Group Size</Label><input type="number" value={maxGroupSize} onChange={e => setMaxGroupSize(Number(e.target.value))} className={inputCls} /></div>
-          <div><Label>Deposit %</Label><input type="number" value={depositPercent} onChange={e => setDepositPercent(Number(e.target.value))} className={inputCls} /></div>
+          <div><Label htmlFor="tf-maxGroupSize">Max Group Size</Label><input id="tf-maxGroupSize" type="number" value={maxGroupSize} onChange={e => setMaxGroupSize(Number(e.target.value))} className={inputCls} /></div>
+          <div><Label htmlFor="tf-depositPercent">Deposit %</Label><input id="tf-depositPercent" type="number" value={depositPercent} onChange={e => setDepositPercent(Number(e.target.value))} className={inputCls} /></div>
         </div>
         <div className="flex items-center gap-6">
           <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)} className="rounded border-gray-300" /> Featured on homepage</label>

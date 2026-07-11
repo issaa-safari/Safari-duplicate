@@ -68,10 +68,10 @@ export default async function SupplierRatesPage({
                   <tr key={card.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td data-label="Rate Card" className="px-4 py-3">
                       <p className="font-medium text-gray-900">{card.name}</p>
-                      <p className="text-xs text-gray-400">{card.supplier_name || 'No supplier'} · {card.currency}</p>
+                      <p className="text-xs text-muted-foreground">{card.supplier_name || 'No supplier'} · {card.currency}</p>
                     </td>
                     <td data-label="Category" className="px-4 py-3 text-gray-600">
-                      <p>{label(card.entity_type)}</p><p className="text-xs text-gray-400">{label(card.cost_category)}</p>
+                      <p>{label(card.entity_type)}</p><p className="text-xs text-muted-foreground">{label(card.cost_category)}</p>
                     </td>
                     <td data-label="Season" className="px-4 py-3 text-gray-600 whitespace-nowrap">
                       {new Date(card.valid_from).toLocaleDateString('en-GB')} → {new Date(card.valid_to).toLocaleDateString('en-GB')}

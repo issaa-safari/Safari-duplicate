@@ -138,11 +138,11 @@ export default function RequestForm({
                   className={inputCls}
                 />
                 {clients.length === 0 ? (
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-muted-foreground">
                     No clients yet — switch to &quot;New client&quot; to add one.
                   </p>
                 ) : matches.length === 0 ? (
-                  <p className="text-sm text-gray-400">No clients match “{query}”.</p>
+                  <p className="text-sm text-muted-foreground">No clients match “{query}”.</p>
                 ) : (
                   <div className="rounded-md border border-gray-200 divide-y divide-gray-100 overflow-hidden">
                     {matches.map(c => (
@@ -150,7 +150,7 @@ export default function RequestForm({
                         onClick={() => setSelectedClientId(c.id)}
                         className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50">
                         <span className="text-sm text-gray-900">{c.name}</span>
-                        <span className="text-xs text-gray-400">{c.email}</span>
+                        <span className="text-xs text-muted-foreground">{c.email}</span>
                       </button>
                     ))}
                   </div>
@@ -161,32 +161,32 @@ export default function RequestForm({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input type="email" name="email" required placeholder="client@email.com" className={inputCls} />
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input id="email" type="email" name="email" required placeholder="client@email.com" className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-              <input type="text" name="firstName" required className={inputCls} />
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+              <input id="firstName" type="text" name="firstName" required className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-              <input type="text" name="lastName" required className={inputCls} />
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <input id="lastName" type="text" name="lastName" required className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-              <input type="text" name="phone" className={inputCls} />
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input id="phone" type="text" name="phone" className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
-              <input type="text" name="whatsapp" className={inputCls} />
+              <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+              <input id="whatsapp" type="text" name="whatsapp" className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-              <input type="text" name="country" className={inputCls} />
+              <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+              <input id="country" type="text" name="country" className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
-              <select name="language" defaultValue="en" className={inputCls}>
+              <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+              <select id="language" name="language" defaultValue="en" className={inputCls}>
                 <option value="en">English</option>
                 <option value="ar">Arabic</option>
               </select>
@@ -199,15 +199,15 @@ export default function RequestForm({
         <h2 className="text-sm font-semibold text-gray-900 mb-4">Request Details</h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Client Message</label>
-            <textarea name="clientQuestion" rows={3}
+            <label htmlFor="clientQuestion" className="block text-sm font-medium text-gray-700 mb-1">Client Message</label>
+            <textarea id="clientQuestion" name="clientQuestion" rows={3}
               defaultValue={initial.clientQuestion ?? ''}
               placeholder="Paste their WhatsApp message or email here..."
               className={inputCls} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
-            <select name="source" defaultValue={initial.source ?? ''} className={inputCls}>
+            <label htmlFor="source" className="block text-sm font-medium text-gray-700 mb-1">Source</label>
+            <select id="source" name="source" defaultValue={initial.source ?? ''} className={inputCls}>
               <option value="">Select source...</option>
               <option value="whatsapp">WhatsApp</option>
               <option value="website">Website</option>
@@ -222,18 +222,18 @@ export default function RequestForm({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Start Date</label>
-              <input type="date" name="preferredDate" defaultValue={initial.preferredDate ?? ''} className={inputCls} />
+              <label htmlFor="preferredDate" className="block text-sm font-medium text-gray-700 mb-1">Preferred Start Date</label>
+              <input id="preferredDate" type="date" name="preferredDate" defaultValue={initial.preferredDate ?? ''} className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Trip Length (nights)</label>
-              <input type="number" name="tripLengthNights" min={1} placeholder="e.g. 7"
+              <label htmlFor="tripLengthNights" className="block text-sm font-medium text-gray-700 mb-1">Trip Length (nights)</label>
+              <input id="tripLengthNights" type="number" name="tripLengthNights" min={1} placeholder="e.g. 7"
                 defaultValue={initial.tripLengthNights ?? ''} className={inputCls} />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Room Type</label>
-            <select name="preferredRoomType" defaultValue={initial.preferredRoomType ?? ''} className={inputCls}>
+            <label htmlFor="preferredRoomType" className="block text-sm font-medium text-gray-700 mb-1">Preferred Room Type</label>
+            <select id="preferredRoomType" name="preferredRoomType" defaultValue={initial.preferredRoomType ?? ''} className={inputCls}>
               <option value="">Not specified</option>
               <option value="sharing">Sharing</option>
               <option value="single">Single</option>
@@ -244,16 +244,16 @@ export default function RequestForm({
             <label className="block text-sm font-medium text-gray-700 mb-2">Travelers</label>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Adults</label>
-                <input type="number" name="adults" min={1} defaultValue={initial.adults ?? 2} className={inputCls} />
+                <label htmlFor="adults" className="block text-xs text-gray-500 mb-1">Adults</label>
+                <input id="adults" type="number" name="adults" min={1} defaultValue={initial.adults ?? 2} className={inputCls} />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Children 12-18</label>
-                <input type="number" name="childrenOlder" min={0} defaultValue={initial.childrenOlder ?? 0} className={inputCls} />
+                <label htmlFor="childrenOlder" className="block text-xs text-gray-500 mb-1">Children 12-18</label>
+                <input id="childrenOlder" type="number" name="childrenOlder" min={0} defaultValue={initial.childrenOlder ?? 0} className={inputCls} />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Children 2-12</label>
-                <input type="number" name="childrenYounger" min={0} defaultValue={initial.childrenYounger ?? 0} className={inputCls} />
+                <label htmlFor="childrenYounger" className="block text-xs text-gray-500 mb-1">Children 2-12</label>
+                <input id="childrenYounger" type="number" name="childrenYounger" min={0} defaultValue={initial.childrenYounger ?? 0} className={inputCls} />
               </div>
             </div>
           </div>

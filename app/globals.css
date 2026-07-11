@@ -18,9 +18,11 @@
   --admin-text:       #2C1A0E;   /* primary body text */
   --admin-text-muted: #7A6652;   /* secondary / muted text */
 
-  /* ── Tailwind / Next.js expects these ── */
-  --background: var(--admin-bg);
-  --foreground:  var(--admin-text);
+  /* ── Tailwind / Next.js expects these ──
+     Public default: white canvas, bush text. Sand fills sections, never the
+     whole page (DESIGN.md §2); .admin-theme re-points these for admin. */
+  --background: #FFFFFF;
+  --foreground: var(--bush);
 }
 
 @theme inline {
@@ -58,15 +60,6 @@
   --color-destructive: var(--destructive);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
-
-  --color-status-new: var(--status-new);
-  --color-status-working: var(--status-working);
-  --color-status-open: var(--status-open);
-  --color-status-prebooked: var(--status-prebooked);
-  --color-status-booked: var(--status-booked);
-  --color-status-completed: var(--status-completed);
-  --color-status-notbooked: var(--status-notbooked);
-  --color-status-archive: var(--status-archive);
 }
 
 .admin-theme {
@@ -88,16 +81,6 @@
   --destructive: oklch(0.6 0.24 27);
   --warning: oklch(0.97 0.08 90);
   --warning-foreground: oklch(0.4 0.12 70);
-
-  /* Pipeline status colors */
-  --status-new: oklch(0.7 0.15 240);
-  --status-working: oklch(0.75 0.15 80);
-  --status-open: oklch(0.7 0.18 200);
-  --status-prebooked: oklch(0.7 0.17 300);
-  --status-booked: oklch(0.7 0.22 143);
-  --status-completed: oklch(0.55 0.1 150);
-  --status-notbooked: oklch(0.65 0.02 150);
-  --status-archive: oklch(0.55 0.02 150);
 
   /* Legacy admin tokens re-pointed to the green system */
   --admin-bg: oklch(0.97 0.005 150);

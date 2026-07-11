@@ -1,20 +1,26 @@
-import { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes, useId } from 'react'
 
 const FIELD_CLS =
   'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white ' +
   'focus:outline-none focus:ring-2 focus:ring-olive focus:border-olive ' +
   'disabled:bg-gray-50 disabled:text-gray-400'
 
+const LABEL_CLS = 'block text-sm font-medium text-gray-700 mb-1'
+
 export function Field({
   label,
   error,
+  id,
   className = '',
+  labelClass = LABEL_CLS,
   ...props
-}: InputHTMLAttributes<HTMLInputElement> & { label?: string; error?: string }) {
+}: InputHTMLAttributes<HTMLInputElement> & { label?: string; error?: string; labelClass?: string }) {
+  const autoId = useId()
+  const fieldId = id ?? autoId
   return (
     <div>
-      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
-      <input className={`${FIELD_CLS} ${className}`} {...props} />
+      {label && <label htmlFor={fieldId} className={labelClass}>{label}</label>}
+      <input id={fieldId} className={`${FIELD_CLS} ${className}`} {...props} />
       {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
     </div>
   )
@@ -22,27 +28,35 @@ export function Field({
 
 export function TextareaField({
   label,
+  id,
   className = '',
+  labelClass = LABEL_CLS,
   ...props
-}: TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string }) {
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string; labelClass?: string }) {
+  const autoId = useId()
+  const fieldId = id ?? autoId
   return (
     <div>
-      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
-      <textarea className={`${FIELD_CLS} ${className}`} {...props} />
+      {label && <label htmlFor={fieldId} className={labelClass}>{label}</label>}
+      <textarea id={fieldId} className={`${FIELD_CLS} ${className}`} {...props} />
     </div>
   )
 }
 
 export function SelectField({
   label,
+  id,
   className = '',
+  labelClass = LABEL_CLS,
   children,
   ...props
-}: SelectHTMLAttributes<HTMLSelectElement> & { label?: string }) {
+}: SelectHTMLAttributes<HTMLSelectElement> & { label?: string; labelClass?: string }) {
+  const autoId = useId()
+  const fieldId = id ?? autoId
   return (
     <div>
-      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
-      <select className={`${FIELD_CLS} ${className}`} {...props}>
+      {label && <label htmlFor={fieldId} className={labelClass}>{label}</label>}
+      <select id={fieldId} className={`${FIELD_CLS} ${className}`} {...props}>
         {children}
       </select>
     </div>

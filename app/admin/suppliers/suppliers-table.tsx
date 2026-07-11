@@ -81,13 +81,13 @@ export default function SuppliersTable({
     <div className="space-y-4">
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {suppliers.length === 0 ? (
-          <p className="p-10 text-center text-sm text-gray-400">
+          <p className="p-10 text-center text-sm text-muted-foreground">
             No suppliers yet — add the first one below. Rate cards link to suppliers so Payables knows who is owed.
           </p>
         ) : (
           <table className="stack-table w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
+              <tr className="text-left text-xs text-muted-foreground border-b border-gray-100">
                 <th className="px-5 py-3 font-medium">Name</th>
                 <th className="px-3 py-3 font-medium">Type</th>
                 <th className="px-3 py-3 font-medium">Contact</th>
@@ -120,7 +120,7 @@ export default function SuppliersTable({
                   <tr key={s.id} className="border-b border-gray-50 last:border-0">
                     <td data-label="Name" className="px-5 py-3 font-medium text-gray-800">
                       {s.name}
-                      {s.notes && <p className="text-xs text-gray-400 font-normal mt-0.5">{s.notes}</p>}
+                      {s.notes && <p className="text-xs text-muted-foreground font-normal mt-0.5">{s.notes}</p>}
                     </td>
                     <td data-label="Type" className="px-3 py-3 text-gray-600">{typeLabel(s.supplier_type)}</td>
                     <td data-label="Contact" className="px-3 py-3 text-gray-500 text-xs">
@@ -136,7 +136,7 @@ export default function SuppliersTable({
                         </Link>
                       ) : (
                         <Link href={`/admin/content/rates/new?supplierId=${s.id}`}
-                          className="text-gray-400 hover:text-gray-600">
+                          className="text-muted-foreground hover:text-gray-600">
                           Add rates
                         </Link>
                       )}
@@ -150,7 +150,7 @@ export default function SuppliersTable({
                       <button type="button" onClick={() => setEditingId(s.id)}
                         className="text-xs text-[var(--olive)] hover:text-[var(--olive-dk)] mr-3">Edit</button>
                       <button type="button" onClick={() => toggleActive(s)} disabled={pending}
-                        className="text-xs text-gray-400 hover:text-gray-600">
+                        className="text-xs text-muted-foreground hover:text-gray-600">
                         {s.is_active ? 'Deactivate' : 'Reactivate'}
                       </button>
                     </td>

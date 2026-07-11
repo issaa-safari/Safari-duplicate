@@ -47,7 +47,7 @@ export default async function DestinationsPage({
               ? 'border-[var(--olive)] text-[var(--olive)]'
               : 'border-transparent text-gray-500 hover:text-gray-700')}>
           With Content
-          <span className="ml-1.5 text-xs text-gray-400">({withContent.length})</span>
+          <span className="ml-1.5 text-xs text-muted-foreground">({withContent.length})</span>
         </Link>
         <Link
           href="/admin/content/destinations?tab=empty"
@@ -56,7 +56,7 @@ export default async function DestinationsPage({
               ? 'border-[var(--olive)] text-[var(--olive)]'
               : 'border-transparent text-gray-500 hover:text-gray-700')}>
           Without Content
-          <span className="ml-1.5 text-xs text-gray-400">({withoutContent.length})</span>
+          <span className="ml-1.5 text-xs text-muted-foreground">({withoutContent.length})</span>
         </Link>
       </div>
 
@@ -96,7 +96,7 @@ export default async function DestinationsPage({
                     {dest.cover_image_url ? (
                       <span className="text-xs text-green-600 font-medium">✓ Set</span>
                     ) : (
-                      <span className="text-xs text-gray-400">—</span>
+                      <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </td>
                   <td data-label="Status" className="px-4 py-3">

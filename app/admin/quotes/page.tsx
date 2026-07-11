@@ -83,7 +83,7 @@ export default async function QuotesPage({
                 : 'border-transparent text-gray-500 hover:text-gray-700')}>
             <span className="capitalize">{s}</span>
             {counts[s] ? (
-              <span className="ml-1.5 text-xs text-gray-400">({counts[s]})</span>
+              <span className="ml-1.5 text-xs text-muted-foreground">({counts[s]})</span>
             ) : null}
           </Link>
         ))}
@@ -119,18 +119,18 @@ export default async function QuotesPage({
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-xs font-mono text-gray-400">{q.quote_number}</span>
+                      <span className="text-xs font-mono text-muted-foreground">{q.quote_number}</span>
                       <StatusBadge status={q.status} />
                       <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 capitalize">
                         {q.mode === 'fixed_departure' ? 'Fixed Departure' : 'Custom Safari'}
                       </span>
                       {versions.length > 1 && (
-                        <span className="text-xs text-gray-400">v{latest?.version_number}</span>
+                        <span className="text-xs text-muted-foreground">v{latest?.version_number}</span>
                       )}
                     </div>
                     <p className="font-medium text-gray-900">{clientName}</p>
                     {client?.email && (
-                      <p className="text-sm text-gray-400">{client.email}</p>
+                      <p className="text-sm text-muted-foreground">{client.email}</p>
                     )}
                     {latest?.travel_start_date && (
                       <p className="text-sm text-gray-500 mt-1">
@@ -141,11 +141,11 @@ export default async function QuotesPage({
                       </p>
                     )}
                   </div>
-                  <div className="text-right text-xs text-gray-400 shrink-0">
+                  <div className="text-right text-xs text-muted-foreground shrink-0">
                     {latest?.sharing_price_per_person_usd ? (
                       <p className="text-base font-semibold text-gray-900">
                         ${Number(latest.sharing_price_per_person_usd).toLocaleString()}
-                        <span className="text-xs font-normal text-gray-400"> /pp</span>
+                        <span className="text-xs font-normal text-muted-foreground"> /pp</span>
                       </p>
                     ) : null}
                     <p className="mt-1">{new Date(q.created_at).toLocaleDateString('en-GB')}</p>

@@ -19,7 +19,7 @@ export default function HomeHero({ heroImageUrl, heroTourId, isAr, locale }: Hom
   const dir = isAr ? 'rtl' : 'ltr'
 
   const t = isAr ? {
-    headline: 'اركب البرية. اقتحم البرية.',
+    headline: 'اركب البرية. اقتحم المجهول.',
     sub: 'جولات دراجات جماعية وسفاري خاصة في كينيا وشرق أفريقيا — مُصممة لمن يطلب أكثر من مجرد رحلة سياحية.',
     cta: 'اختر مسارك',
     quote: 'طلب عرض سعر',
@@ -83,7 +83,8 @@ export default function HomeHero({ heroImageUrl, heroTourId, isAr, locale }: Hom
             color: '#fff',
             lineHeight: 1.1,
             margin: '0 0 20px',
-            letterSpacing: '-0.01em',
+            // Letter-spacing breaks Arabic letter joining — Latin only
+            letterSpacing: isAr ? undefined : '-0.01em',
           }}
         >
           {t.headline}
