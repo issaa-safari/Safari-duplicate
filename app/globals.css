@@ -18,9 +18,11 @@
   --admin-text:       #2C1A0E;   /* primary body text */
   --admin-text-muted: #7A6652;   /* secondary / muted text */
 
-  /* ── Tailwind / Next.js expects these ── */
-  --background: var(--admin-bg);
-  --foreground:  var(--admin-text);
+  /* ── Tailwind / Next.js expects these ──
+     Public default: white canvas, bush text. Sand fills sections, never the
+     whole page (DESIGN.md §2); .admin-theme re-points these for admin. */
+  --background: #FFFFFF;
+  --foreground: var(--bush);
 }
 
 @theme inline {

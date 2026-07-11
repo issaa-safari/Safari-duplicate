@@ -90,7 +90,7 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
         ? 'جولات دراجات جماعية بقيادة خبراء من نيروبي إلى الساحل. مدعومة بالكامل، ممتازة للمغامرين.'
         : 'Expert-led group rides from Nairobi to the coast. Fully supported, KTM-grade adventure for serious riders.',
       cta: isAr ? 'استكشف جولات الدراجات' : 'Explore Bike Tours',
-      href: `/tours?lang=${locale}`,
+      href: `/tours?lang=${locale}&type=bike`,
     },
     {
       accent: GOLD,
@@ -102,7 +102,7 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
         ? 'مسارات مخصصة، مخيمات حصرية، مجموعتك وحدها فقط. سفاري مصمم حول تفضيلاتك.'
         : 'Custom itineraries, exclusive camps, your group only. Safari built entirely around your preferences.',
       cta: isAr ? 'استكشف السفاري الخاص' : 'Explore Private Safaris',
-      href: `/tours?lang=${locale}`,
+      href: `/tours?lang=${locale}&type=private`,
     },
   ]
 

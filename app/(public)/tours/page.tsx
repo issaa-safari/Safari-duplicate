@@ -14,21 +14,23 @@ export const dynamic = 'force-dynamic'
 export default async function ToursPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string }>
+  searchParams: Promise<{ lang?: string; type?: string }>
 }) {
   const sp = await searchParams
   const locale = await getServerLocale(sp)
   const isAr = locale === 'ar'
+  const typeFilter = sp.type === 'bike' || sp.type === 'private' ? sp.type : null
 
   const admin = createAdminClient()
 
   // Use the real tours columns: tours are gated by `status`, not `is_active`,
   // and carry duration_days / countries_visited (not country/min_days/max_days).
-  const { data: tours } = await admin
+  let query = admin
     .from('tours')
     .select('id, title_en, title_ar, subtitle_en, overview_en, type, duration_days, duration_nights, countries_visited, status, hero_image_url, gallery_urls')
     .eq('status', 'active')
-    .order('title_en')
+  if (typeFilter) query = query.eq('type', typeFilter)
+  const { data: tours } = await query.order('title_en')
 
   const t = isAr ? {
     title: 'جولات السفاري لدينا',
@@ -36,6 +38,11 @@ export default async function ToursPage({
     days: 'أيام',
     requestQuote: 'طلب عرض سعر',
     none: 'لا توجد جولات متاحة بعد. تحقق قريباً!',
+    noneFiltered: 'لا توجد جولات من هذا النوع حالياً.',
+    filterBike: 'جولات الدراجات',
+    filterPrivate: 'سفاري خاص',
+    showing: 'عرض:',
+    viewAll: 'عرض كل الجولات',
     ctaTitle: 'لم تجد الجولة المثالية؟',
     ctaText: 'أخبرنا بتفضيلاتك وسننشئ رحلة سفاري مخصصة لك.',
     ctaButton: 'أنشئ جولة مخصصة',
@@ -45,6 +52,11 @@ export default async function ToursPage({
     days: 'days',
     requestQuote: 'Request Quote',
     none: 'No tours available yet. Check back soon!',
+    noneFiltered: 'No tours of this type right now.',
+    filterBike: 'Group Bike Tours',
+    filterPrivate: 'Private Safaris',
+    showing: 'Showing:',
+    viewAll: 'View all tours',
     ctaTitle: "Can't Find the Perfect Tour?",
     ctaText: "Let us know your preferences and we'll create a custom safari just for you.",
     ctaButton: 'Create a Custom Tour',
@@ -68,6 +80,24 @@ export default async function ToursPage({
         {/* Tours Grid */}
         <section className="py-16 md:py-20 bg-white">
           <div className="max-w-6xl mx-auto px-4">
+            {typeFilter && (
+              <div className="flex flex-wrap items-center gap-3 mb-8">
+                <span className="text-sm text-gray-600">{t.showing}</span>
+                <span
+                  className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold text-white"
+                  style={{ backgroundColor: typeFilter === 'bike' ? '#B0492B' : '#C9A24B' }}
+                >
+                  {typeFilter === 'bike' ? t.filterBike : t.filterPrivate}
+                </span>
+                <Link
+                  href={`/tours?lang=${locale}`}
+                  className="text-sm font-semibold underline underline-offset-2"
+                  style={{ color: G }}
+                >
+                  {t.viewAll}
+                </Link>
+              </div>
+            )}
             {tours && tours.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {tours.map((tour: any) => {
@@ -106,7 +136,16 @@ export default async function ToursPage({
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-600 text-lg">{t.none}</p>
+                <p className="text-gray-600 text-lg">{typeFilter ? t.noneFiltered : t.none}</p>
+                {typeFilter && (
+                  <Link
+                    href={`/tours?lang=${locale}`}
+                    className="mt-4 inline-block text-sm font-semibold underline underline-offset-2"
+                    style={{ color: G }}
+                  >
+                    {t.viewAll}
+                  </Link>
+                )}
               </div>
             )}
           </div>
