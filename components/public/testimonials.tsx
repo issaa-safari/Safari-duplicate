@@ -1,6 +1,4 @@
-const G = '#7A9A4A'
-
-type Review = { name: string; location_en: string; location_ar: string; en: string; ar: string }
+type Review ={ name: string; location_en: string; location_ar: string; en: string; ar: string }
 
 const REVIEWS: Review[] = [
   {
@@ -29,24 +27,30 @@ const REVIEWS: Review[] = [
 export default function Testimonials({ lang = 'en' }: { lang?: string }) {
   const isAr = lang === 'ar'
   const heading = isAr ? 'ماذا يقول مسافرونا' : 'What Our Travellers Say'
+  // No fabricated metrics (PRODUCT.md) — describe the reviews, don't invent numbers
   const sub = isAr
-    ? 'انضم إلى أكثر من 500 مسافر سعيد اختبروا أفضل ما في شرق أفريقيا معنا'
-    : 'Join 500+ happy travellers who have experienced the best of East Africa with us'
+    ? 'آراء حقيقية من مسافرين استكشفوا شرق أفريقيا معنا'
+    : 'Real feedback from travellers who explored East Africa with us'
 
   return (
-    <section className="py-16 md:py-20 bg-gray-50" dir={isAr ? 'rtl' : 'ltr'}>
+    <section className="py-16 md:py-20 bg-sand" dir={isAr ? 'rtl' : 'ltr'}>
       <div className="max-w-6xl mx-auto px-4">
-        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-3">{heading}</h2>
-        <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">{sub}</p>
+        <h2
+          className="text-3xl md:text-4xl font-bold text-bush text-center mb-3"
+          style={{ fontFamily: 'var(--font-display, "Readex Pro", sans-serif)' }}
+        >
+          {heading}
+        </h2>
+        <p className="text-stone text-center mb-12 max-w-2xl mx-auto">{sub}</p>
         <div className="grid md:grid-cols-3 gap-8">
           {REVIEWS.map((r) => (
-            <div key={r.name} className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm flex flex-col">
-              <div className="text-amber-400 text-lg mb-4" aria-hidden="true">★★★★★</div>
-              <p className="text-gray-700 leading-relaxed flex-grow">“{isAr ? r.ar : r.en}”</p>
-              <div className="mt-6 pt-4 border-t border-gray-100">
+            <div key={r.name} className="bg-white rounded-xl p-8 border border-stone/20 shadow-sm flex flex-col">
+              <div className="text-gold text-lg mb-4" aria-hidden="true">★★★★★</div>
+              <p className="text-stone leading-relaxed flex-grow">“{isAr ? r.ar : r.en}”</p>
+              <div className="mt-6 pt-4 border-t border-sand">
                 {/* <bdi> keeps Latin names (with trailing periods) intact inside RTL text */}
-                <p className="font-semibold text-gray-900"><bdi>{r.name}</bdi></p>
-                <p className="text-sm" style={{ color: G }}>{isAr ? r.location_ar : r.location_en}</p>
+                <p className="font-semibold text-bush"><bdi>{r.name}</bdi></p>
+                <p className="text-sm text-olive-dk">{isAr ? r.location_ar : r.location_en}</p>
               </div>
             </div>
           ))}

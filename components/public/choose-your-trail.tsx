@@ -85,7 +85,7 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
       imageUrl: bikeCard.imageUrl,
       seed: bikeCard.tourId ?? 'bike',
       badge: isAr ? 'جولات الدراجات' : 'Group Bike Tours',
-      heading: isAr ? 'اركب البرية' : 'MOTORBIKE ADVENTURE',
+      heading: isAr ? 'مغامرة الدراجات النارية' : 'MOTORBIKE ADVENTURE',
       body: isAr
         ? 'جولات دراجات جماعية بقيادة خبراء من نيروبي إلى الساحل. مدعومة بالكامل، ممتازة للمغامرين.'
         : 'Expert-led group rides from Nairobi to the coast. Fully supported, KTM-grade adventure for serious riders.',

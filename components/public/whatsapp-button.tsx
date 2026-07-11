@@ -16,7 +16,7 @@ export default function WhatsAppButton({ lang = 'en' }: { lang?: string }) {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={label}
-      className="fixed right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] shadow-lg hover:scale-105 hover:shadow-xl"
+      className="fixed end-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] shadow-lg hover:scale-105 hover:shadow-xl"
       style={{
         // Sit above the sticky enquiry bar when it is visible (tour pages).
         bottom: 'calc(var(--sticky-bar-h, 0px) + 24px)',
