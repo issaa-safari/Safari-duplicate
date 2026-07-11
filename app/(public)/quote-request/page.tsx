@@ -314,7 +314,7 @@ export default function QuoteRequestPage() {
   return (
     <>
       <Suspense>
-        <PublicHeader initialLang={locale} />
+        <PublicHeader />
       </Suspense>
       <Suspense fallback={<div className="h-screen flex items-center justify-center">Loading...</div>}>
         <QuoteRequestFormContent />
