@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { ProposalPhoto as Photo } from './proposal-photo'
+import ActivityTabs, { type ActivityGroup } from './activity-tabs'
 
 // Client-facing tour proposal, styled to match the operator's PDF proposal.
 // Presentational only — all data arrives as props so it can be rendered with
@@ -21,6 +22,8 @@ export type ProposalDay = {
   description?: string | null
   heroPhoto?: string | null
   activities: ProposalActivity[]
+  // Present for multi-night stops: activities split per sub-day → rendered as tabs.
+  activityGroups?: ActivityGroup[]
   accommodation?: ProposalAccommodation | null
   meals: string[]               // localized meal labels
 }
@@ -241,7 +244,13 @@ export default function ProposalView(p: ProposalViewProps) {
                   ? <p>{d.description}</p>
                   : <p className="text-gray-400">{d.title}</p>}
               </div>
-              {d.activities.length > 0 && (
+              {d.activityGroups && d.activityGroups.length > 0 ? (
+                <ActivityTabs
+                  groups={d.activityGroups}
+                  isArabic={ar}
+                  heading={`${T(ar, 'Activity', 'الأنشطة')} ${d.label}`}
+                />
+              ) : d.activities.length > 0 ? (
                 <aside className="self-start rounded-xl p-4" style={{ border: `1px solid ${OLIVE}44`, background: '#F7FAEE' }}>
                   <p className="mb-2 text-sm font-bold" style={{ color: INK, ...display }}>
                     {T(ar, 'Activity', 'الأنشطة')} <span className="font-normal text-gray-500">{d.label}</span>
@@ -259,7 +268,7 @@ export default function ProposalView(p: ProposalViewProps) {
                     ))}
                   </ul>
                 </aside>
-              )}
+              ) : null}
             </div>
 
             {/* accommodation block */}

@@ -139,7 +139,7 @@ export default async function QuotePortalPage({
         .order('sort_order')
     : { data: [] as any[] }
 
-  type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean }
+  type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean; dayOffset: number }
   const accomItemByDay: Record<string, any> = {}
   const actsByDay: Record<string, ActItem[]> = {}
   for (const item of dayItems ?? []) {
@@ -151,6 +151,8 @@ export default async function QuotePortalPage({
       actsByDay[item.quote_day_id].push({
         name: item.title_snapshot, activity_id: item.activity_id ?? null,
         moment: cs.moment ?? '', optional: !!cs.optional,
+        // Sub-day within a multi-night stop (0 = first day). Defaults to 0.
+        dayOffset: Number(cs.day_offset ?? 0) || 0,
       })
     }
   }
@@ -242,6 +244,19 @@ export default async function QuotePortalPage({
     const acc = item?.accommodation_id ? accMap[item.accommodation_id] : null
     const photos: string[] = Array.isArray(d.photos) ? d.photos : []
     const accPhotos = acc?.cover ? [acc.cover] : []
+    const acts = actsByDay[d.id] ?? []
+    const mapAct = (a: ActItem) => {
+      const am = a.activity_id ? actDescMap[a.activity_id] : null
+      return { name: a.name, moment: a.moment ? momentLbl(a.moment) : null, optional: a.optional, description: am ? (isArabic ? (am.ar || am.en) : am.en) : null }
+    }
+    // Multi-night stop → split activities into per-sub-day tabs.
+    const span = d.day_number_end && d.day_number_end > d.day_number ? d.day_number_end - d.day_number + 1 : 1
+    const activityGroups = span > 1
+      ? Array.from({ length: span }, (_, i) => ({
+          label: `${isArabic ? 'يوم' : 'Day'} ${d.day_number + i}`,
+          activities: acts.filter((a) => a.dayOffset === i).map(mapAct),
+        }))
+      : undefined
     return {
       key: d.id,
       label: dayLabel(d),
@@ -250,10 +265,8 @@ export default async function QuotePortalPage({
       title: (isArabic && d.title_ar ? d.title_ar : d.title) || dayLabel(d),
       description: dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : (isArabic ? d.description_ar : d.description_en),
       heroPhoto: photos[0] ?? acc?.cover ?? null,
-      activities: (actsByDay[d.id] ?? []).map((a) => {
-        const am = a.activity_id ? actDescMap[a.activity_id] : null
-        return { name: a.name, moment: a.moment ? momentLbl(a.moment) : null, optional: a.optional, description: am ? (isArabic ? (am.ar || am.en) : am.en) : null }
-      }),
+      activities: acts.map(mapAct),
+      activityGroups,
       accommodation: item ? {
         name: item.title_snapshot,
         type: acc?.type ? acc.type.replace(/_/g, ' ') : null,
