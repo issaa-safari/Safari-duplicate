@@ -61,7 +61,7 @@ export default function RoomsPanel({ accommodationId, rooms: initial }: { accomm
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-sm font-semibold text-gray-900">Rooms</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Room types can carry their own seasonal rate cards.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Room types can carry their own seasonal rate cards.</p>
           </div>
           {!showAdd && (
             <button onClick={() => { setShowAdd(true); setError('') }}
@@ -70,7 +70,7 @@ export default function RoomsPanel({ accommodationId, rooms: initial }: { accomm
         </div>
 
         <ul className="space-y-2 mb-4">
-          {rooms.length === 0 && !showAdd && <li className="text-xs text-gray-400">No rooms yet.</li>}
+          {rooms.length === 0 && !showAdd && <li className="text-xs text-muted-foreground">No rooms yet.</li>}
           {rooms.map(r => (
             <li key={r.id} className="flex items-start gap-3 group border border-gray-100 rounded-md p-3">
               <div className="flex-1 min-w-0 text-sm">
@@ -81,7 +81,7 @@ export default function RoomsPanel({ accommodationId, rooms: initial }: { accomm
                 <p className="text-xs text-gray-500 mt-0.5">
                   Sleeps {r.max_occupancy}{r.bed_config ? ` · ${r.bed_config}` : ''}
                 </p>
-                {r.amenities.length > 0 && <p className="text-xs text-gray-400 mt-0.5">{r.amenities.join(', ')}</p>}
+                {r.amenities.length > 0 && <p className="text-xs text-muted-foreground mt-0.5">{r.amenities.join(', ')}</p>}
               </div>
               <button onClick={() => handleDelete(r.id)} disabled={pending}
                 className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-xs shrink-0" aria-label="Delete">✕</button>

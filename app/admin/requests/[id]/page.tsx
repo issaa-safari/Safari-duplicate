@@ -134,7 +134,7 @@ export default async function RequestDetailPage({
       {/* Page header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-5xl mx-auto">
-          <Link href="/admin/requests" className="text-xs text-gray-400 hover:text-gray-600">
+          <Link href="/admin/requests" className="text-xs text-muted-foreground hover:text-gray-600">
             ← Back
           </Link>
           <div className="flex items-start justify-between gap-4 mt-2 mb-3">
@@ -328,7 +328,7 @@ export default async function RequestDetailPage({
                           className="bg-white rounded-lg border border-gray-200 p-4 flex items-start justify-between gap-4">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="text-xs text-gray-400">Version</span>
+                              <span className="text-xs text-muted-foreground">Version</span>
                               <span className="text-sm font-semibold text-gray-900 font-mono">
                                 #{quote.quote_number}.{version.version_number}
                               </span>
@@ -340,7 +340,7 @@ export default async function RequestDetailPage({
                               </p>
                             )}
                             {version.travel_start_date && (
-                              <p className="text-xs text-gray-400 mt-0.5">
+                              <p className="text-xs text-muted-foreground mt-0.5">
                                 {new Date(version.travel_start_date).toLocaleDateString('en-GB')}
                                 {version.travel_end_date
                                   ? ` – ${new Date(version.travel_end_date).toLocaleDateString('en-GB')}`
@@ -398,7 +398,7 @@ export default async function RequestDetailPage({
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-400">No tour linked to this request.</p>
+                <p className="text-sm text-muted-foreground">No tour linked to this request.</p>
               )}
               <div className="border-t border-gray-100 pt-4 space-y-2 text-sm">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Group Size</p>

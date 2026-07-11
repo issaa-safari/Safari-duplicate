@@ -68,7 +68,7 @@ export default async function RequestsPage({
         </h1>
         {!requests || requests.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-gray-400 text-sm">No requests in this stage.</p>
+            <p className="text-muted-foreground text-sm">No requests in this stage.</p>
             <Link href="/admin/requests/new"
               className="mt-4 rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
               + Add First Request
@@ -89,7 +89,7 @@ export default async function RequestsPage({
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs text-gray-400 font-mono">{req.reference}</span>
+                        <span className="text-xs text-muted-foreground font-mono">{req.reference}</span>
                         {req.priority && (
                           <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Priority</span>
                         )}
@@ -98,10 +98,10 @@ export default async function RequestsPage({
                       <p className="font-medium text-gray-900">{clientName}</p>
                       {tour && <p className="text-sm text-gray-500 mt-0.5">{tour.title_en}</p>}
                       {req.client_question && (
-                        <p className="text-sm text-gray-400 mt-1 truncate">{req.client_question}</p>
+                        <p className="text-sm text-muted-foreground mt-1 truncate">{req.client_question}</p>
                       )}
                     </div>
-                    <div className="text-right text-xs text-gray-400 shrink-0">
+                    <div className="text-right text-xs text-muted-foreground shrink-0">
                       <p>{req.travelers_adults} adults</p>
                       <p className="mt-1">{new Date(req.created_at).toLocaleDateString('en-GB')}</p>
                     </div>

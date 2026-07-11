@@ -20,7 +20,7 @@ function ContentCard({ href, title, description, count, icon }: CardProps) {
       <div className="flex items-start justify-between mb-3">
         <span className="text-2xl">{icon}</span>
         {count !== null && (
-          <span className="text-xs font-medium text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
+          <span className="text-xs font-medium text-muted-foreground bg-gray-100 rounded-full px-2 py-0.5">
             {count}
           </span>
         )}
@@ -62,7 +62,7 @@ export default async function ContentLibraryPage() {
 
       {/* Main Content */}
       <div className="mb-8">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Main Content</h2>
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Main Content</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <ContentCard
             href="/admin/content/destinations"
@@ -97,7 +97,7 @@ export default async function ContentLibraryPage() {
 
       {/* Company Content */}
       <div>
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Company Content</h2>
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Company Content</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <ContentCard
             href="/admin/content/vehicles"

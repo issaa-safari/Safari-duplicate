@@ -45,8 +45,8 @@ export default function PaymentForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Amount (USD)</label>
-          <input
+          <label htmlFor="amount" className="block text-xs text-gray-500 mb-1">Amount (USD)</label>
+          <input id="amount"
             name="amount"
             type="number"
             step="0.01"
@@ -57,8 +57,8 @@ export default function PaymentForm({
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Date received</label>
-          <input
+          <label htmlFor="receivedAt" className="block text-xs text-gray-500 mb-1">Date received</label>
+          <input id="receivedAt"
             name="receivedAt"
             type="date"
             defaultValue={new Date().toISOString().slice(0, 10)}
@@ -70,8 +70,8 @@ export default function PaymentForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Type</label>
-          <select
+          <label htmlFor="paymentType" className="block text-xs text-gray-500 mb-1">Type</label>
+          <select id="paymentType"
             name="paymentType"
             className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
           >
@@ -83,8 +83,8 @@ export default function PaymentForm({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Method</label>
-          <select
+          <label htmlFor="method" className="block text-xs text-gray-500 mb-1">Method</label>
+          <select id="method"
             name="method"
             className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--olive)]"
           >
@@ -100,8 +100,8 @@ export default function PaymentForm({
       </div>
 
       <div>
-        <label className="block text-xs text-gray-500 mb-1">Reference / notes</label>
-        <input
+        <label htmlFor="reference" className="block text-xs text-gray-500 mb-1">Reference / notes</label>
+        <input id="reference"
           name="reference"
           type="text"
           placeholder="Bank ref, receipt no, etc."

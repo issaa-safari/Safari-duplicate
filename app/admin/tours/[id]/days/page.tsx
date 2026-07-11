@@ -56,7 +56,7 @@ export default async function ItineraryPage({
         </Link>
         <div>
           <h1 className="text-lg font-semibold text-gray-900">Itinerary — {tour.title_en}</h1>
-          <p className="text-xs text-gray-400">{tour.duration_days}-day tour</p>
+          <p className="text-xs text-muted-foreground">{tour.duration_days}-day tour</p>
         </div>
       </div>
 

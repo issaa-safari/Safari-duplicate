@@ -112,15 +112,15 @@ export default function DeliveryPanel({
     <div id="delivery" className="bg-white rounded-lg border border-gray-200 overflow-hidden scroll-mt-6">
       <div className="px-5 py-4 border-b border-gray-100">
         <h2 className="text-sm font-semibold text-gray-700">Preview &amp; Send</h2>
-        <p className="text-xs text-gray-400 mt-0.5">Generate a link to preview exactly what the client will see, then send it for viewing and acceptance.</p>
+        <p className="text-xs text-muted-foreground mt-0.5">Generate a link to preview exactly what the client will see, then send it for viewing and acceptance.</p>
       </div>
 
       {shareableVersions.length > 0 && (
         <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
           <div className="flex gap-3 flex-wrap items-end">
             <div className="flex-1 min-w-[160px]">
-              <label className="block text-xs text-gray-500 mb-1">Version to share</label>
-              <select
+              <label htmlFor="version-to-share" className="block text-xs text-gray-500 mb-1">Version to share</label>
+              <select id="version-to-share"
                 value={selectedVersionId}
                 onChange={e => setSelectedVersionId(e.target.value)}
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
@@ -146,7 +146,7 @@ export default function DeliveryPanel({
       )}
 
       {deliveries.length === 0 ? (
-        <div className="px-5 py-8 text-center text-sm text-gray-400">
+        <div className="px-5 py-8 text-center text-sm text-muted-foreground">
           No share links yet. Save pricing, then generate a link above.
         </div>
       ) : (
@@ -166,7 +166,7 @@ export default function DeliveryPanel({
                         <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700">Active</span>
                       )}
                       {d.view_count > 0 && (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-muted-foreground">
                           {d.view_count} view{d.view_count !== 1 ? 's' : ''}
                           {d.first_viewed_at && ` · first ${fmtDate(d.first_viewed_at)}`}
                         </span>
@@ -196,7 +196,7 @@ export default function DeliveryPanel({
                         </button>
                       )}
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">Created {fmtDate(d.created_at)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Created {fmtDate(d.created_at)}</p>
                   </div>
                   {!isRevoked && (
                     <button

@@ -33,7 +33,7 @@ export default async function ToursPage() {
 
       {!tours || tours.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-gray-400 text-sm">No tours yet.</p>
+          <p className="text-muted-foreground text-sm">No tours yet.</p>
           <ButtonLink href="/admin/tours/new" size="sm" className="mt-4">Create First Template</ButtonLink>
         </div>
       ) : (
@@ -66,30 +66,30 @@ export default async function ToursPage() {
 
                 <div className="space-y-1.5 text-xs text-gray-500 flex-1">
                   <div className="flex gap-2">
-                    <span className="text-gray-400 w-32 shrink-0">Tour Type</span>
+                    <span className="text-muted-foreground w-32 shrink-0">Tour Type</span>
                     <span className="text-gray-700 capitalize">{TYPE_LABEL[tour.type] ?? tour.type}</span>
                   </div>
                   <div className="flex gap-2">
-                    <span className="text-gray-400 w-32 shrink-0">Tour Length</span>
+                    <span className="text-muted-foreground w-32 shrink-0">Tour Length</span>
                     <span className="text-gray-700">
                       {tour.duration_days} Days / {tour.duration_nights} Nights
                     </span>
                   </div>
                   {tour.countries_visited && (
                     <div className="flex gap-2">
-                      <span className="text-gray-400 w-32 shrink-0">Countries Visited</span>
+                      <span className="text-muted-foreground w-32 shrink-0">Countries Visited</span>
                       <span className="text-gray-700">{tour.countries_visited}</span>
                     </div>
                   )}
                   {tour.start_destination && (
                     <div className="flex gap-2">
-                      <span className="text-gray-400 w-32 shrink-0">Start Destination</span>
+                      <span className="text-muted-foreground w-32 shrink-0">Start Destination</span>
                       <span className="text-gray-700">{tour.start_destination}</span>
                     </div>
                   )}
                   {tour.end_destination && (
                     <div className="flex gap-2">
-                      <span className="text-gray-400 w-32 shrink-0">End Destination</span>
+                      <span className="text-muted-foreground w-32 shrink-0">End Destination</span>
                       <span className="text-gray-700">{tour.end_destination}</span>
                     </div>
                   )}

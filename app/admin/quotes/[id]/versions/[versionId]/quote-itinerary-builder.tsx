@@ -69,7 +69,7 @@ const smallSelectCls = 'w-full rounded border border-gray-200 px-1.5 py-1 text-x
 const MealPill = ({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) => (
   <button type="button" onClick={onClick}
     className={'h-7 w-7 rounded-md text-xs font-semibold border transition ' +
-      (on ? 'bg-[var(--olive)] text-white border-[var(--olive)]' : 'bg-white text-gray-400 border-gray-300')}>
+      (on ? 'bg-[var(--olive)] text-white border-[var(--olive)]' : 'bg-white text-muted-foreground border-gray-300')}>
     {label}
   </button>
 )
@@ -627,7 +627,7 @@ export default function QuoteItineraryBuilder({
                   onChange={e => update(i, { title: e.target.value })}
                   placeholder="Day title (English)"
                   className={inputCls} disabled={isLocked} />
-                <p className="text-[10px] text-gray-400 leading-snug">
+                <p className="text-[10px] text-muted-foreground leading-snug">
                   Day description is pulled from the destination in the Content library (EN/AR by client language).
                 </p>
                 <textarea value={day.clientNotes}
@@ -639,7 +639,7 @@ export default function QuoteItineraryBuilder({
                   onClick={() => setArOpenIndices(prev => {
                     const next = new Set(prev); next.has(i) ? next.delete(i) : next.add(i); return next
                   })}
-                  className="text-[10px] text-gray-400 hover:text-[var(--olive)] transition">
+                  className="text-[10px] text-muted-foreground hover:text-[var(--olive)] transition">
                   {arOpenIndices.has(i) ? '▲ Hide Arabic' : '🇸🇦 + Arabic'}
                 </button>
                 {arOpenIndices.has(i) && (
@@ -659,7 +659,7 @@ export default function QuoteItineraryBuilder({
                     onClick={() => setPhotoOpenIndices(prev => {
                       const next = new Set(prev); next.has(i) ? next.delete(i) : next.add(i); return next
                     })}
-                    className="text-[10px] text-gray-400 hover:text-[var(--olive)] transition">
+                    className="text-[10px] text-muted-foreground hover:text-[var(--olive)] transition">
                     {photoOpenIndices.has(i) ? '▲ Hide Photos' : `📷 + Photos${day.photos.length ? ` (${day.photos.length})` : ''}`}
                   </button>
                 )}

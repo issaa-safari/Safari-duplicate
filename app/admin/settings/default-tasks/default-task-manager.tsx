@@ -76,7 +76,7 @@ export default function DefaultTaskManager({ tasks: initial }: { tasks: DefaultT
       </p>
 
       <ul className="space-y-1.5 mb-4">
-        {tasks.length === 0 && <li className="text-xs text-gray-400">No default tasks yet.</li>}
+        {tasks.length === 0 && <li className="text-xs text-muted-foreground">No default tasks yet.</li>}
         {tasks.map(t => (
           <li key={t.id} className="flex items-center gap-2 group">
             <button
@@ -89,7 +89,7 @@ export default function DefaultTaskManager({ tasks: initial }: { tasks: DefaultT
             >
               {t.is_active && <span className="text-white text-[9px] leading-none">✓</span>}
             </button>
-            <span className={`flex-1 text-sm flex items-center gap-1.5 ${t.is_active ? 'text-gray-700' : 'text-gray-400 line-through'}`}>
+            <span className={`flex-1 text-sm flex items-center gap-1.5 ${t.is_active ? 'text-gray-700' : 'text-muted-foreground line-through'}`}>
               {t.description}
               {t.type !== 'other' && <span className={`text-[10px] px-1.5 py-0.5 rounded-full capitalize ${TYPE_CHIP[t.type] ?? TYPE_CHIP.other}`}>{t.type}</span>}
             </span>

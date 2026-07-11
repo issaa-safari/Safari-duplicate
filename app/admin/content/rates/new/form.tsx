@@ -50,7 +50,7 @@ export default function NewRateCardForm({
               <option value="">— no supplier —</option>
               {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
-            <p className="text-xs text-gray-400 mt-1">Manage suppliers under <Link href="/admin/suppliers" className="underline">Admin → Suppliers</Link>. Linking one makes this card&apos;s costs show in Payables.</p>
+            <p className="text-xs text-muted-foreground mt-1">Manage suppliers under <Link href="/admin/suppliers" className="underline">Admin → Suppliers</Link>. Linking one makes this card&apos;s costs show in Payables.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><label htmlFor="entityType" className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label><select id="entityType" name="entityType" value={entityType} onChange={e => setEntityType(e.target.value)} className={inputCls}>{ENTITY_TYPES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>

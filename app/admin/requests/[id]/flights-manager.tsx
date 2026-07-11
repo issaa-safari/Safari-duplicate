@@ -71,7 +71,7 @@ export default function FlightsManager({ requestId, flights: initial }: { reques
       </div>
 
       {flights.length === 0 && !showAdd && (
-        <p className="text-xs text-gray-400">No flights recorded yet.</p>
+        <p className="text-xs text-muted-foreground">No flights recorded yet.</p>
       )}
 
       <ul className="space-y-2 mb-4">
@@ -84,13 +84,13 @@ export default function FlightsManager({ requestId, flights: initial }: { reques
             <div className="flex-1 min-w-0 text-sm">
               <p className="text-gray-800 font-medium">
                 {[f.airline, f.flight_number].filter(Boolean).join(' ') || 'Flight'}
-                {f.traveller_name && <span className="text-gray-400 font-normal"> · {f.traveller_name}</span>}
+                {f.traveller_name && <span className="text-muted-foreground font-normal"> · {f.traveller_name}</span>}
               </p>
               <p className="text-xs text-gray-500 mt-0.5">
                 {f.scheduled_at && new Date(f.scheduled_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 {f.airport && ` · ${f.airport}`}
               </p>
-              {f.notes && <p className="text-xs text-gray-400 mt-0.5">{f.notes}</p>}
+              {f.notes && <p className="text-xs text-muted-foreground mt-0.5">{f.notes}</p>}
             </div>
             <button onClick={() => handleDelete(f.id)} disabled={pending}
               className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-xs shrink-0" aria-label="Delete">✕</button>

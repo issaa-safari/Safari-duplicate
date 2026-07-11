@@ -70,7 +70,7 @@ export default async function ClientsPage({
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {!clients || clients.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-400 text-sm">No clients yet. They appear here when you add requests.</p>
+            <p className="text-muted-foreground text-sm">No clients yet. They appear here when you add requests.</p>
           </div>
         ) : (
           <table className="stack-table w-full text-sm">
@@ -108,7 +108,7 @@ export default async function ClientsPage({
                     </span>
                   </td>
                   <td data-label="Bookings" className="px-4 py-3 text-gray-500 hidden lg:table-cell">{client.total_bookings ?? 0}</td>
-                  <td data-label="Added" className="px-4 py-3 text-gray-400 text-xs">{new Date(client.created_at).toLocaleDateString('en-GB')}</td>
+                  <td data-label="Added" className="px-4 py-3 text-muted-foreground text-xs">{new Date(client.created_at).toLocaleDateString('en-GB')}</td>
                  <td className="px-4 py-3">
   <Link
     href={"/admin/clients/" + client.id}

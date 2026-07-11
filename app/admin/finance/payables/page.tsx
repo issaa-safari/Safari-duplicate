@@ -45,19 +45,19 @@ export default async function PayablesPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <p className="text-xs text-gray-500">Owed to suppliers</p>
               <p className="text-2xl font-semibold text-gray-900 mt-1">${fmt(payables.totalOwedUsd)}</p>
-              <p className="text-xs text-gray-400 mt-1">costs on accepted versions</p>
+              <p className="text-xs text-muted-foreground mt-1">costs on accepted versions</p>
             </div>
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <p className="text-xs text-gray-500">Paid out</p>
               <p className="text-2xl font-semibold text-green-700 mt-1">${fmt(payables.totalPaidUsd)}</p>
-              <p className="text-xs text-gray-400 mt-1">supplier payments recorded</p>
+              <p className="text-xs text-muted-foreground mt-1">supplier payments recorded</p>
             </div>
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <p className="text-xs text-gray-500">Balance payable</p>
-              <p className={`text-2xl font-semibold mt-1 ${payables.totalBalanceUsd > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
+              <p className={`text-2xl font-semibold mt-1 ${payables.totalBalanceUsd > 0 ? 'text-amber-700' : 'text-muted-foreground'}`}>
                 ${fmt(payables.totalBalanceUsd)}
               </p>
-              <p className="text-xs text-gray-400 mt-1">{payables.suppliers.length} supplier{payables.suppliers.length !== 1 ? 's' : ''} with activity</p>
+              <p className="text-xs text-muted-foreground mt-1">{payables.suppliers.length} supplier{payables.suppliers.length !== 1 ? 's' : ''} with activity</p>
             </div>
           </div>
 
@@ -71,10 +71,10 @@ export default async function PayablesPage() {
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100">
               <h2 className="text-sm font-semibold text-gray-700">Per-supplier balances</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Click a supplier for the per-quote breakdown or to record a payment</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Click a supplier for the per-quote breakdown or to record a payment</p>
             </div>
             {payables.suppliers.length === 0 ? (
-              <div className="p-10 text-center text-sm text-gray-400">
+              <div className="p-10 text-center text-sm text-muted-foreground">
                 Nothing payable yet — balances appear once quotes with supplier-linked rate cards are accepted.
               </div>
             ) : (

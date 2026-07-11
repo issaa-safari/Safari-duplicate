@@ -59,13 +59,13 @@ export default function ActivityEditForm({
           <h2 className="text-sm font-semibold text-gray-700">Details</h2>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-            <input type="text" name="name" required defaultValue={activity.name} className={inputCls} />
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+            <input id="name" type="text" name="name" required defaultValue={activity.name} className={inputCls} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
-            <select name="destinationId" defaultValue={activity.destination_id ?? ''} className={inputCls}>
+            <label htmlFor="destinationId" className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+            <select id="destinationId" name="destinationId" defaultValue={activity.destination_id ?? ''} className={inputCls}>
               <option value="">No destination</option>
               {destinations.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
@@ -74,8 +74,8 @@ export default function ActivityEditForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
-            <input
+            <label htmlFor="coverImageUrl" className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
+            <input id="coverImageUrl"
               type="url"
               name="coverImageUrl"
               defaultValue={activity.cover_image_url ?? ''}
@@ -89,17 +89,17 @@ export default function ActivityEditForm({
 
         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700">Content</h2>
-          <p className="text-xs text-gray-400 -mt-2">Filling in a description or cover image marks this as "With Content".</p>
+          <p className="text-xs text-muted-foreground -mt-2">Filling in a description or cover image marks this as "With Content".</p>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
-            <textarea name="descriptionEn" rows={4} defaultValue={activity.description_en ?? ''}
+            <label htmlFor="descriptionEn" className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
+            <textarea id="descriptionEn" name="descriptionEn" rows={4} defaultValue={activity.description_en ?? ''}
               placeholder="Describe this activity…" className={inputCls} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description (Arabic)</label>
-            <textarea name="descriptionAr" rows={4} defaultValue={activity.description_ar ?? ''}
+            <label htmlFor="descriptionAr" className="block text-sm font-medium text-gray-700 mb-1">Description (Arabic)</label>
+            <textarea id="descriptionAr" name="descriptionAr" rows={4} defaultValue={activity.description_ar ?? ''}
               placeholder="وصف هذا النشاط…" dir="rtl" className={inputCls} />
           </div>
         </div>

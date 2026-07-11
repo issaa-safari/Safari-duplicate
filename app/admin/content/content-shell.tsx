@@ -37,7 +37,7 @@ function NavGroup({
                   : 'text-gray-600 hover:bg-white hover:text-gray-900'
               }`}
             >
-              <span className="w-4 text-center text-gray-400">{item.icon}</span>
+              <span className="w-4 text-center text-muted-foreground">{item.icon}</span>
               <span>{item.label}</span>
             </Link>
           )
@@ -77,7 +77,7 @@ export default function ContentShell({
               href="/admin/settings"
               className="flex items-center gap-2 border-b border-gray-200 px-2 py-2 text-sm text-gray-600 hover:bg-white hover:text-gray-900"
             >
-              <span className="w-4 text-center text-gray-400">⚙</span>
+              <span className="w-4 text-center text-muted-foreground">⚙</span>
               <span>Your Library Settings</span>
             </Link>
           </div>

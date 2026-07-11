@@ -121,9 +121,9 @@ export default function ActivitiesModal({
                   <td className={cell}>
                     <div className="flex flex-col">
                       <button type="button" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up"
-                        className="text-gray-400 hover:text-gray-700 disabled:opacity-30 text-xs">↑</button>
+                        className="text-muted-foreground hover:text-gray-700 disabled:opacity-30 text-xs">↑</button>
                       <button type="button" onClick={() => move(i, 1)} disabled={i === rows.length - 1} aria-label="Move down"
-                        className="text-gray-400 hover:text-gray-700 disabled:opacity-30 text-xs">↓</button>
+                        className="text-muted-foreground hover:text-gray-700 disabled:opacity-30 text-xs">↓</button>
                     </div>
                   </td>
                   <td className={cell}>

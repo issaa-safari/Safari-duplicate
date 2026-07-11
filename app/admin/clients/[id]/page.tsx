@@ -149,9 +149,9 @@ export default async function ClientDetailPage({
             <p className="text-2xl font-semibold text-gray-900">
               ${Number(client.total_spent_usd ?? 0).toLocaleString()}
             </p>
-            <p className="text-xs text-gray-400">Total spent</p>
+            <p className="text-xs text-muted-foreground">Total spent</p>
             <p className="text-lg font-medium text-gray-700 mt-2">{client.total_bookings ?? 0}</p>
-            <p className="text-xs text-gray-400">Bookings</p>
+            <p className="text-xs text-muted-foreground">Bookings</p>
           </div>
         </div>
       </div>
@@ -162,18 +162,18 @@ export default async function ClientDetailPage({
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Contact Details</h2>
             <div className="space-y-2 text-sm">
               <div>
-                <p className="text-xs text-gray-400">Email</p>
+                <p className="text-xs text-muted-foreground">Email</p>
                 <p className="text-gray-700">{client.email}</p>
               </div>
               {client.phone && (
                 <div>
-                  <p className="text-xs text-gray-400">Phone</p>
+                  <p className="text-xs text-muted-foreground">Phone</p>
                   <a href={`tel:${client.phone}`} className="text-[var(--olive-dk)] hover:underline text-sm">{client.phone}</a>
                 </div>
               )}
               {client.whatsapp && (
                 <div>
-                  <p className="text-xs text-gray-400">WhatsApp</p>
+                  <p className="text-xs text-muted-foreground">WhatsApp</p>
                   <a href={`https://wa.me/${client.whatsapp.replace(/\D/g, '')}`}
                     target="_blank" rel="noopener noreferrer"
                     className="text-[var(--olive-dk)] hover:underline text-sm">{client.whatsapp}</a>
@@ -181,24 +181,24 @@ export default async function ClientDetailPage({
               )}
               {client.country && (
                 <div>
-                  <p className="text-xs text-gray-400">Country</p>
+                  <p className="text-xs text-muted-foreground">Country</p>
                   <p className="text-gray-700">{client.country}</p>
                 </div>
               )}
               {client.language && (
                 <div>
-                  <p className="text-xs text-gray-400">Language</p>
+                  <p className="text-xs text-muted-foreground">Language</p>
                   <p className="text-gray-700">{client.language === 'ar' ? 'Arabic' : 'English'}</p>
                 </div>
               )}
               {client.source && (
                 <div>
-                  <p className="text-xs text-gray-400">Source</p>
+                  <p className="text-xs text-muted-foreground">Source</p>
                   <p className="text-gray-700 capitalize">{client.source}</p>
                 </div>
               )}
               <div>
-                <p className="text-xs text-gray-400">Client since</p>
+                <p className="text-xs text-muted-foreground">Client since</p>
                 <p className="text-gray-700">
                   {new Date(client.created_at).toLocaleDateString('en-GB', {
                     day: 'numeric', month: 'long', year: 'numeric'
@@ -244,13 +244,13 @@ export default async function ClientDetailPage({
                       <p className="text-sm font-medium text-gray-900">
                         {req.tours?.title_en ?? 'No tour selected'}
                       </p>
-                      <p className="text-xs text-gray-400 font-mono">{req.reference}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{req.reference}</p>
                     </div>
                     <div className="text-right">
                       <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
                         {req.stage.replace('_', ' ')}
                       </span>
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {new Date(req.created_at).toLocaleDateString('en-GB')}
                       </p>
                     </div>
@@ -258,7 +258,7 @@ export default async function ClientDetailPage({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 text-center py-4">No requests yet.</p>
+              <p className="text-sm text-muted-foreground text-center py-4">No requests yet.</p>
             )}
           </div>
 
@@ -276,7 +276,7 @@ export default async function ClientDetailPage({
                     className="flex items-center justify-between p-3 rounded-md border border-gray-100 hover:border-[var(--olive)] hover:bg-gray-50 transition">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{quote.tour_title ?? 'Custom quote'}</p>
-                      <p className="text-xs text-gray-400 font-mono">{quote.quote_number}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{quote.quote_number}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-gray-900">
@@ -290,7 +290,7 @@ export default async function ClientDetailPage({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 text-center py-4">No quotes yet.</p>
+              <p className="text-sm text-muted-foreground text-center py-4">No quotes yet.</p>
             )}
           </div>
 
@@ -310,7 +310,7 @@ export default async function ClientDetailPage({
                       <p className="text-sm font-medium text-gray-900">
                         {booking.departures?.tours?.title_en ?? booking.quotes?.tours?.title_en ?? 'Tour'}
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-muted-foreground">
                         {booking.departures?.start_date
                           ? new Date(booking.departures.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
                           : new Date(booking.created_at).toLocaleDateString('en-GB')}
@@ -328,7 +328,7 @@ export default async function ClientDetailPage({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 text-center py-4">No bookings yet.</p>
+              <p className="text-sm text-muted-foreground text-center py-4">No bookings yet.</p>
             )}
           </div>
 
@@ -351,7 +351,7 @@ export default async function ClientDetailPage({
                     </span>
                     <div>
                       <p className="text-gray-700">{log.summary}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {new Date(log.created_at).toLocaleDateString('en-GB')}
                       </p>
                     </div>

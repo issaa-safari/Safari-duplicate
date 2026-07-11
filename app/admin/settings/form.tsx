@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useId } from 'react'
 import { saveSettings } from './actions'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
@@ -55,7 +55,8 @@ const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
 function Field({ label, name, value, type = 'text', ...props }: {
   label: string; name: string; value: string | number | null; type?: string; [key: string]: unknown
 }) {
-  return <div><label className={labelCls}>{label}</label><input type={type} name={name} defaultValue={value ?? ''} className={inputCls} {...props} /></div>
+  const id = useId()
+  return <div><label htmlFor={id} className={labelCls}>{label}</label><input id={id} type={type} name={name} defaultValue={value ?? ''} className={inputCls} {...props} /></div>
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -99,7 +100,7 @@ export default function SettingsForm({ settings }: { settings: Settings }) {
           <Field label="Secondary Currency" name="currencySecondary" value={settings.currency_secondary} placeholder="KES" />
         </div>
         <Field label="Logo URL" name="logoUrl" value={settings.logo_url} type="url" />
-        <div><label className={labelCls}>Address</label><textarea name="address" defaultValue={settings.address ?? ''} rows={3} className={inputCls} /></div>
+        <div><label htmlFor="address" className={labelCls}>Address</label><textarea id="address" name="address" defaultValue={settings.address ?? ''} rows={3} className={inputCls} /></div>
       </Section>
 
       <Section title="Contact">
@@ -185,7 +186,7 @@ export default function SettingsForm({ settings }: { settings: Settings }) {
       {error && <Alert variant="error">{error}</Alert>}
       <div className="flex items-center justify-between">
         <Button type="submit" loading={loading} loadingText="Saving…">Save Settings</Button>
-        {lastSaved && <p className="text-xs text-gray-400">Last saved {lastSaved}</p>}
+        {lastSaved && <p className="text-xs text-muted-foreground">Last saved {lastSaved}</p>}
       </div>
     </form>
   )

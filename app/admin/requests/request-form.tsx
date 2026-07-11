@@ -138,11 +138,11 @@ export default function RequestForm({
                   className={inputCls}
                 />
                 {clients.length === 0 ? (
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-muted-foreground">
                     No clients yet — switch to &quot;New client&quot; to add one.
                   </p>
                 ) : matches.length === 0 ? (
-                  <p className="text-sm text-gray-400">No clients match “{query}”.</p>
+                  <p className="text-sm text-muted-foreground">No clients match “{query}”.</p>
                 ) : (
                   <div className="rounded-md border border-gray-200 divide-y divide-gray-100 overflow-hidden">
                     {matches.map(c => (
@@ -150,7 +150,7 @@ export default function RequestForm({
                         onClick={() => setSelectedClientId(c.id)}
                         className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50">
                         <span className="text-sm text-gray-900">{c.name}</span>
-                        <span className="text-xs text-gray-400">{c.email}</span>
+                        <span className="text-xs text-muted-foreground">{c.email}</span>
                       </button>
                     ))}
                   </div>

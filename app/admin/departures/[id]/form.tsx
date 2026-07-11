@@ -77,8 +77,8 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-              <input
+              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+              <input id="startDate"
                 type="date"
                 name="startDate"
                 required
@@ -87,8 +87,8 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-              <input
+              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+              <input id="endDate"
                 type="date"
                 name="endDate"
                 required
@@ -100,8 +100,8 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Max Seats</label>
-              <input
+              <label htmlFor="maxSeats" className="block text-sm font-medium text-gray-700 mb-1">Max Seats</label>
+              <input id="maxSeats"
                 type="number"
                 name="maxSeats"
                 min={1}
@@ -111,18 +111,18 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Booked Seats</label>
+              <span className="block text-sm font-medium text-gray-700 mb-1">Booked Seats</span>
               <div className={`${inputCls} bg-gray-50 text-gray-500 cursor-default`}>
                 {departure.booked_seats}
               </div>
-              <p className="text-[11px] text-gray-400 mt-1">Computed from confirmed bookings — not editable here.</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Computed from confirmed bookings — not editable here.</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price per Seat (USD)</label>
-              <input
+              <label htmlFor="priceUsd" className="block text-sm font-medium text-gray-700 mb-1">Price per Seat (USD)</label>
+              <input id="priceUsd"
                 type="number"
                 name="priceUsd"
                 min={0}
@@ -133,8 +133,8 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select name="status" defaultValue={departure.status} className={inputCls}>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select id="status" name="status" defaultValue={departure.status} className={inputCls}>
                 <option value="available">Available</option>
                 <option value="full">Full</option>
                 <option value="closed">Closed</option>
@@ -144,8 +144,8 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Internal Notes</label>
-            <textarea
+            <label htmlFor="internalNotes" className="block text-sm font-medium text-gray-700 mb-1">Internal Notes</label>
+            <textarea id="internalNotes"
               name="internalNotes"
               rows={2}
               placeholder="Not shown to clients"

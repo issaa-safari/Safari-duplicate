@@ -92,7 +92,7 @@ export default function CommunicationLog({
       {/* Log history */}
       <div className="space-y-3 mt-4">
         {logs.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-6">
+          <p className="text-sm text-muted-foreground text-center py-6">
             No communication logged yet. Add your first entry above.
           </p>
         ) : (
@@ -107,7 +107,7 @@ export default function CommunicationLog({
               </div>
               <div className="flex-1">
                 <p className="text-gray-700">{log.summary}</p>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {new Date(log.created_at).toLocaleDateString('en-GB', {
                     day: 'numeric',
                     month: 'short',

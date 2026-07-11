@@ -45,7 +45,7 @@ export default async function EditRequestPage({
           Back to Request
         </Link>
         <h1 className="text-lg font-semibold text-gray-900">
-          Edit Request <span className="font-mono text-sm text-gray-400">{request.reference}</span>
+          Edit Request <span className="font-mono text-sm text-muted-foreground">{request.reference}</span>
         </h1>
       </div>
       <RequestForm

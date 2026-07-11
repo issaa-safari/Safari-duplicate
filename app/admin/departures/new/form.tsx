@@ -82,7 +82,7 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
             <div>
               <label htmlFor="bookedSeats" className="block text-sm font-medium text-gray-700 mb-1">Already-booked seats</label>
               <input id="bookedSeats" type="number" name="bookedSeats" min={0} defaultValue={0} className={inputCls} />
-              <p className="text-[11px] text-gray-400 mt-1">Only for migrating existing bookings — leave at 0 for new departures.</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Only for migrating existing bookings — leave at 0 for new departures.</p>
             </div>
           </div>
 
@@ -91,7 +91,7 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
               <label htmlFor="priceUsd" className="block text-sm font-medium text-gray-700 mb-1">Price per Seat (USD)</label>
               <input id="priceUsd" type="number" name="priceUsd" min={0} step="0.01" required placeholder="e.g. 4500"
                 value={price} onChange={(e) => setPrice(e.target.value)} className={inputCls} />
-              <p className="text-[11px] text-gray-400 mt-1">Shown on the website &amp; charged at booking. Pre-filled from the template, editable per departure.</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Shown on the website &amp; charged at booking. Pre-filled from the template, editable per departure.</p>
             </div>
             <div>
               <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>

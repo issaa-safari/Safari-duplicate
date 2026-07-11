@@ -144,7 +144,7 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
       )}
 
       {tasks.length === 0 && !showAdd && (
-        <p className="text-xs text-gray-400">No tasks yet.</p>
+        <p className="text-xs text-muted-foreground">No tasks yet.</p>
       )}
 
       {open.length > 0 && (
@@ -190,7 +190,7 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
               >
                 <span className="text-white text-[9px] leading-none">✓</span>
               </button>
-              <span className="flex-1 text-sm text-gray-400 line-through">{task.title}</span>
+              <span className="flex-1 text-sm text-muted-foreground line-through">{task.title}</span>
               <button
                 type="button"
                 onClick={() => handleDelete(task.id)}

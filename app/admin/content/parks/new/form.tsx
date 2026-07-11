@@ -51,18 +51,18 @@ export default function NewParkForm() {
           <h2 className="text-sm font-semibold text-gray-700">Details</h2>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-            <input type="text" name="name" required placeholder="e.g. Serengeti National Park" className={inputCls} />
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+            <input id="name" type="text" name="name" required placeholder="e.g. Serengeti National Park" className={inputCls} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-              <input type="text" name="country" defaultValue="Tanzania" placeholder="e.g. Tanzania" className={inputCls} />
+              <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+              <input id="country" type="text" name="country" defaultValue="Tanzania" placeholder="e.g. Tanzania" className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-              <select name="parkType" defaultValue="national_park" className={inputCls}>
+              <label htmlFor="parkType" className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <select id="parkType" name="parkType" defaultValue="national_park" className={inputCls}>
                 {PARK_TYPES.map(t => (
                   <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
@@ -71,8 +71,8 @@ export default function NewParkForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
-            <input type="url" name="coverImageUrl" placeholder="https://…" className={inputCls} />
+            <label htmlFor="coverImageUrl" className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
+            <input id="coverImageUrl" type="url" name="coverImageUrl" placeholder="https://…" className={inputCls} />
           </div>
 
           <Toggle checked={isActive} onChange={() => setIsActive(!isActive)} label="Active (appears in rate picker)" />
@@ -82,8 +82,8 @@ export default function NewParkForm() {
           <h2 className="text-sm font-semibold text-gray-700">Description</h2>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
-            <textarea name="descriptionEn" rows={4} placeholder="Brief description of the park…" className={inputCls} />
+            <label htmlFor="descriptionEn" className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
+            <textarea id="descriptionEn" name="descriptionEn" rows={4} placeholder="Brief description of the park…" className={inputCls} />
           </div>
         </div>
 

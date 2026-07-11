@@ -110,8 +110,8 @@ export default function NewQuoteForm({
             <h2 className="text-sm font-semibold text-gray-700">Client</h2>
 
             <div>
-              <label className={labelCls}>Client <span className="text-red-500">*</span></label>
-              <select
+              <label htmlFor="clientId" className={labelCls}>Client <span className="text-red-500">*</span></label>
+              <select id="clientId"
                 name="clientId"
                 required
                 value={clientId}
@@ -132,8 +132,8 @@ export default function NewQuoteForm({
             </div>
 
             <div>
-              <label className={labelCls}>Linked Request <span className="text-gray-400 font-normal">(optional)</span></label>
-              <select
+              <label htmlFor="requestId" className={labelCls}>Linked Request <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <select id="requestId"
                 name="requestId"
                 value={requestId}
                 onChange={e => {
@@ -153,8 +153,8 @@ export default function NewQuoteForm({
             </div>
 
             <div>
-              <label className={labelCls}>Quote Title <span className="text-gray-400 font-normal">(optional)</span></label>
-              <input
+              <label htmlFor="title" className={labelCls}>Quote Title <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <input id="title"
                 type="text"
                 name="title"
                 placeholder="e.g. Maasai Mara & Samburu 8 Days"
@@ -169,8 +169,8 @@ export default function NewQuoteForm({
           <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
             <h2 className="text-sm font-semibold text-gray-700">Departure</h2>
             <div>
-              <label className={labelCls}>Departure <span className="text-red-500">*</span></label>
-              <select name="departureId" required defaultValue="" className={inputCls}>
+              <label htmlFor="departureId" className={labelCls}>Departure <span className="text-red-500">*</span></label>
+              <select id="departureId" name="departureId" required defaultValue="" className={inputCls}>
                 <option value="" disabled>Select a departure…</option>
                 {departures.map((d) => (
                   <option key={d.id} value={d.id}>
@@ -187,11 +187,11 @@ export default function NewQuoteForm({
         {/* Custom — optionally pin to a tour template */}
         {mode === 'custom' && (
           <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700">Tour Template <span className="text-gray-400 font-normal text-xs">(optional)</span></h2>
-            <p className="text-xs text-gray-400 -mt-2">Link to a tour to copy its itinerary as a starting point.</p>
+            <h2 className="text-sm font-semibold text-gray-700">Tour Template <span className="text-muted-foreground font-normal text-xs">(optional)</span></h2>
+            <p className="text-xs text-muted-foreground -mt-2">Link to a tour to copy its itinerary as a starting point.</p>
             <div>
-              <label className={labelCls}>Tour</label>
-              <select name="tourId" defaultValue="" className={inputCls}>
+              <label htmlFor="tourId" className={labelCls}>Tour</label>
+              <select id="tourId" name="tourId" defaultValue="" className={inputCls}>
                 <option value="">No template</option>
                 {tours.map((t) => (
                   <option key={t.id} value={t.id}>

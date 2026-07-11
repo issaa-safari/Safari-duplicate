@@ -38,16 +38,16 @@ export default function NewTourPage() {
           </p>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title (English)</label>
-            <input type="text" name="titleEn" required autoFocus
+            <label htmlFor="titleEn" className="block text-sm font-medium text-gray-700 mb-1">Title (English)</label>
+            <input id="titleEn" type="text" name="titleEn" required autoFocus
               placeholder="e.g. Kenya Lakes, Mountains & Forest Trails"
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tour Type</label>
-              <select name="type" defaultValue="bike"
+              <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">Tour Type</label>
+              <select id="type" name="type" defaultValue="bike"
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]">
                 <option value="bike">🏍️ Bike Tour</option>
                 <option value="private">🦁 Private Safari</option>
@@ -55,8 +55,8 @@ export default function NewTourPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Duration (days)</label>
-              <input type="number" name="durationDays" min={1} defaultValue={8}
+              <label htmlFor="durationDays" className="block text-sm font-medium text-gray-700 mb-1">Duration (days)</label>
+              <input id="durationDays" type="number" name="durationDays" min={1} defaultValue={8}
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
             </div>
           </div>

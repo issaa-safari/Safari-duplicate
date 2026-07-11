@@ -196,13 +196,13 @@ export default async function AnalyticsPage() {
         {/* Monthly volume chart */}
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-1">Quote Volume — Last 6 Months</h2>
-          <p className="text-xs text-gray-400 mb-4">Versions created vs accepted</p>
+          <p className="text-xs text-muted-foreground mb-4">Versions created vs accepted</p>
           {months.some(m => m.created > 0) ? (
             <div className="flex items-end gap-2 h-36">
               {months.map((m, i) => (
                 <div key={m.key} className="flex-1 flex flex-col items-center gap-1">
                   {m.created > 0 && (
-                    <p className="text-[10px] text-gray-400 leading-none">{m.created}</p>
+                    <p className="text-[10px] text-muted-foreground leading-none">{m.created}</p>
                   )}
                   <div className="w-full flex items-end gap-0.5" style={{ height: '96px' }}>
                     <div
@@ -222,12 +222,12 @@ export default async function AnalyticsPage() {
                       />
                     )}
                   </div>
-                  <p className="text-[10px] text-gray-400">{m.label}</p>
+                  <p className="text-[10px] text-muted-foreground">{m.label}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 py-10 text-center">No quotes yet in this period.</p>
+            <p className="text-sm text-muted-foreground py-10 text-center">No quotes yet in this period.</p>
           )}
           <div className="flex gap-4 mt-3">
             <div className="flex items-center gap-1.5 text-xs text-gray-500">
@@ -245,7 +245,7 @@ export default async function AnalyticsPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Quote Status Breakdown</h2>
           {totalVersions === 0 ? (
-            <p className="text-sm text-gray-400 py-10 text-center">No quotes yet.</p>
+            <p className="text-sm text-muted-foreground py-10 text-center">No quotes yet.</p>
           ) : (
             <div className="space-y-2">
               {STATUS_ORDER.filter(s => (statusCounts[s] ?? 0) > 0).map(status => {
@@ -261,7 +261,7 @@ export default async function AnalyticsPage() {
                       />
                     </div>
                     <span className="w-14 text-xs text-gray-600 font-medium tabular-nums">
-                      {count} <span className="text-gray-400">({barPct}%)</span>
+                      {count} <span className="text-muted-foreground">({barPct}%)</span>
                     </span>
                   </div>
                 )
@@ -278,7 +278,7 @@ export default async function AnalyticsPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Gross P&amp;L — Accepted Quotes</h2>
           {acceptedCount === 0 ? (
-            <p className="text-sm text-gray-400 py-8 text-center">No accepted quotes yet.</p>
+            <p className="text-sm text-muted-foreground py-8 text-center">No accepted quotes yet.</p>
           ) : (
             <div className="space-y-3">
               <PnlRow label="Revenue (selling price)" value={totalAcceptedRevenue} bold />
@@ -297,7 +297,7 @@ export default async function AnalyticsPage() {
                   {overallMargin.toFixed(1)}%
                 </span>
               </div>
-              <p className="text-xs text-gray-400 pt-2 border-t border-gray-50">
+              <p className="text-xs text-muted-foreground pt-2 border-t border-gray-50">
                 Based on {acceptedCount} accepted quote{acceptedCount !== 1 ? 's' : ''}.
                 Revenue = selling price; Cost = sum of price line costs.
               </p>
@@ -309,7 +309,7 @@ export default async function AnalyticsPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Revenue by Category</h2>
           {categories.length === 0 ? (
-            <p className="text-sm text-gray-400 py-8 text-center">No price line data yet.</p>
+            <p className="text-sm text-muted-foreground py-8 text-center">No price line data yet.</p>
           ) : (
             <div className="space-y-3">
               {categories.map(([cat, rev]) => {
@@ -351,7 +351,7 @@ export default async function AnalyticsPage() {
             <Link href="/admin/bookings" className="text-xs text-[var(--olive)] hover:underline">View all</Link>
           </div>
           {totalBookings === 0 ? (
-            <p className="text-sm text-gray-400 py-8 text-center">No website bookings yet.</p>
+            <p className="text-sm text-muted-foreground py-8 text-center">No website bookings yet.</p>
           ) : (
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
@@ -374,7 +374,7 @@ export default async function AnalyticsPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Top Tours — by Booking Revenue</h2>
           {topTours.length === 0 ? (
-            <p className="text-sm text-gray-400 py-8 text-center">No bookings to rank yet.</p>
+            <p className="text-sm text-muted-foreground py-8 text-center">No bookings to rank yet.</p>
           ) : (
             <div className="space-y-3">
               {topTours.map(([title, s]) => {
@@ -385,7 +385,7 @@ export default async function AnalyticsPage() {
                       <span className="font-medium text-gray-700 truncate pr-2">{title}</span>
                       <span className="tabular-nums shrink-0">
                         ${fmt(s.revenue)}
-                        <span className="text-gray-400 ml-2">{s.count} booking{s.count !== 1 ? 's' : ''}</span>
+                        <span className="text-muted-foreground ml-2">{s.count} booking{s.count !== 1 ? 's' : ''}</span>
                       </span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -406,7 +406,7 @@ export default async function AnalyticsPage() {
           <Link href="/admin/requests" className="text-xs text-[var(--olive)] hover:underline">View all</Link>
         </div>
         {totalRequests === 0 ? (
-          <p className="text-sm text-gray-400 py-4 text-center">No requests yet.</p>
+          <p className="text-sm text-muted-foreground py-4 text-center">No requests yet.</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
             {['new', 'working_on', 'open', 'pre_booked', 'booked', 'completed', 'not_booked'].map(stage => {
@@ -417,7 +417,7 @@ export default async function AnalyticsPage() {
                   className="text-center p-3 rounded-lg bg-gray-50 hover:bg-[var(--olive)]/5 hover:border-[var(--olive)]/20 border border-transparent transition">
                   <p className="text-2xl font-semibold text-gray-900">{count}</p>
                   <p className="text-xs text-gray-500 capitalize mt-0.5">{stage.replace('_', ' ')}</p>
-                  <p className="text-xs text-gray-400">{p}%</p>
+                  <p className="text-xs text-muted-foreground">{p}%</p>
                 </Link>
               )
             })}
@@ -435,7 +435,7 @@ function KpiCard({ label, value, sub, highlight }: {
     <div className="bg-white rounded-lg border border-gray-200 p-5">
       <p className="text-xs text-gray-500">{label}</p>
       <p className={`text-2xl font-semibold mt-1 ${highlight ? 'text-green-700' : 'text-gray-900'}`}>{value}</p>
-      <p className="text-xs text-gray-400 mt-1">{sub}</p>
+      <p className="text-xs text-muted-foreground mt-1">{sub}</p>
     </div>
   )
 }

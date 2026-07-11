@@ -90,20 +90,20 @@ export default async function PnlPage({
       {/* Date range */}
       <form method="get" className="flex flex-wrap items-end gap-3 mb-6 bg-white rounded-lg border border-gray-200 p-4">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">From</label>
-          <input type="date" name="from" defaultValue={from}
+          <label htmlFor="from" className="block text-xs text-gray-500 mb-1">From</label>
+          <input id="from" type="date" name="from" defaultValue={from}
             className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">To</label>
-          <input type="date" name="to" defaultValue={to}
+          <label htmlFor="to" className="block text-xs text-gray-500 mb-1">To</label>
+          <input id="to" type="date" name="to" defaultValue={to}
             className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
         </div>
         <button type="submit"
           className="rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
           Apply
         </button>
-        <span className="text-xs text-gray-400 ml-auto">USD · KES @ {fmt(usdToKes)} · accepted {from} → {to}</span>
+        <span className="text-xs text-muted-foreground ml-auto">USD · KES @ {fmt(usdToKes)} · accepted {from} → {to}</span>
       </form>
 
       {/* P&L statement */}
@@ -111,36 +111,36 @@ export default async function PnlPage({
         <table className="w-full text-sm">
           <tbody>
             <tr className="border-b border-gray-100">
-              <td className="px-5 py-3 font-medium text-gray-800">Revenue <span className="text-xs text-gray-400 font-normal">(selling price of accepted versions)</span></td>
+              <td className="px-5 py-3 font-medium text-gray-800">Revenue <span className="text-xs text-muted-foreground font-normal">(selling price of accepted versions)</span></td>
               <td className="px-5 py-3 text-right font-semibold text-gray-900 tabular-nums">${fmt2(revenue)}</td>
-              <td className="px-5 py-3 text-right text-xs text-gray-400 tabular-nums w-40">{kes(revenue)}</td>
+              <td className="px-5 py-3 text-right text-xs text-muted-foreground tabular-nums w-40">{kes(revenue)}</td>
             </tr>
             <tr className="border-b border-gray-100">
-              <td className="px-5 py-3 font-medium text-gray-800">Direct costs <span className="text-xs text-gray-400 font-normal">(supplier costs of the same versions)</span></td>
+              <td className="px-5 py-3 font-medium text-gray-800">Direct costs <span className="text-xs text-muted-foreground font-normal">(supplier costs of the same versions)</span></td>
               <td className="px-5 py-3 text-right font-semibold text-gray-900 tabular-nums">−${fmt2(directCosts)}</td>
-              <td className="px-5 py-3 text-right text-xs text-gray-400 tabular-nums">{kes(directCosts)}</td>
+              <td className="px-5 py-3 text-right text-xs text-muted-foreground tabular-nums">{kes(directCosts)}</td>
             </tr>
             <tr className="border-b border-gray-100 bg-gray-50/60">
-              <td className="px-5 py-3 font-semibold text-gray-900">Gross margin <span className="text-xs font-normal text-gray-400">({fmt2(grossPct)}%)</span></td>
+              <td className="px-5 py-3 font-semibold text-gray-900">Gross margin <span className="text-xs font-normal text-muted-foreground">({fmt2(grossPct)}%)</span></td>
               <td className={`px-5 py-3 text-right font-semibold tabular-nums ${gross >= 0 ? 'text-green-700' : 'text-red-600'}`}>${fmt2(gross)}</td>
-              <td className="px-5 py-3 text-right text-xs text-gray-400 tabular-nums">{kes(gross)}</td>
+              <td className="px-5 py-3 text-right text-xs text-muted-foreground tabular-nums">{kes(gross)}</td>
             </tr>
             {expensesAvailable && [...expenseByCategory.entries()].sort((a, b) => b[1] - a[1]).map(([cat, amt]) => (
               <tr key={cat} className="border-b border-gray-50">
                 <td className="px-5 py-2.5 text-gray-600 pl-9">{label(cat)}</td>
                 <td className="px-5 py-2.5 text-right text-gray-700 tabular-nums">−${fmt2(amt)}</td>
-                <td className="px-5 py-2.5 text-right text-xs text-gray-400 tabular-nums">{kes(amt)}</td>
+                <td className="px-5 py-2.5 text-right text-xs text-muted-foreground tabular-nums">{kes(amt)}</td>
               </tr>
             ))}
             <tr className="border-b border-gray-100">
               <td className="px-5 py-3 font-medium text-gray-800">Total expenses</td>
               <td className="px-5 py-3 text-right font-semibold text-gray-900 tabular-nums">−${fmt2(totalExpenses)}</td>
-              <td className="px-5 py-3 text-right text-xs text-gray-400 tabular-nums">{kes(totalExpenses)}</td>
+              <td className="px-5 py-3 text-right text-xs text-muted-foreground tabular-nums">{kes(totalExpenses)}</td>
             </tr>
             <tr className="bg-gray-50">
               <td className="px-5 py-3.5 font-semibold text-gray-900">Net profit</td>
               <td className={`px-5 py-3.5 text-right text-base font-bold tabular-nums ${net >= 0 ? 'text-green-700' : 'text-red-600'}`}>${fmt2(net)}</td>
-              <td className="px-5 py-3.5 text-right text-xs text-gray-400 tabular-nums">{kes(net)}</td>
+              <td className="px-5 py-3.5 text-right text-xs text-muted-foreground tabular-nums">{kes(net)}</td>
             </tr>
           </tbody>
         </table>
@@ -156,14 +156,14 @@ export default async function PnlPage({
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-700">Accepted in range</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Only the accepted version counts</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Only the accepted version counts</p>
         </div>
         {acceptedRows.length === 0 ? (
-          <p className="p-10 text-center text-sm text-gray-400">No quotes accepted in this range.</p>
+          <p className="p-10 text-center text-sm text-muted-foreground">No quotes accepted in this range.</p>
         ) : (
           <table className="stack-table w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
+              <tr className="text-left text-xs text-muted-foreground border-b border-gray-100">
                 <th className="px-5 py-3 font-medium">Quote</th>
                 <th className="px-3 py-3 font-medium">Accepted</th>
                 <th className="px-3 py-3 font-medium text-right">Revenue</th>

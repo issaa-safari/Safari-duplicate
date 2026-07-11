@@ -120,7 +120,7 @@ export default function AccommodationEditForm({
 
         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700">Content</h2>
-          <p className="text-xs text-gray-400 -mt-2">Filling in a description or cover image marks this as "With Content".</p>
+          <p className="text-xs text-muted-foreground -mt-2">Filling in a description or cover image marks this as "With Content".</p>
 
           <div>
             <label htmlFor="descriptionEn" className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>

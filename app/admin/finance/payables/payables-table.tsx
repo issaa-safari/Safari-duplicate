@@ -37,23 +37,23 @@ function PaymentForm({ supplier, onDone }: { supplier: SupplierPayable; onDone: 
     <form onSubmit={submit} className="space-y-3 max-w-md pt-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Amount (USD) *</label>
-          <input name="amount" type="number" min="0.01" step="0.01" required className={inputCls}
+          <label htmlFor="amount" className="block text-xs text-gray-500 mb-1">Amount (USD) *</label>
+          <input id="amount" name="amount" type="number" min="0.01" step="0.01" required className={inputCls}
             placeholder={supplier.balanceUsd > 0 ? String(supplier.balanceUsd) : undefined} />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Paid on</label>
-          <input name="paidAt" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className={inputCls} />
+          <label htmlFor="paidAt" className="block text-xs text-gray-500 mb-1">Paid on</label>
+          <input id="paidAt" name="paidAt" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className={inputCls} />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Method</label>
-          <select name="method" defaultValue="bank_transfer" className={inputCls}>
+          <label htmlFor="method" className="block text-xs text-gray-500 mb-1">Method</label>
+          <select id="method" name="method" defaultValue="bank_transfer" className={inputCls}>
             {METHODS.map(m => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Allocate to quote</label>
-          <select name="quoteId" defaultValue="" className={inputCls}>
+          <label htmlFor="quoteId" className="block text-xs text-gray-500 mb-1">Allocate to quote</label>
+          <select id="quoteId" name="quoteId" defaultValue="" className={inputCls}>
             <option value="">— whole account —</option>
             {supplier.byQuote.map(q => (
               <option key={q.quoteId} value={q.quoteId}>{q.quoteNumber ?? q.quoteId.slice(0, 8)} (${fmt(q.owedUsd)})</option>
@@ -62,8 +62,8 @@ function PaymentForm({ supplier, onDone }: { supplier: SupplierPayable; onDone: 
         </div>
       </div>
       <div>
-        <label className="block text-xs text-gray-500 mb-1">Reference</label>
-        <input name="reference" className={inputCls} placeholder="e.g. bank ref / M-Pesa code" />
+        <label htmlFor="reference" className="block text-xs text-gray-500 mb-1">Reference</label>
+        <input id="reference" name="reference" className={inputCls} placeholder="e.g. bank ref / M-Pesa code" />
       </div>
       {error && <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>}
       <div className="flex gap-2">
@@ -98,20 +98,20 @@ export default function PayablesTable({ suppliers }: { suppliers: SupplierPayabl
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="font-medium text-gray-900 text-sm">{s.supplierName}</p>
-                  <p className="text-xs text-gray-400 capitalize">{s.supplierType.replace('_', ' ')}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{s.supplierType.replace('_', ' ')}</p>
                 </div>
                 <div className="flex items-center gap-6 text-right shrink-0">
                   <div>
-                    <p className="text-[10px] text-gray-400 uppercase">Owed</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Owed</p>
                     <p className="text-sm font-medium text-gray-900 tabular-nums">${fmt(s.owedUsd)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400 uppercase">Paid</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Paid</p>
                     <p className="text-sm font-medium text-green-700 tabular-nums">${fmt(s.paidUsd)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400 uppercase">Balance</p>
-                    <p className={`text-sm font-semibold tabular-nums ${s.balanceUsd > 0 ? 'text-amber-700' : s.balanceUsd < 0 ? 'text-blue-600' : 'text-gray-400'}`}>
+                    <p className="text-[10px] text-muted-foreground uppercase">Balance</p>
+                    <p className={`text-sm font-semibold tabular-nums ${s.balanceUsd > 0 ? 'text-amber-700' : s.balanceUsd < 0 ? 'text-blue-600' : 'text-muted-foreground'}`}>
                       ${fmt(s.balanceUsd)}
                     </p>
                   </div>
@@ -153,7 +153,7 @@ export default function PayablesTable({ suppliers }: { suppliers: SupplierPayabl
                               <tr key={p.id} className="border-b border-gray-50 last:border-0">
                                 <td data-label="Date" className="py-1.5 text-gray-600 text-xs">{new Date(p.paidAt).toLocaleDateString('en-GB')}</td>
                                 <td data-label="Method" className="py-1.5 text-gray-500 text-xs">{p.method?.replace('_', ' ') ?? '—'}</td>
-                                <td data-label="Ref" className="py-1.5 text-gray-400 text-xs">{p.reference ?? '—'}</td>
+                                <td data-label="Ref" className="py-1.5 text-muted-foreground text-xs">{p.reference ?? '—'}</td>
                                 <td data-label="Paid" className="py-1.5 text-right font-medium text-green-700 tabular-nums">${fmt(p.amountUsd)}</td>
                               </tr>
                             ))}

@@ -46,7 +46,7 @@ export default async function EntityRatesPanel({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                <tr className="text-left text-xs text-muted-foreground uppercase tracking-wider border-b border-gray-100">
                   <th className="px-5 py-2.5 font-semibold">Rate card</th>
                   <th className="px-3 py-2.5 font-semibold">Season</th>
                   <th className="px-3 py-2.5 font-semibold text-right">Rates</th>
@@ -59,7 +59,7 @@ export default async function EntityRatesPanel({
                   <tr key={card.id} className="border-b border-gray-50 last:border-0">
                     <td className="px-5 py-2.5">
                       <p className="font-medium text-gray-900">{card.name}</p>
-                      <p className="text-xs text-gray-400">{card.supplier_name || 'No supplier'} · {card.currency}</p>
+                      <p className="text-xs text-muted-foreground">{card.supplier_name || 'No supplier'} · {card.currency}</p>
                     </td>
                     <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">
                       {new Date(card.valid_from).toLocaleDateString('en-GB')} → {new Date(card.valid_to).toLocaleDateString('en-GB')}

@@ -53,14 +53,14 @@ export default function VehicleEditForm({ vehicle }: { vehicle: Vehicle }) {
           <h2 className="text-sm font-semibold text-gray-700">Details</h2>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-            <input type="text" name="name" required defaultValue={vehicle.name} className={inputCls} />
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+            <input id="name" type="text" name="name" required defaultValue={vehicle.name} className={inputCls} />
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-              <select name="type" defaultValue={vehicle.type} className={inputCls}>
+              <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <select id="type" name="type" defaultValue={vehicle.type} className={inputCls}>
                 <option value="jeep">Jeep</option>
                 <option value="van">Van</option>
                 <option value="bus">Bus</option>
@@ -69,23 +69,23 @@ export default function VehicleEditForm({ vehicle }: { vehicle: Vehicle }) {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Seats</label>
-              <input type="number" name="seats" min={1} defaultValue={vehicle.seats} required className={inputCls} />
+              <label htmlFor="seats" className="block text-sm font-medium text-gray-700 mb-1">Seats</label>
+              <input id="seats" type="number" name="seats" min={1} defaultValue={vehicle.seats} required className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Count</label>
-              <input type="number" name="count" min={1} defaultValue={vehicle.count} required className={inputCls} />
+              <label htmlFor="count" className="block text-sm font-medium text-gray-700 mb-1">Count</label>
+              <input id="count" type="number" name="count" min={1} defaultValue={vehicle.count} required className={inputCls} />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-            <input type="url" name="imageUrl" defaultValue={vehicle.image_url ?? ''} placeholder="https://…" className={inputCls} />
+            <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+            <input id="imageUrl" type="url" name="imageUrl" defaultValue={vehicle.image_url ?? ''} placeholder="https://…" className={inputCls} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea name="descriptionEn" rows={3} defaultValue={vehicle.description_en ?? ''}
+            <label htmlFor="descriptionEn" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea id="descriptionEn" name="descriptionEn" rows={3} defaultValue={vehicle.description_en ?? ''}
               placeholder="Optional notes about this vehicle…" className={inputCls} />
           </div>
 

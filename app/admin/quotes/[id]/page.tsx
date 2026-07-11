@@ -175,7 +175,7 @@ export default async function QuoteDetailPage({
           </h1>
           <div className="flex items-center gap-2 mt-1.5">
             <StatusBadge status={quote.status} />
-            <span className="text-xs text-gray-400 capitalize">
+            <span className="text-xs text-muted-foreground capitalize">
               {quote.mode === 'fixed_departure' ? 'Fixed Departure' : 'Custom Safari'}
             </span>
           </div>
@@ -187,7 +187,7 @@ export default async function QuoteDetailPage({
         {/* Left — client + context */}
         <div className="space-y-4">
           <div className="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Client</h2>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Client</h2>
             {client ? (
               <>
                 <Link href={`/admin/clients/${quote.client_id}`}
@@ -195,7 +195,7 @@ export default async function QuoteDetailPage({
                   {client.first_name} {client.last_name}
                 </Link>
                 <p className="text-sm text-gray-500 mt-0.5">{client.email}</p>
-                {client.country && <p className="text-xs text-gray-400 mt-0.5">🌍 {client.country}</p>}
+                {client.country && <p className="text-xs text-muted-foreground mt-0.5">🌍 {client.country}</p>}
                 <div className="flex flex-wrap gap-2 mt-3">
                   {client.phone && (
                     <a href={`tel:${client.phone}`}
@@ -220,13 +220,13 @@ export default async function QuoteDetailPage({
                 </div>
               </>
             ) : (
-              <p className="text-sm text-gray-400">—</p>
+              <p className="text-sm text-muted-foreground">—</p>
             )}
           </div>
 
           {requestRow && (
             <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Linked Request</h2>
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Linked Request</h2>
               <Link
                 href={`/admin/requests/${(requestRow as any).id}`}
                 className="text-sm text-[var(--olive)] hover:underline font-mono">
@@ -237,7 +237,7 @@ export default async function QuoteDetailPage({
 
           {tourRow && (
             <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Tour Template</h2>
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Tour Template</h2>
               <p className="text-sm text-gray-700">{(tourRow as any).title_en}</p>
             </div>
           )}
@@ -246,10 +246,10 @@ export default async function QuoteDetailPage({
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-700">Versions</h2>
-              <span className="text-xs text-gray-400">{versions.length}</span>
+              <span className="text-xs text-muted-foreground">{versions.length}</span>
             </div>
             {versions.length === 0 ? (
-              <div className="p-4 text-center text-sm text-gray-400">No versions yet.</div>
+              <div className="p-4 text-center text-sm text-muted-foreground">No versions yet.</div>
             ) : (
               <div className="divide-y divide-gray-50">
                 {versions.map((v: any) => (
@@ -273,7 +273,7 @@ export default async function QuoteDetailPage({
         {/* Right — the unified workspace */}
         <div className="lg:col-span-3">
           {versions.length === 0 || !latestVersion ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-10 text-center text-sm text-gray-400">
+            <div className="bg-white rounded-lg border border-gray-200 p-10 text-center text-sm text-muted-foreground">
               This quote has no version yet.
             </div>
           ) : (

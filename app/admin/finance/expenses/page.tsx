@@ -50,7 +50,7 @@ export default async function ExpensesPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <p className="text-xs text-gray-500">All logged</p>
               <p className="text-2xl font-semibold text-gray-900 mt-1">${fmt(total)}</p>
-              <p className="text-xs text-gray-400 mt-1">{rows.length} entr{rows.length === 1 ? 'y' : 'ies'}</p>
+              <p className="text-xs text-muted-foreground mt-1">{rows.length} entr{rows.length === 1 ? 'y' : 'ies'}</p>
             </div>
           </div>
           <ExpensesTable expenses={rows} />

@@ -45,7 +45,7 @@ export default async function ActivitiesPage({
               ? 'border-[var(--olive)] text-[var(--olive)]'
               : 'border-transparent text-gray-500 hover:text-gray-700')}>
           With Content
-          <span className="ml-1.5 text-xs text-gray-400">({withContent.length})</span>
+          <span className="ml-1.5 text-xs text-muted-foreground">({withContent.length})</span>
         </Link>
         <Link
           href="/admin/content/activities?tab=empty"
@@ -54,7 +54,7 @@ export default async function ActivitiesPage({
               ? 'border-[var(--olive)] text-[var(--olive)]'
               : 'border-transparent text-gray-500 hover:text-gray-700')}>
           Without Content
-          <span className="ml-1.5 text-xs text-gray-400">({withoutContent.length})</span>
+          <span className="ml-1.5 text-xs text-muted-foreground">({withoutContent.length})</span>
         </Link>
       </div>
 
@@ -90,7 +90,7 @@ export default async function ActivitiesPage({
                     <td data-label="Activity" className="px-4 py-3">
                       <span className="font-medium text-gray-900">{act.name}</span>
                       {!act.is_active && (
-                        <span className="ml-2 text-xs text-gray-400">(inactive)</span>
+                        <span className="ml-2 text-xs text-muted-foreground">(inactive)</span>
                       )}
                     </td>
                     <td data-label="Location" className="px-4 py-3 text-gray-500 hidden sm:table-cell">
@@ -98,19 +98,19 @@ export default async function ActivitiesPage({
                     </td>
                     <td data-label="Description" className="px-4 py-3 text-center hidden md:table-cell">
                       <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium ${
-                        hasDesc ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                        hasDesc ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-muted-foreground'}`}>
                         {hasDesc}
                       </span>
                     </td>
                     <td data-label="Image" className="px-4 py-3 text-center hidden md:table-cell">
                       <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium ${
-                        hasImg ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                        hasImg ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-muted-foreground'}`}>
                         {hasImg}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link href={'/admin/content/activities/' + act.id}
-                        className="text-gray-400 hover:text-gray-700">
+                        className="text-muted-foreground hover:text-gray-700">
                         →
                       </Link>
                     </td>
