@@ -277,7 +277,7 @@ export default async function TourDetailPage({
           providerUrl: site.url,
         })}
       />
-      <Suspense><PublicHeader /></Suspense>
+      <Suspense><PublicHeader initialLang={locale} /></Suspense>
 
       {/* 1. Hero */}
       <TourHero

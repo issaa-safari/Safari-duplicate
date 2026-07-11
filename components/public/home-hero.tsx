@@ -83,7 +83,8 @@ export default function HomeHero({ heroImageUrl, heroTourId, isAr, locale }: Hom
             color: '#fff',
             lineHeight: 1.1,
             margin: '0 0 20px',
-            letterSpacing: '-0.01em',
+            // Letter-spacing breaks Arabic letter joining — Latin only
+            letterSpacing: isAr ? undefined : '-0.01em',
           }}
         >
           {t.headline}

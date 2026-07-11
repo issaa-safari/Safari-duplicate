@@ -9,7 +9,7 @@ const G = '#7A9A4A'
 function formatDate(dateStr: string, locale: string) {
   if (!dateStr) return '—'
   const d = new Date(dateStr)
-  return d.toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-GB', {
+  return d.toLocaleDateString(locale === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB', {
     day: 'numeric', month: 'short', year: 'numeric',
   })
 }

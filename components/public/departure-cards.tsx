@@ -28,7 +28,7 @@ const SAND = '#EAE3D2'
 function formatDate(d: string, locale: string) {
   if (!d) return '—'
   const date = new Date(d)
-  return date.toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-GB', {
+  return date.toLocaleDateString(locale === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB', {
     day: 'numeric', month: 'short', year: 'numeric',
   })
 }

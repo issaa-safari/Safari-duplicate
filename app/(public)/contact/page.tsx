@@ -92,7 +92,7 @@ function ContactInner() {
   return (
     <div dir={isAr ? 'rtl' : 'ltr'}>
       <Suspense>
-        <PublicHeader />
+        <PublicHeader initialLang={locale} />
       </Suspense>
       <main>
         {/* Page Header */}

@@ -8,13 +8,15 @@ import { createClient } from '@/lib/supabase/client'
 
 const G = '#7A9A4A'
 
-export default function PublicHeader() {
+export default function PublicHeader({ initialLang }: { initialLang?: string }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const router = useRouter()
-  const [currentLang, setCurrentLang] = useState('en')
+  // Seed from the server-resolved locale so the header can render on the
+  // server pass in the right language instead of popping in after hydration.
+  const [currentLang, setCurrentLang] = useState(initialLang === 'ar' ? 'ar' : 'en')
   const [signedIn, setSignedIn] = useState(false)
 
   // Track auth state so the header shows Dashboard + Sign Out when logged in.
@@ -88,8 +90,6 @@ export default function PublicHeader() {
     const lang = params.get('lang') || 'en'
     return `${href}?lang=${lang}`
   }
-
-  if (!mounted) return null
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-[#E5E0D8]">

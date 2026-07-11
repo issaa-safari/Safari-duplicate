@@ -14,7 +14,6 @@ import { getServerLocale } from '@/lib/i18n'
 import { whatsappLink } from '@/lib/site'
 
 const BUSH = '#20271A'
-const STONE = '#6E6A59'
 const OLIVE = '#7A9A4A'
 
 export const dynamic = 'force-dynamic'
@@ -60,7 +59,6 @@ export default async function HomePage({
   )
 
   const t = isAr ? {
-    featuredHeading: 'المواعيد القادمة',
     credibility1: 'مقرنا نيروبي، كينيا',
     credibility2: 'تأسسنا عام 2009',
     credibility3: 'نتحدث الإنجليزية والعربية والسواحيلية',
@@ -68,9 +66,7 @@ export default async function HomePage({
     ctaSub: 'تواصل معنا لتحصل على عرض مخصص، أو ابدأ محادثة على واتساب.',
     ctaQuote: 'طلب عرض سعر',
     ctaWhatsapp: 'تحدث معنا على واتساب',
-    testimonialsLabel: 'ماذا يقول مسافرونا',
   } : {
-    featuredHeading: 'Upcoming Departures',
     credibility1: 'Based in Nairobi, Kenya',
     credibility2: 'Operating since 2009',
     credibility3: 'English · Arabic · Swahili',
@@ -78,13 +74,12 @@ export default async function HomePage({
     ctaSub: 'Get in touch for a personalised quote, or start a conversation on WhatsApp.',
     ctaQuote: 'Request a Quote',
     ctaWhatsapp: 'Chat on WhatsApp',
-    testimonialsLabel: 'What our travellers say',
   }
 
   return (
     <div dir={dir}>
       <Suspense>
-        <PublicHeader />
+        <PublicHeader initialLang={locale} />
       </Suspense>
 
       <main>
@@ -128,7 +123,8 @@ export default async function HomePage({
                   color: 'rgba(234,227,210,0.8)',
                   fontFamily: 'var(--font-body, sans-serif)',
                   fontSize: '0.88rem',
-                  letterSpacing: '0.04em',
+                  // Letter-spacing breaks Arabic letter joining — Latin only
+                  letterSpacing: isAr ? undefined : '0.04em',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 10,
@@ -147,26 +143,7 @@ export default async function HomePage({
         <HomeWhyDirect isAr={isAr} />
 
         {/* 6. Testimonials */}
-        <div style={{ background: '#fff' }}>
-          <SectionReveal>
-            <div style={{
-              maxWidth: 1120, margin: '0 auto',
-              padding: '0 24px',
-              paddingTop: 64,
-            }}>
-              <h2 style={{
-                fontFamily: 'var(--font-display, "Readex Pro", sans-serif)',
-                fontSize: 'clamp(1.4rem, 3vw, 2rem)',
-                fontWeight: 700,
-                color: BUSH,
-                margin: '0 0 8px',
-              }}>
-                {t.testimonialsLabel}
-              </h2>
-            </div>
-          </SectionReveal>
-          <Testimonials lang={locale} />
-        </div>
+        <Testimonials lang={locale} />
 
         {/* 7. Final CTA */}
         <section style={{ background: BUSH, padding: '80px 24px' }}>

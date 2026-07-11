@@ -192,8 +192,9 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
                     padding: '4px 14px',
                     fontSize: '0.72rem',
                     fontWeight: 700,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase' as const,
+                    // Letter-spacing breaks Arabic joining; uppercase is Latin-only
+                    letterSpacing: isAr ? undefined : '0.1em',
+                    textTransform: isAr ? undefined : ('uppercase' as const),
                     color: '#fff',
                     fontFamily: 'var(--font-body, sans-serif)',
                     marginBottom: 14,

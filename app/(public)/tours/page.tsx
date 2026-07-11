@@ -64,7 +64,7 @@ export default async function ToursPage({
 
   return (
     <div dir={isAr ? 'rtl' : 'ltr'}>
-      <PublicHeader />
+      <PublicHeader initialLang={locale} />
       <main>
         {/* Page Header */}
         <section

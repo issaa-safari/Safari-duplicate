@@ -85,7 +85,7 @@ function ClientLoginInner() {
 
   return (
     <div dir={isAr ? 'rtl' : 'ltr'}>
-      <PublicHeader />
+      <PublicHeader initialLang={locale} />
       <main className="min-h-screen bg-gray-50 py-12 px-4">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">

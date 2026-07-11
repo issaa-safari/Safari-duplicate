@@ -44,7 +44,8 @@ export default function Testimonials({ lang = 'en' }: { lang?: string }) {
               <div className="text-amber-400 text-lg mb-4" aria-hidden="true">★★★★★</div>
               <p className="text-gray-700 leading-relaxed flex-grow">“{isAr ? r.ar : r.en}”</p>
               <div className="mt-6 pt-4 border-t border-gray-100">
-                <p className="font-semibold text-gray-900">{r.name}</p>
+                {/* <bdi> keeps Latin names (with trailing periods) intact inside RTL text */}
+                <p className="font-semibold text-gray-900"><bdi>{r.name}</bdi></p>
                 <p className="text-sm" style={{ color: G }}>{isAr ? r.location_ar : r.location_en}</p>
               </div>
             </div>
