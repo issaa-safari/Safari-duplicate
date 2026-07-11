@@ -10,6 +10,9 @@ colors:
   gold: "#C9A24B"
   murram: "#B0492B"
   stone: "#6E6A59"
+  white: "#FFFFFF"
+  whatsapp: "#25D366"
+  scrim: "#14190F"
 typography:
   display:
     fontFamily: "Readex Pro, sans-serif"
@@ -70,8 +73,11 @@ Defined as CSS custom properties in `app/globals.css` and exposed to Tailwind vi
 | `--gold` | `#C9A24B` | Ochre | Private-safari accent |
 | `--murram` | `#B0492B` | Red earth | Bike-tour accent, the thrill color |
 | `--stone` | `#6E6A59` | Warm grey | Secondary/body text on light grounds |
+| (white) | `#FFFFFF` | Paper | Default page canvas, cards, text/scrims on dark grounds |
+| (whatsapp) | `#25D366` | WhatsApp green | Meta's brand color — WhatsApp CTAs only, never decorative |
+| (scrim) | `#14190F` | Night bush | Base of the `rgba(20,25,15,…)` gradients that ground text over photography |
 
-**Admin theme (scoped, OKLCH).** Inside `.admin-theme` the legacy tokens are re-pointed to a green product system: `--primary: oklch(0.7 0.22 143)`, ink `oklch(0.42 0.16 143)`, surfaces at near-white with 150-hue tints, plus a full pipeline status ramp (`--status-new` blue → `--status-booked` green → `--status-archive` grey). OKLCH is canonical for admin values; see `app/globals.css` for the complete set. Never leak `.admin-theme` tokens into public pages or vice versa — the scope boundary is the design rule.
+**Admin theme (scoped, OKLCH).** Inside `.admin-theme` the legacy tokens are re-pointed to a green product system: `--primary: oklch(0.7 0.22 143)`, ink `oklch(0.42 0.16 143)`, surfaces at near-white with 150-hue tints. OKLCH is canonical for admin values; see `app/globals.css` for the complete set. Pipeline status colors are defined once in `lib/status-colors.ts` (status → variant → Tailwind classes) and shared by badges and stage filters. Never leak `.admin-theme` tokens into public pages or vice versa — the scope boundary is the design rule.
 
 Contrast is a known debt: the PRD flags green-on-white combinations for WCAG 2.1 AA fixes. When using `--olive` for text on white, prefer `--olive-dk`.
 
@@ -89,7 +95,7 @@ Mostly flat, tonal layering first. Public sections separate by ground color (whi
 
 - **Button** (`components/ui/button.tsx`): variants `primary` (olive → olive-deep hover, white text), `secondary` (white, gray border), `danger-text`; sizes `sm` (12px text) / `md`; `rounded-md`, `font-medium`, `transition-colors`, built-in loading state.
 - **Inputs** (`components/ui/input.tsx`): white ground, gray-800 text, gray-400 placeholder. Public enquiry fields get an accent-colored `:focus-visible` outline via `--focus-accent` (defaults to olive).
-- **Status badge** (`components/admin/status-badge.tsx`): pipeline states colored by the `--status-*` ramp.
+- **Status badge** (`components/admin/status-badge.tsx`): pipeline states colored via `lib/status-colors.ts` variants (`VARIANT_CLASSES` chips, `VARIANT_DOT` markers).
 - **Stacked tables/grids** (`.stack-table`, `.stack-grid`): on <640px, admin tables and grid editors collapse to label/value cards using `data-label` attributes — the mobile pattern for all dense admin data.
 - **Public composition blocks** (`components/public/`): hero (`home-hero`, `tour-hero`), `trust-strip`, `testimonials`, `featured-departures`, `choose-your-trail` (safari vs. bike fork, gold vs. murram accents), `sticky-enquiry-bar`, floating `whatsapp-button` — the persistent primary CTA on every public page.
 - **Motion**: framer-motion + `section-reveal` for scroll reveals; content must be visible by default (reveals enhance, never gate), with reduced-motion alternatives.
