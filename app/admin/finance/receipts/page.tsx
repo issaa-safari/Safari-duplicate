@@ -86,9 +86,9 @@ export default async function ReceiptsPage() {
   const totalOutstanding = Math.max(totalInvoiced - totalReceived, 0)
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-foreground">Finance</h1>
+        <h1 className="text-xl font-semibold text-foreground">Finance</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Customer receipts — invoiced vs received per accepted quote</p>
       </div>
 

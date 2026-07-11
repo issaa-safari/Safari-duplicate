@@ -49,13 +49,13 @@ export default async function ItineraryPage({
     .order('name', { ascending: true })
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
       <div className="flex items-center gap-4 mb-6">
         <Link href={"/admin/tours/" + id} className="text-sm text-muted-foreground hover:text-foreground">
           Back to Tour
         </Link>
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Itinerary — {tour.title_en}</h1>
+          <h1 className="text-xl font-semibold text-foreground">Itinerary — {tour.title_en}</h1>
           <p className="text-xs text-muted-foreground">{tour.duration_days}-day tour</p>
         </div>
       </div>

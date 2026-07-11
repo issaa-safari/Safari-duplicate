@@ -1,7 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { Users } from 'lucide-react'
 import { ButtonLink, Button } from '@/components/ui/button'
+import { PageShell, PageHeader } from '@/components/admin/ui/page'
+import { StatCard } from '@/components/admin/ui/card'
+import { EmptyState } from '@/components/admin/ui/empty-state'
+import { Table, THead, Th, Tr, Td } from '@/components/admin/ui/table'
 
 export default async function ClientsPage({
   searchParams,
@@ -27,101 +32,117 @@ export default async function ClientsPage({
   const repeatBookers = clients?.filter((c: any) => c.total_bookings >= 2).length ?? 0
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold text-foreground">Clients</h1>
-        <ButtonLink href="/admin/requests/new" size="sm">+ New Request</ButtonLink>
+    <PageShell>
+      <PageHeader
+        title="Clients"
+        subtitle="Everyone who has enquired or travelled with you"
+        actions={
+          <ButtonLink href="/admin/requests/new" variant="primary" size="sm">
+            + New Request
+          </ButtonLink>
+        }
+      />
+
+      <div className="mb-6 grid grid-cols-3 gap-3 sm:gap-4">
+        <StatCard label="Total Clients" value={String(totalClients)} />
+        <StatCard label="Arabic Speaking" value={String(arabicClients)} />
+        <StatCard label="Repeat Bookers" value={String(repeatBookers)} />
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="rounded-xl border border-border bg-surface shadow-sm p-4 text-center">
-          <p className="text-2xl font-semibold text-foreground">{totalClients}</p>
-          <p className="text-xs text-muted-foreground mt-1">Total Clients</p>
-        </div>
-        <div className="rounded-xl border border-border bg-surface shadow-sm p-4 text-center">
-          <p className="text-2xl font-semibold text-foreground">{arabicClients}</p>
-          <p className="text-xs text-muted-foreground mt-1">Arabic Speaking</p>
-        </div>
-        <div className="rounded-xl border border-border bg-surface shadow-sm p-4 text-center">
-          <p className="text-2xl font-semibold text-foreground">{repeatBookers}</p>
-          <p className="text-xs text-muted-foreground mt-1">Repeat Bookers</p>
-        </div>
-      </div>
-
-      <div className="flex gap-3 mb-4">
-        <form method="GET" className="flex gap-2 flex-1">
-          <input type="text" name="search" defaultValue={search}
-            placeholder="Search by name or email..."
-            className="flex-1 rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-[var(--olive)]" />
-          <Button type="submit" size="sm">Search</Button>
+      <div className="mb-4 flex flex-wrap gap-3">
+        <form method="GET" className="flex min-w-0 flex-1 gap-2">
+          <input
+            type="search"
+            name="search"
+            defaultValue={search}
+            aria-label="Search clients"
+            placeholder="Search by name or email…"
+            className="min-w-0 flex-1 rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground transition-colors duration-150 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50"
+          />
+          <Button type="submit" variant="secondary" size="sm">Search</Button>
         </form>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5" role="group" aria-label="Filter clients">
           {[{ key: 'all', label: 'All' }, { key: 'arabic', label: 'Arabic' }].map(f => (
-            <Link key={f.key} href={"/admin/clients?filter=" + f.key}
-              className={"rounded-md px-3 py-2 text-sm font-medium border transition " +
-                (filter === f.key ? 'text-white border-transparent' : 'bg-surface text-muted-foreground border-border')}
-              style={filter === f.key ? { backgroundColor: 'var(--olive)' } : {}}>
+            <Link
+              key={f.key}
+              href={"/admin/clients?filter=" + f.key}
+              aria-current={filter === f.key ? 'page' : undefined}
+              className={"rounded-md border px-3 py-2 text-sm font-medium transition-colors duration-150 " +
+                (filter === f.key
+                  ? 'border-transparent bg-accent text-accent-foreground'
+                  : 'border-border bg-surface text-muted-foreground hover:bg-muted')}
+            >
               {f.label}
             </Link>
           ))}
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
         {!clients || clients.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground text-sm">No clients yet. They appear here when you add requests.</p>
-          </div>
+          <EmptyState
+            icon={Users}
+            title={search ? `No clients match “${search}”` : 'No clients yet'}
+            body={search
+              ? 'Try a different name or email, or clear the search.'
+              : 'Clients are created automatically when you add a request, or from the WhatsApp lead capture.'}
+            action={
+              !search && (
+                <ButtonLink href="/admin/requests/new" variant="primary" size="sm">
+                  + New Request
+                </ButtonLink>
+              )
+            }
+          />
         ) : (
-          <table className="stack-table w-full text-sm">
-            <thead>
-              <tr className="border-b border-border/70 bg-surface-alt">
-                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Name</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Email</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Country</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Language</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground hidden lg:table-cell">Bookings</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Added</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
+          <Table>
+            <THead>
+              <Th>Name</Th>
+              <Th>Email</Th>
+              <Th className="hidden md:table-cell">Country</Th>
+              <Th className="hidden md:table-cell">Language</Th>
+              <Th className="hidden lg:table-cell">Bookings</Th>
+              <Th>Added</Th>
+              <Th><span className="sr-only">Actions</span></Th>
+            </THead>
             <tbody>
-              {clients.map((client: any, i: number) => (
-                <tr key={client.id}
-                  className={"border-b border-gray-50 hover:bg-muted transition " + (i === clients.length - 1 ? 'border-0' : '')}>
-                  <td data-label="Name" className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center text-xs font-medium text-[var(--olive-dk)]">
+              {clients.map((client: any) => (
+                <Tr key={client.id}>
+                  <Td data-label="Name">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-medium text-accent-foreground">
                         {(client.first_name?.[0] ?? '?').toUpperCase()}
                       </div>
-                      <div>
-                        <p className="font-medium text-foreground">{client.first_name} {client.last_name}</p>
-                        {client.total_bookings >= 2 && <span className="text-xs text-brand-text">Repeat booker</span>}
+                      <div className="min-w-0">
+                        <Link href={"/admin/clients/" + client.id} className="font-medium text-foreground hover:underline">
+                          {client.first_name} {client.last_name}
+                        </Link>
+                        {client.total_bookings >= 2 && (
+                          <p className="text-xs text-brand-text">Repeat booker</p>
+                        )}
                       </div>
                     </div>
-                  </td>
-                  <td data-label="Email" className="px-4 py-3 text-muted-foreground">{client.email}</td>
-                  <td data-label="Country" className="px-4 py-3 text-muted-foreground hidden md:table-cell">{client.country ?? '—'}</td>
-                  <td data-label="Language" className="px-4 py-3 hidden md:table-cell">
-                    <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                  </Td>
+                  <Td data-label="Email" className="text-muted-foreground">{client.email}</Td>
+                  <Td data-label="Country" className="hidden text-muted-foreground md:table-cell">{client.country ?? '—'}</Td>
+                  <Td data-label="Language" className="hidden md:table-cell">
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                       {client.language === 'ar' ? 'Arabic' : 'English'}
                     </span>
-                  </td>
-                  <td data-label="Bookings" className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{client.total_bookings ?? 0}</td>
-                  <td data-label="Added" className="px-4 py-3 text-muted-foreground text-xs">{new Date(client.created_at).toLocaleDateString('en-GB')}</td>
-                 <td className="px-4 py-3">
-  <Link
-    href={"/admin/clients/" + client.id}
-    className="text-xs font-medium text-white rounded-md px-3 py-1.5 bg-olive hover:bg-olive-dk">
-    View
-  </Link>
-</td>
-                </tr>
+                  </Td>
+                  <Td data-label="Bookings" className="hidden tabular-nums text-muted-foreground lg:table-cell">{client.total_bookings ?? 0}</Td>
+                  <Td data-label="Added" className="text-xs text-muted-foreground">{new Date(client.created_at).toLocaleDateString('en-GB')}</Td>
+                  <Td>
+                    <ButtonLink href={"/admin/clients/" + client.id} variant="ghost" size="sm">
+                      View
+                    </ButtonLink>
+                  </Td>
+                </Tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         )}
       </div>
-    </div>
+    </PageShell>
   )
 }

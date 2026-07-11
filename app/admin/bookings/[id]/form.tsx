@@ -24,12 +24,12 @@ export default function BookingDetailForm({ booking, bookingId }: BookingDetailF
   const statusBadgeColor = status.badge
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       <div className="flex items-center gap-4 mb-6">
         <Link href="/admin/bookings" className="text-sm text-muted-foreground hover:text-foreground">
           ← Back to Bookings
         </Link>
-        <h1 className="text-lg font-semibold text-foreground">Booking Details</h1>
+        <h1 className="text-xl font-semibold text-foreground">Booking Details</h1>
       </div>
 
       <div className="space-y-6">

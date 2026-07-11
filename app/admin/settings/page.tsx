@@ -18,16 +18,16 @@ export default async function SettingsPage() {
 
   if (error || !settings) {
     return (
-      <div className="p-6 max-w-2xl mx-auto">
+      <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
         <p className="text-sm text-destructive">Could not load settings: {error?.message}</p>
       </div>
     )
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-foreground">Settings</h1>
+        <h1 className="text-xl font-semibold text-foreground">Settings</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Company information, banking, and booking defaults</p>
       </div>
       <div className="mb-4">

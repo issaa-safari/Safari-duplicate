@@ -139,7 +139,7 @@ export default async function RequestDetailPage({
           </Link>
           <div className="flex items-start justify-between gap-4 mt-2 mb-3">
             <div>
-              <h1 className="text-base font-semibold text-foreground">
+              <h1 className="text-xl font-semibold text-foreground">
                 Request from <span className="text-brand-text">{clientName}</span>
                 {request.priority && (
                   <span className="ml-2 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full align-middle">Priority</span>

@@ -26,10 +26,10 @@ export default async function DeparturesPage({
     .order('start_date', { ascending: true })
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Departures</h1>
+          <h1 className="text-xl font-semibold text-foreground">Departures</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Scheduled fixed-date trips and seat inventory</p>
         </div>
         <ButtonLink href="/admin/departures/new" size="sm">+ New Departure</ButtonLink>

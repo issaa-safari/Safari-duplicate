@@ -25,10 +25,10 @@ export default async function VehiclesPage() {
     .order('name', { ascending: true })
 
   return (
-    <ContentShell active="vehicles" title="Vehicles" icon="▰">
+    <ContentShell active="vehicles" title="Vehicles">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Vehicles</h1>
+          <h1 className="text-xl font-semibold text-foreground">Vehicles</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Manage vehicles available for tours</p>
         </div>
         <ButtonLink href="/admin/content/vehicles/new" size="sm">+ New Vehicle</ButtonLink>

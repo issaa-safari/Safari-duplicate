@@ -64,8 +64,8 @@ export default function RateCardEditor({ card, rates, ageBands, entities, suppli
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center gap-4"><Link href="/admin/content/rates" className="text-sm text-muted-foreground hover:text-foreground">← Supplier Rates</Link><h1 className="text-lg font-semibold text-foreground">{card.name}</h1></div>
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
+      <div className="flex items-center gap-4"><Link href="/admin/content/rates" className="text-sm text-muted-foreground hover:text-foreground">← Supplier Rates</Link><h1 className="text-xl font-semibold text-foreground">{card.name}</h1></div>
 
       <form onSubmit={cardSubmit} className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
         <input type="hidden" name="cardId" value={card.id} />

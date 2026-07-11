@@ -39,9 +39,9 @@ export default async function BookingsPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-foreground">Bookings</h1>
+        <h1 className="text-xl font-semibold text-foreground">Bookings</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Manage all departure bookings</p>
       </div>
 

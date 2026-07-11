@@ -22,7 +22,7 @@ export default async function ParkEditPage({ params }: { params: Promise<{ id: s
   if (!park) notFound()
 
   return (
-    <ContentShell active="parks" title={park.name} icon="⛰">
+    <ContentShell active="parks" title={park.name}>
       <ParkEditForm park={park} />
       <EntityRatesPanel entityType="park_fee" entityId={id} heading="Park Fee Rates" />
     </ContentShell>

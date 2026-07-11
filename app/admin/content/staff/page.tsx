@@ -24,10 +24,10 @@ export default async function TourStaffPage() {
     .order('name', { ascending: true })
 
   return (
-    <ContentShell active="staff" title="Tour Staff" icon="♙">
+    <ContentShell active="staff" title="Tour Staff">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Tour Staff</h1>
+          <h1 className="text-xl font-semibold text-foreground">Tour Staff</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Guides, drivers, chefs, and coordinators</p>
         </div>
         <ButtonLink href="/admin/content/staff/new" size="sm">+ New Staff Member</ButtonLink>

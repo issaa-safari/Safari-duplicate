@@ -16,7 +16,7 @@ export default async function DefaultTasksPage() {
     .order('sort_order', { ascending: true })
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
       <div className="mb-6">
         <Link href="/admin/settings" className="text-xs text-muted-foreground hover:text-foreground">← Settings</Link>
         <h1 className="text-lg font-semibold text-foreground mt-2">Default Tasks</h1>

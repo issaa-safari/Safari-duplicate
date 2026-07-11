@@ -27,10 +27,10 @@ export default async function ParksPage() {
     .order('name')
 
   return (
-    <ContentShell active="parks" title="Parks & Reserves" icon="⛰">
+    <ContentShell active="parks" title="Parks & Reserves">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Parks & Reserves</h1>
+          <h1 className="text-xl font-semibold text-foreground">Parks & Reserves</h1>
           <p className="text-sm text-muted-foreground mt-0.5">National parks, game reserves, and conservancies with entrance fees</p>
         </div>
         <ButtonLink href="/admin/content/parks/new" size="sm">+ New Park</ButtonLink>

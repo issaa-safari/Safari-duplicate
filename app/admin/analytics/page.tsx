@@ -163,9 +163,9 @@ export default async function AnalyticsPage() {
     ? timesToAccept.reduce((s, d) => s + d, 0) / timesToAccept.length : null
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6">
       <div>
-        <h1 className="text-lg font-semibold text-foreground">Analytics</h1>
+        <h1 className="text-xl font-semibold text-foreground">Analytics</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Quote pipeline performance and revenue metrics</p>
       </div>
 

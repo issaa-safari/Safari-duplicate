@@ -25,7 +25,7 @@ export default async function ToursPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Tour Templates</h1>
+          <h1 className="text-xl font-semibold text-foreground">Tour Templates</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Manage your bilingual tour templates and itineraries</p>
         </div>
         <ButtonLink href="/admin/tours/new" size="sm">Create Your Template</ButtonLink>

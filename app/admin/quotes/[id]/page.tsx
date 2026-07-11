@@ -159,7 +159,7 @@ export default async function QuoteDetailPage({
   const baseUrl = `${proto}://${host}`
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
@@ -170,7 +170,7 @@ export default async function QuoteDetailPage({
             <span className="text-gray-300">/</span>
             <span className="text-sm font-mono text-muted-foreground">{quote.quote_number}</span>
           </div>
-          <h1 className="text-lg font-semibold text-foreground">
+          <h1 className="text-xl font-semibold text-foreground">
             {latestVersion?.title || clientName}
           </h1>
           <div className="flex items-center gap-2 mt-1.5">

@@ -29,10 +29,10 @@ export default async function SupplierRatesPage({
     : { data: null }
 
   return (
-    <ContentShell active="rates" title="Supplier Rates" icon="$">
+    <ContentShell active="rates" title="Supplier Rates">
       <div className="flex items-center justify-between mb-6 gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Supplier Rates</h1>
+          <h1 className="text-xl font-semibold text-foreground">Supplier Rates</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Seasonal costs used by the Trip Builder</p>
           {supplierId && (
             <p className="text-xs mt-1.5">

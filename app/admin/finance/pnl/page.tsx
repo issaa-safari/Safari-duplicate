@@ -77,9 +77,9 @@ export default async function PnlPage({
   const kes = (usd: number) => `KES ${fmt(usd * usdToKes)}`
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-foreground">Finance</h1>
+        <h1 className="text-xl font-semibold text-foreground">Finance</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           Profit &amp; loss over a date range — revenue and direct costs from versions accepted in the range, overheads from the expense log
         </p>

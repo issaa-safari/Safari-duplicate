@@ -2,8 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ButtonLink, Button } from '@/components/ui/button'
+import { FileText } from 'lucide-react'
+import { ButtonLink } from '@/components/ui/button'
 import StatusBadge from '@/components/admin/status-badge'
+import { PageShell, PageHeader } from '@/components/admin/ui/page'
+import { EmptyState } from '@/components/admin/ui/empty-state'
 
 export default async function QuotesPage({
   searchParams,
@@ -62,44 +65,53 @@ export default async function QuotesPage({
   const STATUSES = ['draft', 'ready', 'sent', 'viewed', 'accepted', 'declined', 'expired', 'cancelled']
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Quotes</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Build and send pricing proposals to clients</p>
-        </div>
-        <ButtonLink href="/admin/quotes/new" size="sm">+ New Quote</ButtonLink>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Quotes"
+        subtitle="Build and send pricing proposals to clients"
+        actions={
+          <ButtonLink href="/admin/quotes/new" variant="primary" size="sm">
+            + New Quote
+          </ButtonLink>
+        }
+      />
 
       {/* Status tabs */}
-      <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+      <nav aria-label="Quote statuses" className="mb-6 flex gap-1 overflow-x-auto border-b border-border">
         {STATUSES.map((s) => (
           <Link
             key={s}
             href={`/admin/quotes?status=${s}`}
-            className={'px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ' +
+            aria-current={activeStatus === s ? 'page' : undefined}
+            className={'-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors duration-150 ' +
               (activeStatus === s
                 ? 'border-primary-strong text-brand-text'
                 : 'border-transparent text-muted-foreground hover:text-foreground')}>
             <span className="capitalize">{s}</span>
             {counts[s] ? (
-              <span className="ml-1.5 text-xs text-muted-foreground">({counts[s]})</span>
+              <span className="ml-1.5 text-xs tabular-nums text-muted-foreground">({counts[s]})</span>
             ) : null}
           </Link>
         ))}
-      </div>
+      </nav>
 
       {/* Quote list */}
       {!quotes || quotes.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface shadow-sm p-10 text-center">
-          <p className="text-sm text-muted-foreground mb-4">No {activeStatus} quotes.</p>
-          {activeStatus === 'draft' && (
-            <Link
-              href="/admin/quotes/new"
-              className="text-sm font-medium text-brand-text hover:underline">
-              Create your first quote
-            </Link>
-          )}
+        <div className="rounded-xl border border-border bg-surface shadow-sm">
+          <EmptyState
+            icon={FileText}
+            title={`No ${activeStatus} quotes`}
+            body={activeStatus === 'draft'
+              ? 'Quotes start as drafts while you build the itinerary and pricing, then move through Ready → Sent → Accepted.'
+              : `Quotes appear here when they reach the “${activeStatus}” status.`}
+            action={
+              activeStatus === 'draft' && (
+                <ButtonLink href="/admin/quotes/new" variant="primary" size="sm">
+                  Create your first quote
+                </ButtonLink>
+              )
+            }
+          />
         </div>
       ) : (
         <div className="space-y-3">
@@ -115,7 +127,7 @@ export default async function QuotesPage({
               <Link
                 key={q.id}
                 href={`/admin/quotes/${q.id}`}
-                className="block rounded-xl border border-border bg-surface shadow-sm p-4 hover:border-primary-strong hover:shadow-sm transition">
+                className="block rounded-xl border border-border bg-surface p-4 shadow-sm transition-all duration-150 hover:border-ring/50 hover:shadow">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -156,6 +168,6 @@ export default async function QuotesPage({
           })}
         </div>
       )}
-    </div>
+    </PageShell>
   )
 }

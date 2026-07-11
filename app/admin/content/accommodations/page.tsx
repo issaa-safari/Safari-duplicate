@@ -35,10 +35,10 @@ export default async function AccommodationsPage({
   const shown = activeTab === 'content' ? withContent : withoutContent
 
   return (
-    <ContentShell active="accommodations" title="Accommodations" icon="⌂">
+    <ContentShell active="accommodations" title="Accommodations">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Accommodations</h1>
+          <h1 className="text-xl font-semibold text-foreground">Accommodations</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Manage lodges, camps, and hotels used in itineraries</p>
         </div>
         <ButtonLink href="/admin/content/accommodations/new" size="sm">+ New Accommodation</ButtonLink>

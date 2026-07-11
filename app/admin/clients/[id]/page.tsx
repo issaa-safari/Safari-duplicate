@@ -96,7 +96,7 @@ export default async function ClientDetailPage({
   const initials = (client.first_name?.[0] ?? '?').toUpperCase()
 
   return (
-    <div className="p-6 max-w-5xl">
+    <div className="max-w-5xl px-4 py-6 sm:px-6">
       <div className="mb-6">
         <Link href="/admin/clients" className="text-sm text-muted-foreground hover:text-foreground">
           Back to Clients

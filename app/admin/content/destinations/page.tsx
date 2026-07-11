@@ -29,10 +29,10 @@ export default async function DestinationsPage({
   const shown = activeTab === 'content' ? withContent : withoutContent
 
   return (
-    <ContentShell active="destinations" title="Destinations" icon="✣">
+    <ContentShell active="destinations" title="Destinations">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Destinations</h1>
+          <h1 className="text-xl font-semibold text-foreground">Destinations</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Manage destination pages and content</p>
         </div>
         <ButtonLink href="/admin/content/destinations/new" size="sm">+ New Destination</ButtonLink>
