@@ -597,14 +597,14 @@ export default function QuoteItineraryBuilder({
                 <select value={accomIdFor(day, false)}
                   onChange={e => onAccomSelect(i, e.target.value, false)}
                   className={inputCls} disabled={isLocked}>
-                  <option value="">— no accommodation —</option>
+                  <option value="">— none —</option>
                   {accommodations.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   <option value="__add__">+ Add new accommodation…</option>
                 </select>
                 <select value={accomIdFor(day, true)}
                   onChange={e => onAccomSelect(i, e.target.value, true)}
                   className={inputCls + ' text-muted-foreground'} disabled={isLocked}>
-                  <option value="">+ Alternative (optional)</option>
+                  <option value="">+ Alternative…</option>
                   {accommodations.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   <option value="__add__">+ Add new accommodation…</option>
                 </select>

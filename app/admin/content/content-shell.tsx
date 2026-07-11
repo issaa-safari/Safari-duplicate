@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import {
   Map, Tent, Compass, Mountain, Car, Users, Settings, LibraryBig,
-  type LucideIcon,
 } from 'lucide-react'
 
 const MAIN_CONTENT = [
