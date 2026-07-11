@@ -36,7 +36,7 @@ function DropZone({
       }}
       onClick={() => inputRef.current?.click()}
       className={`cursor-pointer rounded-lg border-2 border-dashed px-4 py-6 text-center text-sm transition ${
-        over ? 'border-[#7A9A4A] bg-green-50' : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+        over ? 'border-[#7A9A4A] bg-green-50' : 'border-border hover:border-gray-400 bg-surface-alt'
       }`}
     >
       <input
@@ -52,9 +52,9 @@ function DropZone({
         }}
       />
       {busy ? (
-        <span className="text-gray-500">Uploading…</span>
+        <span className="text-muted-foreground">Uploading…</span>
       ) : (
-        <span className="text-gray-500">📷 {label} — drag &amp; drop or click to choose</span>
+        <span className="text-muted-foreground">📷 {label} — drag &amp; drop or click to choose</span>
       )}
     </div>
   )
@@ -89,18 +89,18 @@ export function ImageUpload({
       {value ? (
         <div className="relative inline-block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="" className="h-32 w-auto rounded-lg border border-gray-200 object-cover" />
+          <img src={value} alt="" className="h-32 w-auto rounded-lg border border-border object-cover" />
           <button
             type="button"
             onClick={() => onChange(null)}
-            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 text-white text-xs hover:bg-red-600"
+            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive/100 text-white text-xs hover:bg-red-600"
             title="Remove"
           >×</button>
         </div>
       ) : (
         <DropZone onFiles={handle} busy={busy} label={label} />
       )}
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   )
 }
@@ -136,11 +136,11 @@ export function GalleryUpload({
           {value.map((url, i) => (
             <div key={url + i} className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt="" className="h-24 w-full rounded-lg border border-gray-200 object-cover" />
+              <img src={url} alt="" className="h-24 w-full rounded-lg border border-border object-cover" />
               <button
                 type="button"
                 onClick={() => onChange(value.filter((_, idx) => idx !== i))}
-                className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 text-white text-xs hover:bg-red-600"
+                className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive/100 text-white text-xs hover:bg-red-600"
                 title="Remove"
               >×</button>
             </div>
@@ -148,7 +148,7 @@ export function GalleryUpload({
         </div>
       )}
       <DropZone onFiles={handle} busy={busy} multiple label="Add gallery photos" />
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   )
 }

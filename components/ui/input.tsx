@@ -1,11 +1,13 @@
 import { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes, useId } from 'react'
 
 const FIELD_CLS =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white ' +
-  'focus:outline-none focus:ring-2 focus:ring-olive focus:border-olive ' +
-  'disabled:bg-gray-50 disabled:text-gray-400'
+  'w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground ' +
+  'transition-colors duration-150 ' +
+  'focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring ' +
+  'disabled:bg-muted disabled:text-muted-foreground ' +
+  'aria-invalid:border-destructive aria-invalid:focus:ring-destructive/40'
 
-const LABEL_CLS = 'block text-sm font-medium text-gray-700 mb-1'
+const LABEL_CLS = 'block text-sm font-medium text-foreground mb-1'
 
 export function Field({
   label,

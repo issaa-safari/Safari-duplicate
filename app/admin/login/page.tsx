@@ -60,63 +60,63 @@ function LoginForm() {
         </div>
       </div>
 
-      <div className="flex w-full lg:w-1/2 items-center justify-center bg-white px-6 py-12">
+      <div className="flex w-full lg:w-1/2 items-center justify-center bg-surface px-6 py-12">
         <div className="w-full max-w-sm">
           <div className="mb-8">
             <div className="h-10 w-10 rounded-lg mb-6 bg-olive hover:bg-olive-dk" />
-            <h1 className="text-2xl font-semibold text-gray-900">Admin Login</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className="text-2xl font-semibold text-foreground">Admin Login</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               Sign in to manage Safari Adventure Tour
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="admin-login-email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label htmlFor="admin-login-email" className="block text-sm font-medium text-foreground mb-1">Email</label>
               <input
                 id="admin-login-email"
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--olive)] focus:border-[var(--olive)]"
+                className="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-primary-strong"
                 placeholder="you@safariadventuretour.com"
               />
             </div>
 
             <div>
-              <label htmlFor="admin-login-password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label htmlFor="admin-login-password" className="block text-sm font-medium text-foreground mb-1">Password</label>
               <input
                 id="admin-login-password"
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)] focus:border-[var(--olive)]"                placeholder="••••••••"
+className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-primary-strong"                placeholder="••••••••"
               />
             </div>
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-gray-600">
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 <input
                   type="checkbox"
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
-                  className="rounded border-gray-300"
+                  className="rounded border-border"
                 />
                 Remember me
               </label>
-              <a href="#" className="text-sm text-gray-500 hover:text-gray-700">
+              <a href="#" className="text-sm text-muted-foreground hover:text-foreground">
                 Forgot password?
               </a>
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-destructive">{error}</p>}
 
             <button
               type="submit"
               disabled={loading}
-className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)] focus:border-[var(--olive)] bg-olive hover:bg-olive-dk"
+className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-primary-strong bg-olive hover:bg-olive-dk"
             >
               {loading ? 'Signing in…' : 'Sign In'}
             </button>

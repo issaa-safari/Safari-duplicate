@@ -27,27 +27,27 @@ export default async function ParksPage() {
     .order('name')
 
   return (
-    <ContentShell active="parks" title="Parks & Reserves" icon="⛰">
+    <ContentShell active="parks" title="Parks & Reserves">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Parks & Reserves</h1>
-          <p className="text-sm text-gray-500 mt-0.5">National parks, game reserves, and conservancies with entrance fees</p>
+          <h1 className="text-xl font-semibold text-foreground">Parks & Reserves</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">National parks, game reserves, and conservancies with entrance fees</p>
         </div>
         <ButtonLink href="/admin/content/parks/new" size="sm">+ New Park</ButtonLink>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden">
         {(parks ?? []).length === 0 ? (
           <div className="p-10 text-center">
-            <p className="text-sm text-gray-500 mb-4">No parks or reserves yet.</p>
-            <Link href="/admin/content/parks/new" className="text-sm font-medium text-[var(--olive)] hover:underline">
+            <p className="text-sm text-muted-foreground mb-4">No parks or reserves yet.</p>
+            <Link href="/admin/content/parks/new" className="text-sm font-medium text-brand-text hover:underline">
               Add your first park
             </Link>
           </div>
         ) : (
           <table className="stack-table w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium hidden sm:table-cell">Country</th>
                 <th className="px-4 py-3 font-medium hidden md:table-cell">Type</th>
@@ -57,15 +57,15 @@ export default async function ParksPage() {
             </thead>
             <tbody>
               {(parks ?? []).map((park: any) => (
-                <tr key={park.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                  <td data-label="Name" className="px-4 py-3 font-medium text-gray-900">{park.name}</td>
-                  <td data-label="Country" className="px-4 py-3 text-gray-500 hidden sm:table-cell">{park.country}</td>
-                  <td data-label="Type" className="px-4 py-3 text-gray-500 hidden md:table-cell">
+                <tr key={park.id} className="border-b border-border/70 last:border-0 hover:bg-muted">
+                  <td data-label="Name" className="px-4 py-3 font-medium text-foreground">{park.name}</td>
+                  <td data-label="Country" className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{park.country}</td>
+                  <td data-label="Type" className="px-4 py-3 text-muted-foreground hidden md:table-cell">
                     {TYPE_LABELS[park.park_type] ?? park.park_type}
                   </td>
                   <td data-label="Status" className="px-4 py-3">
                     <span className={'text-xs px-2 py-0.5 rounded-full font-medium ' +
-                      (park.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
+                      (park.is_active ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground')}>
                       {park.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>

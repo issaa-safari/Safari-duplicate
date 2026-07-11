@@ -14,7 +14,7 @@ interface Flight {
   notes: string | null
 }
 
-const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50'
 
 export default function FlightsManager({ requestId, flights: initial }: { requestId: string; flights: Flight[] }) {
   const [flights, setFlights] = useState(initial)
@@ -61,10 +61,10 @@ export default function FlightsManager({ requestId, flights: initial }: { reques
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-gray-900">Flights</h2>
+        <h2 className="text-sm font-semibold text-foreground">Flights</h2>
         {!showAdd && (
           <button onClick={() => { setShowAdd(true); setError('') }}
-            className="text-xs text-[var(--olive)] hover:text-[var(--olive-dk)] font-medium">
+            className="text-xs text-brand-text hover:text-brand-ink font-medium">
             + Add Flight
           </button>
         )}
@@ -76,17 +76,17 @@ export default function FlightsManager({ requestId, flights: initial }: { reques
 
       <ul className="space-y-2 mb-4">
         {flights.map(f => (
-          <li key={f.id} className="flex items-start gap-3 group border border-gray-100 rounded-md p-3">
+          <li key={f.id} className="flex items-start gap-3 group border border-border/70 rounded-md p-3">
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium uppercase shrink-0 ${
               f.direction === 'departure' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
               {f.direction === 'departure' ? '↑ Dep' : '↓ Arr'}
             </span>
             <div className="flex-1 min-w-0 text-sm">
-              <p className="text-gray-800 font-medium">
+              <p className="text-foreground font-medium">
                 {[f.airline, f.flight_number].filter(Boolean).join(' ') || 'Flight'}
                 {f.traveller_name && <span className="text-muted-foreground font-normal"> · {f.traveller_name}</span>}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {f.scheduled_at && new Date(f.scheduled_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 {f.airport && ` · ${f.airport}`}
               </p>
@@ -99,7 +99,7 @@ export default function FlightsManager({ requestId, flights: initial }: { reques
       </ul>
 
       {showAdd && (
-        <form onSubmit={handleAdd} className="space-y-2 border-t border-gray-100 pt-3">
+        <form onSubmit={handleAdd} className="space-y-2 border-t border-border/70 pt-3">
           <div className="grid grid-cols-2 gap-2">
             <select name="direction" className={inputCls} defaultValue="arrival">
               <option value="arrival">Arrival</option>
@@ -112,14 +112,14 @@ export default function FlightsManager({ requestId, flights: initial }: { reques
             <input name="scheduledAt" type="datetime-local" className={inputCls} />
           </div>
           <input name="notes" placeholder="Notes (optional)" className={inputCls} />
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <p className="text-xs text-destructive">{error}</p>}
           <div className="flex gap-2">
             <button type="submit" disabled={pending}
               className="rounded-md px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 bg-olive hover:bg-olive-dk">
               {pending ? 'Saving…' : 'Add Flight'}
             </button>
             <button type="button" onClick={() => { setShowAdd(false); setError('') }}
-              className="rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
+              className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground border border-border hover:bg-muted">
               Cancel
             </button>
           </div>

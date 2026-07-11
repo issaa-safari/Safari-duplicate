@@ -11,8 +11,8 @@ interface Request { id: string; reference: string; client_id: string }
 interface Tour { id: string; title_en: string; type: string }
 interface Departure { id: string; start_date: string; end_date: string; tours: { title_en: string }[] | null }
 
-const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
-const labelCls = 'block text-sm font-medium text-gray-700 mb-1'
+const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
+const labelCls = 'block text-sm font-medium text-foreground mb-1'
 
 export default function NewQuoteForm({
   clients: clientsProp,
@@ -66,19 +66,19 @@ export default function NewQuoteForm({
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/admin/quotes" className="text-sm text-gray-500 hover:text-gray-700">
+        <Link href="/admin/quotes" className="text-sm text-muted-foreground hover:text-foreground">
           ← Back to Quotes
         </Link>
-        <h1 className="text-lg font-semibold text-gray-900">New Quote</h1>
+        <h1 className="text-xl font-semibold text-foreground">New Quote</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
         {/* Step 1 — Mode */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">Quote Type</h2>
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-3">
+          <h2 className="text-sm font-semibold text-foreground">Quote Type</h2>
           <input type="hidden" name="mode" value={mode} />
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -86,31 +86,31 @@ export default function NewQuoteForm({
               onClick={() => setMode('custom')}
               className={'rounded-lg border-2 p-4 text-left transition ' +
                 (mode === 'custom'
-                  ? 'border-[var(--olive)] bg-[var(--olive)]/5'
-                  : 'border-gray-200 hover:border-gray-300')}>
-              <p className="font-medium text-gray-900 text-sm">Custom Safari</p>
-              <p className="text-xs text-gray-500 mt-1">Build a bespoke itinerary and price from scratch</p>
+                  ? 'border-primary-strong bg-accent/50'
+                  : 'border-border hover:border-border')}>
+              <p className="font-medium text-foreground text-sm">Custom Safari</p>
+              <p className="text-xs text-muted-foreground mt-1">Build a bespoke itinerary and price from scratch</p>
             </button>
             <button
               type="button"
               onClick={() => setMode('fixed_departure')}
               className={'rounded-lg border-2 p-4 text-left transition ' +
                 (mode === 'fixed_departure'
-                  ? 'border-[var(--olive)] bg-[var(--olive)]/5'
-                  : 'border-gray-200 hover:border-gray-300')}>
-              <p className="font-medium text-gray-900 text-sm">Fixed Departure</p>
-              <p className="text-xs text-gray-500 mt-1">Price a client into a scheduled group departure</p>
+                  ? 'border-primary-strong bg-accent/50'
+                  : 'border-border hover:border-border')}>
+              <p className="font-medium text-foreground text-sm">Fixed Departure</p>
+              <p className="text-xs text-muted-foreground mt-1">Price a client into a scheduled group departure</p>
             </button>
           </div>
         </div>
 
         {/* Step 2 — Client & context (shown once mode chosen) */}
         {mode && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700">Client</h2>
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
+            <h2 className="text-sm font-semibold text-foreground">Client</h2>
 
             <div>
-              <label htmlFor="clientId" className={labelCls}>Client <span className="text-red-500">*</span></label>
+              <label htmlFor="clientId" className={labelCls}>Client <span className="text-destructive">*</span></label>
               <select id="clientId"
                 name="clientId"
                 required
@@ -166,10 +166,10 @@ export default function NewQuoteForm({
 
         {/* Fixed departure — pick departure */}
         {mode === 'fixed_departure' && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700">Departure</h2>
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
+            <h2 className="text-sm font-semibold text-foreground">Departure</h2>
             <div>
-              <label htmlFor="departureId" className={labelCls}>Departure <span className="text-red-500">*</span></label>
+              <label htmlFor="departureId" className={labelCls}>Departure <span className="text-destructive">*</span></label>
               <select id="departureId" name="departureId" required defaultValue="" className={inputCls}>
                 <option value="" disabled>Select a departure…</option>
                 {departures.map((d) => (
@@ -186,8 +186,8 @@ export default function NewQuoteForm({
 
         {/* Custom — optionally pin to a tour template */}
         {mode === 'custom' && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700">Tour Template <span className="text-muted-foreground font-normal text-xs">(optional)</span></h2>
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
+            <h2 className="text-sm font-semibold text-foreground">Tour Template <span className="text-muted-foreground font-normal text-xs">(optional)</span></h2>
             <p className="text-xs text-muted-foreground -mt-2">Link to a tour to copy its itinerary as a starting point.</p>
             <div>
               <label htmlFor="tourId" className={labelCls}>Tour</label>
@@ -204,7 +204,7 @@ export default function NewQuoteForm({
         )}
 
         {error && (
-          <p className="text-sm text-red-600 bg-red-50 rounded-md px-4 py-3">{error}</p>
+          <p className="text-sm text-destructive bg-destructive/10 rounded-md px-4 py-3">{error}</p>
         )}
 
         {mode && (
@@ -217,7 +217,7 @@ export default function NewQuoteForm({
             </button>
             <Link
               href="/admin/quotes"
-              className="rounded-md border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              className="rounded-md border border-border px-6 py-2.5 text-sm font-medium text-foreground hover:bg-muted">
               Cancel
             </Link>
           </div>

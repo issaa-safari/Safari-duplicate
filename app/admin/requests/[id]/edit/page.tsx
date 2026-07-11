@@ -39,12 +39,12 @@ export default async function EditRequestPage({
   const priority = !!request.priority && String(request.priority) !== 'false'
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
       <div className="flex items-center gap-4 mb-6">
-        <Link href={`/admin/requests/${id}`} className="text-sm text-gray-500 hover:text-gray-700">
+        <Link href={`/admin/requests/${id}`} className="text-sm text-muted-foreground hover:text-foreground">
           Back to Request
         </Link>
-        <h1 className="text-lg font-semibold text-gray-900">
+        <h1 className="text-xl font-semibold text-foreground">
           Edit Request <span className="font-mono text-sm text-muted-foreground">{request.reference}</span>
         </h1>
       </div>

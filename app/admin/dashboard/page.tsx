@@ -2,7 +2,13 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ButtonLink, Button } from '@/components/ui/button'
+import { CalendarDays, Inbox, TrendingUp } from 'lucide-react'
+import { ButtonLink } from '@/components/ui/button'
+import { PageShell, PageHeader } from '@/components/admin/ui/page'
+import { Card, CardHeader, CardBody } from '@/components/admin/ui/card'
+import { StatCard } from '@/components/admin/ui/card'
+import { EmptyState } from '@/components/admin/ui/empty-state'
+import { VARIANT_DOT, STATUS_VARIANT } from '@/lib/status-colors'
 import { getPayables, getReceivablesSummary, getUsdToKesRate } from '@/lib/server/finance'
 
 function formatUSD(n: number) {
@@ -126,212 +132,275 @@ export default async function AdminDashboardPage() {
   const hasChartData = months.some(m => m.total > 0)
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-gray-900">Dashboard</h1>
-        <ButtonLink href="/admin/requests/new" size="sm">+ New Request</ButtonLink>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Dashboard"
+        actions={
+          <ButtonLink href="/admin/requests/new" variant="primary" size="sm">
+            + New Request
+          </ButtonLink>
+        }
+      />
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
-          label="Accepted Revenue This Month"
-          value={formatUSD(revenueThisMonth)}
-          sub={formatKES(revenueThisMonth, usdToKes)}
-        />
-        <KpiCard
-          label="Active Quotes"
-          value={String(activeQuoteCount ?? 0)}
-          sub="versions currently sent or viewed"
-        />
-        <KpiCard
+      <div className="space-y-6">
+      {/* Workflow KPIs — the numbers a consultant acts on today */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard
           label="New Enquiries"
           value={String(newEnquiriesCount ?? 0)}
           sub="waiting in pipeline"
+          emphasis={!!newEnquiriesCount}
+          href="/admin/requests"
         />
-        <KpiCard
+        <StatCard
           label="Expiring Soon"
           value={String(expiringVersions?.length ?? 0)}
           sub="valid until within 3 days"
-          urgent={!!(expiringVersions?.length)}
+          tone={expiringVersions?.length ? 'negative' : 'default'}
+          emphasis={!!expiringVersions?.length}
+          href="/admin/quotes"
+        />
+        <StatCard
+          label="Active Quotes"
+          value={String(activeQuoteCount ?? 0)}
+          sub="sent or viewed"
+          href="/admin/quotes"
+        />
+        <StatCard
+          label="Accepted Revenue"
+          value={formatUSD(revenueThisMonth)}
+          sub={`${formatKES(revenueThisMonth, usdToKes)} · this month`}
+          tone="positive"
         />
       </div>
 
       {/* Finance KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link href="/admin/finance/receipts">
-          <KpiCard
-            label="Receivable (AR)"
-            value={formatUSD(receivables.outstandingUsd)}
-            sub={`invoiced ${formatUSD(receivables.invoicedUsd)} · received ${formatUSD(receivables.receivedUsd)}`}
-            urgent={receivables.outstandingUsd > 0}
-          />
-        </Link>
-        <Link href="/admin/finance/payables">
-          <KpiCard
-            label="Payable (AP)"
-            value={payables ? formatUSD(Math.max(payables.totalBalanceUsd, 0)) : '—'}
-            sub={payables
-              ? `owed ${formatUSD(payables.totalOwedUsd)} · paid ${formatUSD(payables.totalPaidUsd)}`
-              : 'apply migration group_33'}
-            urgent={!!payables && payables.totalBalanceUsd > 0}
-          />
-        </Link>
-        <KpiCard
-          label="Gross Margin This Month"
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard
+          label="Receivable (AR)"
+          value={formatUSD(receivables.outstandingUsd)}
+          sub={`invoiced ${formatUSD(receivables.invoicedUsd)} · received ${formatUSD(receivables.receivedUsd)}`}
+          tone={receivables.outstandingUsd > 0 ? 'negative' : 'default'}
+          href="/admin/finance/receipts"
+        />
+        <StatCard
+          label="Payable (AP)"
+          value={payables ? formatUSD(Math.max(payables.totalBalanceUsd, 0)) : '—'}
+          sub={payables
+            ? `owed ${formatUSD(payables.totalOwedUsd)} · paid ${formatUSD(payables.totalPaidUsd)}`
+            : 'apply migration group_33'}
+          tone={payables && payables.totalBalanceUsd > 0 ? 'negative' : 'default'}
+          href="/admin/finance/payables"
+        />
+        <StatCard
+          label="Gross Margin"
           value={`${marginThisMonth.toFixed(1)}%`}
           sub={`${formatUSD(revenueThisMonth - costThisMonth)} on accepted quotes`}
         />
-        <KpiCard
-          label="Quotes Issued vs Accepted"
+        <StatCard
+          label="Issued vs Accepted"
           value={`${issuedThisMonth ?? 0} / ${acceptedThisMonth}`}
           sub="sent vs accepted this month"
         />
       </div>
 
       {/* Chart + Departures */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Accepted Quote Value — Last 6 Months</h2>
-          {hasChartData ? (
-            <div className="flex items-end gap-2 h-36 mt-2">
-              {months.map((m, i) => (
-                <div key={m.key} className="flex-1 flex flex-col items-center gap-1">
-                  {m.total > 0 && (
-                    <p className="text-[10px] text-gray-500 font-medium leading-none">
-                      ${(m.total / 1000).toFixed(0)}k
-                    </p>
-                  )}
-                  <div className="w-full flex items-end" style={{ height: '96px' }}>
-                    <div
-                      className="w-full rounded-t"
-                      style={{
-                        height: m.total > 0 ? `${Math.max((m.total / chartMax) * 96, 4)}px` : '2px',
-                        backgroundColor: i === 5 ? 'var(--olive)' : '#B8CFA0',
-                      }}
-                    />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader title="Accepted Quote Value — Last 6 Months" />
+          <CardBody>
+            {hasChartData ? (
+              <div className="mt-1 flex h-36 items-end gap-2">
+                {months.map((m, i) => (
+                  <div key={m.key} className="flex flex-1 flex-col items-center gap-1">
+                    {m.total > 0 && (
+                      <p className="text-[10px] font-medium leading-none text-muted-foreground">
+                        ${(m.total / 1000).toFixed(0)}k
+                      </p>
+                    )}
+                    <div className="flex w-full items-end" style={{ height: '96px' }}>
+                      <div
+                        className="w-full rounded-t transition-[height] duration-200"
+                        style={{
+                          height: m.total > 0 ? `${Math.max((m.total / chartMax) * 96, 4)}px` : '2px',
+                          backgroundColor: i === 5 ? 'var(--primary-strong)' : 'var(--olive-lt)',
+                        }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{m.label}</p>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">{m.label}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground py-10 text-center">Fills in as quotes are accepted.</p>
-          )}
-        </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                compact
+                icon={TrendingUp}
+                title="No accepted quotes in the last 6 months"
+                body="When a client accepts a quote, its value lands here so you can watch revenue build month over month."
+              />
+            )}
+          </CardBody>
+        </Card>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-900">Upcoming Departures</h2>
-            <Link href="/admin/departures" className="text-xs text-[var(--olive)] hover:underline">View all</Link>
-          </div>
-          {upcomingDepartures && upcomingDepartures.length > 0 ? (
-            <ul className="space-y-3">
-              {upcomingDepartures.map((d: any) => (
-                <Link key={d.id} href={`/admin/departures/${d.id}`} className="flex items-center justify-between text-sm hover:bg-gray-50 -mx-2 px-2 py-1 rounded">
-                  <div>
-                    <p className="text-gray-800 font-medium">{(d.tours as any)?.title_en ?? 'Departure'}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(d.start_date).toLocaleDateString('en-GB')}</p>
-                  </div>
-                  <span className="text-xs text-gray-500 shrink-0">{d.booked_seats ?? 0}/{d.max_seats ?? '?'} seats</span>
-                </Link>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground py-10 text-center">No upcoming departures yet.</p>
-          )}
-        </div>
+        <Card>
+          <CardHeader
+            title="Upcoming Departures"
+            action={
+              <Link href="/admin/departures" className="text-xs font-medium text-brand-text hover:underline">
+                View all
+              </Link>
+            }
+          />
+          <CardBody className="py-2">
+            {upcomingDepartures && upcomingDepartures.length > 0 ? (
+              <ul>
+                {upcomingDepartures.map((d: any) => (
+                  <li key={d.id}>
+                    <Link
+                      href={`/admin/departures/${d.id}`}
+                      className="-mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-2 text-sm transition-colors duration-150 hover:bg-muted"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-foreground">{(d.tours as any)?.title_en ?? 'Departure'}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(d.start_date).toLocaleDateString('en-GB')}</p>
+                      </div>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {d.booked_seats ?? 0}/{d.max_seats ?? '?'} seats
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <EmptyState
+                compact
+                icon={CalendarDays}
+                title="No upcoming departures"
+                body="Scheduled departures with open seats appear here."
+                action={
+                  <ButtonLink href="/admin/departures/new" size="sm">
+                    Schedule a departure
+                  </ButtonLink>
+                }
+              />
+            )}
+          </CardBody>
+        </Card>
       </div>
 
       {/* Pipeline + Alerts + Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-900">Requests Pipeline</h2>
-            <Link href="/admin/requests" className="text-xs text-[var(--olive)] hover:underline">View all</Link>
-          </div>
-          <ul className="space-y-2 text-sm">
-            {stageCounts.map(s => (
-              <li key={s.key} className="flex justify-between text-gray-700">
-                <Link href={`/admin/requests?stage=${s.key}`} className="hover:text-[var(--olive)]">{s.label}</Link>
-                <span className="font-medium tabular-nums">{s.count}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-3">Alerts</h2>
-          {expiringVersions && expiringVersions.length > 0 ? (
-            <ul className="space-y-3">
-              {expiringVersions.map((v: any) => (
-                <li key={v.id}>
-                  <Link href={`/admin/quotes/${(v.quotes as any)?.id}`} className="text-sm text-amber-700 hover:underline font-medium">
-                    {(v.quotes as any)?.quote_number ?? 'Quote'}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card>
+          <CardHeader
+            title="Requests Pipeline"
+            action={
+              <Link href="/admin/requests" className="text-xs font-medium text-brand-text hover:underline">
+                View all
+              </Link>
+            }
+          />
+          <CardBody className="py-2">
+            <ul className="text-sm">
+              {stageCounts.map(s => (
+                <li key={s.key}>
+                  <Link
+                    href={`/admin/requests?stage=${s.key}`}
+                    className="-mx-2 flex items-center justify-between rounded-md px-2 py-1.5 transition-colors duration-150 hover:bg-muted"
+                  >
+                    <span className="flex items-center gap-2 text-foreground">
+                      <span
+                        aria-hidden
+                        className={`h-1.5 w-1.5 rounded-full ${VARIANT_DOT[STATUS_VARIANT[s.key] ?? 'neutral']}`}
+                      />
+                      {s.label}
+                    </span>
+                    <span className={`font-medium tabular-nums ${s.count === 0 ? 'text-muted-foreground' : 'text-foreground'}`}>
+                      {s.count}
+                    </span>
                   </Link>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Expires {new Date(v.valid_until).toLocaleDateString('en-GB')} · {v.status}
-                  </p>
                 </li>
               ))}
             </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground py-10 text-center">Nothing needs attention right now.</p>
-          )}
-        </div>
+          </CardBody>
+        </Card>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-3">Recent Activity</h2>
-          {((recentAcceptances?.length ?? 0) + (recentRequests?.length ?? 0)) === 0 ? (
-            <p className="text-sm text-muted-foreground py-10 text-center">Activity appears here as things happen.</p>
-          ) : (
-            <ul className="space-y-3">
-              {(recentAcceptances ?? []).map((a: any) => (
-                <li key={a.id} className="flex gap-2.5">
-                  <span className="w-2 h-2 rounded-full bg-green-400 mt-1.5 shrink-0" />
-                  <div className="text-sm min-w-0">
-                    <p className="text-gray-700 truncate">
-                      <Link href={`/admin/quotes/${(a.quote_versions as any)?.quotes?.id}`} className="hover:underline font-medium">
-                        {(a.quote_versions as any)?.quotes?.quote_number}
-                      </Link>
-                      {' '}accepted by {a.client_name}
+        <Card>
+          <CardHeader title="Alerts" />
+          <CardBody className="py-2">
+            {expiringVersions && expiringVersions.length > 0 ? (
+              <ul className="space-y-3 py-1">
+                {expiringVersions.map((v: any) => (
+                  <li key={v.id}>
+                    <Link href={`/admin/quotes/${(v.quotes as any)?.id}`} className="text-sm font-medium text-warning-foreground hover:underline">
+                      {(v.quotes as any)?.quote_number ?? 'Quote'}
+                    </Link>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Expires {new Date(v.valid_until).toLocaleDateString('en-GB')} · {v.status}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatUSD(Number((a.quote_versions as any)?.total_selling_usd ?? 0))} · {new Date(a.accepted_at).toLocaleDateString('en-GB')}
-                    </p>
-                  </div>
-                </li>
-              ))}
-              {(recentRequests ?? []).map((r: any) => (
-                <li key={r.id} className="flex gap-2.5">
-                  <span className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                  <div className="text-sm min-w-0">
-                    <p className="text-gray-700 truncate">
-                      New request —{' '}
-                      <Link href={`/admin/requests/${r.id}`} className="hover:underline font-medium">
-                        {(r.clients as any)?.first_name} {(r.clients as any)?.last_name}
-                      </Link>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {r.reference} · {new Date(r.created_at).toLocaleDateString('en-GB')}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <EmptyState
+                compact
+                icon={Inbox}
+                title="Nothing needs attention"
+                body="Quotes about to expire and other time-critical items surface here."
+              />
+            )}
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader title="Recent Activity" />
+          <CardBody className="py-2">
+            {((recentAcceptances?.length ?? 0) + (recentRequests?.length ?? 0)) === 0 ? (
+              <EmptyState
+                compact
+                icon={Inbox}
+                title="No activity yet"
+                body="New requests and quote acceptances appear here as they happen."
+              />
+            ) : (
+              <ul className="space-y-3 py-1">
+                {(recentAcceptances ?? []).map((a: any) => (
+                  <li key={a.id} className="flex gap-2.5">
+                    <span aria-hidden className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${VARIANT_DOT.success}`} />
+                    <div className="min-w-0 text-sm">
+                      <p className="truncate text-foreground">
+                        <Link href={`/admin/quotes/${(a.quote_versions as any)?.quotes?.id}`} className="font-medium hover:underline">
+                          {(a.quote_versions as any)?.quotes?.quote_number}
+                        </Link>
+                        {' '}accepted by {a.client_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatUSD(Number((a.quote_versions as any)?.total_selling_usd ?? 0))} · {new Date(a.accepted_at).toLocaleDateString('en-GB')}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+                {(recentRequests ?? []).map((r: any) => (
+                  <li key={r.id} className="flex gap-2.5">
+                    <span aria-hidden className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${VARIANT_DOT.info}`} />
+                    <div className="min-w-0 text-sm">
+                      <p className="truncate text-foreground">
+                        New request —{' '}
+                        <Link href={`/admin/requests/${r.id}`} className="font-medium hover:underline">
+                          {(r.clients as any)?.first_name} {(r.clients as any)?.last_name}
+                        </Link>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {r.reference} · {new Date(r.created_at).toLocaleDateString('en-GB')}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardBody>
+        </Card>
       </div>
-    </div>
-  )
-}
-
-function KpiCard({ label, value, sub, urgent }: { label: string; value: string; sub: string; urgent?: boolean }) {
-  return (
-    <div className={`bg-white rounded-lg border p-5 ${urgent ? 'border-amber-300' : 'border-gray-200'}`}>
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className={`text-2xl font-semibold mt-1 ${urgent ? 'text-amber-700' : 'text-gray-900'}`}>{value}</p>
-      <p className="text-xs text-muted-foreground mt-1">{sub}</p>
-    </div>
+      </div>
+    </PageShell>
   )
 }

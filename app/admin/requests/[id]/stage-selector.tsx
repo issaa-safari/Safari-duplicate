@@ -48,7 +48,7 @@ export default function StageSelector({
           className={`rounded-full px-3 py-1 text-xs font-medium border transition ${
             active === stage.key
               ? VARIANT_CLASSES[STATUS_VARIANT[stage.key] ?? 'neutral'] + ' border-transparent'
-              : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+              : 'bg-surface text-muted-foreground border-border hover:border-border'
           }`}
         >
           {stage.label}

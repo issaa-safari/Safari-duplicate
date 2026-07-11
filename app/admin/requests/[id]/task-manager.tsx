@@ -17,7 +17,7 @@ const TYPE_CHIP: Record<string, string> = {
   payment: 'bg-emerald-100 text-emerald-700',
   accommodation: 'bg-blue-100 text-blue-700',
   activity: 'bg-violet-100 text-violet-700',
-  other: 'bg-gray-100 text-gray-500',
+  other: 'bg-muted text-muted-foreground',
 }
 
 function orderTasks(list: Task[]) {
@@ -86,10 +86,10 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-gray-900">
+        <h2 className="text-sm font-semibold text-foreground">
           Tasks
           {open.length > 0 && (
-            <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+            <span className="ml-2 text-xs bg-amber-100 text-warning-foreground px-2 py-0.5 rounded-full">
               {open.length} open
             </span>
           )}
@@ -97,7 +97,7 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
         {!showAdd && (
           <button
             onClick={() => { setShowAdd(true); setError('') }}
-            className="text-xs text-[var(--olive)] hover:text-[var(--olive-dk)] font-medium"
+            className="text-xs text-brand-text hover:text-brand-ink font-medium"
           >
             + Add Task
           </button>
@@ -111,19 +111,19 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Task description…"
-            className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+            className="w-full rounded-md border border-border px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
           />
           <select
             value={type}
             onChange={e => setType(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+            className="w-full rounded-md border border-border px-3 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50"
           >
             <option value="other">General</option>
             <option value="payment">Payment</option>
             <option value="accommodation">Accommodation</option>
             <option value="activity">Activity</option>
           </select>
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <p className="text-xs text-destructive">{error}</p>}
           <div className="flex gap-2">
             <button
               type="submit"
@@ -135,7 +135,7 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
             <button
               type="button"
               onClick={() => { setShowAdd(false); setTitle(''); setError('') }}
-              className="rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 hover:bg-gray-50"
+              className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground border border-border hover:bg-muted"
             >
               Cancel
             </button>
@@ -155,13 +155,13 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
                 type="button"
                 onClick={() => handleToggle(task)}
                 disabled={pending}
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-gray-300 hover:border-[var(--olive)] transition"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-border hover:border-primary-strong transition"
                 aria-label="Mark done"
               />
-              <span className="flex-1 text-sm text-gray-700 flex items-center gap-1.5 flex-wrap">
+              <span className="flex-1 text-sm text-foreground flex items-center gap-1.5 flex-wrap">
                 {task.title}
                 <TypeChip t={task.type} />
-                {task.auto_generated && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">auto</span>}
+                {task.auto_generated && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-warning-foreground border border-amber-200">auto</span>}
               </span>
               <button
                 type="button"
@@ -178,14 +178,14 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
       )}
 
       {done.length > 0 && (
-        <ul className="space-y-1 border-t border-gray-100 pt-2 mt-1">
+        <ul className="space-y-1 border-t border-border/70 pt-2 mt-1">
           {done.map(task => (
             <li key={task.id} className="flex items-start gap-2 group">
               <button
                 type="button"
                 onClick={() => handleToggle(task)}
                 disabled={pending}
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-[var(--olive)] bg-[var(--olive)] flex items-center justify-center transition"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-primary-strong bg-[var(--olive)] flex items-center justify-center transition"
                 aria-label="Mark undone"
               >
                 <span className="text-white text-[9px] leading-none">✓</span>

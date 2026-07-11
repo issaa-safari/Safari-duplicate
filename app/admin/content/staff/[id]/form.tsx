@@ -17,7 +17,7 @@ interface StaffMember {
   is_active: boolean
 }
 
-const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
 export default function StaffEditForm({ member }: { member: StaffMember }) {
   const [error, setError] = useState('')
@@ -39,25 +39,25 @@ export default function StaffEditForm({ member }: { member: StaffMember }) {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/admin/content/staff" className="text-sm text-gray-500 hover:text-gray-700">
+        <Link href="/admin/content/staff" className="text-sm text-muted-foreground hover:text-foreground">
           ← Back to Tour Staff
         </Link>
-        <h1 className="text-lg font-semibold text-gray-900">Edit Staff Member</h1>
+        <h1 className="text-xl font-semibold text-foreground">Edit Staff Member</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700">Details</h2>
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-foreground">Details</h2>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+              <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">Name <span className="text-destructive">*</span></label>
               <input id="name" type="text" name="name" required defaultValue={member.name} className={inputCls} />
             </div>
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+              <label htmlFor="role" className="block text-sm font-medium text-foreground mb-1">Role</label>
               <select id="role" name="role" defaultValue={member.role} className={inputCls}>
                 <option value="guide">Guide</option>
                 <option value="driver">Driver</option>
@@ -69,17 +69,17 @@ export default function StaffEditForm({ member }: { member: StaffMember }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-1">Phone</label>
               <input id="phone" type="tel" name="phone" defaultValue={member.phone ?? ''} placeholder="+254…" className={inputCls} />
             </div>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">Email</label>
               <input id="email" type="email" name="email" defaultValue={member.email ?? ''} placeholder="name@example.com" className={inputCls} />
             </div>
           </div>
 
           <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label htmlFor="notes" className="block text-sm font-medium text-foreground mb-1">Notes</label>
             <textarea id="notes" name="notes" rows={3} defaultValue={member.notes ?? ''}
               placeholder="Languages, certifications, availability notes…" className={inputCls} />
           </div>

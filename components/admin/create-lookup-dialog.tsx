@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Dialog from '@/components/ui/dialog'
 import { Field, TextareaField } from '@/components/ui/input'
 
-const LBL = 'block text-xs font-medium text-gray-600 mb-1'
+const LBL = 'block text-xs font-medium text-muted-foreground mb-1'
 
 // Small dialog to create a new Content-library item with bilingual description.
 // The caller's onSubmit performs the actual createLookup + state update.
@@ -43,7 +43,7 @@ export default function CreateLookupDialog({
       overlayClass="z-[60] pt-20"
       footer={
         <>
-          <button onClick={onClose} className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-white">Cancel</button>
+          <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm text-foreground hover:bg-surface">Cancel</button>
           <button onClick={submit} disabled={busy}
             className="rounded-md bg-olive px-4 py-2 text-sm font-medium text-white disabled:opacity-60">
             {busy ? 'Creating…' : 'Create'}
@@ -58,7 +58,7 @@ export default function CreateLookupDialog({
           onChange={e => setEn(e.target.value)} className="resize-none" />
         <TextareaField label="Description (Arabic)" labelClass={LBL} value={ar} rows={3} dir="rtl"
           onChange={e => setAr(e.target.value)} className="resize-none text-right" />
-        {error && <p className="text-xs text-red-600">{error}</p>}
+        {error && <p className="text-xs text-destructive">{error}</p>}
       </div>
     </Dialog>
   )

@@ -15,7 +15,7 @@ const TYPE_CHIP: Record<string, string> = {
   payment: 'bg-emerald-100 text-emerald-700',
   accommodation: 'bg-blue-100 text-blue-700',
   activity: 'bg-violet-100 text-violet-700',
-  other: 'bg-gray-100 text-gray-500',
+  other: 'bg-muted text-muted-foreground',
 }
 
 export default function DefaultTaskManager({ tasks: initial }: { tasks: DefaultTask[] }) {
@@ -69,9 +69,9 @@ export default function DefaultTaskManager({ tasks: initial }: { tasks: DefaultT
 
   return (
     <div>
-      <p className="text-sm text-gray-500 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         These tasks are generated automatically on every request the moment it becomes
-        <span className="font-medium text-gray-700"> Booked</span>, alongside a payment
+        <span className="font-medium text-foreground"> Booked</span>, alongside a payment
         task and one task per accommodation in the itinerary.
       </p>
 
@@ -85,11 +85,11 @@ export default function DefaultTaskManager({ tasks: initial }: { tasks: DefaultT
               disabled={pending}
               title={t.is_active ? 'Active — click to disable' : 'Disabled — click to enable'}
               className={`h-4 w-4 shrink-0 rounded border-2 flex items-center justify-center transition ${
-                t.is_active ? 'border-[var(--olive)] bg-[var(--olive)]' : 'border-gray-300'}`}
+                t.is_active ? 'border-primary-strong bg-[var(--olive)]' : 'border-border'}`}
             >
               {t.is_active && <span className="text-white text-[9px] leading-none">✓</span>}
             </button>
-            <span className={`flex-1 text-sm flex items-center gap-1.5 ${t.is_active ? 'text-gray-700' : 'text-muted-foreground line-through'}`}>
+            <span className={`flex-1 text-sm flex items-center gap-1.5 ${t.is_active ? 'text-foreground' : 'text-muted-foreground line-through'}`}>
               {t.description}
               {t.type !== 'other' && <span className={`text-[10px] px-1.5 py-0.5 rounded-full capitalize ${TYPE_CHIP[t.type] ?? TYPE_CHIP.other}`}>{t.type}</span>}
             </span>
@@ -109,10 +109,10 @@ export default function DefaultTaskManager({ tasks: initial }: { tasks: DefaultT
           value={description}
           onChange={e => setDescription(e.target.value)}
           placeholder="New default task…"
-          className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+          className="flex-1 rounded-md border border-border px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
         />
         <select value={type} onChange={e => setType(e.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]">
+          className="rounded-md border border-border px-3 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50">
           <option value="other">General</option>
           <option value="payment">Payment</option>
           <option value="accommodation">Accommodation</option>
@@ -123,7 +123,7 @@ export default function DefaultTaskManager({ tasks: initial }: { tasks: DefaultT
           {pending ? 'Saving…' : 'Add'}
         </button>
       </form>
-      {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+      {error && <p className="text-xs text-destructive mt-2">{error}</p>}
     </div>
   )
 }

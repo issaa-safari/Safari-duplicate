@@ -12,7 +12,7 @@ interface Room {
   amenities: string[]
 }
 
-const inputCls = 'rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+const inputCls = 'rounded-md border border-border px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50'
 
 export default function RoomsPanel({ accommodationId, rooms: initial }: { accommodationId: string; rooms: Room[] }) {
   const [rooms, setRooms] = useState(initial)
@@ -57,28 +57,28 @@ export default function RoomsPanel({ accommodationId, rooms: initial }: { accomm
 
   return (
     <div className="max-w-2xl mx-auto px-4 pb-8">
-      <div className="bg-white rounded-lg border border-gray-200 p-5">
+      <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-sm font-semibold text-gray-900">Rooms</h2>
+            <h2 className="text-sm font-semibold text-foreground">Rooms</h2>
             <p className="text-xs text-muted-foreground mt-0.5">Room types can carry their own seasonal rate cards.</p>
           </div>
           {!showAdd && (
             <button onClick={() => { setShowAdd(true); setError('') }}
-              className="text-xs text-[var(--olive)] hover:text-[var(--olive-dk)] font-medium">+ Add Room</button>
+              className="text-xs text-brand-text hover:text-brand-ink font-medium">+ Add Room</button>
           )}
         </div>
 
         <ul className="space-y-2 mb-4">
           {rooms.length === 0 && !showAdd && <li className="text-xs text-muted-foreground">No rooms yet.</li>}
           {rooms.map(r => (
-            <li key={r.id} className="flex items-start gap-3 group border border-gray-100 rounded-md p-3">
+            <li key={r.id} className="flex items-start gap-3 group border border-border/70 rounded-md p-3">
               <div className="flex-1 min-w-0 text-sm">
-                <p className="font-medium text-gray-800">
+                <p className="font-medium text-foreground">
                   {r.name}
-                  {r.room_type && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 capitalize">{r.room_type}</span>}
+                  {r.room_type && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">{r.room_type}</span>}
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   Sleeps {r.max_occupancy}{r.bed_config ? ` · ${r.bed_config}` : ''}
                 </p>
                 {r.amenities.length > 0 && <p className="text-xs text-muted-foreground mt-0.5">{r.amenities.join(', ')}</p>}
@@ -90,7 +90,7 @@ export default function RoomsPanel({ accommodationId, rooms: initial }: { accomm
         </ul>
 
         {showAdd && (
-          <form onSubmit={handleAdd} className="space-y-2 border-t border-gray-100 pt-3">
+          <form onSubmit={handleAdd} className="space-y-2 border-t border-border/70 pt-3">
             <div className="grid grid-cols-2 gap-2">
               <input name="name" placeholder="Room name *" required className={inputCls} />
               <input name="roomType" placeholder="Type (e.g. suite)" className={inputCls} />
@@ -98,14 +98,14 @@ export default function RoomsPanel({ accommodationId, rooms: initial }: { accomm
               <input name="maxOccupancy" type="number" min={1} defaultValue={2} placeholder="Max occupancy" className={inputCls} />
             </div>
             <input name="amenities" placeholder="Amenities, comma-separated" className={`${inputCls} w-full`} />
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {error && <p className="text-xs text-destructive">{error}</p>}
             <div className="flex gap-2">
               <button type="submit" disabled={pending}
                 className="rounded-md px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 bg-olive hover:bg-olive-dk">
                 {pending ? 'Saving…' : 'Add Room'}
               </button>
               <button type="button" onClick={() => { setShowAdd(false); setError('') }}
-                className="rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">Cancel</button>
+                className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground border border-border hover:bg-muted">Cancel</button>
             </div>
           </form>
         )}

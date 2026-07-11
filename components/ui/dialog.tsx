@@ -78,7 +78,7 @@ export default function Dialog({
 
   return (
     <div
-      className={`fixed inset-0 flex items-start justify-center px-4 ${overlayClass}`}
+      className={`admin-fade-in fixed inset-0 flex items-start justify-center px-4 ${overlayClass}`}
       style={{ backgroundColor: 'rgba(26,46,19,0.55)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
       onKeyDown={onKeyDown}
@@ -89,22 +89,22 @@ export default function Dialog({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`w-full ${maxWidth} rounded-xl bg-white shadow-2xl overflow-hidden outline-none`}
+        className={`admin-pop-in w-full ${maxWidth} rounded-xl bg-surface shadow-2xl overflow-hidden outline-none`}
       >
-        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200">
-          <h3 id={titleId} className={`font-semibold text-gray-900 ${titleClass}`}>{title}</h3>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+          <h3 id={titleId} className={`font-semibold text-foreground ${titleClass}`}>{title}</h3>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="text-gray-400 hover:text-gray-700 text-xl leading-none"
+            className="rounded text-muted-foreground transition-colors duration-150 hover:text-foreground text-xl leading-none"
           >
             ×
           </button>
         </div>
         {children}
         {footer && (
-          <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-200 bg-gray-50">
+          <div className="flex justify-end gap-2 px-5 py-3 border-t border-border bg-surface-alt">
             {footer}
           </div>
         )}

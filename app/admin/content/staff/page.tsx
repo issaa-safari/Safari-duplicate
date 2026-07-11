@@ -8,7 +8,7 @@ import ContentShell from '../content-shell'
 const ROLE_STYLES: Record<string, string> = {
   guide: 'bg-green-100 text-green-700',
   driver: 'bg-blue-100 text-blue-700',
-  chef: 'bg-amber-100 text-amber-700',
+  chef: 'bg-amber-100 text-warning-foreground',
   coordinator: 'bg-purple-100 text-purple-700',
 }
 
@@ -24,27 +24,27 @@ export default async function TourStaffPage() {
     .order('name', { ascending: true })
 
   return (
-    <ContentShell active="staff" title="Tour Staff" icon="♙">
+    <ContentShell active="staff" title="Tour Staff">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Tour Staff</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Guides, drivers, chefs, and coordinators</p>
+          <h1 className="text-xl font-semibold text-foreground">Tour Staff</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Guides, drivers, chefs, and coordinators</p>
         </div>
         <ButtonLink href="/admin/content/staff/new" size="sm">+ New Staff Member</ButtonLink>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden">
         {!staff || staff.length === 0 ? (
           <div className="p-10 text-center">
-            <p className="text-sm text-gray-500 mb-4">No staff members added yet.</p>
-            <Link href="/admin/content/staff/new" className="text-sm font-medium text-[var(--olive)] hover:underline">
+            <p className="text-sm text-muted-foreground mb-4">No staff members added yet.</p>
+            <Link href="/admin/content/staff/new" className="text-sm font-medium text-brand-text hover:underline">
               Add your first staff member
             </Link>
           </div>
         ) : (
           <table className="stack-table w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Role</th>
                 <th className="px-4 py-3 font-medium hidden sm:table-cell">Phone</th>
@@ -55,19 +55,19 @@ export default async function TourStaffPage() {
             </thead>
             <tbody>
               {staff.map((s: any) => (
-                <tr key={s.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                  <td data-label="Name" className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
+                <tr key={s.id} className="border-b border-border/70 last:border-0 hover:bg-muted">
+                  <td data-label="Name" className="px-4 py-3 font-medium text-foreground">{s.name}</td>
                   <td data-label="Role" className="px-4 py-3">
                     <span className={'text-xs px-2 py-0.5 rounded-full font-medium capitalize ' +
-                      (ROLE_STYLES[s.role] ?? 'bg-gray-100 text-gray-600')}>
+                      (ROLE_STYLES[s.role] ?? 'bg-muted text-muted-foreground')}>
                       {s.role}
                     </span>
                   </td>
-                  <td data-label="Phone" className="px-4 py-3 text-gray-500 hidden sm:table-cell">{s.phone ?? '—'}</td>
-                  <td data-label="Email" className="px-4 py-3 text-gray-500 hidden md:table-cell">{s.email ?? '—'}</td>
+                  <td data-label="Phone" className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{s.phone ?? '—'}</td>
+                  <td data-label="Email" className="px-4 py-3 text-muted-foreground hidden md:table-cell">{s.email ?? '—'}</td>
                   <td data-label="Status" className="px-4 py-3">
                     <span className={'text-xs px-2 py-0.5 rounded-full font-medium ' +
-                      (s.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
+                      (s.is_active ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground')}>
                       {s.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
