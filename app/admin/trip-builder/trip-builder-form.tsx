@@ -566,34 +566,34 @@ export default function TripBuilderForm({
         </div>
         <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
           <div className="col-span-2">
-            <label className={labelCls}>Guest name *</label>
-            <input className={inputCls} value={guest.name}
+            <label htmlFor="guest-name" className={labelCls}>Guest name *</label>
+            <input id="guest-name" className={inputCls} value={guest.name}
               onChange={e => setGuest(g => ({ ...g, name: e.target.value }))}
               placeholder="e.g. Amina Hassan" />
           </div>
           <div className="col-span-2">
-            <label className={labelCls}>Email (links CRM client)</label>
-            <input className={inputCls} type="email" value={guest.email}
+            <label htmlFor="email-links-crm-client" className={labelCls}>Email (links CRM client)</label>
+            <input id="email-links-crm-client" className={inputCls} type="email" value={guest.email}
               onChange={e => setGuest(g => ({ ...g, email: e.target.value }))} />
           </div>
           <div>
-            <label className={labelCls}>Adults</label>
-            <input className={inputCls} type="number" min={1} value={guest.adults}
+            <label htmlFor="adults" className={labelCls}>Adults</label>
+            <input id="adults" className={inputCls} type="number" min={1} value={guest.adults}
               onChange={e => setGuest(g => ({ ...g, adults: Math.max(1, parseInt(e.target.value) || 1) }))} />
           </div>
           <div>
-            <label className={labelCls}>Children</label>
-            <input className={inputCls} type="number" min={0} max={12} value={guest.childAges.length}
+            <label htmlFor="children" className={labelCls}>Children</label>
+            <input id="children" className={inputCls} type="number" min={0} max={12} value={guest.childAges.length}
               onChange={e => updateChildCount(parseInt(e.target.value) || 0)} />
           </div>
           <div>
-            <label className={labelCls}>Trip start *</label>
-            <input className={inputCls} type="date" value={guest.startDate}
+            <label htmlFor="trip-start" className={labelCls}>Trip start *</label>
+            <input id="trip-start" className={inputCls} type="date" value={guest.startDate}
               onChange={e => setGuest(g => ({ ...g, startDate: e.target.value }))} />
           </div>
           <div>
-            <label className={labelCls}>Trip end *</label>
-            <input className={inputCls} type="date" value={guest.endDate} min={guest.startDate || undefined}
+            <label htmlFor="trip-end" className={labelCls}>Trip end *</label>
+            <input id="trip-end" className={inputCls} type="date" value={guest.endDate} min={guest.startDate || undefined}
               onChange={e => setGuest(g => ({ ...g, endDate: e.target.value }))} />
           </div>
         </div>
@@ -601,8 +601,8 @@ export default function TripBuilderForm({
           <div className="px-4 pb-3 flex flex-wrap items-end gap-3">
             {guest.childAges.map((age, i) => (
               <div key={i}>
-                <label className={labelCls}>Child {i + 1} age</label>
-                <input className={inputCls + ' w-16'} type="number" min={0} max={17} value={age}
+                <label htmlFor={`child-age-${i}`} className={labelCls}>Child {i + 1} age</label>
+                <input id={`child-age-${i}`} className={inputCls + ' w-16'} type="number" min={0} max={17} value={age}
                   onChange={e => setGuest(g => ({
                     ...g,
                     childAges: g.childAges.map((a, j) => (j === i ? Math.max(0, Math.min(17, parseInt(e.target.value) || 0)) : a)),
@@ -871,8 +871,8 @@ export default function TripBuilderForm({
       {/* 6 ─ Save */}
       <div className="flex items-center gap-3 pb-8">
         <div>
-          <label className={labelCls}>Quote title (optional)</label>
-          <input className={inputCls + ' w-72'} value={title}
+          <label htmlFor="quote-title-optional" className={labelCls}>Quote title (optional)</label>
+          <input id="quote-title-optional" className={inputCls + ' w-72'} value={title}
             onChange={e => setTitle(e.target.value)} placeholder="e.g. Hassan family — Christmas safari" />
         </div>
         <button

@@ -62,13 +62,13 @@ export default function AccommodationEditForm({
           <h2 className="text-sm font-semibold text-gray-700">Details</h2>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-            <input type="text" name="name" required defaultValue={accommodation.name} className={inputCls} />
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+            <input id="name" type="text" name="name" required defaultValue={accommodation.name} className={inputCls} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
-            <select name="destinationId" defaultValue={accommodation.destination_id ?? ''} className={inputCls}>
+            <label htmlFor="destinationId" className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+            <select id="destinationId" name="destinationId" defaultValue={accommodation.destination_id ?? ''} className={inputCls}>
               <option value="">No destination</option>
               {destinations.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
@@ -78,8 +78,8 @@ export default function AccommodationEditForm({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-              <select name="type" defaultValue={accommodation.type} className={inputCls}>
+              <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <select id="type" name="type" defaultValue={accommodation.type} className={inputCls}>
                 <option value="hotel">Hotel</option>
                 <option value="lodge">Lodge</option>
                 <option value="camp">Camp</option>
@@ -88,8 +88,8 @@ export default function AccommodationEditForm({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Budget Tier</label>
-              <select name="budgetTier" defaultValue={accommodation.budget_tier} className={inputCls}>
+              <label htmlFor="budgetTier" className="block text-sm font-medium text-gray-700 mb-1">Budget Tier</label>
+              <select id="budgetTier" name="budgetTier" defaultValue={accommodation.budget_tier} className={inputCls}>
                 <option value="budget">Budget</option>
                 <option value="midrange">Mid-range</option>
                 <option value="luxury">Luxury</option>
@@ -100,12 +100,12 @@ export default function AccommodationEditForm({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1–5)</label>
-              <input type="number" name="rating" min={1} max={5} defaultValue={accommodation.rating} className={inputCls} />
+              <label htmlFor="rating" className="block text-sm font-medium text-gray-700 mb-1">Rating (1–5)</label>
+              <input id="rating" type="number" name="rating" min={1} max={5} defaultValue={accommodation.rating} className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
-              <input
+              <label htmlFor="coverImageUrl" className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
+              <input id="coverImageUrl"
                 type="url"
                 name="coverImageUrl"
                 defaultValue={accommodation.cover_image_url ?? ''}
@@ -123,8 +123,8 @@ export default function AccommodationEditForm({
           <p className="text-xs text-gray-400 -mt-2">Filling in a description or cover image marks this as "With Content".</p>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
-            <textarea
+            <label htmlFor="descriptionEn" className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
+            <textarea id="descriptionEn"
               name="descriptionEn"
               rows={4}
               defaultValue={accommodation.description_en ?? ''}
@@ -134,8 +134,8 @@ export default function AccommodationEditForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description (Arabic)</label>
-            <textarea
+            <label htmlFor="descriptionAr" className="block text-sm font-medium text-gray-700 mb-1">Description (Arabic)</label>
+            <textarea id="descriptionAr"
               name="descriptionAr"
               rows={4}
               defaultValue={accommodation.description_ar ?? ''}

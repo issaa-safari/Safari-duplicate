@@ -2,17 +2,15 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import StatusBadge from '@/components/admin/status-badge'
+import { STATUS_VARIANT, VARIANT_CLASSES, VARIANT_DOT, STAGE_LABELS } from '@/lib/status-colors'
 
-const STAGES = [
-  { key: 'new',        label: 'New',        color: 'var(--status-new)' },
-  { key: 'working_on', label: 'Working On', color: 'var(--status-working)' },
-  { key: 'open',       label: 'Open',       color: 'var(--status-open)' },
-  { key: 'pre_booked', label: 'Pre-Booked', color: 'var(--status-prebooked)' },
-  { key: 'booked',     label: 'Booked',     color: 'var(--status-booked)' },
-  { key: 'completed',  label: 'Completed',  color: 'var(--status-completed)' },
-  { key: 'not_booked', label: 'Not Booked', color: 'var(--status-notbooked)' },
-  { key: 'archived',   label: 'Archive',    color: 'var(--status-archive)' },
-]
+// Stage chips share the StatusBadge color system so the sidebar filter and
+// the badges on the cards never disagree about what color a stage is.
+const STAGES = Object.entries(STAGE_LABELS).map(([key, label]) => ({
+  key,
+  label,
+  variant: STATUS_VARIANT[key] ?? 'neutral',
+}))
 
 export default async function RequestsPage({
   searchParams,
@@ -50,26 +48,14 @@ export default async function RequestsPage({
             href={"/admin/requests?stage=" + stage.key}
             className={"flex items-center justify-between rounded-md px-3 py-2 text-sm transition " +
               (activeStage === stage.key
-                ? 'font-medium'
-                : 'text-gray-600 hover:bg-gray-50')}
-            style={activeStage === stage.key
-              ? {
-                  backgroundColor: `color-mix(in oklab, ${stage.color} 12%, transparent)`,
-                  color: `color-mix(in oklab, ${stage.color} 65%, black)`,
-                }
-              : undefined}>
+                ? `font-medium ${VARIANT_CLASSES[stage.variant]}`
+                : 'text-gray-600 hover:bg-gray-50')}>
             <span className="flex items-center gap-2">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: stage.color }} />
+              <span className={`h-2 w-2 shrink-0 rounded-full ${VARIANT_DOT[stage.variant]}`} />
               {stage.label}
             </span>
             <span className={"text-xs font-medium px-2 py-0.5 rounded-full " +
-              (activeStage === stage.key ? '' : 'bg-gray-100 text-gray-600')}
-              style={activeStage === stage.key
-                ? {
-                    backgroundColor: `color-mix(in oklab, ${stage.color} 22%, white)`,
-                    color: `color-mix(in oklab, ${stage.color} 70%, black)`,
-                  }
-                : undefined}>
+              (activeStage === stage.key ? 'bg-white/60' : 'bg-gray-100 text-gray-600')}>
               {stageCounts[stage.key] ?? 0}
             </span>
           </Link>

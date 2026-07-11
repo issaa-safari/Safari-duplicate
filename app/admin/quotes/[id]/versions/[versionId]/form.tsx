@@ -304,8 +304,8 @@ export default function VersionEditorForm({
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className={labelCls}>Name <span className="text-gray-400 font-normal">(optional)</span></label>
-            <input
+            <label htmlFor="name-optional" className={labelCls}>Name <span className="text-gray-400 font-normal">(optional)</span></label>
+            <input id="name-optional"
               className={inputCls}
               placeholder="e.g. John"
               value={f.displayName}
@@ -313,8 +313,8 @@ export default function VersionEditorForm({
             />
           </div>
           <div>
-            <label className={labelCls}>Age on travel date <span className="text-gray-400 font-normal">(optional)</span></label>
-            <input
+            <label htmlFor="age-on-travel-date-optional" className={labelCls}>Age on travel date <span className="text-gray-400 font-normal">(optional)</span></label>
+            <input id="age-on-travel-date-optional"
               type="number"
               min={0}
               max={120}
@@ -325,8 +325,8 @@ export default function VersionEditorForm({
             />
           </div>
           <div>
-            <label className={labelCls}>Category</label>
-            <select
+            <label htmlFor="category" className={labelCls}>Category</label>
+            <select id="category"
               className={inputCls}
               value={f.ageBandId}
               onChange={e => set(applyBandChange(e.target.value))}
@@ -363,9 +363,9 @@ export default function VersionEditorForm({
           </div>
           {f.pricingMethod === 'percentage' && (
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Percentage</label>
+              <label htmlFor="percentage" className="block text-xs text-gray-400 mb-1">Percentage</label>
               <div className="flex items-center gap-1">
-                <input
+                <input id="percentage"
                   type="number"
                   min={0}
                   max={200}
@@ -380,10 +380,10 @@ export default function VersionEditorForm({
           )}
           {f.pricingMethod === 'fixed' && (
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Fixed rate</label>
+              <label htmlFor="fixed-rate" className="block text-xs text-gray-400 mb-1">Fixed rate</label>
               <div className="flex items-center gap-1">
                 <span className="text-sm text-gray-500">USD</span>
-                <input
+                <input id="fixed-rate"
                   type="number"
                   min={0}
                   step={0.01}
@@ -399,8 +399,8 @@ export default function VersionEditorForm({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className={labelCls}>Room category</label>
-            <select
+            <label htmlFor="room-category" className={labelCls}>Room category</label>
+            <select id="room-category"
               className={inputCls}
               value={f.roomCategory}
               onChange={e => set({ roomCategory: e.target.value })}
@@ -443,8 +443,8 @@ export default function VersionEditorForm({
         <h2 className="text-sm font-semibold text-gray-900 mb-4">Trip Dates</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className={labelCls}>Travel start date</label>
-            <input
+            <label htmlFor="travel-start-date" className={labelCls}>Travel start date</label>
+            <input id="travel-start-date"
               type="date"
               className={inputCls}
               value={startDate}
@@ -453,8 +453,8 @@ export default function VersionEditorForm({
             />
           </div>
           <div>
-            <label className={labelCls}>Travel end date</label>
-            <input
+            <label htmlFor="travel-end-date" className={labelCls}>Travel end date</label>
+            <input id="travel-end-date"
               type="date"
               className={inputCls}
               value={endDate}

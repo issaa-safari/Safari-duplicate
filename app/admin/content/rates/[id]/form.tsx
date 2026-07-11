@@ -25,13 +25,13 @@ const roomCategories = ['sharing', 'single', 'triple', 'extra_bed', 'no_bed']
 
 function RateFields({ rate, ageBands }: { rate?: Rate; ageBands: AgeBand[] }) {
   return <>
-    <select name="travellerCategory" defaultValue={rate?.traveller_category ?? ''} className={smallInputCls}><option value="">All travellers</option>{ageBands.map(b => <option key={b.code} value={b.code}>{b.name}</option>)}</select>
-    <select name="roomCategory" defaultValue={rate?.room_category ?? ''} className={smallInputCls}><option value="">All rooms</option>{roomCategories.map(value => <option key={value} value={value}>{label(value)}</option>)}</select>
-    <select name="residency" defaultValue={rate?.residency ?? 'all'} className={smallInputCls}>{RESIDENCIES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select>
-    <select name="pricingUnit" defaultValue={rate?.pricing_unit ?? 'person'} className={smallInputCls}>{PRICING_UNITS.map(value => <option key={value} value={value}>Per {label(value)}</option>)}</select>
-    <input type="number" name="amount" min={0} step="0.01" required defaultValue={rate?.amount ?? ''} placeholder="Amount" className={smallInputCls} />
-    <input type="number" name="minGroupSize" min={1} defaultValue={rate?.min_group_size ?? ''} placeholder="Min group" className={smallInputCls} />
-    <input type="number" name="maxGroupSize" min={1} defaultValue={rate?.max_group_size ?? ''} placeholder="Max group" className={smallInputCls} />
+    <select name="travellerCategory" aria-label="Traveller category" defaultValue={rate?.traveller_category ?? ''} className={smallInputCls}><option value="">All travellers</option>{ageBands.map(b => <option key={b.code} value={b.code}>{b.name}</option>)}</select>
+    <select name="roomCategory" aria-label="Room category" defaultValue={rate?.room_category ?? ''} className={smallInputCls}><option value="">All rooms</option>{roomCategories.map(value => <option key={value} value={value}>{label(value)}</option>)}</select>
+    <select name="residency" aria-label="Residency" defaultValue={rate?.residency ?? 'all'} className={smallInputCls}>{RESIDENCIES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select>
+    <select name="pricingUnit" aria-label="Pricing unit" defaultValue={rate?.pricing_unit ?? 'person'} className={smallInputCls}>{PRICING_UNITS.map(value => <option key={value} value={value}>Per {label(value)}</option>)}</select>
+    <input type="number" name="amount" aria-label="Amount" min={0} step="0.01" required defaultValue={rate?.amount ?? ''} placeholder="Amount" className={smallInputCls} />
+    <input type="number" name="minGroupSize" aria-label="Minimum group size" min={1} defaultValue={rate?.min_group_size ?? ''} placeholder="Min group" className={smallInputCls} />
+    <input type="number" name="maxGroupSize" aria-label="Maximum group size" min={1} defaultValue={rate?.max_group_size ?? ''} placeholder="Max group" className={smallInputCls} />
   </>
 }
 
@@ -71,23 +71,23 @@ export default function RateCardEditor({ card, rates, ageBands, entities, suppli
         <input type="hidden" name="cardId" value={card.id} />
         <h2 className="text-sm font-semibold text-gray-900">Rate Card Details</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Name</label><input name="name" required defaultValue={card.name} className={inputCls} /></div>
+          <div><label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label><input id="name" name="name" required defaultValue={card.name} className={inputCls} /></div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
-            <select name="supplierId" defaultValue={card.supplier_id ?? ''} className={inputCls}>
+            <label htmlFor="supplierId" className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+            <select id="supplierId" name="supplierId" defaultValue={card.supplier_id ?? ''} className={inputCls}>
               <option value="">— no supplier —</option>
               {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             {!card.supplier_id && card.supplier_name && <p className="text-xs text-amber-600 mt-1">Legacy supplier text: “{card.supplier_name}” — pick a real supplier to include this card in Payables.</p>}
           </div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label><select name="entityType" value={entityType} onChange={e => setEntityType(e.target.value)} className={inputCls}>{ENTITY_TYPES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Cost Category</label><select name="costCategory" defaultValue={card.cost_category} className={inputCls}>{COST_CATEGORIES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
-          {linkedTypes.has(entityType) && <div><label className="block text-sm font-medium text-gray-700 mb-1">Linked Content</label><select name="entityId" defaultValue={entityType === card.entity_type ? card.entity_id ?? '' : ''} className={inputCls}><option value="">No linked item</option>{(entities[entityType] ?? []).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>}
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Currency</label><input name="currency" defaultValue={card.currency} maxLength={3} required className={inputCls} /></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Valid From</label><input type="date" name="validFrom" defaultValue={card.valid_from} required className={inputCls} /></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Valid To</label><input type="date" name="validTo" defaultValue={card.valid_to} required className={inputCls} /></div>
+          <div><label htmlFor="entityType" className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label><select id="entityType" name="entityType" value={entityType} onChange={e => setEntityType(e.target.value)} className={inputCls}>{ENTITY_TYPES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
+          <div><label htmlFor="costCategory" className="block text-sm font-medium text-gray-700 mb-1">Cost Category</label><select id="costCategory" name="costCategory" defaultValue={card.cost_category} className={inputCls}>{COST_CATEGORIES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select></div>
+          {linkedTypes.has(entityType) && <div><label htmlFor="entityId" className="block text-sm font-medium text-gray-700 mb-1">Linked Content</label><select id="entityId" name="entityId" defaultValue={entityType === card.entity_type ? card.entity_id ?? '' : ''} className={inputCls}><option value="">No linked item</option>{(entities[entityType] ?? []).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>}
+          <div><label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">Currency</label><input id="currency" name="currency" defaultValue={card.currency} maxLength={3} required className={inputCls} /></div>
+          <div><label htmlFor="validFrom" className="block text-sm font-medium text-gray-700 mb-1">Valid From</label><input id="validFrom" type="date" name="validFrom" defaultValue={card.valid_from} required className={inputCls} /></div>
+          <div><label htmlFor="validTo" className="block text-sm font-medium text-gray-700 mb-1">Valid To</label><input id="validTo" type="date" name="validTo" defaultValue={card.valid_to} required className={inputCls} /></div>
         </div>
-        <div><label className="block text-sm font-medium text-gray-700 mb-1">Notes</label><textarea name="notes" defaultValue={card.notes ?? ''} rows={2} className={inputCls} /></div>
+        <div><label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label><textarea id="notes" name="notes" defaultValue={card.notes ?? ''} rows={2} className={inputCls} /></div>
         <div className="flex items-center justify-between"><label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} className="accent-[var(--olive)]" />Active</label><Button type="submit" size="sm" loading={pending} loadingText="Saving…">Save Card</Button></div>
       </form>
 
