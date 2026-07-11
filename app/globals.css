@@ -23,6 +23,33 @@
      whole page (DESIGN.md §2); .admin-theme re-points these for admin. */
   --background: #FFFFFF;
   --foreground: var(--bush);
+
+  /* ── Cross-scope fallbacks for the shared UI primitives ──
+     components/ui/* are used on both surfaces. These neutral defaults keep
+     them coherent outside .admin-theme (public enquiry forms, quote pages);
+     the admin scope re-points every one of them below. */
+  --primary: var(--olive);
+  --primary-foreground: #FFFFFF;
+  --primary-strong: var(--olive);
+  --primary-strong-hover: var(--olive-dk);
+  --brand-ink: var(--olive-dk);
+  --brand-text: var(--olive-dk);
+  --surface: #FFFFFF;
+  --surface-alt: #FAFAF7;
+  --muted: #F3F4F1;
+  --muted-foreground: var(--stone);
+  --accent: #EEF3E4;
+  --accent-foreground: var(--olive-dk);
+  --border: #E2E3DE;
+  --ring: var(--olive);
+  --destructive: #B91C1C;
+  --warning: #FEF3C7;
+  --warning-foreground: #92400E;
+
+  /* ── Motion tokens (shared) ── */
+  --dur-fast: 150ms;
+  --dur: 200ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @theme inline {
@@ -47,6 +74,8 @@
 @theme inline {
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-strong-hover: var(--primary-strong-hover);
   --color-brand-ink: var(--brand-ink);
   --color-brand-text: var(--brand-text);
   --color-surface: var(--surface);
@@ -63,22 +92,27 @@
 }
 
 .admin-theme {
-  /* Brand green (oklch) */
+  /* Brand green (oklch). --primary stays vivid for identity moments
+     (logo mark, avatar, active indicators); --primary-strong is the
+     interactive solid — the darkest green that keeps white button text
+     at ≥4.5:1 (verified by scripts/check-contrast.mjs). */
   --primary: oklch(0.7 0.22 143);
   --primary-foreground: oklch(0.99 0 0);
+  --primary-strong: oklch(0.55 0.18 143);
+  --primary-strong-hover: oklch(0.47 0.16 143);
   --brand-ink: oklch(0.42 0.16 143);
-  --brand-text: oklch(0.55 0.19 143);
+  --brand-text: oklch(0.45 0.15 143); /* AA on white: 6.99:1 */
 
   /* Surfaces & neutrals */
   --surface: oklch(1 0 0);
   --surface-alt: oklch(0.985 0.003 150);
   --muted: oklch(0.955 0.008 150);
-  --muted-foreground: oklch(0.5 0.02 150);
+  --muted-foreground: oklch(0.45 0.02 150); /* AA on tinted grounds: ≥6.7:1 */
   --accent: oklch(0.94 0.06 143);
   --accent-foreground: oklch(0.35 0.14 143);
   --border: oklch(0.9 0.008 150);
-  --ring: oklch(0.7 0.22 143);
-  --destructive: oklch(0.6 0.24 27);
+  --ring: oklch(0.55 0.18 143);
+  --destructive: oklch(0.5 0.22 27); /* AA on white: 6.39:1 */
   --warning: oklch(0.97 0.08 90);
   --warning-foreground: oklch(0.4 0.12 70);
 
@@ -87,8 +121,8 @@
   --admin-surface: oklch(1 0 0);
   --admin-border: oklch(0.9 0.008 150);
   --admin-text: oklch(0.18 0.02 150);
-  --admin-text-muted: oklch(0.5 0.02 150);
-  --olive: oklch(0.7 0.22 143);
+  --admin-text-muted: oklch(0.45 0.02 150);
+  --olive: oklch(0.55 0.18 143); /* legacy bg-olive buttons: AA with white text */
   --olive-dk: oklch(0.42 0.16 143);
   --olive-lt: oklch(0.88 0.07 143);
   --sand: oklch(0.955 0.008 150);
@@ -109,6 +143,59 @@
 
 .admin-theme .font-display {
   font-family: var(--font-admin-display), "Playfair Display", Georgia, serif;
+}
+
+/* ── Admin accessibility & interaction defaults ─────────────────────────
+   One visible keyboard-focus treatment for every interactive element in
+   the workspace (WCAG 2.4.7). Custom outlines on specific controls win by
+   being more specific; everything else inherits this. */
+.admin-theme :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.admin-theme input::placeholder,
+.admin-theme textarea::placeholder {
+  color: oklch(0.55 0.015 150); /* AA on white: 4.82:1 */
+}
+
+.admin-theme input,
+.admin-theme textarea,
+.admin-theme select {
+  color: var(--admin-text);
+}
+
+/* Skeleton loading shimmer (motion conveys "loading", not decoration) */
+@keyframes admin-skeleton {
+  0% { opacity: 0.55; }
+  50% { opacity: 1; }
+  100% { opacity: 0.55; }
+}
+.admin-skeleton {
+  background: var(--muted);
+  border-radius: 6px;
+  animation: admin-skeleton 1.4s ease-in-out infinite;
+}
+
+/* Dialog / dropdown entrances: fast, ease-out, state-conveying */
+@keyframes admin-pop-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes admin-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.admin-pop-in { animation: admin-pop-in var(--dur) var(--ease-out); }
+.admin-fade-in { animation: admin-fade-in var(--dur-fast) ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-skeleton { animation: none; }
+  .admin-pop-in, .admin-fade-in { animation-duration: 1ms; }
+  .admin-theme *, .admin-theme *::before, .admin-theme *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
 }
 
 body {
