@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-An admin/ops + public marketing platform for a Kenya/Tanzania safari tour operator (*Safari Adventure Riders*). It is a functional rebuild inspired by SafariOffice (a vertical CRM + itinerary/quote builder for tour operators). The core operator workflow is: inbound **Request** → build day-by-day **Quote** (versions, pricing) → publish a shareable public **Proposal** → client **Accepts** → **Booking**. Supporting modules: content library (accommodations, activities, destinations, parks, vehicles, staff, rates), clients CRM, finance (payables/receivables/expenses/P&L), departures (fixed public trips), and daily request automation.
+An admin/ops + public marketing platform for a Kenya/Tanzania safari tour operator (*Safari Adventure Riders*). The core operator workflow is: inbound **Request** → build day-by-day **Quote** (versions, pricing) → publish a shareable public **Proposal** → client **Accepts** → **Booking**. Supporting modules: content library (accommodations, activities, destinations, parks, vehicles, staff, rates), clients CRM, finance (payables/receivables/expenses/P&L), departures (fixed public trips), and daily request automation.
 
-The many `*.md` files at the repo root (`PLAN.md`, `GAP-ANALYSIS.md`, `HANDOFF.md`, `01-…`–`11-…`, `PRD.md`, etc.) are analysis/planning docs from the SafariOffice reverse-engineering and gap-closing effort — background, not code. `HANDOFF.md` and `PLAN.md` describe the intended feature roadmap.
+Project docs: `docs/` holds feature plans and audits; `DESIGN.md` and `PRODUCT.md` are the design-system and product-register context used by the impeccable design skill — keep them in sync when the visual language or audience framing changes.
 
 ## Commands
 
@@ -66,7 +66,7 @@ A quote has many `quote_versions`; the trip-builder (`app/admin/trip-builder/…
 
 ## Database & migrations
 
-- **`migrations/` is the source of truth for the schema** — ordered `group_NN_*.sql` (schema, additive) and `seed_NN_*.sql` (sample/test data). Apply in numeric order. `database-schema.sql` at the root is a reference snapshot.
+- **`migrations/` is the source of truth for the schema** — ordered `group_NN_*.sql` (schema, additive) and `seed_NN_*.sql` (sample/test data). Apply in numeric order.
 - `lib/types.ts` is **hand-authored from the migrations**, not generated. When you change the schema, update the relevant types by hand (or regenerate with `supabase gen types typescript` if live access exists).
 - Prefer **additive** migrations; RLS is enabled on exposed tables (see `group_31`, `group_34`, `group_43`). New migrations go in the next `group_NN` file.
 
