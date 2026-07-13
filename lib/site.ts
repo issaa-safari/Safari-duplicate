@@ -23,3 +23,10 @@ export const site = {
 
 export const whatsappLink = (text?: string) =>
   `https://wa.me/${site.whatsappNumber}${text ? `?text=${encodeURIComponent(text)}` : ''}`
+
+// Opens Google Maps searching for a place. No API key or coordinates needed —
+// the query is just the place name + location text. Empty parts are dropped.
+export const googleMapsSearchUrl = (...parts: (string | null | undefined)[]) => {
+  const query = parts.map((p) => p?.trim()).filter(Boolean).join(', ')
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+}

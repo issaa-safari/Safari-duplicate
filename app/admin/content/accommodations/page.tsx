@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { ButtonLink, Button } from '@/components/ui/button'
+import { ButtonLink } from '@/components/ui/button'
 import ContentShell from '../content-shell'
+import ContentDirectory, { type DirectoryItem } from '@/components/admin/content-directory'
 
 const TIER_STYLES: Record<string, string> = {
   budget: 'bg-muted text-muted-foreground',
@@ -11,14 +11,11 @@ const TIER_STYLES: Record<string, string> = {
   luxury: 'bg-amber-100 text-warning-foreground',
   ultra: 'bg-purple-100 text-purple-700',
 }
+const TIER_LABELS: Record<string, string> = {
+  budget: 'Budget', midrange: 'Mid-Range', luxury: 'Luxury', ultra: 'Ultra-Luxury',
+}
 
-export default async function AccommodationsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ tab?: string }>
-}) {
-  const { tab } = await searchParams
-
+export default async function AccommodationsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/admin/login')
@@ -26,13 +23,38 @@ export default async function AccommodationsPage({
   const admin = createAdminClient()
   const { data: accommodations } = await admin
     .from('accommodations')
-    .select('id, name, type, budget_tier, cover_image_url, is_active, has_content, destinations(name)')
+    .select('id, name, type, budget_tier, rating, cover_image_url, is_active, destinations(name, country)')
     .order('name', { ascending: true })
 
-  const withContent = (accommodations ?? []).filter((a: any) => a.has_content)
-  const withoutContent = (accommodations ?? []).filter((a: any) => !a.has_content)
-  const activeTab = tab === 'empty' ? 'empty' : 'content'
-  const shown = activeTab === 'content' ? withContent : withoutContent
+  const items: DirectoryItem[] = (accommodations ?? []).map((a: any) => {
+    const destination = a.destinations?.name ?? null
+    const country = a.destinations?.country ?? null
+    const badges = []
+    if (a.type) badges.push({ label: String(a.type).replace(/_/g, ' '), className: 'bg-accent text-accent-foreground' })
+    if (a.budget_tier) {
+      badges.push({
+        label: TIER_LABELS[a.budget_tier] ?? a.budget_tier,
+        className: TIER_STYLES[a.budget_tier] ?? 'bg-muted text-muted-foreground',
+      })
+    }
+    return {
+      id: a.id,
+      name: a.name,
+      href: `/admin/content/accommodations/${a.id}`,
+      imageUrl: a.cover_image_url ?? null,
+      location: destination,
+      country,
+      mapsQuery: [a.name, destination, country].filter(Boolean).join(', '),
+      badges,
+      rating: a.rating ?? null,
+      active: a.is_active ?? true,
+      facets: {
+        country: country,
+        type: a.type ?? null,
+        class: a.budget_tier ?? null,
+      },
+    }
+  })
 
   return (
     <ContentShell active="accommodations" title="Accommodations">
@@ -44,104 +66,16 @@ export default async function AccommodationsPage({
         <ButtonLink href="/admin/content/accommodations/new" size="sm">+ New Accommodation</ButtonLink>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-border">
-        <Link
-          href="/admin/content/accommodations?tab=content"
-          className={'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ' +
-            (activeTab === 'content'
-              ? 'border-primary-strong text-brand-text'
-              : 'border-transparent text-muted-foreground hover:text-foreground')}>
-          With Content
-          <span className="ml-1.5 text-xs text-muted-foreground">({withContent.length})</span>
-        </Link>
-        <Link
-          href="/admin/content/accommodations?tab=empty"
-          className={'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ' +
-            (activeTab === 'empty'
-              ? 'border-primary-strong text-brand-text'
-              : 'border-transparent text-muted-foreground hover:text-foreground')}>
-          Without Content
-          <span className="ml-1.5 text-xs text-muted-foreground">({withoutContent.length})</span>
-        </Link>
-      </div>
-
-      <div className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden">
-        {shown.length === 0 ? (
-          <div className="p-10 text-center">
-            <p className="text-sm text-muted-foreground mb-4">
-              {activeTab === 'content'
-                ? 'No accommodations with content yet.'
-                : 'All accommodations have content.'}
-            </p>
-            {activeTab === 'content' && (
-              <Link
-                href="/admin/content/accommodations/new"
-                className="text-sm font-medium text-brand-text hover:underline">
-                Add your first accommodation
-              </Link>
-            )}
-          </div>
-        ) : (
-          <table className="stack-table w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground text-xs">
-                <th className="px-4 py-3 font-medium">Accommodation</th>
-                <th className="px-4 py-3 font-medium hidden sm:table-cell">Destination</th>
-                <th className="px-4 py-3 font-medium text-center hidden md:table-cell">Description</th>
-                <th className="px-4 py-3 font-medium text-center hidden md:table-cell">Image</th>
-                <th className="px-4 py-3 font-medium text-center hidden md:table-cell">Video</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((acc: any) => {
-                const hasDesc = acc.has_content ? 1 : 0
-                const hasImg  = acc.cover_image_url ? 1 : 0
-                return (
-                  <tr key={acc.id} className="border-b border-border/70 last:border-0 hover:bg-muted">
-                    <td data-label="Accommodation" className="px-4 py-3">
-                      <span className="font-medium text-foreground">{acc.name}</span>
-                      {acc.budget_tier && (
-                        <span className={'ml-2 text-xs px-1.5 py-0.5 rounded font-medium capitalize ' +
-                          (TIER_STYLES[acc.budget_tier] ?? 'bg-muted text-muted-foreground')}>
-                          {acc.budget_tier}
-                        </span>
-                      )}
-                    </td>
-                    <td data-label="Destination" className="px-4 py-3 text-muted-foreground hidden sm:table-cell">
-                      {acc.destinations?.name ?? <span className="text-gray-300">—</span>}
-                    </td>
-                    <td data-label="Description" className="px-4 py-3 text-center hidden md:table-cell">
-                      <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium ${
-                        hasDesc ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>
-                        {hasDesc}
-                      </span>
-                    </td>
-                    <td data-label="Image" className="px-4 py-3 text-center hidden md:table-cell">
-                      <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium ${
-                        hasImg ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>
-                        {hasImg}
-                      </span>
-                    </td>
-                    <td data-label="Video" className="px-4 py-3 text-center hidden md:table-cell">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded text-xs font-medium bg-muted text-muted-foreground">
-                        0
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link href={'/admin/content/accommodations/' + acc.id}
-                        className="text-muted-foreground hover:text-foreground">
-                        →
-                      </Link>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <ContentDirectory
+        items={items}
+        noun={{ singular: 'accommodation', plural: 'accommodations' }}
+        placeholderIcon="⌂"
+        facetDefs={[
+          { key: 'country', label: 'Country' },
+          { key: 'type', label: 'Accommodation Type' },
+          { key: 'class', label: 'Class' },
+        ]}
+      />
     </ContentShell>
   )
 }

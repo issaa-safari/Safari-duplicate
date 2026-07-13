@@ -11,6 +11,8 @@ export type DayActivity = {
   moment: 'morning' | 'afternoon' | 'evening' | 'night' | ''
   optional: boolean
   destination_id: string | null
+  /** Sub-day within a multi-night stop (0 = first day). */
+  day_offset?: number
 }
 
 type Lookup = { id: string; name: string }
@@ -23,8 +25,8 @@ const MOMENTS: { value: DayActivity['moment']; label: string }[] = [
   { value: 'night', label: 'Night' },
 ]
 
-export function newActivity(destinationId: string | null = null): DayActivity {
-  return { activity_id: '', moment: '', optional: false, destination_id: destinationId }
+export function newActivity(destinationId: string | null = null, dayOffset = 0): DayActivity {
+  return { activity_id: '', moment: '', optional: false, destination_id: destinationId, day_offset: dayOffset }
 }
 
 export default function ActivitiesModal({
@@ -33,6 +35,7 @@ export default function ActivitiesModal({
   activities,
   destinations,
   dayDestinationId,
+  subDays = 1,
   onChange,
   onClose,
   onCreateActivity,
@@ -43,6 +46,8 @@ export default function ActivitiesModal({
   activities: Lookup[]
   destinations: Lookup[]
   dayDestinationId: string | null
+  /** Number of nights at this stop; >1 shows a per-activity sub-day selector. */
+  subDays?: number
   onChange: (rows: DayActivity[]) => void
   onClose: () => void
   onCreateActivity?: (name: string, descriptionEn: string, descriptionAr: string) => Promise<Lookup | null>
@@ -108,6 +113,7 @@ export default function ActivitiesModal({
             <thead>
               <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide">
                 <th className="px-2 py-1 w-8"></th>
+                {subDays > 1 && <th className="px-2 py-1 w-24">Day</th>}
                 <th className="px-2 py-1">Activity Type</th>
                 <th className="px-2 py-1">Location</th>
                 <th className="px-2 py-1 w-32">Moment</th>
@@ -126,6 +132,14 @@ export default function ActivitiesModal({
                         className="text-muted-foreground hover:text-foreground disabled:opacity-30 text-xs">↓</button>
                     </div>
                   </td>
+                  {subDays > 1 && (
+                    <td className={cell}>
+                      <select className={sel} value={row.day_offset ?? 0} aria-label="Day within stop"
+                        onChange={e => update(i, { day_offset: Number(e.target.value) })}>
+                        {Array.from({ length: subDays }, (_, k) => <option key={k} value={k}>Day {k + 1}</option>)}
+                      </select>
+                    </td>
+                  )}
                   <td className={cell}>
                     <select className={sel} value={row.activity_id} aria-label="Activity type"
                       onChange={e => handleActivitySelect(i, e.target.value)}>

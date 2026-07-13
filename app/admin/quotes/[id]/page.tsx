@@ -94,7 +94,7 @@ export default async function QuoteDetailPage({
   ] = await Promise.all([
     versionIds.length
       ? admin.from('quote_days')
-          .select('id, day_number, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_id, destination_snapshot, meals, photos, sort_order, quote_version_id')
+          .select('id, day_number, day_number_end, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_id, destination_snapshot, meals, photos, sort_order, quote_version_id')
           .in('quote_version_id', versionIds).order('sort_order')
       : Promise.resolve({ data: [] as any[] }),
     admin.from('destinations').select('id, name').eq('is_active', true).order('name'),
