@@ -63,8 +63,8 @@ export default function CommunicationLog({
                 onClick={() => setType(t.key)}
                 className={`rounded-full px-3 py-1 text-xs font-medium border transition ${
                   type === t.key
-                    ? 'bg-[var(--olive)] text-white border-[var(--olive)]'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                    ? 'bg-primary-strong text-white border-primary-strong'
+                    : 'bg-surface text-muted-foreground border-border hover:border-border'
                 }`}
               >
                 {t.label}
@@ -77,7 +77,7 @@ export default function CommunicationLog({
           onChange={e => setSummary(e.target.value)}
           rows={2}
           placeholder="Log a note, call summary, or WhatsApp message..."
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]"
+          className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50"
         />
         <button
           type="submit"
@@ -86,7 +86,7 @@ export default function CommunicationLog({
         >
           {saving ? 'Saving...' : 'Add Log Entry'}
         </button>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
       </form>
 
       {/* Log history */}
@@ -106,7 +106,7 @@ export default function CommunicationLog({
                 {log.type === 'note' && '📝'}
               </div>
               <div className="flex-1">
-                <p className="text-gray-700">{log.summary}</p>
+                <p className="text-foreground">{log.summary}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {new Date(log.created_at).toLocaleDateString('en-GB', {
                     day: 'numeric',

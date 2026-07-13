@@ -163,10 +163,10 @@ export default async function AnalyticsPage() {
     ? timesToAccept.reduce((s, d) => s + d, 0) / timesToAccept.length : null
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6">
       <div>
-        <h1 className="text-lg font-semibold text-gray-900">Analytics</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Quote pipeline performance and revenue metrics</p>
+        <h1 className="text-xl font-semibold text-foreground">Analytics</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Quote pipeline performance and revenue metrics</p>
       </div>
 
       {/* Top KPIs */}
@@ -194,8 +194,8 @@ export default async function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Monthly volume chart */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-1">Quote Volume — Last 6 Months</h2>
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-1">Quote Volume — Last 6 Months</h2>
           <p className="text-xs text-muted-foreground mb-4">Versions created vs accepted</p>
           {months.some(m => m.created > 0) ? (
             <div className="flex items-end gap-2 h-36">
@@ -230,11 +230,11 @@ export default async function AnalyticsPage() {
             <p className="text-sm text-muted-foreground py-10 text-center">No quotes yet in this period.</p>
           )}
           <div className="flex gap-4 mt-3">
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#B8CFA0' }} />
               Created
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <div className="w-3 h-3 rounded-sm bg-olive" />
               Accepted
             </div>
@@ -242,8 +242,8 @@ export default async function AnalyticsPage() {
         </div>
 
         {/* Status funnel */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Quote Status Breakdown</h2>
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">Quote Status Breakdown</h2>
           {totalVersions === 0 ? (
             <p className="text-sm text-muted-foreground py-10 text-center">No quotes yet.</p>
           ) : (
@@ -253,14 +253,14 @@ export default async function AnalyticsPage() {
                 const barPct = Math.round((count / totalVersions) * 100)
                 return (
                   <div key={status} className="flex items-center gap-3">
-                    <span className="w-16 text-xs text-gray-500 capitalize text-right shrink-0">{status}</span>
-                    <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
+                    <span className="w-16 text-xs text-muted-foreground capitalize text-right shrink-0">{status}</span>
+                    <div className="flex-1 h-5 bg-muted rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${STATUS_COLORS[status] ?? 'bg-gray-300'}`}
                         style={{ width: `${Math.max(barPct, 2)}%` }}
                       />
                     </div>
-                    <span className="w-14 text-xs text-gray-600 font-medium tabular-nums">
+                    <span className="w-14 text-xs text-muted-foreground font-medium tabular-nums">
                       {count} <span className="text-muted-foreground">({barPct}%)</span>
                     </span>
                   </div>
@@ -275,15 +275,15 @@ export default async function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Gross P&L */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Gross P&amp;L — Accepted Quotes</h2>
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">Gross P&amp;L — Accepted Quotes</h2>
           {acceptedCount === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No accepted quotes yet.</p>
           ) : (
             <div className="space-y-3">
               <PnlRow label="Revenue (selling price)" value={totalAcceptedRevenue} bold />
               <PnlRow label="Cost of Sales" value={totalAcceptedCost} negative />
-              <div className="border-t border-gray-100 pt-3">
+              <div className="border-t border-border/70 pt-3">
                 <PnlRow
                   label="Gross Profit"
                   value={totalAcceptedRevenue - totalAcceptedCost}
@@ -292,8 +292,8 @@ export default async function AnalyticsPage() {
                 />
               </div>
               <div className="flex justify-between text-sm mt-1">
-                <span className="text-gray-500">Gross Margin</span>
-                <span className={`font-semibold ${overallMargin >= 20 ? 'text-green-700' : overallMargin >= 10 ? 'text-amber-600' : 'text-red-600'}`}>
+                <span className="text-muted-foreground">Gross Margin</span>
+                <span className={`font-semibold ${overallMargin >= 20 ? 'text-green-700' : overallMargin >= 10 ? 'text-warning-foreground' : 'text-destructive'}`}>
                   {overallMargin.toFixed(1)}%
                 </span>
               </div>
@@ -306,8 +306,8 @@ export default async function AnalyticsPage() {
         </div>
 
         {/* Category breakdown */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Revenue by Category</h2>
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">Revenue by Category</h2>
           {categories.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No price line data yet.</p>
           ) : (
@@ -318,16 +318,16 @@ export default async function AnalyticsPage() {
                 const barPct = Math.round((rev / maxCatRevenue) * 100)
                 return (
                   <div key={cat}>
-                    <div className="flex justify-between text-xs text-gray-500 mb-1">
-                      <span className="font-medium text-gray-700">{CATEGORY_LABELS[cat] ?? cat}</span>
+                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                      <span className="font-medium text-foreground">{CATEGORY_LABELS[cat] ?? cat}</span>
                       <span className="tabular-nums">
                         ${fmt(rev)}
-                        <span className={`ml-2 ${margin >= 20 ? 'text-green-600' : margin >= 10 ? 'text-amber-500' : 'text-red-500'}`}>
+                        <span className={`ml-2 ${margin >= 20 ? 'text-green-600' : margin >= 10 ? 'text-amber-500' : 'text-destructive'}`}>
                           {margin.toFixed(0)}%
                         </span>
                       </span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full"
                         style={{ width: `${Math.max(barPct, 1)}%`, backgroundColor: 'var(--olive)' }}
@@ -345,34 +345,34 @@ export default async function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Website bookings summary */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-900">Website Bookings</h2>
-            <Link href="/admin/bookings" className="text-xs text-[var(--olive)] hover:underline">View all</Link>
+            <h2 className="text-sm font-semibold text-foreground">Website Bookings</h2>
+            <Link href="/admin/bookings" className="text-xs text-brand-text hover:underline">View all</Link>
           </div>
           {totalBookings === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No website bookings yet.</p>
           ) : (
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-2xl font-semibold text-gray-900">{fmt(totalBookings)}</p>
-                <p className="text-xs text-gray-500 mt-0.5">Bookings</p>
+                <p className="text-2xl font-semibold text-foreground">{fmt(totalBookings)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Bookings</p>
               </div>
               <div>
                 <p className="text-2xl font-semibold" style={{ color: 'var(--olive)' }}>${fmt(bookingRevenue)}</p>
-                <p className="text-xs text-gray-500 mt-0.5">Revenue</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Revenue</p>
               </div>
               <div>
-                <p className="text-2xl font-semibold text-gray-900">{fmt(bookingTravellers)}</p>
-                <p className="text-xs text-gray-500 mt-0.5">Travellers</p>
+                <p className="text-2xl font-semibold text-foreground">{fmt(bookingTravellers)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Travellers</p>
               </div>
             </div>
           )}
         </div>
 
         {/* Top performing tours */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Top Tours — by Booking Revenue</h2>
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">Top Tours — by Booking Revenue</h2>
           {topTours.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No bookings to rank yet.</p>
           ) : (
@@ -381,14 +381,14 @@ export default async function AnalyticsPage() {
                 const barPct = Math.round((s.revenue / maxTourRevenue) * 100)
                 return (
                   <div key={title}>
-                    <div className="flex justify-between text-xs text-gray-500 mb-1">
-                      <span className="font-medium text-gray-700 truncate pr-2">{title}</span>
+                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                      <span className="font-medium text-foreground truncate pr-2">{title}</span>
                       <span className="tabular-nums shrink-0">
                         ${fmt(s.revenue)}
                         <span className="text-muted-foreground ml-2">{s.count} booking{s.count !== 1 ? 's' : ''}</span>
                       </span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${Math.max(barPct, 1)}%`, backgroundColor: 'var(--olive)' }} />
                     </div>
                   </div>
@@ -400,10 +400,10 @@ export default async function AnalyticsPage() {
       </div>
 
       {/* Request pipeline */}
-      <div className="bg-white rounded-lg border border-gray-200 p-5">
+      <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-900">Request Pipeline</h2>
-          <Link href="/admin/requests" className="text-xs text-[var(--olive)] hover:underline">View all</Link>
+          <h2 className="text-sm font-semibold text-foreground">Request Pipeline</h2>
+          <Link href="/admin/requests" className="text-xs text-brand-text hover:underline">View all</Link>
         </div>
         {totalRequests === 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">No requests yet.</p>
@@ -414,9 +414,9 @@ export default async function AnalyticsPage() {
               const p = Math.round((count / totalRequests) * 100)
               return (
                 <Link key={stage} href={`/admin/requests?stage=${stage}`}
-                  className="text-center p-3 rounded-lg bg-gray-50 hover:bg-[var(--olive)]/5 hover:border-[var(--olive)]/20 border border-transparent transition">
-                  <p className="text-2xl font-semibold text-gray-900">{count}</p>
-                  <p className="text-xs text-gray-500 capitalize mt-0.5">{stage.replace('_', ' ')}</p>
+                  className="text-center p-3 rounded-lg bg-surface-alt hover:bg-accent/60 hover:border-primary-strong/20 border border-transparent transition">
+                  <p className="text-2xl font-semibold text-foreground">{count}</p>
+                  <p className="text-xs text-muted-foreground capitalize mt-0.5">{stage.replace('_', ' ')}</p>
                   <p className="text-xs text-muted-foreground">{p}%</p>
                 </Link>
               )
@@ -432,9 +432,9 @@ function KpiCard({ label, value, sub, highlight }: {
   label: string; value: string; sub: string; highlight?: boolean
 }) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-5">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className={`text-2xl font-semibold mt-1 ${highlight ? 'text-green-700' : 'text-gray-900'}`}>{value}</p>
+    <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={`text-2xl font-semibold mt-1 ${highlight ? 'text-green-700' : 'text-foreground'}`}>{value}</p>
       <p className="text-xs text-muted-foreground mt-1">{sub}</p>
     </div>
   )
@@ -445,8 +445,8 @@ function PnlRow({ label, value, bold, negative, highlight }: {
 }) {
   return (
     <div className={`flex justify-between text-sm ${bold ? 'font-semibold' : ''}`}>
-      <span className="text-gray-600">{label}</span>
-      <span className={highlight ? (value >= 0 ? 'text-green-700' : 'text-red-600') : 'text-gray-900'}>
+      <span className="text-muted-foreground">{label}</span>
+      <span className={highlight ? (value >= 0 ? 'text-green-700' : 'text-destructive') : 'text-foreground'}>
         {negative ? '−' : ''} ${fmt(Math.abs(value))}
       </span>
     </div>

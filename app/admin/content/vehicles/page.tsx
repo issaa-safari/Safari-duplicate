@@ -25,27 +25,27 @@ export default async function VehiclesPage() {
     .order('name', { ascending: true })
 
   return (
-    <ContentShell active="vehicles" title="Vehicles" icon="▰">
+    <ContentShell active="vehicles" title="Vehicles">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Vehicles</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Manage vehicles available for tours</p>
+          <h1 className="text-xl font-semibold text-foreground">Vehicles</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage vehicles available for tours</p>
         </div>
         <ButtonLink href="/admin/content/vehicles/new" size="sm">+ New Vehicle</ButtonLink>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden">
         {!vehicles || vehicles.length === 0 ? (
           <div className="p-10 text-center">
-            <p className="text-sm text-gray-500 mb-4">No vehicles added yet.</p>
-            <Link href="/admin/content/vehicles/new" className="text-sm font-medium text-[var(--olive)] hover:underline">
+            <p className="text-sm text-muted-foreground mb-4">No vehicles added yet.</p>
+            <Link href="/admin/content/vehicles/new" className="text-sm font-medium text-brand-text hover:underline">
               Add your first vehicle
             </Link>
           </div>
         ) : (
           <table className="stack-table w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium hidden sm:table-cell">Type</th>
                 <th className="px-4 py-3 font-medium hidden md:table-cell">Seats</th>
@@ -56,16 +56,16 @@ export default async function VehiclesPage() {
             </thead>
             <tbody>
               {vehicles.map((v: any) => (
-                <tr key={v.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                  <td data-label="Name" className="px-4 py-3 font-medium text-gray-900">{v.name}</td>
-                  <td data-label="Type" className="px-4 py-3 text-gray-500 hidden sm:table-cell capitalize">
+                <tr key={v.id} className="border-b border-border/70 last:border-0 hover:bg-muted">
+                  <td data-label="Name" className="px-4 py-3 font-medium text-foreground">{v.name}</td>
+                  <td data-label="Type" className="px-4 py-3 text-muted-foreground hidden sm:table-cell capitalize">
                     {TYPE_LABELS[v.type] ?? v.type}
                   </td>
-                  <td data-label="Seats" className="px-4 py-3 text-gray-500 hidden md:table-cell">{v.seats}</td>
-                  <td data-label="Count" className="px-4 py-3 text-gray-500 hidden md:table-cell">{v.count}</td>
+                  <td data-label="Seats" className="px-4 py-3 text-muted-foreground hidden md:table-cell">{v.seats}</td>
+                  <td data-label="Count" className="px-4 py-3 text-muted-foreground hidden md:table-cell">{v.count}</td>
                   <td data-label="Status" className="px-4 py-3">
                     <span className={'text-xs px-2 py-0.5 rounded-full font-medium ' +
-                      (v.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
+                      (v.is_active ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground')}>
                       {v.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>

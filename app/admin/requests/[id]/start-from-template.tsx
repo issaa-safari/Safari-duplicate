@@ -36,16 +36,16 @@ export default function StartFromTemplate({ requestId, templates }: { requestId:
   if (!open) {
     return (
       <button onClick={() => setOpen(true)}
-        className="rounded-md border border-[var(--olive)]/40 px-4 py-2 text-sm font-medium text-[var(--olive-dk)] hover:bg-[var(--olive)]/5">
+        className="rounded-md border border-primary-strong/40 px-4 py-2 text-sm font-medium text-brand-ink hover:bg-accent/60">
         Start from template
       </button>
     )
   }
 
   return (
-    <form onSubmit={go} className="flex flex-col sm:flex-row items-start gap-2 bg-white rounded-lg border border-gray-200 p-3">
+    <form onSubmit={go} className="flex flex-col sm:flex-row items-start gap-2 rounded-xl border border-border bg-surface shadow-sm p-3">
       <select value={selected} onChange={e => setSelected(e.target.value)}
-        className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)] min-w-[220px]">
+        className="rounded-md border border-border px-3 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50 min-w-[220px]">
         <option value="">Choose a template…</option>
         {templates.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
       </select>
@@ -55,11 +55,11 @@ export default function StartFromTemplate({ requestId, templates }: { requestId:
           {pending ? 'Copying…' : 'Copy into new quote'}
         </button>
         <button type="button" onClick={() => setOpen(false)}
-          className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
+          className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground border border-border hover:bg-muted">
           Cancel
         </button>
       </div>
-      {error && <p className="text-xs text-red-600 w-full">{error}</p>}
+      {error && <p className="text-xs text-destructive w-full">{error}</p>}
     </form>
   )
 }

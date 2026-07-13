@@ -9,7 +9,7 @@ export default async function NewParkPage() {
   if (!user) redirect('/admin/login')
 
   return (
-    <ContentShell active="parks" title="New Park / Reserve" icon="⛰">
+    <ContentShell active="parks" title="New Park / Reserve">
       <NewParkForm />
     </ContentShell>
   )

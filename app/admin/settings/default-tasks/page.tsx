@@ -16,13 +16,13 @@ export default async function DefaultTasksPage() {
     .order('sort_order', { ascending: true })
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
       <div className="mb-6">
-        <Link href="/admin/settings" className="text-xs text-muted-foreground hover:text-gray-600">← Settings</Link>
-        <h1 className="text-lg font-semibold text-gray-900 mt-2">Default Tasks</h1>
-        <p className="text-sm text-gray-500 mt-0.5">The checklist auto-created when a request is booked</p>
+        <Link href="/admin/settings" className="text-xs text-muted-foreground hover:text-foreground">← Settings</Link>
+        <h1 className="text-lg font-semibold text-foreground mt-2">Default Tasks</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">The checklist auto-created when a request is booked</p>
       </div>
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="rounded-xl border border-border bg-surface shadow-sm p-6">
         <DefaultTaskManager tasks={tasks ?? []} />
       </div>
     </div>

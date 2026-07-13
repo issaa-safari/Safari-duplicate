@@ -24,7 +24,7 @@ export interface RequestFormInitial {
 }
 
 const inputCls =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+  'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
 export default function RequestForm({
   clients,
@@ -91,22 +91,22 @@ export default function RequestForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="rounded-xl border border-border bg-surface shadow-sm p-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h2 className="text-sm font-semibold text-gray-900">Client Information</h2>
-          <div className="flex rounded-md border border-gray-200 overflow-hidden text-xs font-medium">
+          <h2 className="text-sm font-semibold text-foreground">Client Information</h2>
+          <div className="flex rounded-md border border-border overflow-hidden text-xs font-medium">
             <button type="button"
               onClick={() => setClientMode('existing')}
               className={clientMode === 'existing'
-                ? 'px-3 py-1.5 bg-[var(--olive)] text-white'
-                : 'px-3 py-1.5 bg-white text-gray-600 hover:bg-gray-50'}>
+                ? 'px-3 py-1.5 bg-primary-strong text-white'
+                : 'px-3 py-1.5 bg-surface text-muted-foreground hover:bg-muted'}>
               Existing client
             </button>
             <button type="button"
               onClick={() => setClientMode('new')}
               className={clientMode === 'new'
-                ? 'px-3 py-1.5 bg-[var(--olive)] text-white'
-                : 'px-3 py-1.5 bg-white text-gray-600 hover:bg-gray-50'}>
+                ? 'px-3 py-1.5 bg-primary-strong text-white'
+                : 'px-3 py-1.5 bg-surface text-muted-foreground hover:bg-muted'}>
               New client
             </button>
           </div>
@@ -115,16 +115,16 @@ export default function RequestForm({
         {clientMode === 'existing' ? (
           <div className="space-y-3">
             {selectedClient ? (
-              <div className="flex items-center justify-between rounded-md border border-[var(--olive)] bg-[var(--olive)]/5 px-4 py-3">
+              <div className="flex items-center justify-between rounded-md border border-primary-strong bg-accent/50 px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{selectedClient.name}</p>
+                  <p className="text-sm font-medium text-foreground">{selectedClient.name}</p>
                   {selectedClient.email && (
-                    <p className="text-xs text-gray-500">{selectedClient.email}</p>
+                    <p className="text-xs text-muted-foreground">{selectedClient.email}</p>
                   )}
                 </div>
                 <button type="button"
                   onClick={() => { setSelectedClientId(null); setQuery('') }}
-                  className="text-xs font-medium text-[var(--olive)] hover:underline">
+                  className="text-xs font-medium text-brand-text hover:underline">
                   Change
                 </button>
               </div>
@@ -144,12 +144,12 @@ export default function RequestForm({
                 ) : matches.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No clients match “{query}”.</p>
                 ) : (
-                  <div className="rounded-md border border-gray-200 divide-y divide-gray-100 overflow-hidden">
+                  <div className="rounded-md border border-border divide-y divide-border/70 overflow-hidden">
                     {matches.map(c => (
                       <button key={c.id} type="button"
                         onClick={() => setSelectedClientId(c.id)}
-                        className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50">
-                        <span className="text-sm text-gray-900">{c.name}</span>
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-muted">
+                        <span className="text-sm text-foreground">{c.name}</span>
                         <span className="text-xs text-muted-foreground">{c.email}</span>
                       </button>
                     ))}
@@ -161,31 +161,31 @@ export default function RequestForm({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">Email</label>
               <input id="email" type="email" name="email" required placeholder="client@email.com" className={inputCls} />
             </div>
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+              <label htmlFor="firstName" className="block text-sm font-medium text-foreground mb-1">First Name</label>
               <input id="firstName" type="text" name="firstName" required className={inputCls} />
             </div>
             <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <label htmlFor="lastName" className="block text-sm font-medium text-foreground mb-1">Last Name</label>
               <input id="lastName" type="text" name="lastName" required className={inputCls} />
             </div>
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-1">Phone</label>
               <input id="phone" type="text" name="phone" className={inputCls} />
             </div>
             <div>
-              <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+              <label htmlFor="whatsapp" className="block text-sm font-medium text-foreground mb-1">WhatsApp</label>
               <input id="whatsapp" type="text" name="whatsapp" className={inputCls} />
             </div>
             <div>
-              <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+              <label htmlFor="country" className="block text-sm font-medium text-foreground mb-1">Country</label>
               <input id="country" type="text" name="country" className={inputCls} />
             </div>
             <div>
-              <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+              <label htmlFor="language" className="block text-sm font-medium text-foreground mb-1">Language</label>
               <select id="language" name="language" defaultValue="en" className={inputCls}>
                 <option value="en">English</option>
                 <option value="ar">Arabic</option>
@@ -195,18 +195,18 @@ export default function RequestForm({
         )}
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4">Request Details</h2>
+      <div className="rounded-xl border border-border bg-surface shadow-sm p-6">
+        <h2 className="text-sm font-semibold text-foreground mb-4">Request Details</h2>
         <div className="space-y-4">
           <div>
-            <label htmlFor="clientQuestion" className="block text-sm font-medium text-gray-700 mb-1">Client Message</label>
+            <label htmlFor="clientQuestion" className="block text-sm font-medium text-foreground mb-1">Client Message</label>
             <textarea id="clientQuestion" name="clientQuestion" rows={3}
               defaultValue={initial.clientQuestion ?? ''}
               placeholder="Paste their WhatsApp message or email here..."
               className={inputCls} />
           </div>
           <div>
-            <label htmlFor="source" className="block text-sm font-medium text-gray-700 mb-1">Source</label>
+            <label htmlFor="source" className="block text-sm font-medium text-foreground mb-1">Source</label>
             <select id="source" name="source" defaultValue={initial.source ?? ''} className={inputCls}>
               <option value="">Select source...</option>
               <option value="whatsapp">WhatsApp</option>
@@ -222,17 +222,17 @@ export default function RequestForm({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="preferredDate" className="block text-sm font-medium text-gray-700 mb-1">Preferred Start Date</label>
+              <label htmlFor="preferredDate" className="block text-sm font-medium text-foreground mb-1">Preferred Start Date</label>
               <input id="preferredDate" type="date" name="preferredDate" defaultValue={initial.preferredDate ?? ''} className={inputCls} />
             </div>
             <div>
-              <label htmlFor="tripLengthNights" className="block text-sm font-medium text-gray-700 mb-1">Trip Length (nights)</label>
+              <label htmlFor="tripLengthNights" className="block text-sm font-medium text-foreground mb-1">Trip Length (nights)</label>
               <input id="tripLengthNights" type="number" name="tripLengthNights" min={1} placeholder="e.g. 7"
                 defaultValue={initial.tripLengthNights ?? ''} className={inputCls} />
             </div>
           </div>
           <div>
-            <label htmlFor="preferredRoomType" className="block text-sm font-medium text-gray-700 mb-1">Preferred Room Type</label>
+            <label htmlFor="preferredRoomType" className="block text-sm font-medium text-foreground mb-1">Preferred Room Type</label>
             <select id="preferredRoomType" name="preferredRoomType" defaultValue={initial.preferredRoomType ?? ''} className={inputCls}>
               <option value="">Not specified</option>
               <option value="sharing">Sharing</option>
@@ -241,18 +241,18 @@ export default function RequestForm({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Travelers</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Travelers</label>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label htmlFor="adults" className="block text-xs text-gray-500 mb-1">Adults</label>
+                <label htmlFor="adults" className="block text-xs text-muted-foreground mb-1">Adults</label>
                 <input id="adults" type="number" name="adults" min={1} defaultValue={initial.adults ?? 2} className={inputCls} />
               </div>
               <div>
-                <label htmlFor="childrenOlder" className="block text-xs text-gray-500 mb-1">Children 12-18</label>
+                <label htmlFor="childrenOlder" className="block text-xs text-muted-foreground mb-1">Children 12-18</label>
                 <input id="childrenOlder" type="number" name="childrenOlder" min={0} defaultValue={initial.childrenOlder ?? 0} className={inputCls} />
               </div>
               <div>
-                <label htmlFor="childrenYounger" className="block text-xs text-gray-500 mb-1">Children 2-12</label>
+                <label htmlFor="childrenYounger" className="block text-xs text-muted-foreground mb-1">Children 2-12</label>
                 <input id="childrenYounger" type="number" name="childrenYounger" min={0} defaultValue={initial.childrenYounger ?? 0} className={inputCls} />
               </div>
             </div>
@@ -260,15 +260,15 @@ export default function RequestForm({
           <div className="flex items-center gap-3">
             <input type="checkbox" id="priority" checked={priority}
               onChange={e => setPriority(e.target.checked)}
-              className="rounded border-gray-300" />
-            <label htmlFor="priority" className="text-sm text-gray-700">
+              className="rounded border-border" />
+            <label htmlFor="priority" className="text-sm text-foreground">
               Mark as priority
             </label>
           </div>
         </div>
       </div>
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 rounded-md px-4 py-3">{error}</p>
+        <p className="text-sm text-destructive bg-destructive/10 rounded-md px-4 py-3">{error}</p>
       )}
       <div className="flex gap-3">
         <button type="submit" disabled={loading}
@@ -276,7 +276,7 @@ export default function RequestForm({
           {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Save Request'}
         </button>
         <Link href={backHref}
-          className="rounded-md border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          className="rounded-md border border-border px-6 py-2.5 text-sm font-medium text-foreground hover:bg-muted">
           Cancel
         </Link>
       </div>

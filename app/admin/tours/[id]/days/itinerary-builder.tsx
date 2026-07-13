@@ -107,7 +107,7 @@ export default function ItineraryBuilder({
   const [activityModal, setActivityModal] = useState<number | null>(null)
   const [adding, setAdding] = useState<{ index: number; kind: 'destination' | 'accommodation' | 'accommodation_alt' | 'activity' } | null>(null)
 
-  const inputCls = 'w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+  const inputCls = 'w-full rounded-md border border-border px-2 py-1.5 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
   function update(i: number, patch: Partial<Day>) {
     setDays((prev) => prev.map((d, idx) => (idx === i ? { ...d, ...patch } : d)))
@@ -213,7 +213,7 @@ export default function ItineraryBuilder({
   const MealPill = ({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) => (
     <button type="button" onClick={onClick}
       className={'h-7 w-7 rounded-md text-xs font-semibold border ' +
-        (on ? 'bg-[var(--olive)] text-white border-[var(--olive)]' : 'bg-white text-muted-foreground border-gray-300')}>
+        (on ? 'bg-primary-strong text-white border-primary-strong' : 'bg-surface text-muted-foreground border-border')}>
       {label}
     </button>
   )
@@ -221,13 +221,13 @@ export default function ItineraryBuilder({
   return (
     <div className="space-y-4">
       {days.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-10 text-center space-y-4">
-          <p className="text-sm text-gray-500">No itinerary days yet.</p>
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-10 text-center space-y-4">
+          <p className="text-sm text-muted-foreground">No itinerary days yet.</p>
           <div className="flex items-center justify-center gap-3">
             <button onClick={generateDays} className="rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
               Generate {durationDays} blank days
             </button>
-            <button onClick={addDay} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <button onClick={addDay} className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
               Add one day
             </button>
           </div>
@@ -235,7 +235,7 @@ export default function ItineraryBuilder({
       ) : (
         <div className="overflow-x-auto">
           <div className="stack-grid-wrap min-w-[900px] space-y-3">
-            <div className="stack-grid-header grid gap-3 px-2 text-xs font-medium text-gray-500" style={{ gridTemplateColumns: GRID_COLS }}>
+            <div className="stack-grid-header grid gap-3 px-2 text-xs font-medium text-muted-foreground" style={{ gridTemplateColumns: GRID_COLS }}>
               <div>Days</div>
               <div>Main Destination</div>
               <div>Accommodation</div>
@@ -248,9 +248,9 @@ export default function ItineraryBuilder({
               const dayActs = activities.filter((a) => day.activity_ids.includes(a.id))
               const availActs = activities.filter((a) => !day.activity_ids.includes(a.id))
               return (
-                <div key={day._key} className="stack-grid grid gap-3 bg-white rounded-lg border border-gray-200 p-3 items-start" style={{ gridTemplateColumns: GRID_COLS }}>
+                <div key={day._key} className="stack-grid grid gap-3 rounded-xl border border-border bg-surface shadow-sm p-3 items-start" style={{ gridTemplateColumns: GRID_COLS }}>
                   <div data-label="Days" className="space-y-2">
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className="text-sm font-semibold text-foreground">
                       Day {day.day_number}{day.day_number_end ? `–${day.day_number_end}` : ''}
                     </span>
                     <input type="number" min={1} value={day.day_number}
@@ -287,7 +287,7 @@ export default function ItineraryBuilder({
                     </select>
 
                     <select value={nightsOf(day)} onChange={(e) => setNights(i, Number(e.target.value))}
-                      className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 bg-white">
+                      className="rounded-md border border-border px-2 py-1 text-xs text-foreground bg-surface">
                       {Array.from({ length: 14 }, (_, k) => k + 1).map((nn) => (
                         <option key={nn} value={nn}>{nn} night{nn > 1 ? 's' : ''}</option>
                       ))}
@@ -298,7 +298,7 @@ export default function ItineraryBuilder({
                         if (e.target.value === '__add__') setAdding({ index: i, kind: 'accommodation_alt' })
                         else update(i, { accommodation_alt_id: e.target.value || null })
                       }}
-                      className={inputCls + ' text-gray-500'}>
+                      className={inputCls + ' text-muted-foreground'}>
                       <option value="">+ Alternative (optional)</option>
                       {accommodations.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                       <option value="__add__">+ Add new…</option>
@@ -311,17 +311,17 @@ export default function ItineraryBuilder({
                         {day.activities.map((da, ai) => {
                           const act = activities.find(a => a.id === da.activity_id)
                           return (
-                            <span key={ai} className="inline-flex items-center gap-1 text-xs bg-[var(--olive)]/10 text-[var(--olive-dk)] px-2 py-0.5 rounded-full">
+                            <span key={ai} className="inline-flex items-center gap-1 text-xs bg-accent text-brand-ink px-2 py-0.5 rounded-full">
                               {act?.name ?? 'Activity'}
                               {da.moment ? <span className="opacity-60">· {da.moment}</span> : null}
-                              {da.optional ? <span className="text-amber-600">· optional</span> : null}
+                              {da.optional ? <span className="text-warning-foreground">· optional</span> : null}
                             </span>
                           )
                         })}
                       </div>
                     )}
                     <button type="button" onClick={() => setActivityModal(i)}
-                      className="w-full rounded-md border border-dashed border-[var(--olive)] text-[var(--olive-dk)] px-3 py-2 text-sm font-medium hover:bg-[var(--olive)]/5">
+                      className="w-full rounded-md border border-dashed border-primary-strong text-brand-ink px-3 py-2 text-sm font-medium hover:bg-accent/60">
                       + Add Activities{day.activities.length > 0 ? ` (${day.activities.length})` : ''}
                     </button>
                     <input type="text" value={day.title_en}
@@ -337,7 +337,7 @@ export default function ItineraryBuilder({
                         next.has(i) ? next.delete(i) : next.add(i)
                         return next
                       })}
-                      className="text-[10px] text-muted-foreground hover:text-[var(--olive)] transition">
+                      className="text-[10px] text-muted-foreground hover:text-brand-text transition">
                       {arOpen.has(i) ? '▲ Hide Arabic' : '🇸🇦 + Arabic title'}
                     </button>
                     {arOpen.has(i) && (
@@ -361,11 +361,11 @@ export default function ItineraryBuilder({
 
                   <div className="flex flex-col max-sm:flex-row max-sm:justify-end items-center gap-1">
                     <button onClick={() => move(i, -1)} disabled={i === 0}
-                      className="px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30">↑</button>
+                      className="px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted rounded disabled:opacity-30">↑</button>
                     <button onClick={() => move(i, 1)} disabled={i === days.length - 1}
-                      className="px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30">↓</button>
+                      className="px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted rounded disabled:opacity-30">↓</button>
                     <button onClick={() => removeDay(i)}
-                      className="px-2 py-0.5 text-xs text-red-500 hover:bg-red-50 rounded">✕</button>
+                      className="px-2 py-0.5 text-xs text-destructive hover:bg-destructive/10 rounded">✕</button>
                   </div>
                 </div>
               )
@@ -411,13 +411,13 @@ export default function ItineraryBuilder({
 
       {days.length > 0 && (
         <div className="flex items-center gap-3">
-          <button onClick={addDay} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">+ Add Day</button>
-          <button onClick={renumber} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Renumber 1→{days.length}</button>
+          <button onClick={addDay} className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">+ Add Day</button>
+          <button onClick={renumber} className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">Renumber 1→{days.length}</button>
         </div>
       )}
 
-      {error && <p className="text-sm text-red-600 bg-red-50 rounded-md px-4 py-3">{error}</p>}
-      {saved && <p className="text-sm text-green-600 bg-green-50 rounded-md px-4 py-3">Itinerary saved.</p>}
+      {error && <p className="text-sm text-destructive bg-destructive/10 rounded-md px-4 py-3">{error}</p>}
+      {saved && <p className="text-sm text-accent-foreground bg-accent rounded-md px-4 py-3">Itinerary saved.</p>}
 
       {days.length > 0 && (
         <div className="sticky bottom-4">

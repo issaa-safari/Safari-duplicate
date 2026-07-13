@@ -65,14 +65,14 @@ function SearchModal({ onClose }: { onClose: () => void }) {
           <Search size={15} className="text-muted-foreground shrink-0" />
           <input
             ref={inputRef}
-            className="flex-1 bg-transparent text-sm outline-none placeholder-gray-400"
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             placeholder="Search quotes, clients, requests…"
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Escape' && onClose()}
           />
           {searching && <span className="text-xs text-muted-foreground animate-pulse">…</span>}
-          <button onClick={onClose} className="text-xs text-muted-foreground hover:text-gray-600 px-2 py-1 rounded border border-gray-200">
+          <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded border border-border">
             Esc
           </button>
         </div>
@@ -100,9 +100,9 @@ function SearchModal({ onClose }: { onClose: () => void }) {
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
                   <div>
                     <span className="font-mono text-xs text-muted-foreground mr-2">{q.quote_number}</span>
-                    <span className="font-medium text-gray-800">{q.client_name ?? q.title ?? 'Quote'}</span>
+                    <span className="font-medium text-foreground">{q.client_name ?? q.title ?? 'Quote'}</span>
                   </div>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 capitalize">{q.status}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">{q.status}</span>
                 </button>
               ))}
             </div>
@@ -117,7 +117,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
                   className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition"
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--admin-bg)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                  <span className="font-medium text-gray-800">{c.first_name} {c.last_name}</span>
+                  <span className="font-medium text-foreground">{c.first_name} {c.last_name}</span>
                   <span className="text-xs text-muted-foreground">{c.email}</span>
                 </button>
               ))}
@@ -135,9 +135,9 @@ function SearchModal({ onClose }: { onClose: () => void }) {
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
                   <div>
                     <span className="font-mono text-xs text-muted-foreground mr-2">{r.reference}</span>
-                    <span className="font-medium text-gray-800">{r.client_name ?? r.reference}</span>
+                    <span className="font-medium text-foreground">{r.client_name ?? r.reference}</span>
                   </div>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 capitalize">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
                     {r.stage?.replace('_', ' ')}
                   </span>
                 </button>

@@ -24,8 +24,8 @@ export default function TemplateToggleButton({ quoteId, isTemplate }: { quoteId:
       disabled={pending}
       title={isTemplate ? 'This quote is a reusable template' : 'Save this quote as a reusable template'}
       className={isTemplate
-        ? 'rounded-md px-4 py-2 text-sm font-medium text-[var(--olive-dk)] bg-[var(--olive)]/10 border border-[var(--olive)]/40 hover:bg-[var(--olive)]/15'
-        : 'rounded-md px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50'}>
+        ? 'rounded-md px-4 py-2 text-sm font-medium text-brand-ink bg-accent border border-primary-strong/40 hover:bg-accent'
+        : 'rounded-md px-4 py-2 text-sm font-medium text-muted-foreground border border-border hover:bg-muted'}>
       {pending ? '…' : isTemplate ? '★ Template' : '☆ Save as template'}
     </button>
   )

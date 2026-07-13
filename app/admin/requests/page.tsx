@@ -1,7 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { Inbox } from 'lucide-react'
 import StatusBadge from '@/components/admin/status-badge'
+import { ButtonLink } from '@/components/ui/button'
+import { EmptyState } from '@/components/admin/ui/empty-state'
 import { STATUS_VARIANT, VARIANT_CLASSES, VARIANT_DOT, STAGE_LABELS } from '@/lib/status-colors'
 
 // Stage chips share the StatusBadge color system so the sidebar filter and
@@ -37,45 +40,80 @@ export default async function RequestsPage({
     .order('created_at', { ascending: false })
 
   return (
-    <div className="flex flex-1 min-h-screen">
-      <div className="w-48 bg-white border-r border-gray-200 p-3 flex flex-col gap-1">
-        <Link href="/admin/requests/new"
-          className="mb-3 rounded-md px-3 py-2 text-sm font-medium text-white text-center bg-olive hover:bg-olive-dk">
+    <div className="flex min-h-screen flex-1 flex-col md:flex-row">
+      {/* Stage rail (desktop) */}
+      <nav
+        aria-label="Request stages"
+        className="hidden w-52 shrink-0 flex-col gap-1 border-r border-border bg-surface p-3 md:flex"
+      >
+        <ButtonLink href="/admin/requests/new" variant="primary" size="sm" className="mb-3 w-full">
           + New Request
-        </Link>
+        </ButtonLink>
         {STAGES.map((stage) => (
-          <Link key={stage.key}
+          <Link
+            key={stage.key}
             href={"/admin/requests?stage=" + stage.key}
-            className={"flex items-center justify-between rounded-md px-3 py-2 text-sm transition " +
+            aria-current={activeStage === stage.key ? 'page' : undefined}
+            className={"flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors duration-150 " +
               (activeStage === stage.key
                 ? `font-medium ${VARIANT_CLASSES[stage.variant]}`
-                : 'text-gray-600 hover:bg-gray-50')}>
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground')}
+          >
             <span className="flex items-center gap-2">
-              <span className={`h-2 w-2 shrink-0 rounded-full ${VARIANT_DOT[stage.variant]}`} />
+              <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${VARIANT_DOT[stage.variant]}`} />
               {stage.label}
             </span>
-            <span className={"text-xs font-medium px-2 py-0.5 rounded-full " +
-              (activeStage === stage.key ? 'bg-white/60' : 'bg-gray-100 text-gray-600')}>
+            <span className={"rounded-full px-2 py-0.5 text-xs font-medium tabular-nums " +
+              (activeStage === stage.key ? 'bg-surface/60' : 'bg-muted text-muted-foreground')}>
               {stageCounts[stage.key] ?? 0}
             </span>
           </Link>
         ))}
-      </div>
+      </nav>
 
-      <div className="flex-1 p-6">
-        <h1 className="text-lg font-semibold text-gray-900 mb-4">
-          {STAGES.find(s => s.key === activeStage)?.label} Requests
-        </h1>
+      {/* Stage chips (mobile) */}
+      <nav
+        aria-label="Request stages"
+        className="flex gap-1.5 overflow-x-auto border-b border-border bg-surface px-4 py-2.5 md:hidden"
+      >
+        {STAGES.map((stage) => (
+          <Link
+            key={stage.key}
+            href={"/admin/requests?stage=" + stage.key}
+            aria-current={activeStage === stage.key ? 'page' : undefined}
+            className={"flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors duration-150 " +
+              (activeStage === stage.key
+                ? VARIANT_CLASSES[stage.variant]
+                : 'bg-muted text-muted-foreground')}
+          >
+            {stage.label}
+            <span className="tabular-nums opacity-70">{stageCounts[stage.key] ?? 0}</span>
+          </Link>
+        ))}
+      </nav>
+
+      <div className="flex-1 px-4 py-6 sm:px-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold text-foreground">
+            {STAGES.find(s => s.key === activeStage)?.label} Requests
+          </h1>
+          <ButtonLink href="/admin/requests/new" variant="primary" size="sm" className="md:hidden">
+            + New
+          </ButtonLink>
+        </div>
         {!requests || requests.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-muted-foreground text-sm">No requests in this stage.</p>
-            <Link href="/admin/requests/new"
-              className="mt-4 rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
-              + Add First Request
-            </Link>
-          </div>
+          <EmptyState
+            icon={Inbox}
+            title={`No ${STAGES.find(s => s.key === activeStage)?.label.toLowerCase()} requests`}
+            body="Requests move through the pipeline as you work them — new enquiries land here from the website, WhatsApp, or manual entry."
+            action={
+              <ButtonLink href="/admin/requests/new" variant="primary" size="sm">
+                + Add First Request
+              </ButtonLink>
+            }
+          />
         ) : (
-          <div className="space-y-3">
+          <ul className="space-y-3">
             {requests.map((req: any) => {
               const client = req.clients
               const tour = req.tours
@@ -83,33 +121,38 @@ export default async function RequestsPage({
                 ? (client.first_name + ' ' + client.last_name).trim()
                 : 'Unknown'
               return (
-                <Link key={req.id}
-                  href={"/admin/requests/" + req.id}
-                  className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-[var(--olive)] hover:shadow-sm transition">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs text-muted-foreground font-mono">{req.reference}</span>
-                        {req.priority && (
-                          <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Priority</span>
+                <li key={req.id}>
+                  <Link
+                    href={"/admin/requests/" + req.id}
+                    className="block rounded-xl border border-border bg-surface p-4 shadow-sm transition-all duration-150 hover:border-ring/50 hover:shadow"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                          <span className="font-mono text-xs text-muted-foreground">{req.reference}</span>
+                          {req.priority && (
+                            <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
+                              Priority
+                            </span>
+                          )}
+                          {req.stage && <StatusBadge status={req.stage} />}
+                        </div>
+                        <p className="font-medium text-foreground">{clientName}</p>
+                        {tour && <p className="mt-0.5 text-sm text-muted-foreground">{tour.title_en}</p>}
+                        {req.client_question && (
+                          <p className="mt-1 truncate text-sm text-muted-foreground">{req.client_question}</p>
                         )}
-                        {req.stage && <StatusBadge status={req.stage} />}
                       </div>
-                      <p className="font-medium text-gray-900">{clientName}</p>
-                      {tour && <p className="text-sm text-gray-500 mt-0.5">{tour.title_en}</p>}
-                      {req.client_question && (
-                        <p className="text-sm text-muted-foreground mt-1 truncate">{req.client_question}</p>
-                      )}
+                      <div className="shrink-0 text-right text-xs text-muted-foreground">
+                        <p>{req.travelers_adults} adults</p>
+                        <p className="mt-1">{new Date(req.created_at).toLocaleDateString('en-GB')}</p>
+                      </div>
                     </div>
-                    <div className="text-right text-xs text-muted-foreground shrink-0">
-                      <p>{req.travelers_adults} adults</p>
-                      <p className="mt-1">{new Date(req.created_at).toLocaleDateString('en-GB')}</p>
-                    </div>
-                  </div>
-                </Link>
+                  </Link>
+                </li>
               )
             })}
-          </div>
+          </ul>
         )}
       </div>
     </div>

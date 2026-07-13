@@ -18,21 +18,21 @@ export default async function SettingsPage() {
 
   if (error || !settings) {
     return (
-      <div className="p-6 max-w-2xl mx-auto">
-        <p className="text-sm text-red-600">Could not load settings: {error?.message}</p>
+      <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
+        <p className="text-sm text-destructive">Could not load settings: {error?.message}</p>
       </div>
     )
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Company information, banking, and booking defaults</p>
+        <h1 className="text-xl font-semibold text-foreground">Settings</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Company information, banking, and booking defaults</p>
       </div>
       <div className="mb-4">
         <Link href="/admin/settings/default-tasks"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--olive)] hover:text-[var(--olive-dk)]">
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-text hover:text-brand-ink">
           Manage Default Tasks →
         </Link>
       </div>

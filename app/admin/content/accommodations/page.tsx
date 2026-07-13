@@ -6,9 +6,9 @@ import ContentShell from '../content-shell'
 import ContentDirectory, { type DirectoryItem } from '@/components/admin/content-directory'
 
 const TIER_STYLES: Record<string, string> = {
-  budget: 'bg-gray-100 text-gray-600',
+  budget: 'bg-muted text-muted-foreground',
   midrange: 'bg-blue-100 text-blue-700',
-  luxury: 'bg-amber-100 text-amber-700',
+  luxury: 'bg-amber-100 text-warning-foreground',
   ultra: 'bg-purple-100 text-purple-700',
 }
 const TIER_LABELS: Record<string, string> = {
@@ -30,11 +30,11 @@ export default async function AccommodationsPage() {
     const destination = a.destinations?.name ?? null
     const country = a.destinations?.country ?? null
     const badges = []
-    if (a.type) badges.push({ label: String(a.type).replace(/_/g, ' '), className: 'bg-olive/10 text-olive-dk' })
+    if (a.type) badges.push({ label: String(a.type).replace(/_/g, ' '), className: 'bg-accent text-accent-foreground' })
     if (a.budget_tier) {
       badges.push({
         label: TIER_LABELS[a.budget_tier] ?? a.budget_tier,
-        className: TIER_STYLES[a.budget_tier] ?? 'bg-gray-100 text-gray-600',
+        className: TIER_STYLES[a.budget_tier] ?? 'bg-muted text-muted-foreground',
       })
     }
     return {
@@ -57,11 +57,11 @@ export default async function AccommodationsPage() {
   })
 
   return (
-    <ContentShell active="accommodations" title="Accommodations" icon="⌂">
+    <ContentShell active="accommodations" title="Accommodations">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Accommodations</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Lodges, camps, and hotels used in itineraries</p>
+          <h1 className="text-xl font-semibold text-foreground">Accommodations</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage lodges, camps, and hotels used in itineraries</p>
         </div>
         <ButtonLink href="/admin/content/accommodations/new" size="sm">+ New Accommodation</ButtonLink>
       </div>

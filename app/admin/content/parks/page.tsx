@@ -35,7 +35,7 @@ export default async function ParksPage() {
     country: p.country ?? null,
     mapsQuery: [p.name, p.country].filter(Boolean).join(', '),
     badges: p.park_type
-      ? [{ label: TYPE_LABELS[p.park_type] ?? p.park_type, className: 'bg-olive/10 text-olive-dk' }]
+      ? [{ label: TYPE_LABELS[p.park_type] ?? p.park_type, className: 'bg-accent text-accent-foreground' }]
       : [],
     active: p.is_active ?? true,
     facets: {
@@ -45,11 +45,11 @@ export default async function ParksPage() {
   }))
 
   return (
-    <ContentShell active="parks" title="Parks & Reserves" icon="⛰">
+    <ContentShell active="parks" title="Parks & Reserves">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Parks & Reserves</h1>
-          <p className="text-sm text-gray-500 mt-0.5">National parks, game reserves, and conservancies</p>
+          <h1 className="text-xl font-semibold text-foreground">Parks & Reserves</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">National parks, game reserves, and conservancies with entrance fees</p>
         </div>
         <ButtonLink href="/admin/content/parks/new" size="sm">+ New Park</ButtonLink>
       </div>

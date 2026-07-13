@@ -6,11 +6,11 @@ import StatusBadge from '@/components/admin/status-badge'
 
 const TRANSITIONS: Record<string, { to: string; label: string; style: string }[]> = {
   ready: [
-    { to: 'draft', label: 'Revert to Draft', style: 'border border-gray-300 text-gray-600 hover:bg-gray-50' },
+    { to: 'draft', label: 'Revert to Draft', style: 'border border-border text-muted-foreground hover:bg-muted' },
     { to: 'sent', label: 'Mark as Sent', style: 'bg-purple-600 hover:bg-purple-700 text-white' },
   ],
   sent: [
-    { to: 'ready', label: 'Revert to Ready', style: 'border border-gray-300 text-gray-600 hover:bg-gray-50' },
+    { to: 'ready', label: 'Revert to Ready', style: 'border border-border text-muted-foreground hover:bg-muted' },
   ],
 }
 
@@ -45,10 +45,10 @@ export default function VersionStatusControls({
   if (actions.length === 0) return null
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
+    <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Status:</span>
+          <span className="text-sm text-muted-foreground">Status:</span>
           <StatusBadge status={currentStatus} />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -65,7 +65,7 @@ export default function VersionStatusControls({
           ))}
         </div>
       </div>
-      {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+      {error && <p className="text-sm text-destructive mt-2">{error}</p>}
     </div>
   )
 }

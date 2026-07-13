@@ -34,11 +34,11 @@ export default async function ActivitiesPage() {
   })
 
   return (
-    <ContentShell active="activities" title="Activities" icon="□">
+    <ContentShell active="activities" title="Activities">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Activities</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Activities used in tour itineraries</p>
+          <h1 className="text-xl font-semibold text-foreground">Activities</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage activities used in tour itineraries</p>
         </div>
         <ButtonLink href="/admin/content/activities/new" size="sm">+ New Activity</ButtonLink>
       </div>

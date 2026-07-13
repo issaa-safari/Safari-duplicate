@@ -36,21 +36,21 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
     }
   }
 
-  const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
+  const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
+    <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/admin/departures" className="text-sm text-gray-500 hover:text-gray-700">
+        <Link href="/admin/departures" className="text-sm text-muted-foreground hover:text-foreground">
           Back to Departures
         </Link>
-        <h1 className="text-lg font-semibold text-gray-900">New Departure</h1>
+        <h1 className="text-xl font-semibold text-foreground">New Departure</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
           <div>
-            <label htmlFor="tourId" className="block text-sm font-medium text-gray-700 mb-1">Tour</label>
+            <label htmlFor="tourId" className="block text-sm font-medium text-foreground mb-1">Tour</label>
             <select id="tourId" name="tourId" required defaultValue="" className={inputCls}
               onChange={(e) => onTourChange(e.target.value)}>
               <option value="" disabled>Select a tour…</option>
@@ -64,23 +64,23 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+              <label htmlFor="startDate" className="block text-sm font-medium text-foreground mb-1">Start Date</label>
               <input id="startDate" type="date" name="startDate" required className={inputCls} />
             </div>
             <div>
-              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+              <label htmlFor="endDate" className="block text-sm font-medium text-foreground mb-1">End Date</label>
               <input id="endDate" type="date" name="endDate" required className={inputCls} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="maxSeats" className="block text-sm font-medium text-gray-700 mb-1">Max Seats</label>
+              <label htmlFor="maxSeats" className="block text-sm font-medium text-foreground mb-1">Max Seats</label>
               <input id="maxSeats" type="number" name="maxSeats" min={1} value={maxSeats}
                 onChange={(e) => setMaxSeats(e.target.value)} required className={inputCls} />
             </div>
             <div>
-              <label htmlFor="bookedSeats" className="block text-sm font-medium text-gray-700 mb-1">Already-booked seats</label>
+              <label htmlFor="bookedSeats" className="block text-sm font-medium text-foreground mb-1">Already-booked seats</label>
               <input id="bookedSeats" type="number" name="bookedSeats" min={0} defaultValue={0} className={inputCls} />
               <p className="text-[11px] text-muted-foreground mt-1">Only for migrating existing bookings — leave at 0 for new departures.</p>
             </div>
@@ -88,13 +88,13 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="priceUsd" className="block text-sm font-medium text-gray-700 mb-1">Price per Seat (USD)</label>
+              <label htmlFor="priceUsd" className="block text-sm font-medium text-foreground mb-1">Price per Seat (USD)</label>
               <input id="priceUsd" type="number" name="priceUsd" min={0} step="0.01" required placeholder="e.g. 4500"
                 value={price} onChange={(e) => setPrice(e.target.value)} className={inputCls} />
               <p className="text-[11px] text-muted-foreground mt-1">Shown on the website &amp; charged at booking. Pre-filled from the template, editable per departure.</p>
             </div>
             <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label htmlFor="status" className="block text-sm font-medium text-foreground mb-1">Status</label>
               <select id="status" name="status" defaultValue="available" className={inputCls}>
                 <option value="available">Available</option>
                 <option value="full">Full</option>
@@ -105,7 +105,7 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
           </div>
 
           <div>
-            <label htmlFor="internalNotes" className="block text-sm font-medium text-gray-700 mb-1">Internal Notes</label>
+            <label htmlFor="internalNotes" className="block text-sm font-medium text-foreground mb-1">Internal Notes</label>
             <textarea id="internalNotes" name="internalNotes" rows={2} placeholder="Not shown to clients" className={inputCls} />
           </div>
         </div>
