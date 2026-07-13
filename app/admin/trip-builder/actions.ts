@@ -681,7 +681,20 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
     const round2 = (n: number) => Math.round(n * 100) / 100
     const lines = [...hotelLines, ...sharedLines]
     const cost = round2(lines.reduce((s, l) => s + l.quantity * l.unitCostUsd, 0))
-    const sale = Number(state.salePrice)
+    // Per-band manual sale prices (per person) win over the single total.
+    // Ages 16+ fall in the adult band, 3–15 child, under 3 free (bandForAge).
+    const bandPriceOf = (code: string) => {
+      const n = Number((state.bandSalePrices ?? {})[code])
+      return Number.isFinite(n) && n > 0 ? n : null
+    }
+    const adultPp = bandPriceOf('adult')
+    const childPp = bandPriceOf('child')
+    const adultCount = guest.adults + guest.childAges.filter(a => a >= 16).length
+    const childCount = guest.childAges.filter(a => a >= 3 && a <= 15).length
+    const usesBandPricing = adultPp !== null || childPp !== null
+    const sale = usesBandPricing
+      ? round2((adultPp ?? 0) * adultCount + (childPp ?? 0) * childCount)
+      : Number(state.salePrice)
     const hasSale = Number.isFinite(sale) && sale > 0
     const markupPct = hasSale && cost > 0 ? (sale / cost - 1) * 100 : 0
     const priceLines = lines.map(l => {
@@ -725,6 +738,27 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
     await admin.from('quote_versions').update({ status: 'ready' })
       .eq('id', saved.versionId).eq('status', 'draft')
     await syncQuoteStatus(admin, saved.quoteId)
+
+    // Per-band fixed prices → travellers (the proposal's per-traveller
+    // breakdown prefers these over the percentage-derived split), and the
+    // customised Included/Excluded lists → the version. save_trip rewrites
+    // travellers each save, so these follow every save.
+    const [{ error: adultPriceErr }, { error: childPriceErr }, { error: inclErr }] = await Promise.all([
+      admin.from('quote_travellers')
+        .update({ pricing_fixed_amount_usd: adultPp })
+        .eq('quote_version_id', saved.versionId).eq('traveller_category', 'adult'),
+      admin.from('quote_travellers')
+        .update({ pricing_fixed_amount_usd: childPp })
+        .eq('quote_version_id', saved.versionId).eq('traveller_category', 'child'),
+      admin.from('quote_versions')
+        .update({
+          inclusions: state.inclusions && state.inclusions.length > 0 ? state.inclusions : null,
+          exclusions: state.exclusions && state.exclusions.length > 0 ? state.exclusions : null,
+        })
+        .eq('id', saved.versionId),
+    ])
+    const postSaveErr = adultPriceErr ?? childPriceErr ?? inclErr
+    if (postSaveErr) throw new Error(`Saved, but applying prices/inclusions failed: ${postSaveErr.message}`)
 
     const { data: quoteRow } = await admin
       .from('quotes').select('quote_number').eq('id', saved.quoteId).maybeSingle()

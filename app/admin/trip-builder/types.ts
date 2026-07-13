@@ -61,7 +61,18 @@ export interface TripBuilderState {
   hotelRows: HotelRowInput[]
   transportRows: TransportRowInput[]
   parkRows: ParkRowInput[]
+  /** Manual total sale price; ignored when any per-band price is set. */
   salePrice: string
+  /**
+   * Manual per-person sale price by traveller band code ('adult' | 'child').
+   * When any is set, the sale total is Σ count × price and each traveller's
+   * pricing_fixed_amount_usd is stored for the proposal's breakdown.
+   */
+  bandSalePrices?: Record<string, string>
+  /** Per-version Included list shown on the proposal; undefined = defaults. */
+  inclusions?: string[]
+  /** Per-version Excluded list shown on the proposal; undefined = defaults. */
+  exclusions?: string[]
 }
 
 export interface SaveTripInput {
