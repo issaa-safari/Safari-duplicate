@@ -1,6 +1,7 @@
 // Shared Trip Builder types (client form ⇄ server actions).
 
 import type { Residency } from '@/lib/rate-resolution'
+import type { BandSalePrices } from './band-pricing'
 
 export const ROOM_CATEGORIES = ['sharing', 'single', 'triple', 'extra_bed'] as const
 export type RoomCategory = (typeof ROOM_CATEGORIES)[number]
@@ -64,11 +65,11 @@ export interface TripBuilderState {
   /** Manual total sale price; ignored when any per-band price is set. */
   salePrice: string
   /**
-   * Manual per-person sale price by traveller band code ('adult' | 'child').
-   * When any is set, the sale total is Σ count × price and each traveller's
+   * Manual per-person sale price per traveller band. When any is set, the
+   * sale total is Σ count × price and each traveller's
    * pricing_fixed_amount_usd is stored for the proposal's breakdown.
    */
-  bandSalePrices?: Record<string, string>
+  bandSalePrices?: BandSalePrices
   /** Per-version Included list shown on the proposal; undefined = defaults. */
   inclusions?: string[]
   /** Per-version Excluded list shown on the proposal; undefined = defaults. */
@@ -117,4 +118,15 @@ export type SaveTripResult =
       versionId: string
       totals: { costUsd: number; sellingUsd: number }
     }
-  | { ok: false; message: string; gaps?: string[] }
+  | {
+      ok: false
+      message: string
+      gaps?: string[]
+      /**
+       * Set when the quote/version was created before the failure (e.g. a
+       * post-save write failed) so a retry updates it instead of creating a
+       * duplicate.
+       */
+      quoteId?: string
+      versionId?: string
+    }

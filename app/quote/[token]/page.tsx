@@ -9,6 +9,7 @@ import {
   INCLUDED_DEFAULT_EN, INCLUDED_DEFAULT_AR,
   EXCLUDED_DEFAULT_EN, EXCLUDED_DEFAULT_AR,
 } from '@/lib/quote-defaults'
+import { travellerPerPersonUsd } from '@/lib/proposal-pricing'
 
 const MEAL_LABELS: Record<string, string> = { B: 'Breakfast', L: 'Lunch', D: 'Dinner' }
 const MEAL_LABELS_AR: Record<string, string> = { B: 'إفطار', L: 'غداء', D: 'عشاء' }
@@ -193,10 +194,7 @@ export default async function QuotePortalPage({
     const key = band?.code ?? t.traveller_category ?? 'adult'
     const bandName = band?.name ?? (t.traveller_category === 'adult' ? 'Adult' : 'Child')
     const bandPct = (band?.default_percentage ?? 100) / 100
-    // A manually-set per-person price (pricing step) wins over the
-    // percentage-derived split of the total.
-    const fixed = t.pricing_fixed_amount_usd != null ? Number(t.pricing_fixed_amount_usd) : null
-    const pp = fixed !== null && fixed > 0 ? fixed : (effectiveSharingPp > 0 ? effectiveSharingPp * bandPct : 0)
+    const pp = travellerPerPersonUsd(t.pricing_fixed_amount_usd, effectiveSharingPp, bandPct)
     if (!tGroupMap[key]) tGroupMap[key] = { name: bandName, count: 0, perPerson: Math.round(pp), total: 0 }
     tGroupMap[key].count++
     tGroupMap[key].total += Math.round(pp)

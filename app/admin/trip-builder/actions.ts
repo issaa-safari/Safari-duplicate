@@ -22,6 +22,7 @@ import {
   type PricedSegment,
   type RateCardRow,
 } from '@/lib/rate-resolution'
+import { bandForAge, computeBandSale } from './band-pricing'
 import type {
   HotelRowInput,
   ParkRowInput,
@@ -136,10 +137,6 @@ function bandSnapshot(band: BandRow) {
     default_percentage: band.default_pricing_method === 'percentage' ? band.default_percentage : null,
     default_fixed_amount_usd: band.default_pricing_method === 'fixed' ? band.default_fixed_amount_usd : null,
   }
-}
-
-function bandForAge(bands: BandRow[], age: number): BandRow | null {
-  return bands.find(b => age >= b.min_age && (b.max_age === null || age <= b.max_age)) ?? null
 }
 
 function segmentViews(segments: PricedSegment[]): ResolvedSegmentView[] {
@@ -323,6 +320,11 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
   const { user, admin } = await authGuard()
   const state = input.state
   const guest = state.guest
+
+  // Ids of rows created before a mid-save failure, surfaced on the error
+  // result so a retry updates the same quote instead of creating a duplicate.
+  let savedQuoteId: string | null = null
+  let savedVersionId: string | null = null
 
   try {
     // ── Validate guest details ──
@@ -682,19 +684,19 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
     const lines = [...hotelLines, ...sharedLines]
     const cost = round2(lines.reduce((s, l) => s + l.quantity * l.unitCostUsd, 0))
     // Per-band manual sale prices (per person) win over the single total.
-    // Ages 16+ fall in the adult band, 3–15 child, under 3 free (bandForAge).
-    const bandPriceOf = (code: string) => {
-      const n = Number((state.bandSalePrices ?? {})[code])
-      return Number.isFinite(n) && n > 0 ? n : null
+    // Counts derive from the same age-band table that set each traveller's
+    // category above, so the total reconciles with the proposal breakdown.
+    const bandSale = computeBandSale(bands, guest, state.bandSalePrices)
+    const { adultPp, childPp, usesBandPricing } = bandSale
+    if (bandSale.missing.length > 0) {
+      return {
+        ok: false,
+        message: 'Per-traveller-type pricing is incomplete: enter a per-person price '
+          + `(0 = free) for ${bandSale.missing.join(' and ')}, or clear all `
+          + 'per-type prices to use the single sale total.',
+      }
     }
-    const adultPp = bandPriceOf('adult')
-    const childPp = bandPriceOf('child')
-    const adultCount = guest.adults + guest.childAges.filter(a => a >= 16).length
-    const childCount = guest.childAges.filter(a => a >= 3 && a <= 15).length
-    const usesBandPricing = adultPp !== null || childPp !== null
-    const sale = usesBandPricing
-      ? round2((adultPp ?? 0) * adultCount + (childPp ?? 0) * childCount)
-      : Number(state.salePrice)
+    const sale = usesBandPricing ? bandSale.total : Number(state.salePrice)
     const hasSale = Number.isFinite(sale) && sale > 0
     const markupPct = hasSale && cost > 0 ? (sale / cost - 1) * 100 : 0
     const priceLines = lines.map(l => {
@@ -732,33 +734,47 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
     if (rpcError) throw new Error(rpcError.message)
     const saved = result as { quoteId: string; versionId: string } | null
     if (!saved?.quoteId) throw new Error('Save failed — no quote returned.')
-
-    // Pricing is complete once it's saved — advance the draft straight to
-    // Ready so Preview/Send unlock without a separate manual step.
-    await admin.from('quote_versions').update({ status: 'ready' })
-      .eq('id', saved.versionId).eq('status', 'draft')
-    await syncQuoteStatus(admin, saved.quoteId)
+    savedQuoteId = saved.quoteId
+    savedVersionId = saved.versionId
 
     // Per-band fixed prices → travellers (the proposal's per-traveller
     // breakdown prefers these over the percentage-derived split), and the
-    // customised Included/Excluded lists → the version. save_trip rewrites
-    // travellers each save, so these follow every save.
-    const [{ error: adultPriceErr }, { error: childPriceErr }, { error: inclErr }] = await Promise.all([
-      admin.from('quote_travellers')
-        .update({ pricing_fixed_amount_usd: adultPp })
-        .eq('quote_version_id', saved.versionId).eq('traveller_category', 'adult'),
-      admin.from('quote_travellers')
-        .update({ pricing_fixed_amount_usd: childPp })
-        .eq('quote_version_id', saved.versionId).eq('traveller_category', 'child'),
+    // customised Included/Excluded lists → the version. Applied before the
+    // draft is advanced so a failure here can't strand a Ready version with
+    // missing pricing. save_trip rewrites travellers each save (fixed prices
+    // reset to null), so the traveller writes are only needed when band
+    // pricing is in use.
+    const postSaveWrites: PromiseLike<{ error: { message: string } | null }>[] = [
       admin.from('quote_versions')
         .update({
           inclusions: state.inclusions && state.inclusions.length > 0 ? state.inclusions : null,
           exclusions: state.exclusions && state.exclusions.length > 0 ? state.exclusions : null,
         })
         .eq('id', saved.versionId),
-    ])
-    const postSaveErr = adultPriceErr ?? childPriceErr ?? inclErr
-    if (postSaveErr) throw new Error(`Saved, but applying prices/inclusions failed: ${postSaveErr.message}`)
+    ]
+    if (usesBandPricing) {
+      postSaveWrites.push(
+        admin.from('quote_travellers')
+          .update({ pricing_fixed_amount_usd: adultPp })
+          .eq('quote_version_id', saved.versionId).eq('traveller_category', 'adult'),
+        // Every paying non-adult traveller takes the child price — the same
+        // grouping computeBandSale counted, whatever the band code.
+        admin.from('quote_travellers')
+          .update({ pricing_fixed_amount_usd: childPp })
+          .eq('quote_version_id', saved.versionId)
+          .neq('traveller_category', 'adult').eq('is_paying', true),
+      )
+    }
+    const postSaveErr = (await Promise.all(postSaveWrites)).find(r => r.error)?.error
+    if (postSaveErr) {
+      throw new Error(`Saved as a draft, but applying prices/inclusions failed: ${postSaveErr.message}. Save again to retry.`)
+    }
+
+    // Pricing is complete once it's saved — advance the draft straight to
+    // Ready so Preview/Send unlock without a separate manual step.
+    await admin.from('quote_versions').update({ status: 'ready' })
+      .eq('id', saved.versionId).eq('status', 'draft')
+    await syncQuoteStatus(admin, saved.quoteId)
 
     const { data: quoteRow } = await admin
       .from('quotes').select('quote_number').eq('id', saved.quoteId).maybeSingle()
@@ -779,7 +795,12 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
       },
     }
   } catch (err) {
-    return { ok: false, message: err instanceof Error ? err.message : 'Save failed.' }
+    return {
+      ok: false,
+      message: err instanceof Error ? err.message : 'Save failed.',
+      quoteId: savedQuoteId ?? undefined,
+      versionId: savedVersionId ?? undefined,
+    }
   }
 }
 

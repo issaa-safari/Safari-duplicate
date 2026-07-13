@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import CreateLookupDialog from '@/components/admin/create-lookup-dialog'
 import { createLookup } from '@/lib/create-lookup'
-import { INCLUDED_DEFAULT_EN, EXCLUDED_DEFAULT_EN } from '@/lib/quote-defaults'
 import { resolveTripRate, resyncHotelRowsFromItinerary, saveTrip } from './actions'
+import { computeBandSale, type AgeBandLite, type BandSalePrices } from './band-pricing'
 import {
   MEAL_PLANS,
   ROOM_CATEGORIES,
@@ -100,6 +100,7 @@ export default function TripBuilderForm({
   accommodations,
   vehicles,
   parks,
+  ageBands,
   usdToKes,
   initialQuoteId,
   initialVersionId,
@@ -111,6 +112,7 @@ export default function TripBuilderForm({
   accommodations: AccommodationOption[]
   vehicles: LookupOption[]
   parks: LookupOption[]
+  ageBands: AgeBandLite[]
   usdToKes: number
   initialQuoteId?: string | null
   initialVersionId?: string | null
@@ -136,15 +138,14 @@ export default function TripBuilderForm({
   const [salePrice, setSalePrice] = useState(initialState?.salePrice ?? '')
   // Per-person sale price by traveller band ('adult' / 'child'); when any is
   // set the sale total is Σ count × price instead of the single total input.
-  const [bandSalePrices, setBandSalePrices] = useState<Record<string, string>>(
+  const [bandSalePrices, setBandSalePrices] = useState<BandSalePrices>(
     initialState?.bandSalePrices ?? {},
   )
-  const [inclusions, setInclusions] = useState<string[]>(
-    initialState?.inclusions ?? INCLUDED_DEFAULT_EN,
-  )
-  const [exclusions, setExclusions] = useState<string[]>(
-    initialState?.exclusions ?? EXCLUDED_DEFAULT_EN,
-  )
+  // Empty = not customised: the proposal falls back to its language-aware
+  // defaults. Pre-filling defaults here would persist English text onto
+  // Arabic quotes and hide the price-line-derived Included list.
+  const [inclusions, setInclusions] = useState<string[]>(initialState?.inclusions ?? [])
+  const [exclusions, setExclusions] = useState<string[]>(initialState?.exclusions ?? [])
 
   // Lookups live in state so items added inline (saved to the Content
   // library) appear in the dropdowns immediately.
@@ -270,19 +271,13 @@ export default function TripBuilderForm({
   })()
   const payingGuests = guest.adults + guest.childAges.filter(a => a >= 3).length
 
-  // Per-band sale pricing (mirrors the server's band mapping: 16+ → adult,
-  // 3–15 → child, under 3 free). When any per-person price is set, the sale
-  // total is Σ count × price and the single total input is superseded.
-  const adultCount = guest.adults + guest.childAges.filter(a => a >= 16).length
-  const payingChildCount = guest.childAges.filter(a => a >= 3 && a <= 15).length
-  const bandPriceOf = (code: string) => {
-    const n = Number(bandSalePrices[code])
-    return Number.isFinite(n) && n > 0 ? n : null
-  }
-  const adultPp = bandPriceOf('adult')
-  const childPp = bandPriceOf('child')
-  const usesBandPricing = adultPp !== null || childPp !== null
-  const bandSaleTotal = (adultPp ?? 0) * adultCount + (childPp ?? 0) * payingChildCount
+  // Per-band sale pricing, computed with the same helper (and the same
+  // age-band table) the server uses, so the preview can't diverge from the
+  // saved totals. When any per-person price is set, the sale total is
+  // Σ count × price and the single total input is superseded.
+  const bandSale = computeBandSale(ageBands, guest, bandSalePrices)
+  const { adultCount, childCount: payingChildCount, adultPp, childPp, usesBandPricing } = bandSale
+  const bandSaleTotal = bandSale.total
 
   // Rows priced manually don't need a rate card — their gaps don't block saving.
   const manualKeys = new Set<string>()
@@ -300,6 +295,7 @@ export default function TripBuilderForm({
   const tripDays = guest.startDate && guest.endDate ? daysInclusive(guest.startDate, guest.endDate) : null
   const canSave =
     !saving && !anyPending && gapMessages.length === 0 &&
+    bandSale.missing.length === 0 &&
     guest.name.trim().length > 0 && !!guest.startDate && !!guest.endDate &&
     guest.endDate >= guest.startDate
 
@@ -324,6 +320,11 @@ export default function TripBuilderForm({
           setSavedOk(true)
         }
       } else {
+        // A failure can still have created the quote/version (e.g. a
+        // post-save write failed) — keep the ids so retrying updates it
+        // instead of creating a duplicate.
+        if (result.quoteId) setQuoteId(result.quoteId)
+        if (result.versionId) setVersionId(result.versionId)
         setSaveError(result.message)
         setSaveGaps(result.gaps ?? [])
       }
@@ -881,7 +882,7 @@ export default function TripBuilderForm({
           <p className="text-xs font-semibold text-foreground">
             Sale price per traveller type
             <span className="ml-2 font-normal text-muted-foreground">
-              set a per-person price for each type — or leave blank and use the single total above
+              set a per-person price for every type (0 = free) — or leave all blank and use the single total above
             </span>
           </p>
           <div className="mt-2 flex flex-wrap items-end gap-x-6 gap-y-2">
@@ -905,12 +906,18 @@ export default function TripBuilderForm({
                 </span>
               </div>
             ))}
-            {usesBandPricing && (
+            {usesBandPricing && bandSale.missing.length === 0 && (
               <span className="text-sm font-semibold text-foreground tabular-nums">
                 Total sale: ${fmt(bandSaleTotal)}
               </span>
             )}
           </div>
+          {bandSale.missing.length > 0 && (
+            <p className="mt-2 text-xs text-destructive">
+              Enter a per-person price for every traveller type (0 = free) — a blank type would
+              be left out of the sale total. Clear all type prices to use the single total instead.
+            </p>
+          )}
         </div>
         {payingGuests > 0 && (
           <p className="px-4 py-2 text-[11px] text-muted-foreground border-t border-gray-50">
@@ -1047,7 +1054,7 @@ function ChipListEditor({
       <p className="text-xs font-semibold text-foreground mb-2">{label}</p>
       <div className="flex flex-wrap gap-1.5">
         {items.map((item, i) => (
-          <span key={`${item}-${i}`}
+          <span key={item}
             className={'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ' + chipClass}>
             {item}
             <button type="button"

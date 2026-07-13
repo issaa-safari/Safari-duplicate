@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from 'react'
 import QuoteItineraryBuilder from './versions/[versionId]/quote-itinerary-builder'
 import VersionEditorForm from './versions/[versionId]/form'
 import VersionStatusControls from './versions/[versionId]/version-status-controls'
-import TripBuilderForm, { type LookupOption, type AccommodationOption } from '../../trip-builder/trip-builder-form'
+import TripBuilderForm from '../../trip-builder/trip-builder-form'
 import DeliveryPanel from './delivery-panel'
+import type { BuilderLookups } from '../../trip-builder/load-lookups'
 import type { TripBuilderState } from '../../trip-builder/types'
 
 type Step = 'itinerary' | 'pricing' | 'preview' | 'send'
@@ -68,13 +69,7 @@ export default function QuoteWorkspace({
   tourDays: any[]
   quoteRequest: { start_date: string | null; duration_days: number | null }
   itineraryByVersion: Record<string, ItineraryData>
-  tripBuilderLookups: {
-    destinations: LookupOption[]
-    accommodations: AccommodationOption[]
-    vehicles: LookupOption[]
-    parks: LookupOption[]
-    usdToKes: number
-  }
+  tripBuilderLookups: BuilderLookups
   tripBuilderInitialState: TripBuilderState | null
   tripBuilderInitialVersionId: string | null
   deliveries: any[]
