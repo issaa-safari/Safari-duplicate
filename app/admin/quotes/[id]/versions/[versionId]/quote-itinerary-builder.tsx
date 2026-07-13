@@ -6,6 +6,7 @@ import ActivitiesModal, { DayActivity } from '@/components/admin/activities-moda
 import CreateLookupDialog from '@/components/admin/create-lookup-dialog'
 import { createLookup } from '@/lib/create-lookup'
 import { GalleryUpload } from '@/components/admin/image-upload'
+import { cloneVersion } from '../../version-actions'
 
 type ContentItem = { id: string; name: string; [key: string]: unknown }
 
@@ -52,7 +53,7 @@ type TourDay = {
   meal_dinner: boolean
 }
 
-const GRID_COLS = '84px 150px 160px 1fr 76px 40px'
+const GRID_COLS = '104px 168px 200px 1fr 128px 40px'
 
 const ITEM_LABELS: Record<string, string> = {
   accommodation: 'Stay', activity: 'Activity', vehicle: 'Vehicle', staff: 'Staff',
@@ -80,6 +81,8 @@ function renumberDays(list: Day[]): Day[] {
   })
 }
 
+const dayOffsetOf = (it: DayItem) => Number((it.contentSnapshot?.day_offset as any) ?? 0) || 0
+
 const inputCls = 'w-full rounded-md border border-border px-2 py-1.5 text-sm text-foreground bg-surface transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-ring/50'
 const smallSelectCls = 'w-full rounded border border-border px-1.5 py-1 text-xs text-muted-foreground bg-surface transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-ring/50'
 
@@ -95,6 +98,13 @@ const MealPill = ({ on, label, onClick }: { on: boolean; label: string; onClick:
     {label}
   </button>
 )
+
+function fmtFrameDate(d: string | null): string | null {
+  if (!d) return null
+  const dt = new Date(d)
+  if (isNaN(dt.getTime())) return null
+  return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
 
 function fromTourDays(
   tourDays: TourDay[],
@@ -277,9 +287,14 @@ export default function QuoteItineraryBuilder({
         )
   )
   const [genCount, setGenCount] = useState<string>('')
-  const [activityModal, setActivityModal] = useState<number | null>(null)
+  // Which stop + sub-day (day_offset) the activities modal is editing.
+  const [activityModal, setActivityModal] = useState<{ day: number; offset: number } | null>(null)
   const [photoOpenIndices, setPhotoOpenIndices] = useState<Set<number>>(
     () => new Set(initialQuoteDays.map((d: any, i: number) => ((d.photos ?? []).length > 0 ? i : -1)).filter((i: number) => i >= 0))
+  )
+  // "Add drinks / options" — collapsible notes under the meal plan.
+  const [notesOpenIndices, setNotesOpenIndices] = useState<Set<number>>(
+    () => new Set(initialQuoteDays.map((d: any, i: number) => (d.client_notes ? i : -1)).filter((i: number) => i >= 0))
   )
 
   // Bridge the shared ActivitiesModal <-> the quote's activity items.
@@ -291,7 +306,7 @@ export default function QuoteItineraryBuilder({
         moment: ((it.contentSnapshot?.moment as any) ?? '') as DayActivity['moment'],
         optional: !!it.contentSnapshot?.optional,
         destination_id: (it.contentSnapshot?.destination_id as any) ?? null,
-        day_offset: Number((it.contentSnapshot?.day_offset as any) ?? 0) || 0,
+        day_offset: dayOffsetOf(it),
       }))
   }
 
@@ -302,6 +317,7 @@ export default function QuoteItineraryBuilder({
     return it?.entityId ?? ''
   }
   function setAccom(i: number, accomId: string, alt: boolean) {
+    if (isLocked) return
     setDays(prev => prev.map((d, idx) => {
       if (idx !== i) return d
       const others = d.items.filter(it => !(it.itemType === 'accommodation' && !!it.contentSnapshot?.alternative === alt))
@@ -317,19 +333,22 @@ export default function QuoteItineraryBuilder({
     setSaved(false)
   }
 
-  function applyActivities(i: number, rows: DayActivity[]) {
+  // Replace the activity items of one sub-day (day_offset) of a stop; the
+  // other sub-days' activities are untouched.
+  function applyActivities(i: number, offset: number, rows: DayActivity[]) {
+    if (isLocked) return
     setDays(prev => prev.map((d, idx) => {
       if (idx !== i) return d
-      const nonActivity = d.items.filter(it => it.itemType !== 'activity')
+      const kept = d.items.filter(it => it.itemType !== 'activity' || dayOffsetOf(it) !== offset)
       const activityItems: DayItem[] = rows.map(r => {
         const act = activities.find(a => a.id === r.activity_id)
         return {
           _key: uid(), id: null, itemType: 'activity', entityId: r.activity_id,
           titleSnapshot: (act?.name as string) ?? 'Activity',
-          contentSnapshot: { moment: r.moment || null, optional: !!r.optional, destination_id: r.destination_id ?? null, day_offset: r.day_offset ?? 0 },
+          contentSnapshot: { moment: r.moment || null, optional: !!r.optional, destination_id: r.destination_id ?? null, day_offset: offset },
         }
       })
-      return { ...d, items: [...nonActivity, ...activityItems] }
+      return { ...d, items: [...kept, ...activityItems] }
     }))
     setSaved(false)
   }
@@ -339,14 +358,23 @@ export default function QuoteItineraryBuilder({
     ? Math.max(1, Math.round((new Date(travelEndDate).getTime() - new Date(travelStartDate).getTime()) / 86_400_000) + 1)
     : null
 
+  // Countries visited — derived from the chosen destinations' countries.
+  const countriesVisited = [...new Set(
+    days
+      .map(d => (destinations.find(x => x.id === d.destinationId) as any)?.country as string | undefined)
+      .filter(Boolean)
+  )] as string[]
+
   // ── Day mutations ───────────────────────────────────────────────────────
 
   function update(i: number, patch: Partial<Day>) {
+    if (isLocked) return
     setDays(prev => prev.map((d, idx) => idx === i ? { ...d, ...patch } : d))
     setSaved(false)
   }
 
   function addBlankDay() {
+    if (isLocked) return
     const newIdx = days.length
     setDays(p => renumberDays([...p, {
       _key: uid(), id: null, dayNumber: p.length + 1, nights: 1, dayNumberEnd: null, dayDate: '', title: '',
@@ -361,6 +389,7 @@ export default function QuoteItineraryBuilder({
   }
 
   function generateBlankDays(count: number) {
+    if (isLocked) return
     if (count < 1 || count > 60) return
     setDays(renumberDays(Array.from({ length: count }, (_, i) => ({
       _key: uid(), id: null,
@@ -377,17 +406,20 @@ export default function QuoteItineraryBuilder({
 
   // Nights at a stop → recompute all day numbers cumulatively.
   function setNights(i: number, nights: number) {
+    if (isLocked) return
     const n = Math.max(1, Math.min(30, Math.floor(nights) || 1))
     setDays(prev => renumberDays(prev.map((d, idx) => idx === i ? { ...d, nights: n } : d)))
     setSaved(false)
   }
 
   function removeDay(i: number) {
+    if (isLocked) return
     setDays(p => renumberDays(p.filter((_, idx) => idx !== i)))
     setSaved(false)
   }
 
   function move(i: number, dir: -1 | 1) {
+    if (isLocked) return
     const t = i + dir
     if (t < 0 || t >= days.length) return
     setDays(prev => {
@@ -399,11 +431,13 @@ export default function QuoteItineraryBuilder({
   }
 
   function renumber() {
+    if (isLocked) return
     setDays(p => renumberDays(p))
     setSaved(false)
   }
 
   function autoComputeDates() {
+    if (isLocked) return
     if (!travelStartDate) return
     const start = new Date(travelStartDate)
     setDays(p => p.map(d => {
@@ -415,6 +449,7 @@ export default function QuoteItineraryBuilder({
   }
 
   function prefillFromTour() {
+    if (isLocked) return
     const mapped = fromTourDays(tourDays, destinations, accommodations, activities)
     setDays(mapped)
     if (language === 'ar') {
@@ -472,6 +507,10 @@ export default function QuoteItineraryBuilder({
   // ── Save ────────────────────────────────────────────────────────────────
 
   async function save(): Promise<boolean> {
+    if (isLocked) {
+      setError('This quote version has been sent and is locked — create a new version to edit the itinerary.')
+      return false
+    }
     setLoading(true); setError(''); setSaved(false)
     try {
       const res = await fetch('/api/admin/save-quote-itinerary', {
@@ -498,112 +537,162 @@ export default function QuoteItineraryBuilder({
     if (ok) onContinueToPricing?.()
   }
 
+  // Sent/locked versions can't be edited — offer a one-click editable copy
+  // (the same clone action used in the versions sidebar).
+  const lockedBanner = isLocked ? (
+    <div role="alert"
+      className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-warning-foreground">
+      <span className="flex-1 min-w-[16rem]">
+        This version has been <strong>sent to the client and is locked</strong> — the itinerary can no longer
+        be changed. Create a new version to edit and re-send it.
+      </span>
+      <form action={cloneVersion}>
+        <input type="hidden" name="versionId" value={versionId} />
+        <input type="hidden" name="quoteId" value={quoteId} />
+        <button type="submit"
+          className="rounded-md bg-primary-strong px-4 py-2 text-xs font-medium text-white shadow-sm transition-colors duration-150 hover:bg-primary-strong-hover">
+          Create new editable version
+        </button>
+      </form>
+    </div>
+  ) : null
+
   // ── Empty state ─────────────────────────────────────────────────────────
 
   if (days.length === 0) {
     return (
-      <section className="rounded-xl border border-border bg-surface shadow-sm p-8 text-center">
-        <p className="text-sm text-muted-foreground mb-5">No itinerary days yet.</p>
-        <div className="flex flex-col items-center gap-3">
-          {tourDays.length > 0 && (
-            <button
-              type="button"
-              onClick={prefillFromTour}
-              className="rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk"
-            >
-              Pre-fill from tour template ({tourDays.length} days)
-            </button>
-          )}
-          {tripDays && (
-            <button
-              type="button"
-              onClick={() => generateBlankDays(tripDays)}
-              className="rounded-md px-4 py-2 text-sm font-medium text-white"
-              style={{ backgroundColor: 'var(--gold)' }}
-            >
-              Generate {tripDays} blank days (from trip dates)
-            </button>
-          )}
-          <div className="flex items-center gap-2">
-            <input
-              type="number" min={1} max={60}
-              placeholder="Days"
-              value={genCount}
-              onChange={e => setGenCount(e.target.value)}
-              className="w-20 rounded-md border border-border px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-ring/50"
-            />
-            <button
-              type="button"
-              onClick={() => { const n = parseInt(genCount); if (n > 0) generateBlankDays(n) }}
-              disabled={!genCount || parseInt(genCount) < 1}
-              className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-40"
-            >
-              Generate blank days
-            </button>
+      <div className="space-y-4">
+        {lockedBanner}
+        <section className="rounded-xl border border-border bg-surface shadow-sm p-8 text-center">
+          <p className="text-sm text-muted-foreground mb-5">No itinerary days yet.</p>
+          <div className="flex flex-col items-center gap-3">
+            {tourDays.length > 0 && !isLocked && (
+              <button
+                type="button"
+                onClick={prefillFromTour}
+                className="rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk"
+              >
+                Pre-fill from tour template ({tourDays.length} days)
+              </button>
+            )}
+            {tripDays && !isLocked && (
+              <button
+                type="button"
+                onClick={() => generateBlankDays(tripDays)}
+                className="rounded-md px-4 py-2 text-sm font-medium text-white"
+                style={{ backgroundColor: 'var(--gold)' }}
+              >
+                Generate {tripDays} blank days (from trip dates)
+              </button>
+            )}
+            {!isLocked && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="number" min={1} max={60}
+                  placeholder="Days"
+                  value={genCount}
+                  onChange={e => setGenCount(e.target.value)}
+                  className="w-20 rounded-md border border-border px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-ring/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => { const n = parseInt(genCount); if (n > 0) generateBlankDays(n) }}
+                  disabled={!genCount || parseInt(genCount) < 1}
+                  className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-40"
+                >
+                  Generate blank days
+                </button>
+              </div>
+            )}
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     )
   }
 
-  // ── Grid ────────────────────────────────────────────────────────────────
+  // ── Day-by-day program table ────────────────────────────────────────────
+
+  const firstDestName = days[0]
+    ? ((days[0].destinationSnapshot as any)?.name
+        ?? destinations.find(d => d.id === days[0].destinationId)?.name
+        ?? null)
+    : null
+  const startLabel = fmtFrameDate(travelStartDate)
+  const endLabel = fmtFrameDate(travelEndDate)
 
   return (
     <div className="space-y-4">
+      {lockedBanner}
+
       {/* Toolbar */}
       <div className="flex items-center gap-2 flex-wrap">
-        {tourDays.length > 0 && (
+        {tourDays.length > 0 && !isLocked && (
           <button type="button" onClick={prefillFromTour}
             className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted">
             Re-fill from template ({tourDays.length} days)
           </button>
         )}
-        {travelStartDate && (
+        {travelStartDate && !isLocked && (
           <button type="button" onClick={autoComputeDates}
             className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted">
             Auto-set dates
           </button>
         )}
-        <button type="button" onClick={renumber}
-          className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted">
-          Renumber
-        </button>
+        {!isLocked && (
+          <button type="button" onClick={renumber}
+            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted">
+            Renumber
+          </button>
+        )}
+      </div>
+
+      {/* Program header + countries visited */}
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="text-sm font-semibold text-foreground">Create Day by Day Program</h3>
+        <p className="text-xs text-muted-foreground">
+          Countries visited:{' '}
+          <span className="font-medium text-foreground">
+            {countriesVisited.length > 0 ? countriesVisited.join(', ') : '—'}
+          </span>
+        </p>
       </div>
 
       <div className="overflow-x-auto">
-        <div className="stack-grid-wrap space-y-3" style={{ minWidth: 940 }}>
+        <div className="stack-grid-wrap rounded-xl border border-border bg-surface shadow-sm overflow-hidden"
+          style={{ minWidth: 980 }}>
 
           {/* Header */}
-          <div className="stack-grid-header grid gap-3 px-2 text-xs font-medium text-muted-foreground"
+          <div className="stack-grid-header grid gap-3 px-3 py-2 text-xs font-medium text-muted-foreground bg-muted/50 border-b border-border"
             style={{ gridTemplateColumns: GRID_COLS }}>
-            <div>Day / Date</div>
+            <div>Days</div>
             <div>Main Destination</div>
             <div>Accommodation</div>
-            <div>Activities &amp; Details</div>
+            <div>Activities</div>
             <div>Meal Plan</div>
             <div />
           </div>
 
-          {/* Day rows */}
+          {/* Arrival framing row */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 bg-accent/40 px-3 py-2 text-xs border-b border-border">
+            <span className="font-semibold text-brand-ink">Arrival &amp; start of tour</span>
+            {startLabel && <span className="text-muted-foreground">· {startLabel}</span>}
+            {firstDestName && <span className="text-muted-foreground">· {firstDestName}</span>}
+          </div>
+
+          {/* Stop rows — one row per stop; a stop can span several nights. */}
           {days.map((day, i) => (
             <div key={day._key}
-              className="stack-grid grid gap-3 rounded-xl border border-border bg-surface shadow-sm p-3 items-start"
+              className="stack-grid grid gap-3 p-3 items-start border-b border-border/70"
               style={{ gridTemplateColumns: GRID_COLS }}>
 
-              {/* Day range + Nights + Date. Day numbers auto-compute from nights. */}
-              <div data-label="Day / Nights" className="space-y-1.5">
+              {/* Days — auto range from the running nights total */}
+              <div data-label="Days" className="space-y-1.5">
                 <p className="text-sm font-semibold text-foreground">
                   Day {day.dayNumber}{day.dayNumberEnd ? `–${day.dayNumberEnd}` : ''}
                 </p>
-                <label className="block">
-                  <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">Nights</span>
-                  <input type="number" min={1} max={30} value={day.nights}
-                    onChange={e => setNights(i, Number(e.target.value))}
-                    className={inputCls} disabled={isLocked}
-                    aria-label={`Nights at day ${day.dayNumber}`} />
-                </label>
                 <input type="date" value={day.dayDate}
                   onChange={e => { update(i, { dayDate: e.target.value }); setSaved(false) }}
+                  aria-label={`Date of day ${day.dayNumber}`}
                   className={inputCls} disabled={isLocked} />
               </div>
 
@@ -611,6 +700,7 @@ export default function QuoteItineraryBuilder({
               <div data-label="Main Destination">
                 <select value={day.destinationId ?? ''}
                   onChange={e => onDestSelect(i, e.target.value)}
+                  aria-label={`Main destination of day ${day.dayNumber}`}
                   className={inputCls} disabled={isLocked}>
                   <option value="">— none —</option>
                   {destinations.map(d => (
@@ -620,41 +710,62 @@ export default function QuoteItineraryBuilder({
                 </select>
               </div>
 
-              {/* Accommodation (primary + optional alternative) */}
+              {/* Accommodation (primary + nights + optional alternative) */}
               <div data-label="Accommodation" className="space-y-1.5">
                 <select value={accomIdFor(day, false)}
                   onChange={e => onAccomSelect(i, e.target.value, false)}
+                  aria-label={`Accommodation for day ${day.dayNumber}`}
                   className={inputCls} disabled={isLocked}>
                   <option value="">— none —</option>
                   {accommodations.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   <option value="__add__">+ Add new accommodation…</option>
                 </select>
-                <select value={accomIdFor(day, true)}
-                  onChange={e => onAccomSelect(i, e.target.value, true)}
-                  className={inputCls + ' text-muted-foreground'} disabled={isLocked}>
-                  <option value="">+ Alternative…</option>
-                  {accommodations.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  <option value="__add__">+ Add new accommodation…</option>
+                <select value={day.nights}
+                  onChange={e => setNights(i, Number(e.target.value))}
+                  aria-label={`Nights at day ${day.dayNumber}`}
+                  className={smallSelectCls} disabled={isLocked}>
+                  {Array.from({ length: 21 }, (_, k) => k + 1).map(n => (
+                    <option key={n} value={n}>{n} night{n > 1 ? 's' : ''}</option>
+                  ))}
                 </select>
+                <div>
+                  <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">Alternative</span>
+                  <select value={accomIdFor(day, true)}
+                    onChange={e => onAccomSelect(i, e.target.value, true)}
+                    aria-label={`Alternative accommodation for day ${day.dayNumber}`}
+                    className={inputCls + ' text-muted-foreground'} disabled={isLocked}>
+                    <option value="">+ Alternative…</option>
+                    {accommodations.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    <option value="__add__">+ Add new accommodation…</option>
+                  </select>
+                </div>
               </div>
 
-              {/* Activities & Details */}
-              <div data-label="Activities & Details" className="space-y-1.5">
-                <button type="button" onClick={() => setActivityModal(i)} disabled={isLocked}
-                  className="w-full rounded-md border border-dashed border-primary-strong text-brand-ink px-2 py-1 text-xs font-medium hover:bg-accent/60 disabled:opacity-50">
-                  + Add Activities{day.items.filter(it => it.itemType === 'activity').length > 0 ? ` (${day.items.filter(it => it.itemType === 'activity').length})` : ''}
-                </button>
-                {day.items.filter(it => it.itemType === 'activity').length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {day.items.filter(it => it.itemType === 'activity').map(item => (
-                      <span key={item._key} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-accent text-brand-ink">
-                        {item.titleSnapshot}
-                        {(item.contentSnapshot?.moment as string) ? <span className="opacity-60">· {item.contentSnapshot.moment as string}</span> : null}
-                        {item.contentSnapshot?.optional ? <span className="text-warning-foreground">· opt</span> : null}
-                      </span>
-                    ))}
-                  </div>
-                )}
+              {/* Activities — one block per sub-day of the stop */}
+              <div data-label="Activities" className="space-y-1.5">
+                {Array.from({ length: day.nights }, (_, k) => {
+                  const subDayNumber = day.dayNumber + k
+                  const acts = day.items.filter(it => it.itemType === 'activity' && dayOffsetOf(it) === k)
+                  return (
+                    <div key={k} className={day.nights > 1 ? 'rounded-md border border-border/60 p-1.5 space-y-1' : 'space-y-1'}>
+                      {acts.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {acts.map(item => (
+                            <span key={item._key} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-accent text-brand-ink">
+                              {item.titleSnapshot}
+                              {(item.contentSnapshot?.moment as string) ? <span className="opacity-60">· {item.contentSnapshot.moment as string}</span> : null}
+                              {item.contentSnapshot?.optional ? <span className="text-warning-foreground">· opt</span> : null}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <button type="button" onClick={() => setActivityModal({ day: i, offset: k })} disabled={isLocked}
+                        className="w-full rounded-md border border-dashed border-primary-strong text-brand-ink px-2 py-1 text-xs font-medium hover:bg-accent/60 disabled:opacity-50">
+                        {acts.length > 0 ? 'Edit' : '+ Add'} Activities{day.nights > 1 ? ` – Day ${subDayNumber}` : ''}{acts.length > 0 ? ` (${acts.length})` : ''}
+                      </button>
+                    </div>
+                  )
+                })}
 
                 <input type="text" value={day.title}
                   onChange={e => update(i, { title: e.target.value })}
@@ -663,10 +774,6 @@ export default function QuoteItineraryBuilder({
                 <p className="text-[10px] text-muted-foreground leading-snug">
                   Day description is pulled from the destination in the Content library (EN/AR by client language).
                 </p>
-                <textarea value={day.clientNotes}
-                  onChange={e => update(i, { clientNotes: e.target.value })}
-                  placeholder="Client notes (optional)" rows={2}
-                  className={inputCls + ' resize-none'} disabled={isLocked} />
 
                 <button type="button"
                   aria-expanded={arOpenIndices.has(i)}
@@ -737,44 +844,68 @@ export default function QuoteItineraryBuilder({
                 )}
               </div>
 
-              {/* Meal Plan */}
-              <div data-label="Meal Plan" className="flex gap-1 pt-1">
-                <MealPill on={day.meals.includes('breakfast')} label="B"
-                  onClick={() => !isLocked && update(i, {
-                    meals: day.meals.includes('breakfast')
-                      ? day.meals.filter(m => m !== 'breakfast')
-                      : [...day.meals, 'breakfast'],
-                  })} />
-                <MealPill on={day.meals.includes('lunch')} label="L"
-                  onClick={() => !isLocked && update(i, {
-                    meals: day.meals.includes('lunch')
-                      ? day.meals.filter(m => m !== 'lunch')
-                      : [...day.meals, 'lunch'],
-                  })} />
-                <MealPill on={day.meals.includes('dinner')} label="D"
-                  onClick={() => !isLocked && update(i, {
-                    meals: day.meals.includes('dinner')
-                      ? day.meals.filter(m => m !== 'dinner')
-                      : [...day.meals, 'dinner'],
-                  })} />
+              {/* Meal Plan + drinks/options notes */}
+              <div data-label="Meal Plan" className="space-y-1.5 pt-1">
+                <div className="flex gap-1">
+                  <MealPill on={day.meals.includes('breakfast')} label="B"
+                    onClick={() => !isLocked && update(i, {
+                      meals: day.meals.includes('breakfast')
+                        ? day.meals.filter(m => m !== 'breakfast')
+                        : [...day.meals, 'breakfast'],
+                    })} />
+                  <MealPill on={day.meals.includes('lunch')} label="L"
+                    onClick={() => !isLocked && update(i, {
+                      meals: day.meals.includes('lunch')
+                        ? day.meals.filter(m => m !== 'lunch')
+                        : [...day.meals, 'lunch'],
+                    })} />
+                  <MealPill on={day.meals.includes('dinner')} label="D"
+                    onClick={() => !isLocked && update(i, {
+                      meals: day.meals.includes('dinner')
+                        ? day.meals.filter(m => m !== 'dinner')
+                        : [...day.meals, 'dinner'],
+                    })} />
+                </div>
+                <button type="button"
+                  aria-expanded={notesOpenIndices.has(i)}
+                  onClick={() => setNotesOpenIndices(prev => {
+                    const next = new Set(prev); next.has(i) ? next.delete(i) : next.add(i); return next
+                  })}
+                  className="text-[11px] font-medium text-muted-foreground transition-colors duration-150 hover:text-brand-ink">
+                  {notesOpenIndices.has(i) ? 'Hide drinks / options' : '+ Add drinks / options'}
+                </button>
+                {notesOpenIndices.has(i) && (
+                  <textarea value={day.clientNotes}
+                    onChange={e => update(i, { clientNotes: e.target.value })}
+                    placeholder="Drinks, options & notes shown to the client" rows={3}
+                    className={inputCls + ' resize-none'} disabled={isLocked} />
+                )}
               </div>
 
               {/* Controls */}
               <div className="flex flex-col max-sm:flex-row max-sm:justify-end items-center gap-1 pt-0.5">
-                <button onClick={() => move(i, -1)} disabled={i === 0}
-                  aria-label={`Move day ${day.dayNumber} up`}
-                  className="rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted disabled:opacity-30">↑</button>
-                <button onClick={() => move(i, 1)} disabled={i === days.length - 1}
-                  aria-label={`Move day ${day.dayNumber} down`}
-                  className="rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted disabled:opacity-30">↓</button>
                 {!isLocked && (
-                  <button onClick={() => removeDay(i)}
-                    aria-label={`Remove day ${day.dayNumber}`}
-                    className="rounded px-1.5 py-0.5 text-xs text-destructive transition-colors duration-150 hover:bg-destructive/10">✕</button>
+                  <>
+                    <button onClick={() => move(i, -1)} disabled={i === 0}
+                      aria-label={`Move day ${day.dayNumber} up`}
+                      className="rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted disabled:opacity-30">↑</button>
+                    <button onClick={() => move(i, 1)} disabled={i === days.length - 1}
+                      aria-label={`Move day ${day.dayNumber} down`}
+                      className="rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted disabled:opacity-30">↓</button>
+                    <button onClick={() => removeDay(i)}
+                      aria-label={`Remove day ${day.dayNumber}`}
+                      className="rounded px-1.5 py-0.5 text-xs text-destructive transition-colors duration-150 hover:bg-destructive/10">✕</button>
+                  </>
                 )}
               </div>
             </div>
           ))}
+
+          {/* Departure framing row */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 bg-accent/40 px-3 py-2 text-xs">
+            <span className="font-semibold text-brand-ink">End of tour &amp; departure</span>
+            {endLabel && <span className="text-muted-foreground">· {endLabel}</span>}
+          </div>
         </div>
       </div>
 
@@ -788,20 +919,24 @@ export default function QuoteItineraryBuilder({
         </div>
       )}
 
-      {activityModal !== null && days[activityModal] && (
-        <ActivitiesModal
-          dayLabel={`Day ${days[activityModal].dayNumber}${days[activityModal].dayNumberEnd ? `–${days[activityModal].dayNumberEnd}` : ''}`}
-          value={dayActivitiesFor(days[activityModal])}
-          activities={activities as any}
-          destinations={destinations as any}
-          dayDestinationId={days[activityModal].destinationId}
-          subDays={days[activityModal].nights}
-          onChange={(rows) => applyActivities(activityModal, rows)}
-          onClose={() => setActivityModal(null)}
-          onCreateActivity={createActivityInline as any}
-          onCreateDestination={createDestinationInline as any}
-        />
-      )}
+      {activityModal !== null && days[activityModal.day] && (() => {
+        const d = days[activityModal.day]
+        const offset = activityModal.offset
+        return (
+          <ActivitiesModal
+            dayLabel={`Day ${d.dayNumber + offset}`}
+            value={dayActivitiesFor(d).filter(a => (a.day_offset ?? 0) === offset)}
+            activities={activities as any}
+            destinations={destinations as any}
+            dayDestinationId={d.destinationId}
+            newRowDayOffset={offset}
+            onChange={(rows) => applyActivities(activityModal.day, offset, rows)}
+            onClose={() => setActivityModal(null)}
+            onCreateActivity={createActivityInline as any}
+            onCreateDestination={createDestinationInline as any}
+          />
+        )
+      })()}
 
       {creating && (
         <CreateLookupDialog
@@ -820,26 +955,34 @@ export default function QuoteItineraryBuilder({
         />
       )}
 
-      {error && <p role="alert" className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
+          {error}
+        </p>
+      )}
       {saved && <p role="status" className="rounded-md bg-accent px-4 py-3 text-sm text-accent-foreground">Itinerary saved.</p>}
 
-      {!isLocked && (
-        <div className="sticky bottom-0 -mx-1 flex flex-wrap items-center gap-2 border-t border-border bg-surface/95 px-1 py-3 backdrop-blur">
-          <button type="button" onClick={() => save()} disabled={loading}
-            className="rounded-md bg-primary-strong px-6 py-2.5 text-sm font-medium text-white shadow-sm transition-colors duration-150 hover:bg-primary-strong-hover disabled:opacity-60">
-            {loading ? 'Saving…' : 'Save Itinerary'}
+      <div className="sticky bottom-0 -mx-1 flex flex-wrap items-center gap-2 border-t border-border bg-surface/95 px-1 py-3 backdrop-blur">
+        <button type="button" onClick={() => save()} disabled={loading || isLocked}
+          title={isLocked ? 'This version is locked — create a new version to edit.' : undefined}
+          className="rounded-md bg-primary-strong px-6 py-2.5 text-sm font-medium text-white shadow-sm transition-colors duration-150 hover:bg-primary-strong-hover disabled:opacity-60">
+          {loading ? 'Saving…' : 'Save Itinerary'}
+        </button>
+        {onContinueToPricing && (
+          <button type="button" onClick={saveAndContinue} disabled={loading || isLocked}
+            title={isLocked ? 'This version is locked — create a new version to edit.' : undefined}
+            className="rounded-md border border-primary-strong bg-surface px-6 py-2.5 text-sm font-medium text-brand-ink shadow-sm transition-colors duration-150 hover:bg-accent/60 disabled:opacity-60">
+            Save &amp; Continue to Pricing →
           </button>
-          {onContinueToPricing && (
-            <button type="button" onClick={saveAndContinue} disabled={loading}
-              className="rounded-md border border-primary-strong bg-surface px-6 py-2.5 text-sm font-medium text-brand-ink shadow-sm transition-colors duration-150 hover:bg-accent/60 disabled:opacity-60">
-              Save &amp; Continue to Pricing →
-            </button>
-          )}
-          {dirty && !loading && (
-            <span className="text-xs text-warning-foreground" role="status">Unsaved changes</span>
-          )}
-        </div>
-      )}
+        )}
+        {isLocked ? (
+          <span className="text-xs text-muted-foreground" role="status">
+            Version locked (sent to client) — saving is disabled.
+          </span>
+        ) : dirty && !loading ? (
+          <span className="text-xs text-warning-foreground" role="status">Unsaved changes</span>
+        ) : null}
+      </div>
     </div>
   )
 }

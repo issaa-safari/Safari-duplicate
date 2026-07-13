@@ -36,6 +36,7 @@ export default function ActivitiesModal({
   destinations,
   dayDestinationId,
   subDays = 1,
+  newRowDayOffset = 0,
   onChange,
   onClose,
   onCreateActivity,
@@ -48,12 +49,14 @@ export default function ActivitiesModal({
   dayDestinationId: string | null
   /** Number of nights at this stop; >1 shows a per-activity sub-day selector. */
   subDays?: number
+  /** Sub-day new rows belong to, for a modal pre-scoped to one day of a multi-night stop. */
+  newRowDayOffset?: number
   onChange: (rows: DayActivity[]) => void
   onClose: () => void
   onCreateActivity?: (name: string, descriptionEn: string, descriptionAr: string) => Promise<Lookup | null>
   onCreateDestination?: (name: string, descriptionEn: string, descriptionAr: string) => Promise<Lookup | null>
 }) {
-  const [rows, setRows] = useState<DayActivity[]>(value.length ? value : [newActivity(dayDestinationId)])
+  const [rows, setRows] = useState<DayActivity[]>(value.length ? value : [newActivity(dayDestinationId, newRowDayOffset)])
   const [extraAct, setExtraAct] = useState<Lookup[]>([])
   const [extraDest, setExtraDest] = useState<Lookup[]>([])
   const [creating, setCreating] = useState<null | { kind: 'activity' | 'destination'; row: number }>(null)
@@ -78,7 +81,7 @@ export default function ActivitiesModal({
     if (j < 0 || j >= rs.length) return rs
     const copy = [...rs]; const tmp = copy[i]; copy[i] = copy[j]; copy[j] = tmp; return copy
   })
-  const add = () => setRows(rs => [...rs, newActivity(dayDestinationId)])
+  const add = () => setRows(rs => [...rs, newActivity(dayDestinationId, newRowDayOffset)])
 
   function save() {
     onChange(rows.filter(r => r.activity_id))

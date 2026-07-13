@@ -26,7 +26,13 @@ export async function POST(request: Request) {
 
   if (error) {
     console.error('[save-quote-itinerary] rpc failed', error)
-    return NextResponse.json({ error: 'Failed to save itinerary' }, { status: 400 })
+    // Pass the DB guard's message through so the builder can tell the user
+    // *why* the save failed (e.g. the version is sent/locked) instead of a
+    // generic failure that leaves "Unsaved changes" unexplained.
+    const message = /locked/i.test(error.message ?? '')
+      ? 'This quote version has been sent and is locked — create a new version to edit the itinerary.'
+      : (error.message || 'Failed to save itinerary')
+    return NextResponse.json({ error: message }, { status: 400 })
   }
 
   return NextResponse.json({ success: true })

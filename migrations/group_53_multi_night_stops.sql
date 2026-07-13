@@ -2,13 +2,16 @@
 --
 -- A single itinerary stop can span several nights at one destination (e.g.
 -- "Day 1-2 Nairobi", one accommodation, activities that differ per day).
--- quote_days.day_number_end already exists to express the range, but
--- save_quote_itinerary (last set in group_48) did not persist it. This
--- redefines the function to also write day_number_end. Per-sub-day activity
--- assignment rides in quote_day_items.content_snapshot (day_offset), which the
--- function already passes through verbatim — no change needed for that.
+-- tour_days already has day_number_end for this; quote_days did not — add it,
+-- and redefine save_quote_itinerary (last set in group_48) to persist it.
+-- Per-sub-day activity assignment rides in quote_day_items.content_snapshot
+-- (day_offset), which the function already passes through verbatim — no
+-- change needed for that.
 --
 -- Idempotent — safe to re-run.
+
+alter table quote_days
+  add column if not exists day_number_end integer;
 
 create or replace function save_quote_itinerary(p_version_id uuid, p_days jsonb)
 returns void
