@@ -203,7 +203,14 @@ export default async function QuotePortalPage({
 
   // ── Header facts ──
   const lastDay = Math.max(0, ...(quoteDays ?? []).map((d: any) => d.day_number_end || d.day_number))
-  const days = lastDay || (quoteDays?.length ?? 0)
+  // A version sent before its day-by-day was saved has no quote_days; fall
+  // back to the travel dates so the cover doesn't read "0 days / 0 nights".
+  const daysFromDates = version.travel_start_date && version.travel_end_date
+    ? Math.max(1, Math.round(
+        (new Date(version.travel_end_date).getTime() - new Date(version.travel_start_date).getTime()) / 86_400_000,
+      ) + 1)
+    : 0
+  const days = lastDay || (quoteDays?.length ?? 0) || daysFromDates
   const nights = Math.max(days - 1, 0)
 
   const travCounts: Record<string, number> = {}

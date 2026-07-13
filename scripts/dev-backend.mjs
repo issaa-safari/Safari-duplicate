@@ -338,7 +338,7 @@ async function handleInsert(table, url, body) {
   const cols = Object.keys(rows[0])
   const params = []
   const tuples = rows.map((r) => `(${cols.map((c) => {
-    params.push(toParam(r[c]))
+    params.push(toParam(r[c], colType(table, c)))
     return `$${params.length}${castFor(colType(table, c))}`
   }).join(',')})`)
   const returning = url.searchParams.get('select') ? ` returning to_jsonb(${q(table)}) as row` : ` returning to_jsonb(${q(table)}) as row`
@@ -350,7 +350,7 @@ async function handleInsert(table, url, body) {
 async function handleUpdate(table, url, body) {
   const params = []
   const sets = Object.keys(body).map((c) => {
-    params.push(toParam(body[c]))
+    params.push(toParam(body[c], colType(table, c)))
     return `${q(c)} = $${params.length}${castFor(colType(table, c))}`
   })
   const where = whereSql(table, url, params)
@@ -369,7 +369,10 @@ async function handleDelete(table, url) {
   return { rows: r.rows.map((x) => x.row) }
 }
 
-function toParam(v) {
+function toParam(v, type = null) {
+  // JS arrays going into Postgres array columns are serialized natively by
+  // node-postgres; JSON-stringifying them ("[\"a\"]") is a malformed literal.
+  if (Array.isArray(v) && type === 'ARRAY') return v
   if (v !== null && typeof v === 'object') return JSON.stringify(v)
   return v
 }

@@ -77,17 +77,19 @@ export async function cloneVersion(formData: FormData) {
     .select('*').eq('quote_version_id', versionId).order('sort_order')
   if (days?.length) {
     for (const { id: dayId, quote_version_id: __, ...dayRest } of days as any[]) {
-      const { data: newDay } = await admin.from('quote_days')
+      const { data: newDay, error: dayErr } = await admin.from('quote_days')
         .insert({ ...dayRest, quote_version_id: newId }).select('id').single()
-      if (!newDay) continue
+      // A copy that silently loses its itinerary is worse than a failed copy.
+      if (dayErr || !newDay) throw new Error(`Failed to copy itinerary day: ${dayErr?.message ?? 'unknown error'}`)
       const { data: items } = await admin.from('quote_day_items')
         .select('*').eq('quote_day_id', dayId)
       if (items?.length) {
-        await admin.from('quote_day_items').insert(
+        const { error: itemErr } = await admin.from('quote_day_items').insert(
           items.map(({ id: _, quote_day_id: __, ...iRest }: any) => ({
             ...iRest, quote_day_id: newDay.id,
           }))
         )
+        if (itemErr) throw new Error(`Failed to copy day items: ${itemErr.message}`)
       }
     }
   }
