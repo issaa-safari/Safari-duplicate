@@ -122,7 +122,7 @@ export default async function QuotePrintPage({
     { data: settings },
   ] = await Promise.all([
     admin.from('quote_versions')
-      .select('id, version_number, title, language, travel_start_date, travel_end_date, valid_until, total_selling_usd, sharing_price_per_person_usd, single_price_per_person_usd, cost_base_usd, default_markup_percent')
+      .select('id, version_number, title, language, travel_start_date, travel_end_date, valid_until, total_selling_usd, sharing_price_per_person_usd, single_price_per_person_usd, cost_base_usd, default_markup_percent, inclusions, exclusions')
       .eq('id', delivery.quote_version_id).single(),
     admin.from('quotes')
       .select('id, quote_number, mode, client_id, tour_id')
@@ -149,7 +149,7 @@ export default async function QuotePrintPage({
       .eq('id', (quote as any).client_id)
       .single(),
     admin.from('quote_travellers')
-      .select('id, display_name, traveller_category, age_band_snapshot, room_category, is_paying, is_complimentary')
+      .select('id, display_name, traveller_category, age_band_snapshot, room_category, is_paying, is_complimentary, pricing_fixed_amount_usd')
       .eq('quote_version_id', delivery.quote_version_id)
       .order('sort_order'),
   ])
@@ -260,7 +260,9 @@ export default async function QuotePrintPage({
     const bandKey = band?.code ?? t.traveller_category ?? 'adult'
     const bandName = band?.name ?? (t.traveller_category === 'adult' ? 'Adult' : 'Child')
     const bandPct = (band?.default_percentage ?? 100) / 100
-    const pp = effectiveSharingPp > 0 ? effectiveSharingPp * bandPct : 0
+    // A manually-set per-person price (pricing step) wins over the split.
+    const fixed = t.pricing_fixed_amount_usd != null ? Number(t.pricing_fixed_amount_usd) : null
+    const pp = fixed !== null && fixed > 0 ? fixed : (effectiveSharingPp > 0 ? effectiveSharingPp * bandPct : 0)
     if (!travellerGroupMap[bandKey]) {
       travellerGroupMap[bandKey] = { name: bandName, count: 0, perPerson: pp, total: 0 }
     }
@@ -607,11 +609,14 @@ export default async function QuotePrintPage({
             </div>
           </div>
 
-          {/* Included / Excluded */}
+          {/* Included / Excluded — the version's customised lists win, then
+              visible price lines, then the language defaults. */}
           <div className="incl-excl nb">
             <div className="incl">
               <div className="incl-hd">⊕ {T.included}</div>
-              {includedLines.length > 0 ? (
+              {((version as any).inclusions as string[] | null)?.length ? (
+                <p className="sm">{((version as any).inclusions as string[]).join(', ')}</p>
+              ) : includedLines.length > 0 ? (
                 <p className="sm">
                   {includedLines.map((l: any, i: number) => (
                     <span key={l.id}>{l.description}{i < includedLines.length - 1 ? ', ' : ''}</span>
@@ -623,7 +628,11 @@ export default async function QuotePrintPage({
             </div>
             <div className="excl">
               <div className="excl-hd">⊖ {T.excluded}</div>
-              <p className="sm">{T.exclText}</p>
+              {((version as any).exclusions as string[] | null)?.length ? (
+                <p className="sm">{((version as any).exclusions as string[]).join(', ')}</p>
+              ) : (
+                <p className="sm">{T.exclText}</p>
+              )}
             </div>
           </div>
 

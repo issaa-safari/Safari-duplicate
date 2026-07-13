@@ -189,8 +189,8 @@ values ('aaaa1111-0000-4000-8000-000000000015', 'aaaa1111-0000-4000-8000-0000000
         '2026-08-10', '2026-08-13', '2026-07-31',
         20, 2320, 2900, 580, 20, 1450,
         '{"first_name":"Test","last_name":"Client","email":"test.client@example.com","phone":"+254700000001","country":"Kenya"}',
-        'All park fees, full-board lodges, 4x4 Landcruiser, driver-guide, airport transfers.',
-        'International flights, travel insurance, tips, personal expenses.',
+        array['All park fees', 'Full-board lodges', '4x4 Landcruiser', 'Driver-guide', 'Airport transfers'],
+        array['International flights', 'Travel insurance', 'Tips', 'Personal expenses'],
         'TEST RECORD — draft quote for the test booking flow. Safe to delete.')
 on conflict (id) do nothing;
 

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import CreateLookupDialog from '@/components/admin/create-lookup-dialog'
 import { createLookup } from '@/lib/create-lookup'
+import { INCLUDED_DEFAULT_EN, EXCLUDED_DEFAULT_EN } from '@/lib/quote-defaults'
 import { resolveTripRate, resyncHotelRowsFromItinerary, saveTrip } from './actions'
 import {
   MEAL_PLANS,
@@ -133,6 +134,17 @@ export default function TripBuilderForm({
   )
   const [parkRows, setParkRows] = useState<ParkRowInput[]>(initialState?.parkRows ?? [])
   const [salePrice, setSalePrice] = useState(initialState?.salePrice ?? '')
+  // Per-person sale price by traveller band ('adult' / 'child'); when any is
+  // set the sale total is Σ count × price instead of the single total input.
+  const [bandSalePrices, setBandSalePrices] = useState<Record<string, string>>(
+    initialState?.bandSalePrices ?? {},
+  )
+  const [inclusions, setInclusions] = useState<string[]>(
+    initialState?.inclusions ?? INCLUDED_DEFAULT_EN,
+  )
+  const [exclusions, setExclusions] = useState<string[]>(
+    initialState?.exclusions ?? EXCLUDED_DEFAULT_EN,
+  )
 
   // Lookups live in state so items added inline (saved to the Content
   // library) appear in the dropdowns immediately.
@@ -161,7 +173,7 @@ export default function TripBuilderForm({
   useEffect(() => {
     if (isFirstPricingRender.current) { isFirstPricingRender.current = false; return }
     setDirty(true)
-  }, [guest, title, hotelRows, transportRows, parkRows, salePrice])
+  }, [guest, title, hotelRows, transportRows, parkRows, salePrice, bandSalePrices, inclusions, exclusions])
   useEffect(() => { onDirtyChange?.(dirty) }, [dirty, onDirtyChange])
 
   // ── Row rate resolution (fires when a row becomes complete or changes) ──
@@ -258,6 +270,20 @@ export default function TripBuilderForm({
   })()
   const payingGuests = guest.adults + guest.childAges.filter(a => a >= 3).length
 
+  // Per-band sale pricing (mirrors the server's band mapping: 16+ → adult,
+  // 3–15 → child, under 3 free). When any per-person price is set, the sale
+  // total is Σ count × price and the single total input is superseded.
+  const adultCount = guest.adults + guest.childAges.filter(a => a >= 16).length
+  const payingChildCount = guest.childAges.filter(a => a >= 3 && a <= 15).length
+  const bandPriceOf = (code: string) => {
+    const n = Number(bandSalePrices[code])
+    return Number.isFinite(n) && n > 0 ? n : null
+  }
+  const adultPp = bandPriceOf('adult')
+  const childPp = bandPriceOf('child')
+  const usesBandPricing = adultPp !== null || childPp !== null
+  const bandSaleTotal = (adultPp ?? 0) * adultCount + (childPp ?? 0) * payingChildCount
+
   // Rows priced manually don't need a rate card — their gaps don't block saving.
   const manualKeys = new Set<string>()
   for (const r of hotelRows) if (manualPriceOf(r.manualUnitCostUsd) !== null) manualKeys.add(r.key)
@@ -281,7 +307,10 @@ export default function TripBuilderForm({
     setSaveError('')
     setSaveGaps([])
     setSavedOk(false)
-    const state: TripBuilderState = { guest, title, hotelRows, transportRows, parkRows, salePrice }
+    const state: TripBuilderState = {
+      guest, title, hotelRows, transportRows, parkRows, salePrice,
+      bandSalePrices, inclusions, exclusions,
+    }
     startSave(async () => {
       const result = await saveTrip({ quoteId, versionId, state })
       if (result.ok) {
@@ -797,7 +826,7 @@ export default function TripBuilderForm({
             </thead>
             <tbody>
               {(() => {
-                const sale = parseFloat(salePrice)
+                const sale = usesBandPricing ? bandSaleTotal : parseFloat(salePrice)
                 const hasSale = Number.isFinite(sale) && sale > 0
                 const margin = hasSale ? sale - summary.total : null
                 const marginPct = hasSale && sale > 0 ? ((sale - summary.total) / sale) * 100 : null
@@ -816,13 +845,20 @@ export default function TripBuilderForm({
                       {payingGuests > 0 ? `$${fmt(summary.total / payingGuests)}` : '—'}
                     </td>
                     <td data-label="Sale price" className="px-3 py-2.5 text-right">
-                      <input
-                        type="number" min={0} step="1"
-                        className={inputCls + ' w-28 text-right tabular-nums inline-block'}
-                        value={salePrice}
-                        placeholder="0"
-                        onChange={e => setSalePrice(e.target.value)}
-                      />
+                      {usesBandPricing ? (
+                        <span className="tabular-nums font-semibold text-foreground" title="Sum of the per-traveller-type prices below">
+                          ${fmt(bandSaleTotal)}
+                          <span className="block text-[10px] font-normal text-muted-foreground">per traveller type ↓</span>
+                        </span>
+                      ) : (
+                        <input
+                          type="number" min={0} step="1"
+                          className={inputCls + ' w-28 text-right tabular-nums inline-block'}
+                          value={salePrice}
+                          placeholder="0"
+                          onChange={e => setSalePrice(e.target.value)}
+                        />
+                      )}
                     </td>
                     <td data-label="Margin" className="px-3 py-2.5 text-right tabular-nums">
                       {margin === null ? (
@@ -840,11 +876,73 @@ export default function TripBuilderForm({
             </tbody>
           </table>
         </div>
+        {/* Per-traveller-type sale prices (Adult / Child set manually) */}
+        <div className="px-4 py-3 border-t border-border/70">
+          <p className="text-xs font-semibold text-foreground">
+            Sale price per traveller type
+            <span className="ml-2 font-normal text-muted-foreground">
+              set a per-person price for each type — or leave blank and use the single total above
+            </span>
+          </p>
+          <div className="mt-2 flex flex-wrap items-end gap-x-6 gap-y-2">
+            {([
+              { code: 'adult', label: 'Adult', count: adultCount, pp: adultPp },
+              { code: 'child', label: 'Child', count: payingChildCount, pp: childPp },
+            ] as const).filter(b => b.count > 0).map(b => (
+              <div key={b.code} className="flex items-center gap-2">
+                <span className="text-sm text-foreground w-20">{b.count} × {b.label}</span>
+                <span className="text-sm text-muted-foreground">$</span>
+                <input
+                  type="number" min={0} step="1"
+                  className={inputCls + ' w-28 text-right tabular-nums' + (b.pp !== null ? ' border-amber-400 bg-amber-50' : '')}
+                  value={bandSalePrices[b.code] ?? ''}
+                  placeholder="per person"
+                  aria-label={`${b.label} sale price per person`}
+                  onChange={e => setBandSalePrices(prev => ({ ...prev, [b.code]: e.target.value }))}
+                />
+                <span className="text-xs text-muted-foreground tabular-nums w-24">
+                  {b.pp !== null ? `= $${fmt(b.pp * b.count)}` : ''}
+                </span>
+              </div>
+            ))}
+            {usesBandPricing && (
+              <span className="text-sm font-semibold text-foreground tabular-nums">
+                Total sale: ${fmt(bandSaleTotal)}
+              </span>
+            )}
+          </div>
+        </div>
         {payingGuests > 0 && (
           <p className="px-4 py-2 text-[11px] text-muted-foreground border-t border-gray-50">
             Per guest = total ÷ {payingGuests} paying guest{payingGuests === 1 ? '' : 's'} (infants under 3 excluded).
           </p>
         )}
+      </div>
+
+      {/* 6 ─ Included / Excluded (shown on the client proposal) */}
+      <div className={section}>
+        <div className={sectionHead}>
+          <h2 className={sectionTitle}>6 · Inclusions &amp; Exclusions</h2>
+          <span className="text-xs text-muted-foreground">shown on the client proposal</span>
+        </div>
+        <div className="p-4 grid gap-6 md:grid-cols-2">
+          <ChipListEditor
+            label="Included"
+            items={inclusions}
+            onChange={setInclusions}
+            chipClass="bg-accent text-brand-ink border border-primary-strong/30"
+            placeholder="Add an included item…"
+            emptyHint="Empty — the proposal will show the default Included list."
+          />
+          <ChipListEditor
+            label="Excluded"
+            items={exclusions}
+            onChange={setExclusions}
+            chipClass="bg-destructive/10 text-destructive border border-destructive/30"
+            placeholder="Add an excluded item…"
+            emptyHint="Empty — the proposal will show the default Excluded list."
+          />
+        </div>
       </div>
 
       {/* Gap + error surface */}
@@ -916,6 +1014,66 @@ export default function TripBuilderForm({
           }}
         />
       )}
+    </div>
+  )
+}
+
+function ChipListEditor({
+  label,
+  items,
+  onChange,
+  chipClass,
+  placeholder,
+  emptyHint,
+}: {
+  label: string
+  items: string[]
+  onChange: (items: string[]) => void
+  chipClass: string
+  placeholder: string
+  emptyHint: string
+}) {
+  const [draft, setDraft] = useState('')
+
+  function add() {
+    const value = draft.trim()
+    if (!value || items.includes(value)) return
+    onChange([...items, value])
+    setDraft('')
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-semibold text-foreground mb-2">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((item, i) => (
+          <span key={`${item}-${i}`}
+            className={'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ' + chipClass}>
+            {item}
+            <button type="button"
+              onClick={() => onChange(items.filter((_, j) => j !== i))}
+              aria-label={`Remove ${item}`}
+              className="opacity-50 hover:opacity-100 leading-none">×</button>
+          </span>
+        ))}
+        {items.length === 0 && (
+          <span className="text-xs text-muted-foreground">{emptyHint}</span>
+        )}
+      </div>
+      <div className="mt-2 flex gap-2">
+        <input
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
+          placeholder={placeholder}
+          aria-label={placeholder}
+          className={inputCls + ' max-w-xs'}
+        />
+        <button type="button" onClick={add} disabled={!draft.trim()}
+          className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-40">
+          Add
+        </button>
+      </div>
     </div>
   )
 }

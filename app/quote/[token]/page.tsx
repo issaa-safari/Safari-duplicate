@@ -5,13 +5,13 @@ import { syncQuoteStatus } from '@/lib/server/quote-status'
 import ProposalView, { type ProposalDay, type SummaryRow, type TravellerGroup } from '@/components/quote/proposal-view'
 import { site } from '@/lib/site'
 
+import {
+  INCLUDED_DEFAULT_EN, INCLUDED_DEFAULT_AR,
+  EXCLUDED_DEFAULT_EN, EXCLUDED_DEFAULT_AR,
+} from '@/lib/quote-defaults'
+
 const MEAL_LABELS: Record<string, string> = { B: 'Breakfast', L: 'Lunch', D: 'Dinner' }
 const MEAL_LABELS_AR: Record<string, string> = { B: 'إفطار', L: 'غداء', D: 'عشاء' }
-
-const INCLUDED_DEFAULT_EN = ['All activities (unless marked optional)', 'Meals as specified in the day-by-day', 'Taxes / VAT', 'Park fees', 'All accommodations', 'Professional guide', 'All transportation']
-const INCLUDED_DEFAULT_AR = ['جميع الأنشطة (ما لم تُذكر كاختيارية)', 'الوجبات كما هو محدد في البرنامج اليومي', 'الضرائب / ضريبة القيمة المضافة', 'رسوم المتنزهات', 'جميع أماكن الإقامة', 'مرشد محترف', 'جميع وسائل النقل']
-const EXCLUDED_EN = ['Personal items (souvenirs, travel insurance, visa fees)', 'Government-imposed increases of taxes / park fees', 'Additional accommodation before or after the tour', 'Tips & gratuities (guideline US$50 per person per day)', 'International flights']
-const EXCLUDED_AR = ['المواد الشخصية (الهدايا، تأمين السفر، رسوم التأشيرة)', 'الزيادات الحكومية في الضرائب / رسوم المتنزهات', 'الإقامة الإضافية قبل أو بعد الرحلة', 'الإكراميات (إرشادياً 50 دولاراً للشخص يومياً)', 'الرحلات الجوية الدولية']
 
 function fmt(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -55,7 +55,7 @@ export default async function QuotePortalPage({
     { data: settings },
   ] = await Promise.all([
     admin.from('quote_versions')
-      .select('id, version_number, status, title, language, travel_start_date, travel_end_date, valid_until, total_selling_usd, sharing_price_per_person_usd, single_price_per_person_usd, cost_base_usd, default_markup_percent, client_snapshot')
+      .select('id, version_number, status, title, language, travel_start_date, travel_end_date, valid_until, total_selling_usd, sharing_price_per_person_usd, single_price_per_person_usd, cost_base_usd, default_markup_percent, client_snapshot, inclusions, exclusions')
       .eq('id', delivery.quote_version_id)
       .single(),
     admin.from('quotes')
@@ -95,7 +95,7 @@ export default async function QuotePortalPage({
   ] = await Promise.all([
     admin.from('clients').select('first_name, last_name, email').eq('id', (quote as any).client_id).single(),
     admin.from('quote_travellers')
-      .select('id, traveller_category, age_band_snapshot, room_category, is_paying, is_complimentary')
+      .select('id, traveller_category, age_band_snapshot, room_category, is_paying, is_complimentary, pricing_fixed_amount_usd')
       .eq('quote_version_id', delivery.quote_version_id)
       .order('sort_order'),
   ])
@@ -193,7 +193,10 @@ export default async function QuotePortalPage({
     const key = band?.code ?? t.traveller_category ?? 'adult'
     const bandName = band?.name ?? (t.traveller_category === 'adult' ? 'Adult' : 'Child')
     const bandPct = (band?.default_percentage ?? 100) / 100
-    const pp = effectiveSharingPp > 0 ? effectiveSharingPp * bandPct : 0
+    // A manually-set per-person price (pricing step) wins over the
+    // percentage-derived split of the total.
+    const fixed = t.pricing_fixed_amount_usd != null ? Number(t.pricing_fixed_amount_usd) : null
+    const pp = fixed !== null && fixed > 0 ? fixed : (effectiveSharingPp > 0 ? effectiveSharingPp * bandPct : 0)
     if (!tGroupMap[key]) tGroupMap[key] = { name: bandName, count: 0, perPerson: Math.round(pp), total: 0 }
     tGroupMap[key].count++
     tGroupMap[key].total += Math.round(pp)
@@ -285,9 +288,18 @@ export default async function QuotePortalPage({
     }
   })
 
-  // ── Included / optional ──
+  // ── Included / excluded / optional ──
+  // Priority: the version's customised lists (pricing step) → visible price
+  // lines → language defaults.
+  const versionInclusions = (version as any).inclusions as string[] | null
+  const versionExclusions = (version as any).exclusions as string[] | null
   const includedLines = (priceLines ?? []).filter((l: any) => !l.is_optional).map((l: any) => l.description)
-  const included = includedLines.length > 0 ? includedLines : (isArabic ? INCLUDED_DEFAULT_AR : INCLUDED_DEFAULT_EN)
+  const included = versionInclusions?.length
+    ? versionInclusions
+    : includedLines.length > 0 ? includedLines : (isArabic ? INCLUDED_DEFAULT_AR : INCLUDED_DEFAULT_EN)
+  const excluded = versionExclusions?.length
+    ? versionExclusions
+    : (isArabic ? EXCLUDED_DEFAULT_AR : EXCLUDED_DEFAULT_EN)
   const optional = (priceLines ?? []).filter((l: any) => l.is_optional).map((l: any) => ({
     description: l.description, price: `$${fmt(Number(l.total_selling_usd))}`,
   }))
@@ -331,7 +343,7 @@ export default async function QuotePortalPage({
       summaryRows={summaryRows}
       itinerary={itinerary}
       included={included}
-      excluded={isArabic ? EXCLUDED_AR : EXCLUDED_EN}
+      excluded={excluded}
       optional={optional}
       travellerGroups={travellerGroups}
       grandTotalLabel={`$${fmt(grandTotal)} USD`}
