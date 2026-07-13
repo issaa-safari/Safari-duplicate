@@ -22,6 +22,9 @@ type Day = {
   _key: string
   id: string | null
   dayNumber: number
+  // Nights at this stop (1 = single day). day_number_end is derived for saving.
+  nights: number
+  dayNumberEnd: number | null
   dayDate: string
   title: string
   descriptionEn: string
@@ -62,6 +65,20 @@ const ITEM_COLORS: Record<string, string> = {
 }
 
 const uid = () => Math.random().toString(36).slice(2)
+
+// Walk stops in order, assigning each a start day_number from the running total
+// of nights, so a 2-night stop occupies "Day 1-2" and the next stop starts at
+// Day 3. dayNumberEnd is null for single-night stops.
+function renumberDays(list: Day[]): Day[] {
+  let start = 1
+  return list.map(d => {
+    const nights = Math.max(1, d.nights || 1)
+    const dayNumber = start
+    const dayNumberEnd = nights > 1 ? dayNumber + nights - 1 : null
+    start = dayNumber + nights
+    return { ...d, dayNumber, nights, dayNumberEnd }
+  })
+}
 
 const inputCls = 'w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--olive)]'
 const smallSelectCls = 'w-full rounded border border-gray-200 px-1.5 py-1 text-xs text-gray-600 bg-white focus:outline-none focus:ring-1 focus:ring-[var(--olive)]'
@@ -108,6 +125,8 @@ function fromTourDays(
     return {
       _key: uid(), id: null,
       dayNumber: td.day_number,
+      nights: 1,
+      dayNumberEnd: null,
       dayDate: '',
       title: td.title_en ?? '',
       descriptionEn: td.description_en ?? '',
@@ -143,6 +162,8 @@ function loadInitialDays(
       _key: uid(),
       id: qd.id,
       dayNumber: qd.day_number,
+      nights: qd.day_number_end && qd.day_number_end > qd.day_number ? qd.day_number_end - qd.day_number + 1 : 1,
+      dayNumberEnd: qd.day_number_end ?? null,
       dayDate: qd.day_date ?? '',
       title: qd.title ?? '',
       descriptionEn: qd.description_en ?? '',
@@ -265,6 +286,7 @@ export default function QuoteItineraryBuilder({
         moment: ((it.contentSnapshot?.moment as any) ?? '') as DayActivity['moment'],
         optional: !!it.contentSnapshot?.optional,
         destination_id: (it.contentSnapshot?.destination_id as any) ?? null,
+        day_offset: Number((it.contentSnapshot?.day_offset as any) ?? 0) || 0,
       }))
   }
 
@@ -299,7 +321,7 @@ export default function QuoteItineraryBuilder({
         return {
           _key: uid(), id: null, itemType: 'activity', entityId: r.activity_id,
           titleSnapshot: (act?.name as string) ?? 'Activity',
-          contentSnapshot: { moment: r.moment || null, optional: !!r.optional, destination_id: r.destination_id ?? null },
+          contentSnapshot: { moment: r.moment || null, optional: !!r.optional, destination_id: r.destination_id ?? null, day_offset: r.day_offset ?? 0 },
         }
       })
       return { ...d, items: [...nonActivity, ...activityItems] }
@@ -320,16 +342,13 @@ export default function QuoteItineraryBuilder({
   }
 
   function addBlankDay() {
-    const next = days.length
-      ? Math.max(...days.map(d => d.dayNumber)) + 1
-      : 1
     const newIdx = days.length
-    setDays(p => [...p, {
-      _key: uid(), id: null, dayNumber: next, dayDate: '', title: '',
+    setDays(p => renumberDays([...p, {
+      _key: uid(), id: null, dayNumber: p.length + 1, nights: 1, dayNumberEnd: null, dayDate: '', title: '',
       descriptionEn: '', clientNotes: '',
       titleAr: '', descriptionAr: '', clientNotesAr: '',
       destinationId: null, destinationSnapshot: {}, meals: [], photos: [], items: [],
-    }])
+    }]))
     if (language === 'ar') {
       setArOpenIndices(prev => new Set([...prev, newIdx]))
     }
@@ -338,21 +357,28 @@ export default function QuoteItineraryBuilder({
 
   function generateBlankDays(count: number) {
     if (count < 1 || count > 60) return
-    setDays(Array.from({ length: count }, (_, i) => ({
+    setDays(renumberDays(Array.from({ length: count }, (_, i) => ({
       _key: uid(), id: null,
-      dayNumber: i + 1, dayDate: '', title: '',
+      dayNumber: i + 1, nights: 1, dayNumberEnd: null, dayDate: '', title: '',
       descriptionEn: '', clientNotes: '',
       titleAr: '', descriptionAr: '', clientNotesAr: '',
       destinationId: null, destinationSnapshot: {}, meals: [], photos: [], items: [],
-    })))
+    }))))
     if (language === 'ar') {
       setArOpenIndices(new Set(Array.from({ length: count }, (_, i) => i)))
     }
     setSaved(false)
   }
 
+  // Nights at a stop → recompute all day numbers cumulatively.
+  function setNights(i: number, nights: number) {
+    const n = Math.max(1, Math.min(30, Math.floor(nights) || 1))
+    setDays(prev => renumberDays(prev.map((d, idx) => idx === i ? { ...d, nights: n } : d)))
+    setSaved(false)
+  }
+
   function removeDay(i: number) {
-    setDays(p => p.filter((_, idx) => idx !== i))
+    setDays(p => renumberDays(p.filter((_, idx) => idx !== i)))
     setSaved(false)
   }
 
@@ -362,17 +388,13 @@ export default function QuoteItineraryBuilder({
     setDays(prev => {
       const n = [...prev]
       ;[n[i], n[t]] = [n[t], n[i]]
-      // swap day numbers too
-      const numA = n[i].dayNumber; const numB = n[t].dayNumber
-      n[i] = { ...n[i], dayNumber: numB }
-      n[t] = { ...n[t], dayNumber: numA }
-      return n
+      return renumberDays(n)
     })
     setSaved(false)
   }
 
   function renumber() {
-    setDays(p => p.map((d, i) => ({ ...d, dayNumber: i + 1 })))
+    setDays(p => renumberDays(p))
     setSaved(false)
   }
 
@@ -563,12 +585,18 @@ export default function QuoteItineraryBuilder({
               className="stack-grid grid gap-3 bg-white rounded-lg border border-gray-200 p-3 items-start"
               style={{ gridTemplateColumns: GRID_COLS }}>
 
-              {/* Day # + Date */}
-              <div data-label="Day / Date" className="space-y-1.5">
-                <p className="text-sm font-semibold text-gray-900">Day {day.dayNumber}</p>
-                <input type="number" min={1} value={day.dayNumber}
-                  onChange={e => update(i, { dayNumber: Number(e.target.value) })}
-                  className={inputCls} disabled={isLocked} />
+              {/* Day range + Nights + Date. Day numbers auto-compute from nights. */}
+              <div data-label="Day / Nights" className="space-y-1.5">
+                <p className="text-sm font-semibold text-gray-900">
+                  Day {day.dayNumber}{day.dayNumberEnd ? `–${day.dayNumberEnd}` : ''}
+                </p>
+                <label className="block">
+                  <span className="block text-[10px] uppercase tracking-wide text-gray-400">Nights</span>
+                  <input type="number" min={1} max={30} value={day.nights}
+                    onChange={e => setNights(i, Number(e.target.value))}
+                    className={inputCls} disabled={isLocked}
+                    aria-label={`Nights at day ${day.dayNumber}`} />
+                </label>
                 <input type="date" value={day.dayDate}
                   onChange={e => { update(i, { dayDate: e.target.value }); setSaved(false) }}
                   className={inputCls} disabled={isLocked} />
@@ -752,11 +780,12 @@ export default function QuoteItineraryBuilder({
 
       {activityModal !== null && days[activityModal] && (
         <ActivitiesModal
-          dayLabel={`Day ${days[activityModal].dayNumber}`}
+          dayLabel={`Day ${days[activityModal].dayNumber}${days[activityModal].dayNumberEnd ? `–${days[activityModal].dayNumberEnd}` : ''}`}
           value={dayActivitiesFor(days[activityModal])}
           activities={activities as any}
           destinations={destinations as any}
           dayDestinationId={days[activityModal].destinationId}
+          subDays={days[activityModal].nights}
           onChange={(rows) => applyActivities(activityModal, rows)}
           onClose={() => setActivityModal(null)}
           onCreateActivity={createActivityInline as any}
