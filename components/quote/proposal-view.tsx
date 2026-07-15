@@ -44,6 +44,13 @@ export type ProposalViewProps = {
   validUntil?: string | null
   heroImage: string | null
   company: { name: string; logoUrl: string | null; email: string | null; phone: string | null; whatsapp: string | null; website: string | null }
+  bank?: {
+    accountName: string | null
+    accountNumber: string | null
+    bankName: string | null
+    accountType: string | null
+    depositPercent: number | null
+  } | null
   agentName?: string | null
   summaryRows: SummaryRow[]
   arrivalNote?: string | null
@@ -367,6 +374,55 @@ export default function ProposalView(p: ProposalViewProps) {
 
           {p.acceptSlot && <div className="mt-6">{p.acceptSlot}</div>}
         </section>
+
+        {/* ── Payment details ───────────────────────────────────── */}
+        {p.bank && (p.bank.accountNumber || p.bank.bankName) && (
+          <section className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">
+            <Pill>{T(ar, 'Payment Details', 'تفاصيل الدفع')}</Pill>
+            <h2 className="mt-5 text-2xl font-bold" style={{ color: INK, ...display }}>
+              {T(ar, 'How to pay', 'كيفية الدفع')}
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-gray-600">
+              {p.bank.depositPercent
+                ? T(
+                    ar,
+                    `A deposit of ${p.bank.depositPercent}% confirms your booking; the balance is due before travel. Pay by bank transfer using the details below.`,
+                    `يؤكد دفع عربون بنسبة ${p.bank.depositPercent}٪ حجزك، ويستحق الرصيد المتبقي قبل السفر. ادفع عبر التحويل البنكي باستخدام التفاصيل أدناه.`
+                  )
+                : T(
+                    ar,
+                    'Pay by bank transfer using the details below, then send us your transfer confirmation.',
+                    'ادفع عبر التحويل البنكي باستخدام التفاصيل أدناه، ثم أرسل لنا تأكيد التحويل.'
+                  )}
+            </p>
+            <dl className="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+              {p.bank.bankName && (
+                <div>
+                  <dt className="text-gray-500">{T(ar, 'Bank', 'البنك')}</dt>
+                  <dd className="font-semibold" style={{ color: INK }}>{p.bank.bankName}</dd>
+                </div>
+              )}
+              {p.bank.accountName && (
+                <div>
+                  <dt className="text-gray-500">{T(ar, 'Account name', 'اسم الحساب')}</dt>
+                  <dd className="font-semibold" style={{ color: INK }}>{p.bank.accountName}</dd>
+                </div>
+              )}
+              {p.bank.accountNumber && (
+                <div>
+                  <dt className="text-gray-500">{T(ar, 'Account number', 'رقم الحساب')}</dt>
+                  <dd className="font-semibold tabular-nums" style={{ color: INK }}>{p.bank.accountNumber}</dd>
+                </div>
+              )}
+              {p.bank.accountType && (
+                <div>
+                  <dt className="text-gray-500">{T(ar, 'Account type', 'نوع الحساب')}</dt>
+                  <dd className="font-semibold" style={{ color: INK }}>{p.bank.accountType}</dd>
+                </div>
+              )}
+            </dl>
+          </section>
+        )}
 
         {/* ── About ─────────────────────────────────────────────── */}
         {p.aboutText && (

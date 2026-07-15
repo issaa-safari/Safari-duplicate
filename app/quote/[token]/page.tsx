@@ -78,7 +78,7 @@ export default async function QuotePortalPage({
       .limit(1)
       .maybeSingle(),
     admin.from('company_settings')
-      .select('company_name, logo_url, email, phone, whatsapp, website')
+      .select('company_name, logo_url, email, phone, whatsapp, website, bank_account_name, bank_account_number, bank_name, bank_account_type, deposit_percent')
       .limit(1).single(),
   ])
 
@@ -336,6 +336,13 @@ export default async function QuotePortalPage({
         phone: settings?.phone ?? null,
         whatsapp: settings?.whatsapp ?? null,
         website: (settings as any)?.website ?? site.domain,
+      }}
+      bank={{
+        accountName: (settings as any)?.bank_account_name ?? null,
+        accountNumber: (settings as any)?.bank_account_number ?? null,
+        bankName: (settings as any)?.bank_name ?? null,
+        accountType: (settings as any)?.bank_account_type ?? null,
+        depositPercent: (settings as any)?.deposit_percent ?? null,
       }}
       agentName={null}
       arrivalNote={null}

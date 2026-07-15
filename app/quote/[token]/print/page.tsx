@@ -137,7 +137,7 @@ export default async function QuotePrintPage({
       .eq('is_client_visible', true)
       .order('sort_order'),
     admin.from('company_settings')
-      .select('company_name, logo_url, email, phone, whatsapp, address')
+      .select('company_name, logo_url, email, phone, whatsapp, address, bank_account_name, bank_account_number, bank_name, bank_account_type, deposit_percent')
       .limit(1).maybeSingle(),
   ])
 
@@ -314,6 +314,11 @@ export default async function QuotePrintPage({
     arrivalLine: (dest: string) => `✈ الوصول: ${dest}، النقل من المطار مشمول`,
     endDestLine: (dest: string) => `✈ نقطة النهاية: ${dest}`,
     validUntil: (d: string) => `هذا العرض صالح حتى ${d} ورهن بالتوفر عند التأكيد.`,
+    howToPay: 'كيفية الدفع', bankLbl: 'البنك', accountNameLbl: 'اسم الحساب',
+    accountNumberLbl: 'رقم الحساب', accountTypeLbl: 'نوع الحساب',
+    payNote: (dep: number | null) => dep
+      ? `يؤكد دفع عربون بنسبة ${dep}٪ حجزك، ويستحق الرصيد المتبقي قبل السفر. ادفع عبر التحويل البنكي باستخدام التفاصيل التالية.`
+      : 'ادفع عبر التحويل البنكي باستخدام التفاصيل التالية، ثم أرسل لنا تأكيد التحويل.',
   } : {
     proposal: 'Proposal', summary: 'Summary', pricing: 'Pricing', aboutUs: 'About Us',
     tourLength: 'Tour Length', traveler: 'Traveler', startTour: 'Start Tour', endTour: 'End Tour',
@@ -341,6 +346,11 @@ export default async function QuotePrintPage({
     arrivalLine: (dest: string) => `✈ Arrival: ${dest}, Airport transfer included`,
     endDestLine: (dest: string) => `✈ End Destination: ${dest}`,
     validUntil: (d: string) => `This quotation is valid until ${d} and subject to availability at time of confirmation.`,
+    howToPay: 'How to pay', bankLbl: 'Bank', accountNameLbl: 'Account name',
+    accountNumberLbl: 'Account number', accountTypeLbl: 'Account type',
+    payNote: (dep: number | null) => dep
+      ? `A deposit of ${dep}% confirms your booking; the balance is due before travel. Pay by bank transfer using the details below.`
+      : 'Pay by bank transfer using the details below, then send us your transfer confirmation.',
   }
 
   const itinStart = 3
@@ -723,6 +733,27 @@ export default async function QuotePrintPage({
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {(settings?.bank_account_number || settings?.bank_name) && (
+            <div className="contact-box" style={{ marginTop: 24 }}>
+              <h3 style={{ color: G, margin: '0 0 8px', fontSize: 14 }}>{T.howToPay}</h3>
+              <p style={{ fontSize: 12, color: '#555', margin: '0 0 14px', lineHeight: 1.6 }}>
+                {T.payNote(settings?.deposit_percent ? Number(settings.deposit_percent) : null)}
+              </p>
+              {settings?.bank_name && (
+                <div className="contact-row"><span className="contact-lbl">{T.bankLbl}</span><span>{settings.bank_name}</span></div>
+              )}
+              {settings?.bank_account_name && (
+                <div className="contact-row"><span className="contact-lbl">{T.accountNameLbl}</span><span>{settings.bank_account_name}</span></div>
+              )}
+              {settings?.bank_account_number && (
+                <div className="contact-row"><span className="contact-lbl">{T.accountNumberLbl}</span><span>{settings.bank_account_number}</span></div>
+              )}
+              {settings?.bank_account_type && (
+                <div className="contact-row"><span className="contact-lbl">{T.accountTypeLbl}</span><span>{settings.bank_account_type}</span></div>
+              )}
             </div>
           )}
 
