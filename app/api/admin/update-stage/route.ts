@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
+import { logActivity } from '@/lib/server/audit'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -30,6 +31,16 @@ export async function POST(request: Request) {
     console.error('[update-stage]', error)
     return NextResponse.json({ error: 'Request failed' }, { status: 500 })
   }
+
+  await logActivity(admin, {
+    entityType: 'request',
+    entityId: requestId,
+    action: 'stage_changed',
+    summary: `Request moved to ${stage.replace(/_/g, ' ')}`,
+    actorId: user.id,
+    actorEmail: user.email ?? null,
+    metadata: { stage },
+  })
 
   return NextResponse.json({ success: true })
 }

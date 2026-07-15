@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { syncQuoteStatus } from '@/lib/server/quote-status'
 import { sendEmail, emailShell, escapeHtml } from '@/lib/email'
+import { logActivity } from '@/lib/server/audit'
 
 async function authGuard() {
   const supabase = await createClient()
@@ -54,6 +55,16 @@ export async function createShareLink(formData: FormData) {
     await admin.from('quote_versions').update({ status: 'sent' }).eq('id', versionId)
     await syncQuoteStatus(admin, quoteId)
   }
+
+  await logActivity(admin, {
+    entityType: 'quote',
+    entityId: quoteId,
+    action: 'share_link_created',
+    summary: 'Share link created for a quote version',
+    actorId: user.id,
+    actorEmail: user.email ?? null,
+    metadata: { versionId },
+  })
 
   revalidatePath(`/admin/quotes/${quoteId}`)
   return { token: delivery.access_token }
@@ -125,6 +136,16 @@ export async function emailQuote(formData: FormData) {
     await admin.from('quote_versions').update({ status: 'sent' }).eq('id', versionId)
     await syncQuoteStatus(admin, quoteId)
   }
+
+  await logActivity(admin, {
+    entityType: 'quote',
+    entityId: quoteId,
+    action: 'quote_emailed',
+    summary: `Proposal emailed to ${recipient}${emailed ? '' : ' (email provider not configured — link created only)'}`,
+    actorId: user.id,
+    actorEmail: user.email ?? null,
+    metadata: { versionId, recipient, emailed },
+  })
 
   revalidatePath(`/admin/quotes/${quoteId}`)
   return { token: delivery.access_token, recipient, emailed }

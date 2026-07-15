@@ -7,6 +7,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { syncQuoteStatus } from '@/lib/server/quote-status'
 import { safeAction } from '@/lib/server/action-result'
+import { logActivity } from '@/lib/server/audit'
 
 async function authGuard() {
   const supabase = await createClient()
@@ -243,7 +244,7 @@ export const updateTraveller = safeAction(async (formData: FormData) => {
 })
 
 export const setVersionStatus = safeAction(async (formData: FormData) => {
-  const { admin } = await authGuard()
+  const { admin, user } = await authGuard()
   const versionId = formData.get('versionId') as string
   const quoteId = formData.get('quoteId') as string
   const newStatus = formData.get('status') as string
@@ -280,6 +281,15 @@ export const setVersionStatus = safeAction(async (formData: FormData) => {
   const { error } = await admin.from('quote_versions').update({ status: newStatus }).eq('id', versionId)
   if (error) throw new Error(error.message)
   await syncQuoteStatus(admin, quoteId)
+  await logActivity(admin, {
+    entityType: 'quote',
+    entityId: quoteId,
+    action: 'version_status_changed',
+    summary: `Quote version moved from ${version.status} to ${newStatus}`,
+    actorId: user.id,
+    actorEmail: user.email ?? null,
+    metadata: { versionId, from: version.status, to: newStatus },
+  })
 
   // Status drives which versions the Preview/Send panel can share, so this
   // one does refresh the page data.

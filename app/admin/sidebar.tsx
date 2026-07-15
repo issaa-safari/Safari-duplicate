@@ -23,6 +23,7 @@ const OVERFLOW_NAV = [
   { label: 'Departures',     href: '/admin/departures' },
   { label: 'Suppliers',      href: '/admin/suppliers' },
   { label: 'Analytics',      href: '/admin/analytics' },
+  { label: 'Activity',       href: '/admin/activity' },
 ]
 
 function SearchModal({ onClose }: { onClose: () => void }) {
