@@ -2,12 +2,17 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { assertAdminAccess, getAdminProfile } from './admin-access'
 
-// Minimal chainable fake for the .from().select().eq().maybeSingle() shape
-// that admin-access.ts relies on.
+// Minimal chainable fake for the .from().select().eq().eq().maybeSingle()
+// shape that admin-access.ts relies on. `eq` is self-chainable so both the
+// email and is_active filters resolve.
 function fakeSupabase(result: { data: unknown; error: unknown }) {
   const maybeSingle = vi.fn().mockResolvedValue(result)
-  const eq = vi.fn(() => ({ maybeSingle }))
-  const select = vi.fn(() => ({ eq }))
+  const chain: { eq: ReturnType<typeof vi.fn>; maybeSingle: typeof maybeSingle } = {
+    eq: vi.fn(() => chain),
+    maybeSingle,
+  }
+  const eq = chain.eq
+  const select = vi.fn(() => chain)
   const from = vi.fn(() => ({ select }))
   return { client: { from } as unknown as SupabaseClient, from, select, eq, maybeSingle }
 }
@@ -37,6 +42,7 @@ describe('getAdminProfile', () => {
     expect(from).toHaveBeenCalledWith('admin_users')
     expect(select).toHaveBeenCalledWith('full_name, role')
     expect(eq).toHaveBeenCalledWith('email', 'jane@example.com')
+    expect(eq).toHaveBeenCalledWith('is_active', true)
   })
 
   it('returns null when no admin row matches', async () => {

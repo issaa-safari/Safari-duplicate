@@ -41,6 +41,7 @@ export async function updateSession(request: NextRequest) {
       .from('admin_users')
       .select('email')
       .eq('email', user.email)
+      .eq('is_active', true)
       .maybeSingle()
     if (error) {
       console.error('admin_users lookup failed in middleware:', error.message)
