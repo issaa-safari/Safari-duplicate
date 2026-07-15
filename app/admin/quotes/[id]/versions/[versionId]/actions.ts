@@ -263,6 +263,20 @@ export const setVersionStatus = safeAction(async (formData: FormData) => {
     throw new Error(`Cannot move from ${version.status} to ${newStatus}.`)
   }
 
+  // Completeness gate: a version can only be marked Ready (or shared as Sent)
+  // once it has at least one itinerary day. Without this a blank version could
+  // be published as an empty proposal to the client.
+  if (newStatus === 'ready' || newStatus === 'sent') {
+    const { count, error: countError } = await admin
+      .from('quote_days')
+      .select('id', { count: 'exact', head: true })
+      .eq('quote_version_id', versionId)
+    if (countError) throw new Error(countError.message)
+    if (!count || count < 1) {
+      throw new Error('Add at least one itinerary day before marking this quote Ready.')
+    }
+  }
+
   const { error } = await admin.from('quote_versions').update({ status: newStatus }).eq('id', versionId)
   if (error) throw new Error(error.message)
   await syncQuoteStatus(admin, quoteId)
