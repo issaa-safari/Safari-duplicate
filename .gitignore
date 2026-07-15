@@ -44,3 +44,9 @@ next-env.d.ts
 .claude/settings.local.json
 # impeccable live-mode session state (config.json stays tracked)
 .impeccable/live/sessions/
+
+# Android APK build (local only — keystore is a secret)
+/apkbuild/
+/apk-src/
+*.apk
+*.keystore
