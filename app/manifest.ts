@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'Safari Riders',
     description: 'Booking, quoting and trip management for Safari Adventure Riders.',
     id: '/',
-    start_url: '/',
+    start_url: '/admin/dashboard',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
