@@ -2,15 +2,31 @@
 
 import Link from 'next/link'
 
+interface Payment {
+  amount_usd: number
+  status: string
+  method: string | null
+  reference: string | null
+  created_at: string
+}
+
 interface BookingDetailFormProps {
   booking: any
   bookingId: string
+  payments?: Payment[]
 }
 
-export default function BookingDetailForm({ booking, bookingId }: BookingDetailFormProps) {
+export default function BookingDetailForm({ booking, bookingId, payments = [] }: BookingDetailFormProps) {
   const departure = booking.departures as any
   const tour = departure?.tours as any
   const travellers = booking.booking_travellers as any[]
+
+  const totalPrice = Number(booking.total_price_usd) || 0
+  const paidAmount = payments
+    .filter((p) => p.status === 'paid')
+    .reduce((sum, p) => sum + (Number(p.amount_usd) || 0), 0)
+  const balanceDue = Math.max(0, totalPrice - paidAmount)
+  const paidPct = totalPrice > 0 ? Math.min(100, Math.round((paidAmount / totalPrice) * 100)) : 0
 
   const statusMap: Record<string, { bg: string; text: string; badge: string }> = {
     confirmed: { bg: 'bg-green-50', text: 'text-green-900', badge: 'bg-green-100 text-green-700' },
@@ -69,6 +85,44 @@ export default function BookingDetailForm({ booking, bookingId }: BookingDetailF
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Payment */}
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold text-foreground">Payment</h3>
+            <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${
+              paidPct >= 100 ? 'bg-green-100 text-green-700' : paidAmount > 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-muted text-muted-foreground'
+            }`}>
+              {paidPct >= 100 ? 'Paid in full' : paidAmount > 0 ? 'Partially paid' : 'Awaiting payment'}
+            </span>
+          </div>
+          <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+            <div className="h-2.5 rounded-full bg-green-600 transition-all" style={{ width: `${paidPct}%` }} />
+          </div>
+          <div className="flex justify-between mt-2 text-sm">
+            <span className="text-muted-foreground">Paid: <span className="font-semibold text-foreground">${paidAmount.toLocaleString()}</span></span>
+            <span className="text-muted-foreground">Balance due: <span className="font-semibold text-foreground">${balanceDue.toLocaleString()}</span></span>
+          </div>
+          {payments.length > 0 ? (
+            <div className="mt-4 pt-4 border-t border-border space-y-1.5">
+              {payments.map((p, i) => (
+                <div key={i} className="flex justify-between text-xs text-muted-foreground">
+                  <span>
+                    {new Date(p.created_at).toLocaleDateString('en-GB')}
+                    {p.method ? ` · ${p.method}` : ''}
+                    {p.reference ? ` · ${p.reference}` : ''}
+                  </span>
+                  <span className="font-medium text-foreground">${Number(p.amount_usd).toLocaleString()} · {p.status}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-4 pt-4 border-t border-border text-xs text-muted-foreground">
+              No payments recorded yet. Record payments in{' '}
+              <Link href="/admin/finance" className="underline hover:text-foreground">Finance</Link>.
+            </p>
+          )}
         </div>
 
         {/* Traveller Information */}

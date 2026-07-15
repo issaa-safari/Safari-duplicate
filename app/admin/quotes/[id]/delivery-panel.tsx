@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createShareLink, revokeDelivery } from './delivery-actions'
+import { createShareLink, revokeDelivery, emailQuote } from './delivery-actions'
 
 interface Delivery {
   id: string
@@ -33,11 +33,13 @@ export default function DeliveryPanel({
   versions,
   deliveries: initial,
   baseUrl,
+  clientEmail,
 }: {
   quoteId: string
   versions: Version[]
   deliveries: Delivery[]
   baseUrl: string
+  clientEmail?: string | null
 }) {
   const [deliveries, setDeliveries] = useState(initial)
   const [selectedVersionId, setSelectedVersionId] = useState(
@@ -45,6 +47,7 @@ export default function DeliveryPanel({
   )
   const [copiedToken, setCopiedToken] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [pending, startTransition] = useTransition()
 
   const shareableVersions = versions.filter(v => ['ready', 'sent', 'viewed', 'accepted'].includes(v.status))
@@ -74,6 +77,42 @@ export default function DeliveryPanel({
         setDeliveries(d => [newDelivery, ...d])
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to create link.')
+      }
+    })
+  }
+
+  function handleEmail() {
+    if (!selectedVersionId) return
+    setError('')
+    setNotice('')
+    const fd = new FormData()
+    fd.set('quoteId', quoteId)
+    fd.set('versionId', selectedVersionId)
+    fd.set('baseUrl', baseUrl)
+    startTransition(async () => {
+      try {
+        const result = await emailQuote(fd)
+        const newDelivery: Delivery = {
+          id: crypto.randomUUID(),
+          quote_version_id: selectedVersionId,
+          channel: 'email',
+          access_token: result.token,
+          expires_at: null,
+          sent_at: new Date().toISOString(),
+          first_viewed_at: null,
+          last_viewed_at: null,
+          view_count: 0,
+          revoked_at: null,
+          created_at: new Date().toISOString(),
+        }
+        setDeliveries(d => [newDelivery, ...d])
+        setNotice(
+          result.emailed
+            ? `Emailed to ${result.recipient}.`
+            : `Link created for ${result.recipient}, but email isn't configured on this environment — copy the link below to send it manually.`
+        )
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to email the quote.')
       }
     })
   }
@@ -140,8 +179,19 @@ export default function DeliveryPanel({
             >
               {pending ? 'Creating…' : 'Generate Link'}
             </button>
+            <button
+              type="button"
+              onClick={handleEmail}
+              disabled={pending || !selectedVersionId || !clientEmail}
+              title={clientEmail ? `Email the proposal to ${clientEmail}` : 'Add a client email to enable sending'}
+              className="rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50 shrink-0 border border-border hover:border-primary-strong text-foreground"
+            >
+              {pending ? 'Sending…' : 'Email to client'}
+            </button>
           </div>
+          {clientEmail && <p className="text-xs text-muted-foreground mt-2">Emails the proposal link to {clientEmail}.</p>}
           {error && <p className="text-xs text-destructive mt-2">{error}</p>}
+          {notice && <p className="text-xs text-primary-strong mt-2">{notice}</p>}
         </div>
       )}
 

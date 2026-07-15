@@ -74,6 +74,18 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const paidPct = totalPrice > 0 ? Math.min(100, Math.round((paidAmount / totalPrice) * 100)) : 0
   const balanceDue = Math.max(0, totalPrice - paidAmount)
 
+  // Bank-transfer details so the client knows how to pay the balance. Pulled
+  // from company_settings; when an online payment gateway is added later a pay
+  // button can slot into this same section.
+  const { data: settings } = await admin
+    .from('company_settings')
+    .select('bank_account_name, bank_account_number, bank_name, bank_account_type, email, whatsapp, deposit_percent')
+    .limit(1)
+    .maybeSingle()
+  const hasBankDetails = !!(settings?.bank_account_number || settings?.bank_name)
+  const depositPercent = Number(settings?.deposit_percent) || 0
+  const depositDue = depositPercent > 0 ? Math.round(totalPrice * depositPercent) / 100 : 0
+
   // Countdown to departure.
   const startDate = departure?.start_date ? new Date(departure.start_date) : null
   const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -234,6 +246,62 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               </div>
             )}
           </div>
+
+          {/* How to pay — bank transfer details, shown while a balance is outstanding */}
+          {balanceDue > 0 && hasBankDetails && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-1">How to pay</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Pay by bank transfer using the details below, then send us your transfer
+                confirmation so we can update your booking.
+                {depositDue > 0 && paidAmount === 0 && (
+                  <> A deposit of <span className="font-semibold text-gray-900">${depositDue.toLocaleString()}</span> ({depositPercent}%) secures your booking.</>
+                )}
+              </p>
+              <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                {settings?.bank_name && (
+                  <div>
+                    <dt className="text-gray-600">Bank</dt>
+                    <dd className="font-semibold text-gray-900">{settings.bank_name}</dd>
+                  </div>
+                )}
+                {settings?.bank_account_name && (
+                  <div>
+                    <dt className="text-gray-600">Account name</dt>
+                    <dd className="font-semibold text-gray-900">{settings.bank_account_name}</dd>
+                  </div>
+                )}
+                {settings?.bank_account_number && (
+                  <div>
+                    <dt className="text-gray-600">Account number</dt>
+                    <dd className="font-semibold text-gray-900 tabular-nums">{settings.bank_account_number}</dd>
+                  </div>
+                )}
+                {settings?.bank_account_type && (
+                  <div>
+                    <dt className="text-gray-600">Account type</dt>
+                    <dd className="font-semibold text-gray-900">{settings.bank_account_type}</dd>
+                  </div>
+                )}
+                <div>
+                  <dt className="text-gray-600">Amount due</dt>
+                  <dd className="font-semibold" style={{ color: G }}>${balanceDue.toLocaleString()}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-600">Reference</dt>
+                  <dd className="font-semibold text-gray-900">Booking {String(booking.id).slice(0, 8).toUpperCase()}</dd>
+                </div>
+              </dl>
+              {(settings?.email || settings?.whatsapp) && (
+                <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-100">
+                  Send your transfer confirmation to{' '}
+                  {settings.email && <span className="font-medium text-gray-700">{settings.email}</span>}
+                  {settings.email && settings.whatsapp && ' or '}
+                  {settings.whatsapp && <span className="font-medium text-gray-700">WhatsApp {settings.whatsapp}</span>}.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Traveller Information */}
           <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">

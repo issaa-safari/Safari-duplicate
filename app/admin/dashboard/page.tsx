@@ -54,7 +54,10 @@ export default async function AdminDashboardPage() {
     admin.from('quote_acceptances')
       .select('quote_versions(total_selling_usd, total_cost_usd)')
       .gte('accepted_at', startOfMonth),
-    admin.from('quote_versions')
+    // Count parent quotes (not versions) so this matches the Quotes list's
+    // sent/viewed tab badges. quotes.status is synced to the most-advanced
+    // version by syncQuoteStatus, and is the canonical grain for dashboards.
+    admin.from('quotes')
       .select('id', { count: 'exact', head: true })
       .in('status', ['sent', 'viewed']),
     admin.from('requests')

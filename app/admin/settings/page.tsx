@@ -30,10 +30,14 @@ export default async function SettingsPage() {
         <h1 className="text-xl font-semibold text-foreground">Settings</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Company information, banking, and booking defaults</p>
       </div>
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap gap-4">
         <Link href="/admin/settings/default-tasks"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-text hover:text-brand-ink">
           Manage Default Tasks →
+        </Link>
+        <Link href="/admin/settings/team"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-text hover:text-brand-ink">
+          Manage Team →
         </Link>
       </div>
       <SettingsForm settings={settings} />

@@ -50,5 +50,12 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
   if (!booking) notFound()
 
-  return <BookingDetailForm booking={booking} bookingId={id} />
+  // Payment records (group_25) so the booking page shows paid vs. balance.
+  const { data: payments } = await admin
+    .from('booking_payments')
+    .select('amount_usd, status, method, reference, created_at')
+    .eq('booking_id', id)
+    .order('created_at', { ascending: true })
+
+  return <BookingDetailForm booking={booking} bookingId={id} payments={payments ?? []} />
 }

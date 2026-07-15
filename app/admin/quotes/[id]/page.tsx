@@ -296,6 +296,7 @@ export default async function QuoteDetailPage({
               tripBuilderInitialVersionId={tripBuilderInit?.initialVersionId ?? null}
               deliveries={deliveries}
               baseUrl={baseUrl}
+              clientEmail={client?.email ?? null}
             />
           )}
         </div>

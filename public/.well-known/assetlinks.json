@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.safariadventureriders.app",
+      "sha256_cert_fingerprints": [
+        "B8:EA:D6:99:84:C6:79:A4:B6:BA:9C:14:D5:69:16:E3:B6:BB:4A:6A:1E:B5:8E:D2:77:DE:41:F2:6D:62:26:87"
+      ]
+    }
+  }
+]

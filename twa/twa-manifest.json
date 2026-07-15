@@ -1,0 +1,50 @@
+{
+  "packageId": "com.safariadventureriders.app",
+  "host": "safariadventureriders.com",
+  "name": "Safari Adventure Riders",
+  "launcherName": "Safari Riders",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#7A9A4A",
+  "themeColorDark": "#7A9A4A",
+  "navigationColor": "#7A9A4A",
+  "navigationColorDark": "#0f172a",
+  "navigationDividerColor": "#7A9A4A",
+  "navigationDividerColorDark": "#0f172a",
+  "backgroundColor": "#ffffff",
+  "enableNotifications": false,
+  "startUrl": "/admin/dashboard",
+  "iconUrl": "https://safariadventureriders.com/icons/icon-512.png",
+  "maskableIconUrl": "https://safariadventureriders.com/icons/maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Admin dashboard",
+      "shortName": "Admin",
+      "url": "/admin/dashboard",
+      "chosenIconUrl": "https://safariadventureriders.com/icons/icon-192.png"
+    },
+    {
+      "name": "My trips",
+      "shortName": "My trips",
+      "url": "/dashboard",
+      "chosenIconUrl": "https://safariadventureriders.com/icons/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://safariadventureriders.com/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://safariadventureriders.com/",
+  "minSdkVersion": 21,
+  "orientationLock": false
+}

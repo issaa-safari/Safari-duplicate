@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import SecurityForm from './form'
+import TwoFactor from './two-factor'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 
@@ -25,6 +26,7 @@ export default async function SecurityPage() {
 
           <div className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
             <SecurityForm user={user} />
+            <TwoFactor />
           </div>
         </div>
       </main>

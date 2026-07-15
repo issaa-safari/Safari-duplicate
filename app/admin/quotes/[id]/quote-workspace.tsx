@@ -54,6 +54,7 @@ export default function QuoteWorkspace({
   tripBuilderInitialVersionId,
   deliveries,
   baseUrl,
+  clientEmail,
 }: {
   quoteId: string
   initialStep: Step
@@ -79,6 +80,7 @@ export default function QuoteWorkspace({
   tripBuilderInitialVersionId: string | null
   deliveries: any[]
   baseUrl: string
+  clientEmail?: string | null
 }) {
   const [step, setStep] = useState<Step>(initialStep)
   const [activeVersionId, setActiveVersionId] = useState(initialVersionId)
@@ -199,6 +201,7 @@ export default function QuoteWorkspace({
           versions={versions.map(v => ({ id: v.id, version_number: v.version_number, status: v.status }))}
           deliveries={deliveries}
           baseUrl={baseUrl}
+          clientEmail={clientEmail}
         />
       </div>
     </div>

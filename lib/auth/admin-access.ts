@@ -7,6 +7,7 @@ export async function getAdminProfile(admin: SupabaseClient, email?: string | nu
     .from('admin_users')
     .select('full_name, role')
     .eq('email', email)
+    .eq('is_active', true)
     .maybeSingle()
 
   if (error || !data) return null
