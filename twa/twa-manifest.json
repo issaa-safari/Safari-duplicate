@@ -13,7 +13,7 @@
   "navigationDividerColorDark": "#0f172a",
   "backgroundColor": "#ffffff",
   "enableNotifications": false,
-  "startUrl": "/",
+  "startUrl": "/admin/dashboard",
   "iconUrl": "https://safariadventureriders.com/icons/icon-512.png",
   "maskableIconUrl": "https://safariadventureriders.com/icons/maskable-512.png",
   "splashScreenFadeOutDuration": 300,
