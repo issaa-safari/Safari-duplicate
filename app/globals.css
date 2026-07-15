@@ -67,7 +67,7 @@
 }
 
 /* ── SafariOffice green design system (admin only) ─────────────────────────
-   Ported from the Lovable design pass (docs/lovable-enhancement.md).
+   Ported from the Lovable design pass (docs/archive/build-planning/lovable-enhancement.md).
    Scoped under .admin-theme so the public site's earthy palette is untouched;
    the legacy --admin-* / --olive tokens are re-pointed inside the scope so
    every existing admin page picks up the new skin without per-page edits. */
