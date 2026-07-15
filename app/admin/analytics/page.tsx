@@ -52,6 +52,7 @@ export default async function AnalyticsPage() {
     { data: allRequests },
     { data: acceptances },
     { data: allBookings },
+    { count: totalQuotes },
   ] = await Promise.all([
     admin.from('quote_versions').select('id, status, total_selling_usd, total_cost_usd, created_at, sent_at'),
     admin.from('quote_versions')
@@ -66,6 +67,10 @@ export default async function AnalyticsPage() {
     admin.from('quote_acceptances').select('accepted_at, quote_version_id'),
     admin.from('bookings')
       .select('status, total_price_usd, number_of_travellers, created_at, departures(tours(title_en))'),
+    // Parent-quote count so the headline "Total Quotes" matches the Quotes
+    // list. Version-grain figures below (conversion, status distribution) stay
+    // version-based and are labelled as such.
+    admin.from('quotes').select('id', { count: 'exact', head: true }),
   ])
 
   // --- Website bookings (direct online bookings, separate from the quote flow) ---
@@ -171,7 +176,7 @@ export default async function AnalyticsPage() {
 
       {/* Top KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Total Quotes" value={fmt(totalVersions)} sub="all versions" />
+        <KpiCard label="Total Quotes" value={fmt(totalQuotes ?? 0)} sub={`${fmt(totalVersions)} versions`} />
         <KpiCard
           label="Conversion Rate"
           value={conversionRate !== null ? `${Math.round(conversionRate * 100)}%` : '—'}
