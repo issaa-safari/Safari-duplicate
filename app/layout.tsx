@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Readex_Pro, IBM_Plex_Sans, IBM_Plex_Sans_Arabic, Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import PwaRegister from "@/components/pwa-register";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -80,6 +81,20 @@ export const metadata: Metadata = {
     description:
       "Expert-led safaris in Kenya, Tanzania & East Africa. Custom itineraries, luxury lodges, and 15+ years of experience.",
   },
+  applicationName: "Safari Adventure Riders",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Safari Riders",
+  },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#7A9A4A",
 };
 
 export default function RootLayout({
@@ -94,6 +109,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-body, 'IBM Plex Sans', sans-serif)" }}>
         {children}
+        <PwaRegister />
       </body>
     </html>
   );
