@@ -203,6 +203,19 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans, Arial, Helvetica, sans-serif);
 }
+
+/* ── Arabic / RTL type ─────────────────────────────────────────────────────
+   Every Arabic surface (public pages, the client quote proposal, admin RTL
+   previews) is wrapped in a dir="rtl" container, and all font styling is done
+   via inline `var(--font-*)` references. Redefining those variables at the RTL
+   scope unifies both headings and body onto Cairo for Arabic content, with no
+   per-component edits. Latin/LTR rendering (Readex Pro + IBM Plex Sans) is
+   untouched because the root <html lang="en"> never sets dir. */
+[dir="rtl"] {
+  --font-display: var(--font-arabic), "Cairo", sans-serif;
+  --font-body:    var(--font-arabic), "Cairo", sans-serif;
+  --font-body-ar: var(--font-arabic), "Cairo", sans-serif;
+}
 input, textarea, select { color: #1f2937; }
 input::placeholder, textarea::placeholder { color: #9ca3af; }
 html { scroll-behavior: smooth; }

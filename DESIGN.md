@@ -21,9 +21,14 @@ typography:
   body:
     fontFamily: "IBM Plex Sans, sans-serif"
     fontWeight: 400
-  body-arabic:
-    fontFamily: "IBM Plex Sans Arabic, sans-serif"
+  arabic:
+    # Arabic/RTL uses a single family for both display and body (Cairo).
+    # Applied via a [dir="rtl"] variable swap in app/globals.css, which
+    # redefines --font-display / --font-body / --font-body-ar to --font-arabic
+    # (Cairo) for all Arabic content — public site and client quote/proposal.
+    fontFamily: "Cairo, sans-serif"
     fontWeight: 400
+    displayWeight: 600
   admin-display:
     fontFamily: "Playfair Display, Georgia, serif"
     letterSpacing: "-0.01em"

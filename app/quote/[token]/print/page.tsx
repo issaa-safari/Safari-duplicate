@@ -359,9 +359,9 @@ export default async function QuotePrintPage({
 
   return (
     <>
-      <style>{CSS + (isArabic ? `body { font-family: 'Noto Sans Arabic', Arial, sans-serif; }` : '')}</style>
+      <style>{CSS + (isArabic ? `[dir="rtl"], [dir="rtl"] * { font-family: 'Cairo', var(--font-arabic), Arial, sans-serif !important; }` : '')}</style>
       {isArabic && (
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" />
       )}
 
       <PrintToolbar />

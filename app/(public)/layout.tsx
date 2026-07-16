@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Readex_Pro, IBM_Plex_Sans, IBM_Plex_Sans_Arabic } from 'next/font/google'
+import { Readex_Pro, IBM_Plex_Sans, IBM_Plex_Sans_Arabic, Cairo } from 'next/font/google'
 
 const readexPro = Readex_Pro({
   subsets: ['latin', 'arabic'],
@@ -22,6 +22,15 @@ const ibmPlexSansAr = IBM_Plex_Sans_Arabic({
   display: 'swap',
 })
 
+// Arabic/RTL type: unified to Cairo for headings + body via the [dir="rtl"]
+// variable swap in globals.css.
+const cairo = Cairo({
+  subsets: ['arabic', 'latin'],
+  variable: '--font-arabic',
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
   title: 'Safari Adventure Riders - East African Safari Tours',
   description: 'Experience the ultimate East African safari. Custom wildlife tours, expert guides, and unforgettable adventures.',
@@ -29,7 +38,7 @@ export const metadata: Metadata = {
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${readexPro.variable} ${ibmPlexSans.variable} ${ibmPlexSansAr.variable}`}>
+    <html lang="en" className={`${readexPro.variable} ${ibmPlexSans.variable} ${ibmPlexSansAr.variable} ${cairo.variable}`}>
       <body className="bg-white" style={{ fontFamily: "var(--font-body, 'IBM Plex Sans', sans-serif)" }}>
         {children}
       </body>
