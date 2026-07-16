@@ -1,10 +1,11 @@
--- Seed 09: Client "SM" — 7-day Ol Pejeta & Naivasha private safari (DRAFT)
+-- Seed 09: "SM" 7-day Ol Pejeta & Naivasha private safari — TOUR TEMPLATE
 --
--- Creates one Arabic (RTL) client quotation as a DRAFT so the operator can
--- review it in Admin → Quotes and ENTER THE PRICING before sending. Nothing
--- here sets a price: quote_versions totals stay at 0, no quote_price_lines are
--- created, and travellers carry no fixed amount. The quoted figures the client
--- was given are recorded in quote_versions.internal_notes for the operator.
+-- Creates the Arabic (RTL) 7-day itinerary as a reusable TOUR TEMPLATE
+-- (quotes.is_template = true) so it appears under Admin → Tour Templates and
+-- can be copied into any request via "Start from template". Nothing here sets
+-- a price: quote_versions totals stay at 0, no quote_price_lines are created,
+-- and travellers carry no fixed amount. The quoted figures are recorded in
+-- quote_versions.internal_notes for the operator to enter when pricing a copy.
 --
 -- 6 travellers · 7 days / 6 nights · car Toyota Noah · meals NOT included.
 -- Language = 'ar' (client is from Oman). Itinerary from the client brief.
@@ -32,12 +33,15 @@ values ('5b000000-0000-4000-8000-000000000002', 'REQ-SM-001',
         6, 6, 'wildlife')
 on conflict (id) do nothing;
 
--- ── Quote (custom, draft) ─────────────────────────────────────────────────────
-insert into quotes (id, quote_number, request_id, client_id, mode, status)
+-- ── Quote (custom, draft, flagged as a reusable Tour Template) ────────────────
+insert into quotes (id, quote_number, request_id, client_id, mode, status, is_template)
 values ('5b000000-0000-4000-8000-000000000003', 'SAT-Q-SM-001',
         '5b000000-0000-4000-8000-000000000002',
-        '5b000000-0000-4000-8000-000000000001', 'custom', 'draft')
+        '5b000000-0000-4000-8000-000000000001', 'custom', 'draft', true)
 on conflict (id) do nothing;
+
+-- Keep the template flag set on re-runs where the quote row already existed.
+update quotes set is_template = true where id = '5b000000-0000-4000-8000-000000000003';
 
 -- ── Quote version 1 (Arabic, draft — NO pricing) ──────────────────────────────
 insert into quote_versions (id, quote_id, version_number, status, title, language, currency,
