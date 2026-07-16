@@ -190,8 +190,8 @@ export default function AdminSidebar({
   const moreRef = useRef<HTMLDivElement>(null)
   const userRef = useRef<HTMLDivElement>(null)
 
-  // Close the mobile sheet on navigation, and lock scroll / Escape while open.
-  useEffect(() => { setSheetOpen(false) }, [pathname])
+  // Lock scroll / Escape while the mobile "More" sheet is open. (Every link in
+  // the sheet closes it via onClick, so no route-change effect is needed.)
   useEffect(() => {
     if (!sheetOpen) return
     const prev = document.body.style.overflow
@@ -489,7 +489,7 @@ export default function AdminSidebar({
       </div>
 
       {/* ── Mobile bottom tab bar ──────────────────────────────────────── */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 pb-[max(env(safe-area-inset-bottom),0.5rem)] backdrop-blur lg:hidden">
         <div className="grid grid-cols-5">
           {BOTTOM_NAV.map((item) => {
             const Icon = item.icon
