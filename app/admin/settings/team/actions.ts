@@ -59,6 +59,11 @@ export async function setTeamMemberRole(formData: FormData) {
   const role = String(formData.get('role') ?? '')
   if (!ROLES.includes(role as (typeof ROLES)[number])) throw new Error('Invalid role.')
 
+  // The owner role is protected: it isn't in ROLES, so it can never be assigned
+  // here, and an existing owner must not be demoted through this editor.
+  const { data: target } = await admin.from('admin_users').select('role').eq('id', id).maybeSingle()
+  if (target?.role === 'owner') throw new Error("The owner's role can't be changed here.")
+
   const { error } = await admin.from('admin_users').update({ role }).eq('id', id)
   if (error) throw new Error(error.message)
 

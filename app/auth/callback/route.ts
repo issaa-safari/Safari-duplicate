@@ -32,8 +32,11 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Return the user to where they started (e.g. a booking page), else the dashboard.
+  // Return the user to where they started (e.g. a booking page), else the
+  // dashboard. Only accept same-origin relative paths: a single leading slash
+  // not followed by another slash or backslash, so protocol-relative targets
+  // like `//evil.com` (which resolve to an external origin) are rejected.
   const next = searchParams.get('next')
-  const dest = next && next.startsWith('/') ? next : '/dashboard'
+  const dest = next && /^\/(?![/\\])/.test(next) ? next : '/dashboard'
   return NextResponse.redirect(new URL(dest, request.url))
 }

@@ -82,15 +82,22 @@ export default async function TeamPage() {
                 {m.full_name && <p className="text-xs text-muted-foreground">{m.email}</p>}
               </div>
 
-              <form action={setTeamMemberRole} className="flex items-center gap-2">
-                <input type="hidden" name="id" value={m.id} />
-                <select name="role" defaultValue={m.role}
-                  className="rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50">
-                  <option value="admin">Admin</option>
-                  <option value="editor">Editor</option>
-                </select>
-                <button type="submit" className="text-xs px-2.5 py-1.5 rounded border border-border hover:border-primary-strong text-muted-foreground hover:text-foreground">Save</button>
-              </form>
+              {m.role === 'owner' ? (
+                // Owner is a protected role that this editor can't set, so show
+                // it as a static badge — a select limited to admin/editor would
+                // otherwise render as "Admin" and silently demote the owner on Save.
+                <span className="text-xs px-2.5 py-1.5 rounded border border-border text-muted-foreground">Owner</span>
+              ) : (
+                <form action={setTeamMemberRole} className="flex items-center gap-2">
+                  <input type="hidden" name="id" value={m.id} />
+                  <select name="role" defaultValue={m.role}
+                    className="rounded-md border border-border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50">
+                    <option value="admin">Admin</option>
+                    <option value="editor">Editor</option>
+                  </select>
+                  <button type="submit" className="text-xs px-2.5 py-1.5 rounded border border-border hover:border-primary-strong text-muted-foreground hover:text-foreground">Save</button>
+                </form>
+              )}
 
               <form action={setTeamMemberActive}>
                 <input type="hidden" name="id" value={m.id} />

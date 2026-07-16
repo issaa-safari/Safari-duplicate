@@ -4,10 +4,20 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { syncQuoteStatus } from '@/lib/server/quote-status'
 import { sendEmail, emailShell, escapeHtml } from '@/lib/email'
 import { logActivity } from '@/lib/server/audit'
+
+// Same-origin base URL derived server-side from the request headers, so the
+// customer-facing link can never be pointed at an attacker host via a forged
+// form field.
+async function requestBaseUrl() {
+  const host = (await headers()).get('host') ?? 'localhost:3000'
+  const proto = host.startsWith('localhost') ? 'http' : 'https'
+  return `${proto}://${host}`
+}
 
 async function authGuard() {
   const supabase = await createClient()
@@ -67,14 +77,14 @@ export async function createShareLink(formData: FormData) {
   })
 
   revalidatePath(`/admin/quotes/${quoteId}`)
-  return { token: delivery.access_token }
+  return { id: delivery.id, token: delivery.access_token }
 }
 
 export async function emailQuote(formData: FormData) {
   const { user, admin } = await authGuard()
   const quoteId = formData.get('quoteId') as string
   const versionId = formData.get('versionId') as string
-  const baseUrl = formData.get('baseUrl') as string
+  const baseUrl = await requestBaseUrl()
 
   const { data: version } = await admin
     .from('quote_versions')
@@ -148,7 +158,7 @@ export async function emailQuote(formData: FormData) {
   })
 
   revalidatePath(`/admin/quotes/${quoteId}`)
-  return { token: delivery.access_token, recipient, emailed }
+  return { id: delivery.id, token: delivery.access_token, recipient, emailed }
 }
 
 export async function revokeDelivery(formData: FormData) {

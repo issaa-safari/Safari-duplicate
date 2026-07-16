@@ -73,3 +73,16 @@ export interface BookingTraveller {
   nationality: string | null
   passport_number: string | null
 }
+
+// --- Activity / audit log (migrations/group_55_activity_log.sql) ---
+export interface ActivityLog {
+  id: string
+  actor_id: string | null
+  actor_email: string | null
+  entity_type: string
+  entity_id: string | null
+  action: string
+  summary: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+}

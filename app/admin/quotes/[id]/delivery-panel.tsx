@@ -28,6 +28,14 @@ function fmtDate(d: string | null) {
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+// Mirrors the server's 90-day delivery expiry so the optimistic row shown
+// before the next reload isn't misdated.
+function ninetyDaysOut() {
+  const d = new Date()
+  d.setDate(d.getDate() + 90)
+  return d.toISOString()
+}
+
 export default function DeliveryPanel({
   quoteId,
   versions,
@@ -50,7 +58,9 @@ export default function DeliveryPanel({
   const [notice, setNotice] = useState('')
   const [pending, startTransition] = useTransition()
 
-  const shareableVersions = versions.filter(v => ['ready', 'sent', 'viewed', 'accepted'].includes(v.status))
+  // Must match the statuses the server actions accept (see delivery-actions.ts);
+  // offering 'accepted' here only produced a guaranteed throw on send.
+  const shareableVersions = versions.filter(v => ['ready', 'sent', 'viewed'].includes(v.status))
 
   function handleCreate() {
     if (!selectedVersionId) return
@@ -62,11 +72,11 @@ export default function DeliveryPanel({
       try {
         const result = await createShareLink(fd)
         const newDelivery: Delivery = {
-          id: crypto.randomUUID(),
+          id: result.id,
           quote_version_id: selectedVersionId,
           channel: 'share_link',
           access_token: result.token,
-          expires_at: null,
+          expires_at: ninetyDaysOut(),
           sent_at: new Date().toISOString(),
           first_viewed_at: null,
           last_viewed_at: null,
@@ -88,16 +98,15 @@ export default function DeliveryPanel({
     const fd = new FormData()
     fd.set('quoteId', quoteId)
     fd.set('versionId', selectedVersionId)
-    fd.set('baseUrl', baseUrl)
     startTransition(async () => {
       try {
         const result = await emailQuote(fd)
         const newDelivery: Delivery = {
-          id: crypto.randomUUID(),
+          id: result.id,
           quote_version_id: selectedVersionId,
           channel: 'email',
           access_token: result.token,
-          expires_at: null,
+          expires_at: ninetyDaysOut(),
           sent_at: new Date().toISOString(),
           first_viewed_at: null,
           last_viewed_at: null,
