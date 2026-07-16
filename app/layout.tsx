@@ -95,6 +95,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#7A9A4A",
+  // Extend under the notch / home indicator so `env(safe-area-inset-*)` returns
+  // real values; the sticky bottom nav and floating CTAs pad against them.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

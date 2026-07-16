@@ -18,8 +18,10 @@ export default function WhatsAppButton({ lang = 'en' }: { lang?: string }) {
       aria-label={label}
       className="fixed end-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] shadow-lg hover:scale-105 hover:shadow-xl"
       style={{
-        // Sit above the sticky enquiry bar when it is visible (tour pages).
-        bottom: 'calc(var(--sticky-bar-h, 0px) + 24px)',
+        // Sit above the sticky enquiry bar (tour pages) AND the iOS home
+        // indicator — without the safe-area inset the button lands in the
+        // bottom-edge gesture zone and taps trigger Siri / the home gesture.
+        bottom: 'calc(var(--sticky-bar-h, 0px) + env(safe-area-inset-bottom, 0px) + 24px)',
         transition: 'bottom 0.35s cubic-bezier(0.22, 1, 0.36, 1), transform 0.15s ease, box-shadow 0.15s ease',
       }}
     >
