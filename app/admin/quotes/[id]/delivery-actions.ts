@@ -9,6 +9,7 @@ import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { syncQuoteStatus } from '@/lib/server/quote-status'
 import { sendEmail, emailShell, escapeHtml } from '@/lib/email'
 import { logActivity } from '@/lib/server/audit'
+import { safeAction } from '@/lib/server/action-result'
 
 // Same-origin base URL derived server-side from the request headers, so the
 // customer-facing link can never be pointed at an attacker host via a forged
@@ -28,7 +29,7 @@ async function authGuard() {
   return { user, admin }
 }
 
-export async function createShareLink(formData: FormData) {
+export const createShareLink = safeAction(async (formData: FormData) => {
   const { user, admin } = await authGuard()
   const quoteId = formData.get('quoteId') as string
   const versionId = formData.get('versionId') as string
@@ -77,10 +78,10 @@ export async function createShareLink(formData: FormData) {
   })
 
   revalidatePath(`/admin/quotes/${quoteId}`)
-  return { id: delivery.id, token: delivery.access_token }
-}
+  return { error: null, id: delivery.id, token: delivery.access_token }
+})
 
-export async function emailQuote(formData: FormData) {
+export const emailQuote = safeAction(async (formData: FormData) => {
   const { user, admin } = await authGuard()
   const quoteId = formData.get('quoteId') as string
   const versionId = formData.get('versionId') as string
@@ -158,10 +159,10 @@ export async function emailQuote(formData: FormData) {
   })
 
   revalidatePath(`/admin/quotes/${quoteId}`)
-  return { id: delivery.id, token: delivery.access_token, recipient, emailed }
-}
+  return { error: null, id: delivery.id, token: delivery.access_token, recipient, emailed }
+})
 
-export async function revokeDelivery(formData: FormData) {
+export const revokeDelivery = safeAction(async (formData: FormData) => {
   const { admin } = await authGuard()
   const deliveryId = formData.get('deliveryId') as string
   const quoteId = formData.get('quoteId') as string
@@ -173,4 +174,4 @@ export async function revokeDelivery(formData: FormData) {
 
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/quotes/${quoteId}`)
-}
+})

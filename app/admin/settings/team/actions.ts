@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { logActivity } from '@/lib/server/audit'
+import { safeAction, type ActionResult } from '@/lib/server/action-result'
 
 const ROLES = ['admin', 'editor'] as const
 
@@ -22,7 +23,12 @@ function normaliseEmail(raw: unknown) {
   return String(raw ?? '').trim().toLowerCase()
 }
 
-export async function addTeamMember(formData: FormData) {
+// The action bodies throw on validation/DB errors; safeAction converts those
+// into `{ error }` so the messages survive Next.js's production redaction and
+// the UI (via useActionState) can display them. The exported actions take the
+// `(prevState, formData)` shape useActionState dispatches with.
+
+const addTeamMemberImpl = safeAction(async (formData: FormData) => {
   const { user, admin } = await authGuard()
   const email = normaliseEmail(formData.get('email'))
   const fullName = String(formData.get('fullName') ?? '').trim() || null
@@ -51,9 +57,13 @@ export async function addTeamMember(formData: FormData) {
     metadata: { email, role },
   })
   revalidatePath('/admin/settings/team')
+})
+
+export async function addTeamMember(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  return addTeamMemberImpl(formData)
 }
 
-export async function setTeamMemberRole(formData: FormData) {
+const setTeamMemberRoleImpl = safeAction(async (formData: FormData) => {
   const { user, admin } = await authGuard()
   const id = String(formData.get('id') ?? '')
   const role = String(formData.get('role') ?? '')
@@ -77,9 +87,13 @@ export async function setTeamMemberRole(formData: FormData) {
     metadata: { role },
   })
   revalidatePath('/admin/settings/team')
+})
+
+export async function setTeamMemberRole(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  return setTeamMemberRoleImpl(formData)
 }
 
-export async function setTeamMemberActive(formData: FormData) {
+const setTeamMemberActiveImpl = safeAction(async (formData: FormData) => {
   const { user, admin } = await authGuard()
   const id = String(formData.get('id') ?? '')
   const active = formData.get('active') === 'true'
@@ -113,4 +127,8 @@ export async function setTeamMemberActive(formData: FormData) {
     metadata: { email: target.email },
   })
   revalidatePath('/admin/settings/team')
+})
+
+export async function setTeamMemberActive(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  return setTeamMemberActiveImpl(formData)
 }
