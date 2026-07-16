@@ -34,8 +34,12 @@ self.addEventListener('fetch', (event) => {
       caches.match(request).then((hit) =>
         hit ||
         fetch(request).then((res) => {
-          const copy = res.clone()
-          caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {})
+          // Only cache successful responses — never persist a transient
+          // 404/500/redirect, which cache-first would then replay forever.
+          if (res.ok) {
+            const copy = res.clone()
+            caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {})
+          }
           return res
         })
       )

@@ -26,7 +26,7 @@ export default async function AdminLayout({
         fullName={adminProfile?.full_name ?? user.email ?? 'Admin'}
         role={adminProfile?.role ?? 'admin'}
       />
-      <main className="min-h-[calc(100vh-108px)]">
+      <main className="min-h-[calc(100vh-108px)] pb-[calc(env(safe-area-inset-bottom)+4.5rem)] lg:pb-0">
         {children}
       </main>
     </div>

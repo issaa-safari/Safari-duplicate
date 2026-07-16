@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 const G = '#7A9A4A'
 
-type Factor = { id: string; status: string; friendly_name?: string | null }
+type Factor = { id: string; status: string; factor_type?: string; friendly_name?: string | null }
 
 export default function TwoFactor() {
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null)
@@ -23,8 +23,11 @@ export default function TwoFactor() {
   const refresh = useCallback(async (client: SupabaseClient) => {
     setLoading(true)
     const { data, error } = await client.auth.mfa.listFactors()
+    // Use `all` (not `totp`): listFactors only puts *verified* factors in the
+    // per-type arrays, so a dangling unverified factor would be invisible to
+    // the stale-factor cleanup in startEnroll and block re-enrolment.
     if (error) setError(error.message)
-    else setFactors((data?.totp ?? []) as Factor[])
+    else setFactors((data?.all ?? []) as Factor[])
     setLoading(false)
   }, [])
 
@@ -39,8 +42,9 @@ export default function TwoFactor() {
   async function startEnroll() {
     if (!supabase) return
     setError(''); setNotice(''); setBusy(true)
-    // Clear any stale unverified factors first (Supabase blocks duplicate enrol).
-    for (const f of factors.filter((f) => f.status !== 'verified')) {
+    // Clear any stale unverified TOTP factors first (Supabase blocks duplicate
+    // enrol). These come from an abandoned enrolment (QR shown, never confirmed).
+    for (const f of factors.filter((f) => f.status !== 'verified' && (f.factor_type ?? 'totp') === 'totp')) {
       await supabase.auth.mfa.unenroll({ factorId: f.id })
     }
     const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' })

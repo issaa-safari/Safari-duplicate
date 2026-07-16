@@ -28,6 +28,14 @@ function fmtDate(d: string | null) {
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+// Mirrors the server's 90-day delivery expiry so the optimistic row shown
+// before the next reload isn't misdated.
+function ninetyDaysOut() {
+  const d = new Date()
+  d.setDate(d.getDate() + 90)
+  return d.toISOString()
+}
+
 export default function DeliveryPanel({
   quoteId,
   versions,
@@ -50,7 +58,9 @@ export default function DeliveryPanel({
   const [notice, setNotice] = useState('')
   const [pending, startTransition] = useTransition()
 
-  const shareableVersions = versions.filter(v => ['ready', 'sent', 'viewed', 'accepted'].includes(v.status))
+  // Must match the statuses the server actions accept (see delivery-actions.ts);
+  // offering 'accepted' here only produced a guaranteed throw on send.
+  const shareableVersions = versions.filter(v => ['ready', 'sent', 'viewed'].includes(v.status))
 
   function handleCreate() {
     if (!selectedVersionId) return
@@ -59,25 +69,25 @@ export default function DeliveryPanel({
     fd.set('quoteId', quoteId)
     fd.set('versionId', selectedVersionId)
     startTransition(async () => {
-      try {
-        const result = await createShareLink(fd)
-        const newDelivery: Delivery = {
-          id: crypto.randomUUID(),
-          quote_version_id: selectedVersionId,
-          channel: 'share_link',
-          access_token: result.token,
-          expires_at: null,
-          sent_at: new Date().toISOString(),
-          first_viewed_at: null,
-          last_viewed_at: null,
-          view_count: 0,
-          revoked_at: null,
-          created_at: new Date().toISOString(),
-        }
-        setDeliveries(d => [newDelivery, ...d])
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to create link.')
+      const result = await createShareLink(fd)
+      if (result.error !== null) {
+        setError(result.error)
+        return
       }
+      const newDelivery: Delivery = {
+        id: result.id,
+        quote_version_id: selectedVersionId,
+        channel: 'share_link',
+        access_token: result.token,
+        expires_at: ninetyDaysOut(),
+        sent_at: new Date().toISOString(),
+        first_viewed_at: null,
+        last_viewed_at: null,
+        view_count: 0,
+        revoked_at: null,
+        created_at: new Date().toISOString(),
+      }
+      setDeliveries(d => [newDelivery, ...d])
     })
   }
 
@@ -88,32 +98,31 @@ export default function DeliveryPanel({
     const fd = new FormData()
     fd.set('quoteId', quoteId)
     fd.set('versionId', selectedVersionId)
-    fd.set('baseUrl', baseUrl)
     startTransition(async () => {
-      try {
-        const result = await emailQuote(fd)
-        const newDelivery: Delivery = {
-          id: crypto.randomUUID(),
-          quote_version_id: selectedVersionId,
-          channel: 'email',
-          access_token: result.token,
-          expires_at: null,
-          sent_at: new Date().toISOString(),
-          first_viewed_at: null,
-          last_viewed_at: null,
-          view_count: 0,
-          revoked_at: null,
-          created_at: new Date().toISOString(),
-        }
-        setDeliveries(d => [newDelivery, ...d])
-        setNotice(
-          result.emailed
-            ? `Emailed to ${result.recipient}.`
-            : `Link created for ${result.recipient}, but email isn't configured on this environment — copy the link below to send it manually.`
-        )
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to email the quote.')
+      const result = await emailQuote(fd)
+      if (result.error !== null) {
+        setError(result.error)
+        return
       }
+      const newDelivery: Delivery = {
+        id: result.id,
+        quote_version_id: selectedVersionId,
+        channel: 'email',
+        access_token: result.token,
+        expires_at: ninetyDaysOut(),
+        sent_at: new Date().toISOString(),
+        first_viewed_at: null,
+        last_viewed_at: null,
+        view_count: 0,
+        revoked_at: null,
+        created_at: new Date().toISOString(),
+      }
+      setDeliveries(d => [newDelivery, ...d])
+      setNotice(
+        result.emailed
+          ? `Emailed to ${result.recipient}.`
+          : `Link created for ${result.recipient}, but email isn't configured on this environment — copy the link below to send it manually.`
+      )
     })
   }
 
@@ -123,15 +132,15 @@ export default function DeliveryPanel({
     fd.set('deliveryId', deliveryId)
     fd.set('quoteId', quoteId)
     startTransition(async () => {
-      try {
-        await revokeDelivery(fd)
-        setDeliveries(ds => ds.map(d => d.id === deliveryId
-          ? { ...d, revoked_at: new Date().toISOString() }
-          : d
-        ))
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to revoke link.')
+      const result = await revokeDelivery(fd)
+      if (result.error !== null) {
+        setError(result.error)
+        return
       }
+      setDeliveries(ds => ds.map(d => d.id === deliveryId
+        ? { ...d, revoked_at: new Date().toISOString() }
+        : d
+      ))
     })
   }
 
