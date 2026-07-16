@@ -74,6 +74,20 @@ export interface BookingTraveller {
   passport_number: string | null
 }
 
+// --- Multi-location activities (migrations/group_57_activity_locations.sql) ---
+// A generic activity (e.g. "Waterfall Visit", "Game Drive") can occur at
+// several places — each a destination and/or a park.
+export interface ActivityLocation {
+  id: string
+  activity_id: string
+  destination_id: string | null
+  park_id: string | null
+  label_en: string | null
+  label_ar: string | null
+  sort_order: number
+  created_at: string
+}
+
 // --- Activity / audit log (migrations/group_55_activity_log.sql) ---
 export interface ActivityLog {
   id: string
