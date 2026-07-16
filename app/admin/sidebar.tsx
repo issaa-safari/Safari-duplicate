@@ -4,26 +4,42 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useTransition, useRef } from 'react'
-import { Search, MoreHorizontal } from 'lucide-react'
+import {
+  Search, MoreHorizontal, LayoutDashboard, Inbox, FileText, Route, CalendarCheck,
+  Users, Wallet, Package, Boxes, MapPin, Truck, BarChart3, Clock, Settings, LogOut, X,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import type { SearchResults, SearchQuote, SearchClient, SearchRequest } from '@/lib/types'
 
-const PRIMARY_NAV = [
-  { label: 'Dashboard',    href: '/admin/dashboard' },
-  { label: 'Requests',     href: '/admin/requests' },
-  { label: 'Quotes',       href: '/admin/quotes' },
-  { label: 'Trip Builder', href: '/admin/trip-builder' },
-  { label: 'Bookings',     href: '/admin/bookings' },
-  { label: 'Clients',      href: '/admin/clients' },
-  { label: 'Finance',      href: '/admin/finance' },
+type NavItem = { label: string; href: string; icon: LucideIcon }
+
+const PRIMARY_NAV: NavItem[] = [
+  { label: 'Dashboard',    href: '/admin/dashboard',    icon: LayoutDashboard },
+  { label: 'Requests',     href: '/admin/requests',     icon: Inbox },
+  { label: 'Quotes',       href: '/admin/quotes',       icon: FileText },
+  { label: 'Trip Builder', href: '/admin/trip-builder', icon: Route },
+  { label: 'Bookings',     href: '/admin/bookings',     icon: CalendarCheck },
+  { label: 'Clients',      href: '/admin/clients',      icon: Users },
+  { label: 'Finance',      href: '/admin/finance',      icon: Wallet },
 ]
 
-const OVERFLOW_NAV = [
-  { label: 'Tour Templates', href: '/admin/tours' },
-  { label: 'Content',        href: '/admin/content' },
-  { label: 'Departures',     href: '/admin/departures' },
-  { label: 'Suppliers',      href: '/admin/suppliers' },
-  { label: 'Analytics',      href: '/admin/analytics' },
-  { label: 'Activity',       href: '/admin/activity' },
+const OVERFLOW_NAV: NavItem[] = [
+  { label: 'Tour Templates', href: '/admin/tours',       icon: Package },
+  { label: 'Content',        href: '/admin/content',     icon: Boxes },
+  { label: 'Departures',     href: '/admin/departures',  icon: MapPin },
+  { label: 'Suppliers',      href: '/admin/suppliers',   icon: Truck },
+  { label: 'Analytics',      href: '/admin/analytics',   icon: BarChart3 },
+  { label: 'Activity',       href: '/admin/activity',    icon: Clock },
+]
+
+// The four primary destinations promoted to the mobile bottom tab bar; every
+// other module lives behind the "More" tab so the bar stays app-clean.
+const BOTTOM_NAV: NavItem[] = [
+  PRIMARY_NAV[0], PRIMARY_NAV[1], PRIMARY_NAV[2], PRIMARY_NAV[4],
+]
+// Everything reachable from the "More" sheet (bottom-bar items excluded).
+const MORE_NAV: NavItem[] = [
+  PRIMARY_NAV[3], PRIMARY_NAV[5], PRIMARY_NAV[6], ...OVERFLOW_NAV,
 ]
 
 function SearchModal({ onClose }: { onClose: () => void }) {
@@ -170,8 +186,20 @@ export default function AdminSidebar({
   const [searchOpen, setSearchOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const [userOpen, setUserOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false) // mobile "More" sheet
   const moreRef = useRef<HTMLDivElement>(null)
   const userRef = useRef<HTMLDivElement>(null)
+
+  // Close the mobile sheet on navigation, and lock scroll / Escape while open.
+  useEffect(() => { setSheetOpen(false) }, [pathname])
+  useEffect(() => {
+    if (!sheetOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSheetOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey) }
+  }, [sheetOpen])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -203,6 +231,7 @@ export default function AdminSidebar({
     return pathname === href || pathname.startsWith(href + '/')
   }
   const overflowActive = OVERFLOW_NAV.some(item => isActive(item.href))
+  const moreActive = MORE_NAV.some(item => isActive(item.href))
   const initials = fullName
     .split(/\s+/)
     .filter(Boolean)
@@ -215,7 +244,8 @@ export default function AdminSidebar({
     <>
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
 
-      <header className="sticky top-0 z-30">
+      {/* ── Desktop chrome (lg+) ───────────────────────────────────────── */}
+      <header className="sticky top-0 z-30 hidden lg:block">
         {/* Utility bar */}
         <div className="h-11 border-b border-border bg-surface">
           <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4">
@@ -359,6 +389,134 @@ export default function AdminSidebar({
           </div>
         </nav>
       </header>
+
+      {/* ── Mobile top app bar (below lg) ──────────────────────────────── */}
+      <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur lg:hidden">
+        <div className="flex h-14 items-center gap-3 px-4">
+          <Link href="/admin/dashboard" className="flex items-center gap-2 min-w-0">
+            <span className="font-display flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-base font-bold text-primary-foreground">
+              S
+            </span>
+            <span className="truncate text-sm font-semibold text-brand-ink">Safari Adventure Riders</span>
+          </Link>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <button
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground"
+            >
+              <Search size={16} />
+            </button>
+            <div ref={userRef} className="relative">
+              <button
+                onClick={() => setUserOpen(v => !v)}
+                aria-label="Account menu"
+                aria-expanded={userOpen}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
+              >
+                {initials}
+              </button>
+              {userOpen && (
+                <div className="absolute right-0 top-full z-40 mt-2 w-52 rounded-lg border border-border bg-surface py-1 shadow-lg">
+                  <div className="border-b border-border px-3 py-2">
+                    <p className="truncate text-sm font-medium">{fullName}</p>
+                    <p className="text-xs capitalize text-muted-foreground">{role}</p>
+                  </div>
+                  <Link href="/admin/settings" onClick={() => setUserOpen(false)}
+                    className="block px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-brand-ink">
+                    Settings
+                  </Link>
+                  <button onClick={handleLogout}
+                    className="block w-full px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-destructive">
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Mobile "More" sheet ────────────────────────────────────────── */}
+      <div
+        className={`fixed inset-0 z-40 lg:hidden transition-opacity duration-200 ${
+          sheetOpen ? 'visible opacity-100' : 'invisible opacity-0'
+        }`}
+        aria-hidden={!sheetOpen}
+      >
+        <div className="absolute inset-0 bg-bush/50" onClick={() => setSheetOpen(false)} />
+        <div
+          className={`absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-border bg-surface pb-[calc(env(safe-area-inset-bottom)+5rem)] shadow-2xl transition-transform duration-300 ease-out motion-reduce:transition-none ${
+            sheetOpen ? 'translate-y-0' : 'translate-y-full'
+          }`}
+        >
+          <div className="flex items-center justify-between px-5 pb-2 pt-4">
+            <div>
+              <p className="text-sm font-semibold text-brand-ink">All modules</p>
+              <p className="text-xs text-muted-foreground">Alamoudy Group · {role}</p>
+            </div>
+            <button onClick={() => setSheetOpen(false)} aria-label="Close"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
+              <X size={18} />
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-1 px-3 pb-2">
+            {MORE_NAV.map((item) => {
+              const Icon = item.icon
+              const active = isActive(item.href)
+              return (
+                <Link key={item.href} href={item.href} onClick={() => setSheetOpen(false)}
+                  className={`flex flex-col items-center gap-1.5 rounded-xl px-2 py-3 text-center transition-colors ${
+                    active ? 'bg-accent text-brand-ink' : 'text-muted-foreground hover:bg-muted'
+                  }`}>
+                  <Icon size={20} className={active ? 'text-primary-strong' : ''} />
+                  <span className="text-[11px] font-medium leading-tight">{item.label}</span>
+                </Link>
+              )
+            })}
+          </div>
+          <div className="mt-1 border-t border-border px-3 py-2">
+            <Link href="/admin/settings" onClick={() => setSheetOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-brand-ink">
+              <Settings size={18} /> Settings
+            </Link>
+            <button onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-muted-foreground hover:bg-muted hover:text-destructive">
+              <LogOut size={18} /> Log out
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Mobile bottom tab bar ──────────────────────────────────────── */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+        <div className="grid grid-cols-5">
+          {BOTTOM_NAV.map((item) => {
+            const Icon = item.icon
+            const active = isActive(item.href)
+            return (
+              <Link key={item.href} href={item.href}
+                className={`flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${
+                  active ? 'text-primary-strong' : 'text-muted-foreground'
+                }`}>
+                <Icon size={21} strokeWidth={active ? 2.4 : 1.9} />
+                {item.label}
+              </Link>
+            )
+          })}
+          <button
+            onClick={() => setSheetOpen(true)}
+            aria-label="More modules"
+            aria-expanded={sheetOpen}
+            className={`flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${
+              moreActive || sheetOpen ? 'text-primary-strong' : 'text-muted-foreground'
+            }`}
+          >
+            <MoreHorizontal size={21} strokeWidth={moreActive || sheetOpen ? 2.4 : 1.9} />
+            More
+          </button>
+        </div>
+      </nav>
     </>
   )
 }
