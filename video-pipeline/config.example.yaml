@@ -1,0 +1,25 @@
+# Copy to config.yaml and edit. Non-secret settings only — secrets live in .env.
+
+ingestion:
+  # File extensions treated as videos when scanning sources.
+  video_extensions: [".mp4", ".mov", ".mkv", ".avi", ".m4v", ".webm"]
+
+  telegram:
+    enabled: true
+    # Which chats/channels to pull videos from. Each entry can be:
+    #   - a numeric chat id            (e.g. -1001234567890)
+    #   - a @username                  (e.g. "@my_safari_channel")
+    #   - a phone-contact / title text Telethon can resolve
+    watch:
+      - "@my_safari_channel"
+      # - -1001234567890
+    # Only download messages newer than this many days on the first run
+    # (prevents pulling a channel's entire history). 0 = no limit.
+    lookback_days: 30
+
+  onedrive:
+    enabled: true
+    # Name of the rclone remote you configured for OneDrive (see README).
+    remote: "onedrive"
+    # Folder inside that remote to sync FROM (use "" for the drive root).
+    path: "SafariVideos"

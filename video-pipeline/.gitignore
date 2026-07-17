@@ -1,0 +1,24 @@
+# --- Secrets & credentials ---
+.env
+rclone.conf
+*.session
+*.session-journal
+
+# --- Python ---
+.venv/
+__pycache__/
+*.pyc
+
+# --- Pipeline data (never commit media or state) ---
+inbox/*
+work/*
+output/*
+assets/music/*
+state/*
+
+# ...but keep the empty dirs in git
+!inbox/.gitkeep
+!work/.gitkeep
+!output/.gitkeep
+!assets/music/.gitkeep
+!state/.gitkeep

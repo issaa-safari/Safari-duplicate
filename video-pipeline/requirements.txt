@@ -1,0 +1,13 @@
+# Stage 1 — Ingestion
+telethon==1.44.0        # Telegram client (user API)
+python-dotenv==1.0.1    # load .env secrets
+PyYAML==6.0.2           # config.yaml parsing
+
+# Stage 2 — Transcription/analysis (installed when we build that stage)
+# faster-whisper==1.1.0
+
+# Stage 4 — Voiceover (installed when we build that stage)
+# edge-tts==7.0.0
+
+# Stage 5 — Publish (Blotato uses plain HTTPS; requests is convenient)
+# requests==2.32.3
