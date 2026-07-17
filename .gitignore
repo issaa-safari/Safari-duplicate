@@ -50,3 +50,7 @@ next-env.d.ts
 /apk-src/
 *.apk
 *.keystore
+
+# Carousel generator — rendered output + render temp files (regenerable)
+/tools/carousel/out/
+/tools/carousel/template/.render-*.html

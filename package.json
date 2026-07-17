@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "carousel": "node tools/carousel/export.mjs",
+    "carousel:photos": "node tools/carousel/scripts/fetch-photos.mjs",
+    "carousel:fonts": "node tools/carousel/scripts/fetch-fonts.mjs tools/carousel/template/fonts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.3.0",

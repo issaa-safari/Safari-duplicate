@@ -1,0 +1,70 @@
+{
+  "slug": "big-five-safari",
+  "title": "Classic Big Five Safari",
+  "track": "private",
+  "slides": [
+    {
+      "layout": "cover",
+      "photo": "photos/big-five-safari/01-big-five.jpg",
+      "bandA": "الحيوانات الخمسة الكبرى في رحلة وحدة",
+      "bandB": "كينيا... أقرب مما تتوقع"
+    },
+    {
+      "layout": "content",
+      "photo": "photos/big-five-safari/02-lion.jpg",
+      "title": "الأسد",
+      "eyebrow": "LION",
+      "body": "ماساي مارا فيها أعلى كثافة أسود في أفريقيا. الجولات الصباحية عند الفجر هي أفضل وقت للمشاهدة."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/big-five-safari/03-elephant.jpg",
+      "title": "الفيل",
+      "eyebrow": "ELEPHANT",
+      "body": "أمبوسيلي موطن أكبر قطعان الفيلة في شرق أفريقيا، وبعضها يتجاوز عمره ٥٠ سنة."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/big-five-safari/04-buffalo.jpg",
+      "title": "الجاموس البري",
+      "eyebrow": "BUFFALO",
+      "body": "يُعتبر من أخطر الحيوانات في السافانا. تشاهدونه بأعداد كبيرة في نكورو وماساي مارا."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/big-five-safari/05-leopard.jpg",
+      "title": "النمر",
+      "eyebrow": "LEOPARD",
+      "body": "أصعب الخمسة مشاهدةً. مرشدونا يعرفون أشجاره المفضلة على ضفاف نهر مارا."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/big-five-safari/06-rhino.jpg",
+      "title": "وحيد القرن",
+      "eyebrow": "RHINO",
+      "body": "محمية أول بيجيتا في لايكيبيا تحمي آخر وحيدي قرن أبيض شمالي في العالم."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/big-five-safari/07-rift-valley.jpg",
+      "title": "الوادي المتصدع",
+      "eyebrow": "RIFT VALLEY",
+      "body": "الطريق بين المحميات يمر بأجمل مناظر كينيا — بحيرات وفلامنجو ومزارع شاي على جانبي الطريق."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/big-five-safari/08-lodging.jpg",
+      "title": "الإقامة",
+      "eyebrow": "LODGING",
+      "body": "نُزل ومخيمات فاخرة داخل المحميات — تسمعون الأسود من الخيمة. أكل حلال ومرافق عربي."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/big-five-safari/09-programme.jpg",
+      "title": "البرنامج",
+      "eyebrow": "THE PROGRAMME",
+      "body": "٥ إلى ٧ أيام، سيارة ٤×٤ خاصة بسقف مفتوح للتصوير، استقبال وتوديع من المطار، وكل شي منظّم من قبل وصولكم."
+    },
+    { "layout": "cta" }
+  ]
+}

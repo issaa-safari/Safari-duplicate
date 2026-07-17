@@ -1,0 +1,70 @@
+{
+  "slug": "kenya-bike-adventure",
+  "title": "8-Day Kenya Bike Adventure",
+  "track": "bike",
+  "slides": [
+    {
+      "layout": "cover",
+      "photo": "photos/kenya-bike-adventure/01-chalbi-pan.jpg",
+      "bandA": "٨ أيام على الدراجة في كينيا",
+      "bandB": "مو رحلة سياحية... مغامرة حقيقية"
+    },
+    {
+      "layout": "content",
+      "photo": "photos/kenya-bike-adventure/02-nairobi-start.jpg",
+      "title": "البداية من نيروبي",
+      "eyebrow": "NAIROBI START",
+      "body": "نستقبلكم في مطار نيروبي، تسليم الدراجة والمعدات، وإحاطة كاملة عن الطريق. تنطلقون في اليوم التالي شمالًا."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/kenya-bike-adventure/03-equator-nanyuki.jpg",
+      "title": "خط الاستواء – نانيوكي",
+      "eyebrow": "EQUATOR · NANYUKI",
+      "body": "في اليوم الثاني تعبرون خط الاستواء عند نانيوكي، بإطلالة على جبل كينيا. طرق إسفلت ممتازة وارتفاع ٢٠٠٠ متر — الجو بارد حتى في الصيف."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/kenya-bike-adventure/04-chalbi-desert.jpg",
+      "title": "صحراء تشالبي",
+      "eyebrow": "CHALBI DESERT",
+      "body": "٩٠ كيلومتر من قاع بحيرة جافة بين كالاشا ونورث هور، بدون شجرة وحدة. أصعب وأجمل مقطع في الرحلة. لا تُنسى."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/kenya-bike-adventure/05-lake-turkana.jpg",
+      "title": "بحيرة توركانا",
+      "eyebrow": "LAKE TURKANA",
+      "body": "أكبر بحيرة صحراوية في العالم، بلون أخضر غريب وسط الحجر الأسود. مخيم على الضفة تحت النجوم."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/kenya-bike-adventure/06-marsabit.jpg",
+      "title": "جبل مارسابيت",
+      "eyebrow": "MT. MARSABIT",
+      "body": "غابة ضباب وسط الصحراء. تغيّر كامل في المشهد خلال ساعتين ركوب. أفيال برية على جانب الطريق."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/kenya-bike-adventure/07-the-bikes.jpg",
+      "title": "الدراجات",
+      "eyebrow": "THE BIKES",
+      "body": "دراجات صيانتها كاملة وجاهزة للطرق الوعرة، مع سيارة دعم فني ترافق المجموعة طوال الرحلة وقطع غيار احتياطية."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/kenya-bike-adventure/08-difficulty.jpg",
+      "title": "مستوى الصعوبة",
+      "eyebrow": "DIFFICULTY",
+      "body": "تحتاج خبرة سابقة في الطرق غير المعبّدة. متوسط ٢٥٠ كم يوميًا. المجموعة محدودة العدد لضمان المتابعة."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/kenya-bike-adventure/09-whats-included.jpg",
+      "title": "السعر يشمل",
+      "eyebrow": "WHAT'S INCLUDED",
+      "body": "الدراجة والوقود، الإقامة، الإفطار والعشاء، سيارة الدعم، المرشد، وتصاريح المحميات. (عدّل حسب سعرك الحالي)"
+    },
+    { "layout": "cta" }
+  ]
+}

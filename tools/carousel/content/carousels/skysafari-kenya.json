@@ -1,0 +1,70 @@
+{
+  "slug": "skysafari-kenya",
+  "title": "SkySafari Kenya — luxury fly-in safari",
+  "track": "private",
+  "slides": [
+    {
+      "layout": "cover",
+      "photo": "photos/skysafari-kenya/01-amboseli-sunrise.jpg",
+      "bandA": "كينيا... سفاري خمس نجوم",
+      "bandB": "على بُعد ٥ ساعات فقط من الخليج ✈️"
+    },
+    {
+      "layout": "content",
+      "photo": "photos/skysafari-kenya/02-masai-mara.jpg",
+      "title": "ماساي مارا",
+      "eyebrow": "MASAI MARA",
+      "body": "أشهر محمية في أفريقيا وموطن الحيوانات الخمسة الكبرى. من يوليو إلى أكتوبر تشهد هجرة الحيوانات البرية — أحد أعظم المشاهد الطبيعية في العالم. الإقامة في نُزل خاصة داخل المحمية."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/skysafari-kenya/03-amboseli-elephants.jpg",
+      "title": "أمبوسيلي",
+      "eyebrow": "AMBOSELI",
+      "body": "تقع جنوب كينيا وتشتهر بقطعان الفيلة الضخمة وإطلالتها المباشرة على جبل كليمنجارو. أفضل مكان في أفريقيا لتصوير الفيلة مع خلفية الجبل الثلجي."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/skysafari-kenya/04-elementaita-flamingo.jpg",
+      "title": "بحيرة إليمينتايتا",
+      "eyebrow": "LAKE ELEMENTAITA",
+      "body": "بحيرة قلوية ضحلة في الوادي المتصدع، تتجمع فيها آلاف طيور الفلامنجو الوردية عند الفجر. هدوء تام ومناظر لا تشبه أي مكان آخر في كينيا."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/skysafari-kenya/05-nanyuki-mtkenya.jpg",
+      "title": "نانيوكي وجبل كينيا",
+      "eyebrow": "NANYUKI · MT. KENYA",
+      "body": "عند خط الاستواء تمامًا، على سفوح ثاني أعلى جبل في أفريقيا. طقس معتدل طوال السنة ونُزل فاخرة وسط الغابة. مناسبة جدًا للعائلات."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/skysafari-kenya/06-bush-flight.jpg",
+      "title": "طيران داخلي بين المحميات",
+      "eyebrow": "FLY-IN SAFARI",
+      "body": "لا تضيّع يومك في الطرق. ننقلكم بطائرات خاصة صغيرة بين المحميات — رحلة ٤٥ دقيقة بدل ٦ ساعات بالسيارة. أكثر وقت في السفاري وأقل وقت في الطريق."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/skysafari-kenya/07-halal-dining.jpg",
+      "title": "أكل حلال وطاقم يتكلم عربي",
+      "eyebrow": "HALAL · ARABIC-SPEAKING",
+      "body": "جميع الوجبات حلال ومحضّرة حسب طلبكم، مع مرافق يتحدث العربية طوال الرحلة وترتيب أوقات الصلاة ضمن البرنامج."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/skysafari-kenya/08-family-vehicle.jpg",
+      "title": "مناسب للعائلات والخصوصية",
+      "eyebrow": "FAMILY · PRIVACY",
+      "body": "سيارات خاصة لكل عائلة، نُزل بفلل مستقلة، وخصوصية كاملة. برامج مخصصة للأطفال ومواعيد مرنة."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/skysafari-kenya/09-migration.jpg",
+      "title": "أفضل وقت للزيارة",
+      "eyebrow": "BEST TIME TO VISIT",
+      "body": "من يونيو إلى أكتوبر: الجو معتدل (١٨–٢٦ درجة)، هروب مثالي من حر الخليج، وموسم الهجرة الكبرى. الحجز يُفضّل قبل ٣ أشهر."
+    },
+    { "layout": "cta" }
+  ]
+}

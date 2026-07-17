@@ -1,0 +1,235 @@
+/* ============================================================================
+   Safari Adventure — Instagram carousel design system (FIXED per template).
+   Canvas 1080×1350 (4:5). RTL, Arabic-first. Do not fork per carousel:
+   every carousel is a JSON content file, never a style edit.
+   Reference: docs/social/skysafari-carousel-preview.html (band proportions,
+   scrim, counter, pill, CTA), scaled up to the full 1080×1350 canvas.
+   ========================================================================== */
+
+:root {
+  --sage: #5f7355;
+  --sage-deep: #4a5a42;
+  --amber: #f5a623;
+  --slate: #25291f;      /* text on amber / dark base */
+  --cream: #faf6ee;
+  --scrim: rgba(15, 17, 11, 0.9);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { width: 1080px; height: 1350px; }
+
+.slide {
+  position: relative;
+  width: 1080px;
+  height: 1350px;
+  overflow: hidden;
+  direction: rtl;
+  background: var(--slate);
+  color: #fff;
+  font-family: 'Almarai', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---- Full-bleed photo + placeholder ------------------------------------- */
+.photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.photo.placeholder {
+  background:
+    radial-gradient(120% 90% at 22% 12%, rgba(245, 166, 35, 0.55), transparent 55%),
+    radial-gradient(120% 120% at 85% 8%, rgba(250, 246, 238, 0.35), transparent 45%),
+    linear-gradient(158deg, #8a9560 0%, #6d7d4f 38%, #5f7355 60%, #b07d34 100%);
+}
+.spec-note {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  direction: ltr;
+  max-width: 68%;
+  padding: 22px 30px;
+  border: 3px dashed rgba(255, 255, 255, 0.85);
+  border-radius: 16px;
+  background: rgba(37, 41, 31, 0.35);
+  color: #fff;
+  font-family: 'Almarai', sans-serif;
+  font-size: 24px;
+  line-height: 1.5;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+.spec-note b { display: block; font-weight: 800; margin-bottom: 6px; letter-spacing: 0.12em; }
+
+/* ---- Scrim (content slides) --------------------------------------------- */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 30%, var(--scrim) 100%);
+}
+
+/* ---- Slide counter (top-right = RTL start) ------------------------------ */
+.counter {
+  position: absolute;
+  top: 44px;
+  right: 44px;
+  direction: ltr;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: rgba(37, 41, 31, 0.55);
+  backdrop-filter: blur(4px);
+  color: var(--cream);
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: 0.04em;
+}
+.counter b { color: #fff; }
+
+/* ---- Logo --------------------------------------------------------------- */
+.logo-tl { position: absolute; top: 40px; left: 44px; height: 92px; width: auto; }
+
+/* ---- Brand pill (all slides, bottom center) ----------------------------- */
+.pill {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 26px;
+  border-radius: 999px;
+  background: rgba(37, 41, 31, 0.66);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(250, 246, 238, 0.18);
+  color: var(--cream);
+  white-space: nowrap;
+}
+.pill .lat { font-family: 'Tajawal', sans-serif; font-weight: 700; font-size: 25px; letter-spacing: 0.02em; direction: ltr; }
+.pill .dot { opacity: 0.55; font-size: 22px; }
+.pill .ar { font-family: 'Tajawal', sans-serif; font-weight: 800; font-size: 26px; }
+
+/* ============================ COVER ====================================== */
+.bands {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 130px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* RTL start = right edge */
+}
+.band-a {
+  align-self: stretch;
+  background: var(--sage);
+  padding: 40px 60px 44px;
+  text-align: right;
+}
+.band-a h1 {
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 900;
+  font-size: 74px;
+  line-height: 1.12;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.band-b {
+  width: 88%;
+  background: var(--amber);
+  padding: 26px 60px;
+  text-align: right;
+}
+.band-b p {
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 800;
+  font-size: 40px;
+  line-height: 1.25;
+  color: var(--slate);
+}
+
+/* =========================== CONTENT ==================================== */
+.content-stack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 120px;
+  display: flex;
+  flex-direction: column;
+}
+.title-band {
+  background: var(--sage);
+  padding: 22px 60px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+}
+.title-band .eyebrow {
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.22em;
+  color: rgba(250, 246, 238, 0.78);
+  direction: ltr;
+  white-space: nowrap;
+}
+.title-band h2 {
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 800;
+  font-size: 58px;
+  line-height: 1.1;
+  color: #fff;
+}
+.content-body {
+  padding: 30px 60px 0;
+  text-align: right;
+}
+.content-body p {
+  font-family: 'Almarai', sans-serif;
+  font-weight: 700;
+  font-size: 33px;
+  line-height: 1.85;
+  color: #fff;
+  text-shadow: 0 1px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* ============================= CTA ====================================== */
+.cta {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 38%, #3c4a34 0%, #2c3327 55%, var(--slate) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  padding: 0 90px;
+  text-align: center;
+}
+.cta .mark { height: 168px; width: auto; margin-bottom: 6px; }
+.cta .wordmark { font-family: 'Tajawal', sans-serif; font-weight: 900; font-size: 40px; color: var(--cream); letter-spacing: 0.01em; }
+.cta .wordmark .ar { display: block; font-size: 46px; margin-top: 4px; }
+.cta-band {
+  width: 100%;
+  max-width: 720px;
+  border-radius: 14px;
+  padding: 24px 30px;
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 800;
+}
+.cta-band.sage { background: var(--sage); color: #fff; font-size: 44px; }
+.cta-band.amber { background: var(--amber); color: var(--slate); font-size: 44px; }
+.cta .footnote {
+  font-family: 'Almarai', sans-serif;
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.7;
+  color: rgba(250, 246, 238, 0.72);
+  margin-top: 8px;
+}

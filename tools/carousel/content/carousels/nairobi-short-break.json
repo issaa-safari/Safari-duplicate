@@ -1,0 +1,70 @@
+{
+  "slug": "nairobi-short-break",
+  "title": "Nairobi Short Break / Stopover",
+  "track": "private",
+  "slides": [
+    {
+      "layout": "cover",
+      "photo": "photos/nairobi-short-break/01-nairobi-park.jpg",
+      "bandA": "٣ أيام في نيروبي تكفي",
+      "bandB": "إجازة قصيرة بطعم أفريقيا"
+    },
+    {
+      "layout": "content",
+      "photo": "photos/nairobi-short-break/02-national-park.jpg",
+      "title": "حديقة نيروبي الوطنية",
+      "eyebrow": "NAIROBI NAT'L PARK",
+      "body": "المحمية الوحيدة في العالم داخل عاصمة. أسود وزرافات مع ناطحات السحاب في الخلفية — على بعد ٢٠ دقيقة من الفندق."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/nairobi-short-break/03-giraffe-centre.jpg",
+      "title": "مركز الزرافات",
+      "eyebrow": "GIRAFFE CENTRE",
+      "body": "تطعمون الزرافة من يدكم مباشرة. من أكثر التجارب المحبوبة للأطفال في كينيا."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/nairobi-short-break/04-elephant-orphanage.jpg",
+      "title": "ملجأ الأفيال اليتيمة",
+      "eyebrow": "ELEPHANT ORPHANAGE",
+      "body": "مركز شيلدريك لرعاية صغار الأفيال. زيارة يومية لساعة واحدة فقط — الحجز مسبق ضروري."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/nairobi-short-break/05-karen-blixen.jpg",
+      "title": "متحف كارين بلكسن",
+      "eyebrow": "KAREN BLIXEN",
+      "body": "بيت صاحبة رواية \"خارج أفريقيا\" وسط حدائق هادئة على أطراف المدينة."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/nairobi-short-break/06-limuru-tea.jpg",
+      "title": "مزارع الشاي في ليموروا",
+      "eyebrow": "LIMURU TEA",
+      "body": "مرتفعات خضراء وجو بارد على بعد ساعة من نيروبي. جولة في المزرعة وتذوق الشاي."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/nairobi-short-break/07-markets-food.jpg",
+      "title": "الأسواق والمطاعم",
+      "eyebrow": "MARKETS · FOOD",
+      "body": "أسواق حرف يدوية أصلية ومطاعم حلال ممتازة. نرشدكم للأماكن الصح ونتفادى المصايد السياحية."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/nairobi-short-break/08-eta-visa.jpg",
+      "title": "التأشيرة",
+      "eyebrow": "eTA VISA",
+      "body": "كينيا تعتمد نظام تصريح إلكتروني (eTA) يُقدَّم أونلاين قبل السفر. نساعدكم في الإجراءات خطوة بخطوة."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/nairobi-short-break/09-getting-there.jpg",
+      "title": "الوصول",
+      "eyebrow": "GETTING THERE",
+      "body": "رحلات مباشرة يومية من دبي والدوحة، ومن الرياض وجدة والكويت. مدة الطيران ٥ ساعات تقريبًا."
+    },
+    { "layout": "cta" }
+  ]
+}

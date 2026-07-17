@@ -1,0 +1,70 @@
+{
+  "slug": "summer-escape",
+  "title": "Summer Escape (seasonal — June–August)",
+  "track": "private",
+  "slides": [
+    {
+      "layout": "cover",
+      "photo": "photos/summer-escape/01-mara-migration.jpg",
+      "bandA": "الخليج ٤٥ درجة... كينيا ٢٢",
+      "bandB": "وجهة الصيف اللي ما أحد يتوقعها"
+    },
+    {
+      "layout": "content",
+      "photo": "photos/summer-escape/02-climate.jpg",
+      "title": "الجو",
+      "eyebrow": "THE CLIMATE",
+      "body": "يونيو إلى سبتمبر هو الموسم الجاف في كينيا. الحرارة بين ١٨ و٢٦ درجة نهارًا وبارد ليلًا — عكس الخليج تمامًا."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/summer-escape/03-great-migration.jpg",
+      "title": "الهجرة الكبرى",
+      "eyebrow": "GREAT MIGRATION",
+      "body": "أكثر من مليون حيوان بري يعبرون نهر مارا بين يوليو وأكتوبر. أعظم حركة حيوانات على وجه الأرض، وتصير قدامكم مباشرة."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/summer-escape/04-school-holidays.jpg",
+      "title": "إجازة المدارس",
+      "eyebrow": "SCHOOL HOLIDAYS",
+      "body": "البرنامج يناسب العائلات: أنشطة للأطفال، جولات قصيرة، وسيارات خاصة بدون مشاركة مع غرباء."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/summer-escape/05-easy-reach.jpg",
+      "title": "قريبة وما تحتاج تعب",
+      "eyebrow": "EASY REACH",
+      "body": "٥ ساعات طيران فقط، بدون فرق توقيت يذكر (ساعة واحدة عن السعودية). تنزلون من الطيارة جاهزين للرحلة."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/summer-escape/06-halal-arabic.jpg",
+      "title": "أكل حلال ومرافق عربي",
+      "eyebrow": "HALAL · ARABIC-SPEAKING",
+      "body": "كل الوجبات حلال، ومرافق يتحدث العربية معكم من الاستقبال إلى التوديع."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/summer-escape/07-summer-rates.jpg",
+      "title": "أسعار الصيف",
+      "eyebrow": "SUMMER RATES",
+      "body": "احجز مبكرًا — نُزل ماساي مارا تنحجز بالكامل قبل ٣ أشهر من موسم الهجرة. (أضف عرضك السعري هنا)"
+    },
+    {
+      "layout": "content",
+      "photo": "photos/summer-escape/08-or-by-bike.jpg",
+      "title": "أو خلها على الدراجة",
+      "eyebrow": "OR GO BY BIKE",
+      "body": "عندنا مسار ثاني تمامًا: ٨ أيام على الدراجات في شمال كينيا لمحبي المغامرة الحقيقية."
+    },
+    {
+      "layout": "content",
+      "photo": "photos/summer-escape/09-fully-handled.jpg",
+      "title": "كل شي مرتب من قبل وصولكم",
+      "eyebrow": "FULLY HANDLED",
+      "body": "استقبال المطار، السائق، النُزل، التصاريح، والتنسيق الكامل. أنتم بس احجزوا التذكرة."
+    },
+    { "layout": "cta" }
+  ]
+}
