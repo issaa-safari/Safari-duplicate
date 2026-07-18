@@ -40,14 +40,20 @@ export default function DeliveryPanel({
   quoteId,
   versions,
   deliveries: initial,
+  dayCountByVersion = {},
   baseUrl,
   clientEmail,
+  onGoToItinerary,
 }: {
   quoteId: string
   versions: Version[]
   deliveries: Delivery[]
+  /** quote_days count per version — versions with 0 get a "pricing only" warning. */
+  dayCountByVersion?: Record<string, number>
   baseUrl: string
   clientEmail?: string | null
+  /** Jumps the workspace back to the Itinerary step (from the no-days warning). */
+  onGoToItinerary?: () => void
 }) {
   const [deliveries, setDeliveries] = useState(initial)
   const [selectedVersionId, setSelectedVersionId] = useState(
@@ -156,6 +162,8 @@ export default function DeliveryPanel({
     return v ? `v${v.version_number}` : id
   }
 
+  const selectedHasNoDays = !!selectedVersionId && (dayCountByVersion[selectedVersionId] ?? 0) === 0
+
   return (
     <div id="delivery" className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden scroll-mt-6">
       <div className="px-5 py-4 border-b border-border/70">
@@ -175,7 +183,7 @@ export default function DeliveryPanel({
               >
                 {shareableVersions.map(v => (
                   <option key={v.id} value={v.id}>
-                    v{v.version_number} — {v.status}
+                    v{v.version_number} — {v.status}{(dayCountByVersion[v.id] ?? 0) === 0 ? ' · no itinerary' : ''}
                   </option>
                 ))}
               </select>
@@ -198,6 +206,21 @@ export default function DeliveryPanel({
               {pending ? 'Sending…' : 'Email to client'}
             </button>
           </div>
+          {selectedHasNoDays && (
+            <div role="alert" className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-warning-foreground">
+              <strong>This version has no Day-by-Day itinerary.</strong> The client proposal will only contain the
+              cover letter, pricing, and about pages — no daily program, summary table, or itinerary map.
+              {onGoToItinerary && (
+                <>
+                  {' '}
+                  <button type="button" onClick={onGoToItinerary} className="font-semibold underline hover:opacity-80">
+                    Add itinerary days first
+                  </button>
+                  {' '}(then save pricing again so the version is Ready).
+                </>
+              )}
+            </div>
+          )}
           {clientEmail && <p className="text-xs text-muted-foreground mt-2">Emails the proposal link to {clientEmail}.</p>}
           {error && <p className="text-xs text-destructive mt-2">{error}</p>}
           {notice && <p className="text-xs text-primary-strong mt-2">{notice}</p>}

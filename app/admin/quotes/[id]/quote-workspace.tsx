@@ -53,6 +53,7 @@ export default function QuoteWorkspace({
   tripBuilderInitialState,
   tripBuilderInitialVersionId,
   deliveries,
+  dayCountByVersion,
   baseUrl,
   clientEmail,
 }: {
@@ -79,6 +80,7 @@ export default function QuoteWorkspace({
   tripBuilderInitialState: TripBuilderState | null
   tripBuilderInitialVersionId: string | null
   deliveries: any[]
+  dayCountByVersion: Record<string, number>
   baseUrl: string
   clientEmail?: string | null
 }) {
@@ -211,8 +213,10 @@ export default function QuoteWorkspace({
           quoteId={quoteId}
           versions={versions.map(v => ({ id: v.id, version_number: v.version_number, status: v.status }))}
           deliveries={deliveries}
+          dayCountByVersion={dayCountByVersion}
           baseUrl={baseUrl}
           clientEmail={clientEmail}
+          onGoToItinerary={() => setStep('itinerary')}
         />
       </div>
     </div>

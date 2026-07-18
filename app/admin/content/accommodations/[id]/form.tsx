@@ -8,6 +8,7 @@ import { Alert } from '@/components/ui/alert'
 import { Toggle } from '@/components/ui/toggle'
 import LocationFields from '@/components/admin/location-fields'
 import { GalleryUpload } from '@/components/admin/image-upload'
+import CoverImageField from '@/components/admin/cover-image-field'
 
 interface Destination { id: string; name: string }
 interface Accommodation {
@@ -114,13 +115,9 @@ export default function AccommodationEditForm({
               <input id="rating" type="number" name="rating" min={1} max={5} defaultValue={accommodation.rating} className={inputCls} />
             </div>
             <div>
-              <label htmlFor="coverImageUrl" className="block text-sm font-medium text-foreground mb-1">Cover Image URL</label>
-              <input id="coverImageUrl"
-                type="url"
-                name="coverImageUrl"
-                defaultValue={accommodation.cover_image_url ?? ''}
-                placeholder="https://…"
-                className={inputCls}
+              <CoverImageField
+                initialUrl={accommodation.cover_image_url}
+                folder={`accommodations/${accommodation.id}`}
               />
             </div>
           </div>
