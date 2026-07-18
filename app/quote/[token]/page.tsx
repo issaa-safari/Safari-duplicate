@@ -167,12 +167,16 @@ export default async function QuotePortalPage({
     }
   }
 
-  // Accommodation records (type, photo, description) for the day pages.
+  // Accommodation records (type, photos, description) for the day pages.
   const accIds = [...new Set(Object.values(accomItemByDay).map((i: any) => i.accommodation_id).filter(Boolean))] as string[]
-  const accMap: Record<string, { type: string | null; cover: string | null; en: string | null; ar: string | null }> = {}
+  const accMap: Record<string, { type: string | null; cover: string | null; gallery: string[]; en: string | null; ar: string | null }> = {}
   if (accIds.length > 0) {
-    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, description_en, description_ar').in('id', accIds)
-    for (const a of accs ?? []) accMap[a.id] = { type: a.type, cover: a.cover_image_url, en: a.description_en, ar: a.description_ar }
+    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, gallery_urls, description_en, description_ar').in('id', accIds)
+    for (const a of accs ?? []) accMap[a.id] = {
+      type: a.type, cover: a.cover_image_url,
+      gallery: Array.isArray(a.gallery_urls) ? (a.gallery_urls as string[]).filter(Boolean) : [],
+      en: a.description_en, ar: a.description_ar,
+    }
   }
 
   // Activity descriptions.
@@ -302,7 +306,8 @@ export default async function QuotePortalPage({
     const item = accomItemByDay[d.id]
     const acc = item?.accommodation_id ? accMap[item.accommodation_id] : null
     const photos: string[] = Array.isArray(d.photos) ? d.photos : []
-    const accPhotos = acc?.cover ? [acc.cover] : []
+    // Accommodation photo block: curated gallery first, cover as fallback.
+    const accPhotos = acc ? (acc.gallery.length > 0 ? acc.gallery : acc.cover ? [acc.cover] : []) : []
     const acts = actsByDay[d.id] ?? []
     // Road transfers read "Transfer by Road, {previous stop} to {this stop}".
     const prevDestName = di > 0
@@ -338,7 +343,7 @@ export default async function QuotePortalPage({
         type: acc?.type ? acc.type.replace(/_/g, ' ') : null,
         room: item.room_category ? item.room_category.replace(/_/g, ' ') : null,
         description: acc ? (isArabic ? (acc.ar || acc.en) : acc.en) : null,
-        photos: photos.length > 1 ? photos.slice(0, 2) : accPhotos,
+        photos: photos.length > 1 ? photos.slice(0, 4) : accPhotos.slice(0, 4),
       } : null,
       meals: (d.meals ?? []).map((m: string) => mealLabels[m] ?? m),
     }

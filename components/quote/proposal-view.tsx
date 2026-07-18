@@ -357,7 +357,7 @@ export default function ProposalView(p: ProposalViewProps) {
                   </div>
                   {d.accommodation.photos.length > 0 && (
                     <div className="grid grid-cols-2 gap-2">
-                      {d.accommodation.photos.slice(0, 2).map((src, pi) => (
+                      {d.accommodation.photos.slice(0, 4).map((src, pi) => (
                         <Photo key={pi} src={src} alt={d.accommodation!.name} className="h-24 w-full rounded-lg" />
                       ))}
                     </div>

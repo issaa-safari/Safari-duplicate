@@ -163,7 +163,7 @@ export default async function QuotePrintPage({
   const dayIds = (quoteDays ?? []).map((d: any) => d.id)
   const { data: dayItems } = dayIds.length
     ? await admin.from('quote_day_items')
-        .select('quote_day_id, item_type, activity_id, title_snapshot, content_snapshot, sort_order')
+        .select('quote_day_id, item_type, accommodation_id, activity_id, title_snapshot, content_snapshot, sort_order')
         .in('quote_day_id', dayIds)
         .in('item_type', ['accommodation', 'activity'])
         .order('sort_order')
@@ -172,6 +172,7 @@ export default async function QuotePrintPage({
   type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean; transfer: boolean }
   const accomByDay: Record<string, string[]> = {}
   const accomDescByDay: Record<string, string[]> = {}
+  const accomIdByDay: Record<string, string> = {}
   const actsByDay: Record<string, ActItem[]> = {}
   for (const item of dayItems ?? []) {
     if (item.item_type === 'accommodation') {
@@ -179,6 +180,7 @@ export default async function QuotePrintPage({
       if (!accomDescByDay[item.quote_day_id]) accomDescByDay[item.quote_day_id] = []
       if (item.title_snapshot) accomByDay[item.quote_day_id].push(item.title_snapshot)
       if (item.content_snapshot) accomDescByDay[item.quote_day_id].push(item.content_snapshot)
+      if (item.accommodation_id && !accomIdByDay[item.quote_day_id]) accomIdByDay[item.quote_day_id] = item.accommodation_id
     } else if (item.item_type === 'activity') {
       if (!actsByDay[item.quote_day_id]) actsByDay[item.quote_day_id] = []
       const cs = (item.content_snapshot ?? {}) as any
@@ -187,6 +189,17 @@ export default async function QuotePrintPage({
         moment: cs.moment ?? '', optional: !!cs.optional,
         transfer: !!cs.transfer,
       })
+    }
+  }
+
+  // Accommodation gallery photos — fallback for days without custom photos.
+  const accIds = [...new Set(Object.values(accomIdByDay))]
+  const accGalleryMap: Record<string, string[]> = {}
+  if (accIds.length > 0) {
+    const { data: accs } = await admin.from('accommodations').select('id, cover_image_url, gallery_urls').in('id', accIds)
+    for (const a of accs ?? []) {
+      const gallery = Array.isArray(a.gallery_urls) ? (a.gallery_urls as string[]).filter(Boolean) : []
+      accGalleryMap[a.id] = gallery.length > 0 ? gallery : a.cover_image_url ? [a.cover_image_url] : []
     }
   }
 
@@ -680,14 +693,20 @@ export default async function QuotePrintPage({
                     </div>
                   )}
                   {notes && <p className="day-notes">{notes}</p>}
-                  {Array.isArray(day.photos) && day.photos.length > 0 && (
-                    <div className="day-photos">
-                      {day.photos.slice(0, 4).map((url: string, pi: number) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img key={pi} src={url} alt="" />
-                      ))}
-                    </div>
-                  )}
+                  {(() => {
+                    // Day photos win; otherwise the accommodation's gallery.
+                    const dayPhotos: string[] = Array.isArray(day.photos) && day.photos.length > 0
+                      ? day.photos
+                      : accGalleryMap[accomIdByDay[day.id] ?? ''] ?? []
+                    return dayPhotos.length > 0 ? (
+                      <div className="day-photos">
+                        {dayPhotos.slice(0, 4).map((url: string, pi: number) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img key={pi} src={url} alt="" />
+                        ))}
+                      </div>
+                    ) : null
+                  })()}
                 </div>
               )
             })}

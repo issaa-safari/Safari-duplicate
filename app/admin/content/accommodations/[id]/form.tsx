@@ -7,6 +7,7 @@ import { Button, ButtonLink } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Toggle } from '@/components/ui/toggle'
 import LocationFields from '@/components/admin/location-fields'
+import { GalleryUpload } from '@/components/admin/image-upload'
 
 interface Destination { id: string; name: string }
 interface Accommodation {
@@ -23,6 +24,7 @@ interface Accommodation {
   google_maps_url: string | null
   latitude: number | null
   longitude: number | null
+  gallery_urls: string[] | null
 }
 
 const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
@@ -37,6 +39,9 @@ export default function AccommodationEditForm({
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [isActive, setIsActive] = useState(accommodation.is_active)
+  const [galleryUrls, setGalleryUrls] = useState<string[]>(
+    Array.isArray(accommodation.gallery_urls) ? accommodation.gallery_urls : []
+  )
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -44,6 +49,7 @@ export default function AccommodationEditForm({
     setLoading(true)
     const formData = new FormData(e.currentTarget)
     formData.set('isActive', isActive ? 'true' : 'false')
+    formData.set('galleryUrls', JSON.stringify(galleryUrls))
     try {
       await updateAccommodation(accommodation.id, formData)
     } catch (err: any) {
@@ -155,6 +161,18 @@ export default function AccommodationEditForm({
               placeholder="وصف مكان الإقامة…"
               dir="rtl"
               className={inputCls}
+            />
+          </div>
+
+          <div>
+            <span className="block text-sm font-medium text-foreground mb-1">Gallery photos</span>
+            <p className="text-xs text-muted-foreground mb-2">
+              Shown in the client proposal&apos;s accommodation block when the itinerary day has no custom photos.
+            </p>
+            <GalleryUpload
+              value={galleryUrls}
+              onChange={setGalleryUrls}
+              folder={`accommodations/${accommodation.id}`}
             />
           </div>
         </div>
