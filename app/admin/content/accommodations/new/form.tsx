@@ -6,6 +6,7 @@ import { createAccommodation } from './actions'
 import { Button, ButtonLink } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Toggle } from '@/components/ui/toggle'
+import LocationFields from '@/components/admin/location-fields'
 
 interface Destination { id: string; name: string }
 
@@ -92,6 +93,11 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
           </div>
 
           <Toggle checked={isActive} onChange={() => setIsActive(!isActive)} label="Active (visible on website)" />
+        </div>
+
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-foreground">Location</h2>
+          <LocationFields />
         </div>
 
         <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">

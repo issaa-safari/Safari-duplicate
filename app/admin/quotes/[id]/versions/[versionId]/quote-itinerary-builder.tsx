@@ -37,6 +37,9 @@ type Day = {
   destinationSnapshot: Record<string, unknown>
   meals: string[]
   photos: string[]
+  // Staff override for the km of the leg *into* this stop; '' = auto
+  // (straight-line distance from destination coordinates in the proposal).
+  distanceKm: string
   items: DayItem[]
 }
 
@@ -82,6 +85,12 @@ function renumberDays(list: Day[]): Day[] {
 }
 
 const dayOffsetOf = (it: DayItem) => Number((it.contentSnapshot?.day_offset as any) ?? 0) || 0
+
+// Auto-added road-transfer activities (destination changed vs the previous
+// stop). Flagged in the snapshot so they can be deduplicated, kept out of the
+// activities modal, and labelled "A to B" in the proposal.
+const TRANSFER_TITLE = 'Transfer by Road'
+const isTransferItem = (it: DayItem) => it.itemType === 'activity' && !!it.contentSnapshot?.transfer
 
 const inputCls = 'w-full rounded-md border border-border px-2 py-1.5 text-sm text-foreground bg-surface transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-ring/50'
 const smallSelectCls = 'w-full rounded border border-border px-1.5 py-1 text-xs text-muted-foreground bg-surface transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-ring/50'
@@ -153,6 +162,7 @@ function fromTourDays(
       destinationSnapshot: dest ? { id: dest.id, name: dest.name } : {},
       meals,
       photos: [],
+      distanceKm: '',
       items,
     }
   })
@@ -190,6 +200,7 @@ function loadInitialDays(
       destinationSnapshot: qd.destination_snapshot ?? {},
       meals: qd.meals ?? [],
       photos: qd.photos ?? [],
+      distanceKm: qd.distance_km != null ? String(qd.distance_km) : '',
       items,
     }
   })
@@ -300,7 +311,7 @@ export default function QuoteItineraryBuilder({
   // Bridge the shared ActivitiesModal <-> the quote's activity items.
   function dayActivitiesFor(day: Day): DayActivity[] {
     return day.items
-      .filter(it => it.itemType === 'activity')
+      .filter(it => it.itemType === 'activity' && !isTransferItem(it))
       .map(it => ({
         activity_id: it.entityId ?? '',
         moment: ((it.contentSnapshot?.moment as any) ?? '') as DayActivity['moment'],
@@ -339,7 +350,9 @@ export default function QuoteItineraryBuilder({
     if (isLocked) return
     setDays(prev => prev.map((d, idx) => {
       if (idx !== i) return d
-      const kept = d.items.filter(it => it.itemType !== 'activity' || dayOffsetOf(it) !== offset)
+      // Transfer items are managed from the destination column, not the modal
+      // (which would drop their entity-less rows) — always keep them.
+      const kept = d.items.filter(it => it.itemType !== 'activity' || isTransferItem(it) || dayOffsetOf(it) !== offset)
       const activityItems: DayItem[] = rows.map(r => {
         const act = activities.find(a => a.id === r.activity_id)
         return {
@@ -380,7 +393,7 @@ export default function QuoteItineraryBuilder({
       _key: uid(), id: null, dayNumber: p.length + 1, nights: 1, dayNumberEnd: null, dayDate: '', title: '',
       descriptionEn: '', clientNotes: '',
       titleAr: '', descriptionAr: '', clientNotesAr: '',
-      destinationId: null, destinationSnapshot: {}, meals: [], photos: [], items: [],
+      destinationId: null, destinationSnapshot: {}, meals: [], photos: [], distanceKm: '', items: [],
     }]))
     if (language === 'ar') {
       setArOpenIndices(prev => new Set([...prev, newIdx]))
@@ -396,7 +409,7 @@ export default function QuoteItineraryBuilder({
       dayNumber: i + 1, nights: 1, dayNumberEnd: null, dayDate: '', title: '',
       descriptionEn: '', clientNotes: '',
       titleAr: '', descriptionAr: '', clientNotesAr: '',
-      destinationId: null, destinationSnapshot: {}, meals: [], photos: [], items: [],
+      destinationId: null, destinationSnapshot: {}, meals: [], photos: [], distanceKm: '', items: [],
     }))))
     if (language === 'ar') {
       setArOpenIndices(new Set(Array.from({ length: count }, (_, i) => i)))
@@ -462,10 +475,34 @@ export default function QuoteItineraryBuilder({
 
   function onDestChange(i: number, destId: string) {
     const dest = destinations.find(d => d.id === destId) ?? null
-    update(i, {
+    const patch: Partial<Day> = {
       destinationId: destId || null,
       destinationSnapshot: dest ? { id: dest.id, name: dest.name } : {},
-    })
+    }
+    // A stop whose destination differs from the previous stop's is a travel
+    // day — auto-add an editable "Transfer by Road" activity (never on the
+    // first stop, never twice). Reverting to the previous stop's destination
+    // removes the auto-added item again.
+    if (!isLocked && i > 0 && days[i]) {
+      const prevDestId = days[i - 1]?.destinationId ?? null
+      const isTravelDay = !!destId && !!prevDestId && destId !== prevDestId
+      const hasTransfer = days[i].items.some(isTransferItem)
+      if (isTravelDay && !hasTransfer) {
+        patch.items = [{
+          _key: uid(), id: null, itemType: 'activity', entityId: null,
+          titleSnapshot: TRANSFER_TITLE,
+          contentSnapshot: { destination_id: destId, transfer: true, day_offset: 0 },
+        }, ...days[i].items]
+      } else if (!isTravelDay && hasTransfer) {
+        patch.items = days[i].items.filter(it => !isTransferItem(it))
+      } else if (isTravelDay && hasTransfer) {
+        // Keep the transfer but point its location at the new destination.
+        patch.items = days[i].items.map(it => isTransferItem(it)
+          ? { ...it, contentSnapshot: { ...it.contentSnapshot, destination_id: destId } }
+          : it)
+      }
+    }
+    update(i, patch)
   }
 
   // ── Item mutations ──────────────────────────────────────────────────────
@@ -697,7 +734,7 @@ export default function QuoteItineraryBuilder({
               </div>
 
               {/* Destination */}
-              <div data-label="Main Destination">
+              <div data-label="Main Destination" className="space-y-1.5">
                 <select value={day.destinationId ?? ''}
                   onChange={e => onDestSelect(i, e.target.value)}
                   aria-label={`Main destination of day ${day.dayNumber}`}
@@ -708,6 +745,17 @@ export default function QuoteItineraryBuilder({
                   ))}
                   <option value="__add__">+ Add new destination…</option>
                 </select>
+                {i > 0 && (
+                  <div>
+                    <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">Km from previous</span>
+                    <input type="number" min={0} step="any" value={day.distanceKm}
+                      onChange={e => update(i, { distanceKm: e.target.value })}
+                      placeholder="auto"
+                      title="Distance of the leg into this stop, shown on the proposal map. Leave empty to compute from destination coordinates."
+                      aria-label={`Distance in km from the previous stop to day ${day.dayNumber}`}
+                      className={smallSelectCls} disabled={isLocked} />
+                  </div>
+                )}
               </div>
 
               {/* Accommodation (primary + nights + optional alternative) */}
@@ -743,9 +791,28 @@ export default function QuoteItineraryBuilder({
 
               {/* Activities — one block per sub-day of the stop */}
               <div data-label="Activities" className="space-y-1.5">
+                {day.items.filter(isTransferItem).map(item => (
+                  <span key={item._key}
+                    className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 text-warning-foreground border border-amber-200">
+                    <span aria-hidden="true">🚙</span>
+                    {item.titleSnapshot}
+                    {i > 0 && (() => {
+                      const from = (days[i - 1]?.destinationSnapshot as { name?: string })?.name
+                        ?? destinations.find(d => d.id === days[i - 1]?.destinationId)?.name
+                      const to = (day.destinationSnapshot as { name?: string })?.name
+                        ?? destinations.find(d => d.id === day.destinationId)?.name
+                      return from && to ? <span className="opacity-60">· {from as string} → {to as string}</span> : null
+                    })()}
+                    {!isLocked && (
+                      <button onClick={() => removeItem(i, item._key)}
+                        aria-label="Remove transfer"
+                        className="ml-0.5 opacity-50 hover:opacity-100">×</button>
+                    )}
+                  </span>
+                ))}
                 {Array.from({ length: day.nights }, (_, k) => {
                   const subDayNumber = day.dayNumber + k
-                  const acts = day.items.filter(it => it.itemType === 'activity' && dayOffsetOf(it) === k)
+                  const acts = day.items.filter(it => it.itemType === 'activity' && !isTransferItem(it) && dayOffsetOf(it) === k)
                   return (
                     <div key={k} className={day.nights > 1 ? 'rounded-md border border-border/60 p-1.5 space-y-1' : 'space-y-1'}>
                       {acts.length > 0 && (

@@ -6,6 +6,7 @@ import { createDestination } from './actions'
 import { Button, ButtonLink } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Toggle } from '@/components/ui/toggle'
+import LocationFields from '@/components/admin/location-fields'
 
 const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
@@ -59,6 +60,12 @@ export default function NewDestinationForm() {
           </div>
 
           <Toggle checked={isActive} onChange={() => setIsActive(!isActive)} label="Active (visible on website)" />
+        </div>
+
+        {/* Location (itinerary map) */}
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-foreground">Location</h2>
+          <LocationFields />
         </div>
 
         {/* Content */}

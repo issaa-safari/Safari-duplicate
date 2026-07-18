@@ -6,6 +6,7 @@ import { updatePark, deletePark } from './actions'
 import { Button, ButtonLink } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Toggle } from '@/components/ui/toggle'
+import LocationFields from '@/components/admin/location-fields'
 
 const PARK_TYPES = [
   { value: 'national_park',  label: 'National Park' },
@@ -26,6 +27,9 @@ interface Park {
   description_en: string | null
   cover_image_url: string | null
   is_active: boolean
+  google_maps_url: string | null
+  latitude: number | null
+  longitude: number | null
 }
 
 export default function ParkEditForm({ park }: { park: Park }) {
@@ -101,6 +105,15 @@ export default function ParkEditForm({ park }: { park: Park }) {
           </div>
 
           <Toggle checked={isActive} onChange={() => setIsActive(!isActive)} label="Active (appears in rate picker)" />
+        </div>
+
+        <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-foreground">Location</h2>
+          <LocationFields
+            googleMapsUrl={park.google_maps_url}
+            latitude={park.latitude}
+            longitude={park.longitude}
+          />
         </div>
 
         <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">

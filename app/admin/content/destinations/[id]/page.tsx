@@ -13,7 +13,7 @@ export default async function DestinationEditPage({ params }: { params: Promise<
   const admin = createAdminClient()
   const { data: destination } = await admin
     .from('destinations')
-    .select('id, name, country, description_en, description_ar, cover_image_url, is_active')
+    .select('id, name, country, description_en, description_ar, cover_image_url, is_active, google_maps_url, latitude, longitude')
     .eq('id', id)
     .single()
 

@@ -53,6 +53,19 @@ export interface Lookup {
   destination_id?: string | null
 }
 
+// --- Geo columns (migrations/group_58_geo_coordinates.sql) ---
+// Shared by destinations, accommodations and parks. Coordinates come from a
+// pasted Google Maps link (lib/geo.ts) or explicit lat/lng in the content
+// forms; google_place_id is reserved for the optional key-gated Google
+// enrichment (lib/google-places.ts). They drive the proposal's itinerary map
+// and the auto per-leg distances (with quote_days.distance_km as override).
+export interface GeoFields {
+  latitude: number | null
+  longitude: number | null
+  google_maps_url: string | null
+  google_place_id: string | null
+}
+
 // --- Bookings & finance ---
 export interface BookingPayment {
   id?: string

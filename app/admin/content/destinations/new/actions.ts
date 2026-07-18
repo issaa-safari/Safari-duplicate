@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
+import { geoColumnsFromForm } from '@/lib/geo'
 import { redirect } from 'next/navigation'
 
 export async function createDestination(formData: FormData) {
@@ -33,6 +34,7 @@ export async function createDestination(formData: FormData) {
       cover_image_url: coverImageUrl || null,
       is_active: isActive,
       has_content: hasContent,
+      ...geoColumnsFromForm(formData),
     })
     .select('id')
     .single()
