@@ -8,7 +8,12 @@ Automated pipeline for tour-trip videos: **ingest → transcribe/analyze → scr
 > it needs your credentials and needs to stay running. Clone the repo there,
 > follow the setup below, and schedule it.
 
-Build status: **Stage 1 (Ingestion) — complete & tested.** Stages 2–6 land next.
+Build status: **Stages 1–2 complete & tested.** Stages 3–6 land next.
+
+> **These videos are mostly b-roll** (scenery, wildlife, bikes — little or no
+> narration), so Stage 2 treats the *visuals* as the content: keyframes + shot
+> detection are primary, and speech transcription only kicks in when a clip
+> actually contains speech (no Whisper hallucination on silent/music footage).
 
 ---
 
@@ -85,6 +90,28 @@ ffmpeg -y -f lavfi -i mandelbrot=size=320x240:rate=15 -t 2 -pix_fmt yuv420p /tmp
 cp /tmp/vids/clipA.mp4 /tmp/vids/clipA_copy.mp4
 PYTHONPATH=src .venv/bin/python src/test_ingest_dedup.py /tmp/vids
 ```
+
+---
+
+## Stage 2 — Analysis (keyframes + scenes + optional speech)
+
+For each new video in `inbox/`, writes `work/<name>/`:
+- `keyframes/` — interval frames **plus one representative thumbnail per shot**
+  (`scene_00_2s.jpg`, …), which is what you'll show Claude at Stage 3.
+- `scenes.json` — shot cuts turned into **candidate segments** (`start`/`end`/
+  `duration`/`thumbnail`) — the raw material for the edit plan.
+- `transcript.json` — real speech only; `has_speech: false` + empty text on b-roll.
+- `metadata.json` — probe info (duration/res/fps) + stage status.
+
+```bash
+.venv/bin/python src/analyze.py            # process all new inbox videos
+.venv/bin/python src/analyze.py --video safari_intro_demo
+.venv/bin/python src/analyze.py --force    # re-analyze
+```
+
+Tuning lives under `analysis:` in `config.yaml`: `keyframe_interval_seconds`,
+`scene_threshold` (lower = more cuts), and `speech.enabled` (set `false` to skip
+Whisper entirely if none of your clips have narration).
 
 ---
 

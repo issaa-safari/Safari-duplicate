@@ -23,3 +23,29 @@ ingestion:
     remote: "onedrive"
     # Folder inside that remote to sync FROM (use "" for the drive root).
     path: "SafariVideos"
+
+# Stage 2 — analysis. Most tour footage is b-roll (no narration), so keyframes
+# and scene cuts are the primary signal; speech transcription is optional.
+analysis:
+  # Grab one keyframe every N seconds (these are what Claude "sees" at Stage 3).
+  keyframe_interval_seconds: 5
+  # JPEG quality for keyframes (2 = high, 31 = low).
+  keyframe_quality: 3
+
+  # Shot/scene detection: finds cuts so we get candidate segments to keep.
+  # 0.0-1.0; LOWER finds more cuts. ~0.3-0.4 suits typical footage.
+  scene_threshold: 0.35
+
+  speech:
+    # Turn OFF entirely if your videos never have narration — skips Whisper,
+    # much faster. Leave ON to auto-transcribe the occasional talking clip.
+    enabled: true
+    # faster-whisper model: tiny / base / small / medium / large-v3
+    whisper_model: "base"
+    # Force a language ("en", "sw", "ar", ...) or null to auto-detect.
+    language: null
+    device: "cpu"          # "cuda" only on a GPU box
+    compute_type: "int8"   # "float16" on GPU
+    # If detected speech covers less than this fraction of the video, treat it
+    # as b-roll (no usable narration) and store an empty transcript.
+    min_speech_coverage: 0.10
