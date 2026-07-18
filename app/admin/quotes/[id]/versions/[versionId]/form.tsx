@@ -82,12 +82,15 @@ export default function VersionEditorForm({
   travellers: initialTravellers,
   ageBands,
   quoteRequest,
+  onDatesSaved,
 }: {
   quoteId: string
   version: Version
   travellers: Traveller[]
   ageBands: AgeBand[]
   quoteRequest?: { start_date: string | null; duration_days: number | null } | null
+  /** Called after travel dates save successfully, so an embedding workspace can carry them into Pricing. */
+  onDatesSaved?: (startDate: string, endDate: string) => void
 }) {
   const isLocked = !['draft', 'ready'].includes(version.status)
 
@@ -131,7 +134,10 @@ export default function VersionEditorForm({
     startDateTransition(async () => {
       const result = await saveDates(fd)
       if (result.error) setDatesError(result.error)
-      else setDatesSaved(true)
+      else {
+        setDatesSaved(true)
+        onDatesSaved?.(startDate, endDate)
+      }
     })
   }
 

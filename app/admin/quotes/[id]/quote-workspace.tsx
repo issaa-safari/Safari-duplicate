@@ -85,6 +85,14 @@ export default function QuoteWorkspace({
   const [step, setStep] = useState<Step>(initialStep)
   const [activeVersionId, setActiveVersionId] = useState(initialVersionId)
 
+  // Live travel dates per version — seeded from the server load, updated the
+  // moment "Save Dates" succeeds so the Pricing tab (mounted alongside, not
+  // remounted) can pick up the new trip window without a page reload.
+  const [versionDates, setVersionDates] = useState<Record<string, { start: string; end: string }>>(
+    () => Object.fromEntries(versions.map(v => [v.id, { start: v.travel_start_date ?? '', end: v.travel_end_date ?? '' }])),
+  )
+  const pricingDates = tripBuilderInitialVersionId ? versionDates[tripBuilderInitialVersionId] : undefined
+
   // Render an itinerary panel for every version the server loaded data for
   // (latest, all tracked versions, and/or an explicitly requested older one).
   const versionsWithItinerary = versions.filter(v => itineraryByVersion[v.id])
@@ -159,6 +167,7 @@ export default function QuoteWorkspace({
                 travellers={data.travellers}
                 ageBands={ageBands}
                 quoteRequest={quoteRequest}
+                onDatesSaved={(start, end) => setVersionDates(prev => ({ ...prev, [v.id]: { start, end } }))}
               />
               <ReadinessChecklist quoteDays={data.quoteDays} dayItems={data.dayItems} version={v} />
               <QuoteItineraryBuilder
@@ -190,6 +199,8 @@ export default function QuoteWorkspace({
           initialQuoteId={quoteId}
           initialVersionId={tripBuilderInitialVersionId}
           initialState={tripBuilderInitialState ?? undefined}
+          tripStartDate={pricingDates?.start}
+          tripEndDate={pricingDates?.end}
           onDirtyChange={setPricingDirty}
           onSaved={() => setStep('preview')}
         />

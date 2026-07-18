@@ -104,6 +104,8 @@ export default function TripBuilderForm({
   initialQuoteId,
   initialVersionId,
   initialState,
+  tripStartDate,
+  tripEndDate,
   onDirtyChange,
   onSaved,
 }: {
@@ -115,6 +117,9 @@ export default function TripBuilderForm({
   initialQuoteId?: string | null
   initialVersionId?: string | null
   initialState?: TripBuilderState | null
+  /** Live travel dates from the itinerary step — followed into the guest dates until the admin manually overrides them. */
+  tripStartDate?: string | null
+  tripEndDate?: string | null
   /** Reports unsaved-changes state to an embedding parent (e.g. for a navigation guard). */
   onDirtyChange?: (dirty: boolean) => void
   /** Called after a successful save (e.g. to advance an embedding workspace to Preview). */
@@ -125,6 +130,27 @@ export default function TripBuilderForm({
       name: '', email: '', phone: '', adults: 2, childAges: [], startDate: '', endDate: '',
     },
   )
+
+  // Follow the itinerary step's travel dates into the guest dates as they're
+  // saved, but stop following a field the admin has manually diverged from
+  // (tracked via the last value we synced in).
+  const lastSyncedTripDates = useRef<{ start: string; end: string } | null>(null)
+  useEffect(() => {
+    const start = tripStartDate ?? ''
+    const end = tripEndDate ?? ''
+    if (!start && !end) return
+    setGuest(prev => {
+      const synced = lastSyncedTripDates.current
+      const startDiverged = !!synced && prev.startDate !== '' && prev.startDate !== synced.start
+      const endDiverged = !!synced && prev.endDate !== '' && prev.endDate !== synced.end
+      const nextStart = startDiverged ? prev.startDate : start
+      const nextEnd = endDiverged ? prev.endDate : end
+      if (nextStart === prev.startDate && nextEnd === prev.endDate) return prev
+      return { ...prev, startDate: nextStart, endDate: nextEnd }
+    })
+    lastSyncedTripDates.current = { start, end }
+  }, [tripStartDate, tripEndDate])
+
   const [title, setTitle] = useState(initialState?.title ?? '')
   const [hotelRows, setHotelRows] = useState<HotelRowInput[]>(
     initialState?.hotelRows ?? [],
