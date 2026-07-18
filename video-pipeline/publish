@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Convenience wrapper: ./publish <video_name> [--dry-run] [--platforms ...] [--schedule ISO]
+cd "$(dirname "$0")"
+exec .venv/bin/python src/publish.py post "$@"

@@ -64,3 +64,28 @@ export:
     fontsize_ratio: 0.045       # caption size as a fraction of video height
     y_ratio: 0.80               # vertical position (0=top, 1=bottom)
     box_opacity: 0.5            # background box behind caption text
+
+# Stage 5 — publish via Blotato. Nothing posts automatically: the pipeline only
+# writes output/<name>/READY_TO_PUBLISH.md. You publish explicitly with:
+#   ./publish <name>        (or:  python src/publish.py post <name>)
+publish:
+  # Which platforms to post to, and which exported format each one uses.
+  # Only platforms that ALSO have text in script.json's post_captions are posted.
+  # Comment out a platform to stop posting there.
+  targets:
+    instagram:
+      format: "9x16"
+      media_type: "reel"
+    tiktok:
+      format: "9x16"
+      privacy_level: "PUBLIC_TO_EVERYONE"   # or SELF_ONLY while testing
+      is_ai_generated: true                 # we add AI voiceover
+    youtube:
+      format: "16x9"
+      privacy_status: "public"              # public | unlisted | private
+    facebook:
+      format: "9x16"
+      media_type: "reel"
+      # page_id: "123456789"                # required by FB; else taken from account
+    # twitter: { format: "16x9" }
+    # linkedin: { format: "16x9" }

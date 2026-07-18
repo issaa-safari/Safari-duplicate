@@ -9,5 +9,5 @@ faster-whisper==1.2.1   # local Whisper; only runs when a clip has real speech
 # Stage 4 — Voiceover
 edge-tts==7.2.8         # free neural TTS for voiceover narration
 
-# Stage 5 — Publish (Blotato uses plain HTTPS; requests is convenient)
-# requests==2.32.3
+# Stage 5 — Publish (Blotato REST API)
+requests==2.34.2

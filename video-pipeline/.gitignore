@@ -4,6 +4,9 @@ rclone.conf
 *.session
 *.session-journal
 
+# --- Personal config (copy config.example.yaml -> config.yaml) ---
+config.yaml
+
 # --- Python ---
 .venv/
 __pycache__/

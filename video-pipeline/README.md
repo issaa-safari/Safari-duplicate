@@ -8,7 +8,7 @@ Automated pipeline for tour-trip videos: **ingest → transcribe/analyze → scr
 > it needs your credentials and needs to stay running. Clone the repo there,
 > follow the setup below, and schedule it.
 
-Build status: **Stages 1–4 complete & tested.** Stages 5–6 land next.
+Build status: **Stages 1–5 complete & tested.** Stage 6 (orchestration) lands next.
 
 > **These videos are mostly b-roll** (scenery, wildlife, bikes — little or no
 > narration), so Stage 2 treats the *visuals* as the content: keyframes + shot
@@ -154,6 +154,26 @@ Drop your own music files into `assets/music/` (mp3/m4a/wav). Tuning lives under
 `export:` in `config.yaml` (CRF, caption font/size, default voice, music gain).
 If narration runs longer than the footage, the last frame is held so no line is
 cut off.
+
+---
+
+## Stage 5 — Publish via Blotato (opt-in — nothing auto-posts)
+
+The pipeline only ever writes `output/<name>/READY_TO_PUBLISH.md` (a summary of
+the exports and the per-platform captions). **You** publish explicitly:
+
+```bash
+./publish <name> --dry-run     # preview the exact Blotato API calls, send nothing
+./publish <name>               # actually post to every configured platform
+./publish <name> --platforms instagram,tiktok
+./publish <name> --schedule 2026-08-01T09:00:00Z    # schedule instead of now
+```
+
+Put your key in `.env` as `BLOTATO_API_KEY` (never in code). Which platforms get
+posted, which export format each uses, and platform options (TikTok privacy,
+YouTube visibility, …) are set under `publish.targets` in `config.yaml`. A
+platform posts only if it has both a caption in `script.json` and a matching
+export. Uses Blotato REST (`POST /v2/media/uploads` → `PUT` file → `POST /v2/posts`).
 
 ---
 
