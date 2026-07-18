@@ -8,7 +8,7 @@ Automated pipeline for tour-trip videos: **ingest → transcribe/analyze → scr
 > it needs your credentials and needs to stay running. Clone the repo there,
 > follow the setup below, and schedule it.
 
-Build status: **Stages 1–2 complete & tested.** Stages 3–6 land next.
+Build status: **Stages 1–3 complete & tested.** Stages 4–6 land next.
 
 > **These videos are mostly b-roll** (scenery, wildlife, bikes — little or no
 > narration), so Stage 2 treats the *visuals* as the content: keyframes + shot
@@ -112,6 +112,27 @@ For each new video in `inbox/`, writes `work/<name>/`:
 Tuning lives under `analysis:` in `config.yaml`: `keyframe_interval_seconds`,
 `scene_threshold` (lower = more cuts), and `speech.enabled` (set `false` to skip
 Whisper entirely if none of your clips have narration).
+
+---
+
+## Stage 3 — Script request (semi-manual, the human-in-the-loop step)
+
+```bash
+.venv/bin/python src/script_request.py     # writes work/<name>/SCRIPT_REQUEST.md
+```
+
+Each `SCRIPT_REQUEST.md` is a self-contained brief: the candidate-segment table,
+a paste-ready prompt, and the full JSON schema. To produce a script:
+
+1. Open the Claude chat, **attach the shot thumbnails** it lists
+   (`work/<name>/keyframes/scene_*.jpg`), and paste the prompt block.
+2. Save Claude's JSON reply as **`work/<name>/script.json`**.
+
+`script.json` (schema in `schema/script.schema.json`) carries: `keep_segments`
+(source cuts, in final order), `voiceover` lines, on-screen `captions`, optional
+`music`, and per-platform `post_captions`. The pipeline validates it (structure
++ that times fit the clip) before Stage 4 touches it — invalid drops are
+reported, not silently edited.
 
 ---
 

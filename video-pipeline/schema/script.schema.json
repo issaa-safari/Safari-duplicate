@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://safari-video-pipeline/script.schema.json",
+  "title": "Video edit script",
+  "description": "The plan returned from the Claude chat and dropped into work/<video_name>/script.json. Stage 4 reads this to cut, caption, narrate, and export the video.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["video_name", "keep_segments", "post_captions"],
+  "properties": {
+    "video_name": {
+      "type": "string",
+      "description": "Must match the work/<video_name> folder."
+    },
+    "title": {
+      "type": "string",
+      "description": "Short human title for the finished clip."
+    },
+    "keep_segments": {
+      "type": "array",
+      "description": "Segments of the SOURCE video to keep, in final playback order. The output is these concatenated top-to-bottom.",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["start", "end"],
+        "properties": {
+          "start": {"type": "number", "minimum": 0, "description": "Start time in the source video (seconds)."},
+          "end": {"type": "number", "minimum": 0, "description": "End time in the source video (seconds)."},
+          "note": {"type": "string", "description": "Optional: why this shot was kept."}
+        }
+      }
+    },
+    "voiceover": {
+      "type": "array",
+      "description": "Narration lines spoken over the FINAL edited timeline. Rendered to speech with edge-tts. If 'start' is omitted, lines play back-to-back from 0.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text"],
+        "properties": {
+          "text": {"type": "string", "minLength": 1},
+          "start": {"type": "number", "minimum": 0, "description": "When this line begins on the final timeline (seconds)."}
+        }
+      }
+    },
+    "voice": {
+      "type": "string",
+      "description": "edge-tts voice name (e.g. en-US-AriaNeural). Falls back to config default if omitted."
+    },
+    "captions": {
+      "type": "array",
+      "description": "On-screen text burned onto the FINAL edited timeline.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "start", "end"],
+        "properties": {
+          "text": {"type": "string", "minLength": 1},
+          "start": {"type": "number", "minimum": 0},
+          "end": {"type": "number", "minimum": 0}
+        }
+      }
+    },
+    "music": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Background music from assets/music/.",
+      "properties": {
+        "track": {"type": ["string", "null"], "description": "Filename in assets/music/, or null to auto-pick / omit."},
+        "gain_db": {"type": "number", "description": "Music level relative to voiceover; negative ducks it (e.g. -18)."}
+      }
+    },
+    "post_captions": {
+      "type": "object",
+      "description": "Per-platform post text used at publish time. Include only the platforms you post to.",
+      "additionalProperties": {"type": "string"},
+      "properties": {
+        "instagram": {"type": "string"},
+        "tiktok": {"type": "string"},
+        "youtube": {"type": "string"},
+        "facebook": {"type": "string"},
+        "x": {"type": "string"},
+        "linkedin": {"type": "string"}
+      }
+    }
+  }
+}
