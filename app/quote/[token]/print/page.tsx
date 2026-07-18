@@ -167,7 +167,7 @@ export default async function QuotePrintPage({
         .order('sort_order')
     : { data: [] as any[] }
 
-  type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean }
+  type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean; transfer: boolean }
   const accomByDay: Record<string, string[]> = {}
   const accomDescByDay: Record<string, string[]> = {}
   const actsByDay: Record<string, ActItem[]> = {}
@@ -183,6 +183,7 @@ export default async function QuotePrintPage({
       actsByDay[item.quote_day_id].push({
         name: item.title_snapshot, activity_id: item.activity_id ?? null,
         moment: cs.moment ?? '', optional: !!cs.optional,
+        transfer: !!cs.transfer,
       })
     }
   }
@@ -567,10 +568,14 @@ export default async function QuotePrintPage({
                         const dd = a.activity_id ? actDescMap[a.activity_id] : null
                         const adesc = dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : null
                         const mom = a.moment ? (isArabic ? momentAr(a.moment) : a.moment) : ''
+                        const prevDest = idx > 0 ? ((days[idx - 1].destination_snapshot as any)?.name ?? null) : null
+                        const aName = a.transfer && prevDest && dest
+                          ? (isArabic ? `${a.name}، ${prevDest} إلى ${dest}` : `${a.name}, ${prevDest} to ${dest}`)
+                          : a.name
                         return (
                           <div key={ai} style={{ marginTop: 3 }}>
                             <span className="day-ico">→</span>
-                            <strong>{a.name}</strong>
+                            <strong>{aName}</strong>
                             {mom ? <span style={{ color: '#999' }}> · {mom}</span> : null}
                             {a.optional ? <span style={{ color: '#C97A1A' }}> · {isArabic ? 'اختياري' : 'optional'}</span> : null}
                             {adesc ? <div style={{ color: '#666', fontSize: 11 }}>{adesc}</div> : null}

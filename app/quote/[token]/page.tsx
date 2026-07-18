@@ -139,7 +139,7 @@ export default async function QuotePortalPage({
         .order('sort_order')
     : { data: [] as any[] }
 
-  type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean; dayOffset: number }
+  type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean; dayOffset: number; transfer: boolean }
   const accomItemByDay: Record<string, any> = {}
   const actsByDay: Record<string, ActItem[]> = {}
   for (const item of dayItems ?? []) {
@@ -153,6 +153,8 @@ export default async function QuotePortalPage({
         moment: cs.moment ?? '', optional: !!cs.optional,
         // Sub-day within a multi-night stop (0 = first day). Defaults to 0.
         dayOffset: Number(cs.day_offset ?? 0) || 0,
+        // Auto-added road transfer (builder) — labelled "A to B" below.
+        transfer: !!cs.transfer,
       })
     }
   }
@@ -247,7 +249,7 @@ export default async function QuotePortalPage({
   })
 
   // ── Itinerary days ──
-  const itinerary: ProposalDay[] = (quoteDays ?? []).map((d: any) => {
+  const itinerary: ProposalDay[] = (quoteDays ?? []).map((d: any, di: number) => {
     const dest = d.destination_snapshot as Record<string, string> | null
     const dd = dest?.id ? destDescMap[dest.id] : null
     const item = accomItemByDay[d.id]
@@ -255,9 +257,14 @@ export default async function QuotePortalPage({
     const photos: string[] = Array.isArray(d.photos) ? d.photos : []
     const accPhotos = acc?.cover ? [acc.cover] : []
     const acts = actsByDay[d.id] ?? []
+    // Road transfers read "Transfer by Road, {previous stop} to {this stop}".
+    const prevDestName = di > 0 ? ((quoteDays as any)[di - 1].destination_snapshot as any)?.name ?? null : null
     const mapAct = (a: ActItem) => {
       const am = a.activity_id ? actDescMap[a.activity_id] : null
-      return { name: a.name, moment: a.moment ? momentLbl(a.moment) : null, optional: a.optional, description: am ? (isArabic ? (am.ar || am.en) : am.en) : null }
+      const name = a.transfer && prevDestName && dest?.name
+        ? (isArabic ? `${a.name}، ${prevDestName} إلى ${dest.name}` : `${a.name}, ${prevDestName} to ${dest.name}`)
+        : a.name
+      return { name, moment: a.moment ? momentLbl(a.moment) : null, optional: a.optional, description: am ? (isArabic ? (am.ar || am.en) : am.en) : null }
     }
     // Multi-night stop → split activities into per-sub-day tabs.
     const span = d.day_number_end && d.day_number_end > d.day_number ? d.day_number_end - d.day_number + 1 : 1
