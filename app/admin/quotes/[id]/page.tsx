@@ -114,6 +114,20 @@ export default async function QuoteDetailPage({
     loadTripBuilderInitialState(admin, id),
   ])
 
+  // Day counts for every version (not just the ones with full itinerary data
+  // loaded) — the Preview & Send panel warns when a version about to be shared
+  // has no Day-by-Day itinerary, since the proposal would render without the
+  // summary, map, and day pages.
+  const { data: dayCountRows } = versions.length
+    ? await admin.from('quote_days')
+        .select('quote_version_id')
+        .in('quote_version_id', versions.map((v: any) => v.id))
+    : { data: [] as any[] }
+  const dayCountByVersion: Record<string, number> = {}
+  for (const r of dayCountRows ?? []) {
+    dayCountByVersion[r.quote_version_id] = (dayCountByVersion[r.quote_version_id] ?? 0) + 1
+  }
+
   const dayIds = (quoteDaysAll ?? []).map((d: any) => d.id)
   const [{ data: dayItemsAll }, { data: travellersAll }] = await Promise.all([
     dayIds.length
@@ -295,6 +309,7 @@ export default async function QuoteDetailPage({
               tripBuilderInitialState={tripBuilderInit?.initialState ?? null}
               tripBuilderInitialVersionId={tripBuilderInit?.initialVersionId ?? null}
               deliveries={deliveries}
+              dayCountByVersion={dayCountByVersion}
               baseUrl={baseUrl}
               clientEmail={client?.email ?? null}
             />

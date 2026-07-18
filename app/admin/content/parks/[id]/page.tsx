@@ -15,7 +15,7 @@ export default async function ParkEditPage({ params }: { params: Promise<{ id: s
   const admin = createAdminClient()
   const { data: park } = await admin
     .from('parks')
-    .select('id, name, country, park_type, description_en, cover_image_url, is_active, google_maps_url, latitude, longitude')
+    .select('id, name, country, park_type, description_en, cover_image_url, is_active, google_maps_url, latitude, longitude, gallery_urls')
     .eq('id', id)
     .single()
 

@@ -7,6 +7,7 @@ import { Button, ButtonLink } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Toggle } from '@/components/ui/toggle'
 import LocationFields from '@/components/admin/location-fields'
+import CoverImageField from '@/components/admin/cover-image-field'
 
 const PARK_TYPES = [
   { value: 'national_park',  label: 'National Park' },
@@ -71,10 +72,7 @@ export default function NewParkForm() {
             </div>
           </div>
 
-          <div>
-            <label htmlFor="coverImageUrl" className="block text-sm font-medium text-foreground mb-1">Cover Image URL</label>
-            <input id="coverImageUrl" type="url" name="coverImageUrl" placeholder="https://…" className={inputCls} />
-          </div>
+          <CoverImageField folder="parks/covers" />
 
           <Toggle checked={isActive} onChange={() => setIsActive(!isActive)} label="Active (appears in rate picker)" />
         </div>

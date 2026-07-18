@@ -7,6 +7,8 @@ import { Button, ButtonLink } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Toggle } from '@/components/ui/toggle'
 import LocationFields from '@/components/admin/location-fields'
+import CoverImageField from '@/components/admin/cover-image-field'
+import { GalleryUpload } from '@/components/admin/image-upload'
 
 const PARK_TYPES = [
   { value: 'national_park',  label: 'National Park' },
@@ -30,6 +32,7 @@ interface Park {
   google_maps_url: string | null
   latitude: number | null
   longitude: number | null
+  gallery_urls: string[] | null
 }
 
 export default function ParkEditForm({ park }: { park: Park }) {
@@ -37,6 +40,9 @@ export default function ParkEditForm({ park }: { park: Park }) {
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [isActive, setIsActive] = useState(park.is_active)
+  const [galleryUrls, setGalleryUrls] = useState<string[]>(
+    Array.isArray(park.gallery_urls) ? park.gallery_urls : []
+  )
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -44,6 +50,7 @@ export default function ParkEditForm({ park }: { park: Park }) {
     setLoading(true)
     const formData = new FormData(e.currentTarget)
     formData.set('isActive', isActive ? 'true' : 'false')
+    formData.set('galleryUrls', JSON.stringify(galleryUrls))
     formData.set('id', park.id)
     try {
       await updatePark(formData)
@@ -99,10 +106,7 @@ export default function ParkEditForm({ park }: { park: Park }) {
             </div>
           </div>
 
-          <div>
-            <label htmlFor="coverImageUrl" className="block text-sm font-medium text-foreground mb-1">Cover Image URL</label>
-            <input id="coverImageUrl" type="url" name="coverImageUrl" defaultValue={park.cover_image_url ?? ''} placeholder="https://…" className={inputCls} />
-          </div>
+          <CoverImageField initialUrl={park.cover_image_url} folder={`parks/${park.id}`} />
 
           <Toggle checked={isActive} onChange={() => setIsActive(!isActive)} label="Active (appears in rate picker)" />
         </div>
@@ -121,6 +125,15 @@ export default function ParkEditForm({ park }: { park: Park }) {
           <div>
             <label htmlFor="descriptionEn" className="block text-sm font-medium text-foreground mb-1">Description (English)</label>
             <textarea id="descriptionEn" name="descriptionEn" rows={4} defaultValue={park.description_en ?? ''} placeholder="Brief description of the park…" className={inputCls} />
+          </div>
+
+          <div>
+            <span className="block text-sm font-medium text-foreground mb-1">Gallery photos</span>
+            <GalleryUpload
+              value={galleryUrls}
+              onChange={setGalleryUrls}
+              folder={`parks/${park.id}`}
+            />
           </div>
         </div>
 

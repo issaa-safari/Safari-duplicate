@@ -7,6 +7,7 @@ import { Button, ButtonLink } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Toggle } from '@/components/ui/toggle'
 import LocationFields from '@/components/admin/location-fields'
+import CoverImageField from '@/components/admin/cover-image-field'
 
 interface Destination { id: string; name: string }
 
@@ -87,8 +88,7 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
               <input id="rating" type="number" name="rating" min={1} max={5} defaultValue={4} className={inputCls} />
             </div>
             <div>
-              <label htmlFor="coverImageUrl" className="block text-sm font-medium text-foreground mb-1">Cover Image URL</label>
-              <input id="coverImageUrl" type="url" name="coverImageUrl" placeholder="https://…" className={inputCls} />
+              <CoverImageField folder="accommodations/covers" />
             </div>
           </div>
 
