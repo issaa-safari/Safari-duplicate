@@ -8,7 +8,7 @@ Automated pipeline for tour-trip videos: **ingest → transcribe/analyze → scr
 > it needs your credentials and needs to stay running. Clone the repo there,
 > follow the setup below, and schedule it.
 
-Build status: **Stages 1–3 complete & tested.** Stages 4–6 land next.
+Build status: **Stages 1–4 complete & tested.** Stages 5–6 land next.
 
 > **These videos are mostly b-roll** (scenery, wildlife, bikes — little or no
 > narration), so Stage 2 treats the *visuals* as the content: keyframes + shot
@@ -133,6 +133,27 @@ a paste-ready prompt, and the full JSON schema. To produce a script:
 `music`, and per-platform `post_captions`. The pipeline validates it (structure
 + that times fit the clip) before Stage 4 touches it — invalid drops are
 reported, not silently edited.
+
+---
+
+## Stage 4 — Edit + export
+
+```bash
+.venv/bin/python src/edit.py --video <name>          # both formats
+.venv/bin/python src/edit.py --video <name> --formats 9x16
+.venv/bin/python src/edit.py                         # all videos with a script.json
+```
+
+From `script.json` it cuts the `keep_segments`, concatenates them, synthesizes
+the `voiceover` with edge-tts, mixes a track from `assets/music/` (ducked by
+`gain_db`), burns the `captions`, and writes to `output/<name>/`:
+- `<name>_16x9.mp4` — 1920×1080 (padded to fit)
+- `<name>_9x16.mp4` — 1080×1920 (auto-cropped to cover)
+
+Drop your own music files into `assets/music/` (mp3/m4a/wav). Tuning lives under
+`export:` in `config.yaml` (CRF, caption font/size, default voice, music gain).
+If narration runs longer than the footage, the last frame is held so no line is
+cut off.
 
 ---
 

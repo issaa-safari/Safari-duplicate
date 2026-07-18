@@ -49,3 +49,18 @@ analysis:
     # If detected speech covers less than this fraction of the video, treat it
     # as b-roll (no usable narration) and store an empty transcript.
     min_speech_coverage: 0.10
+
+# Stage 4 — edit + export
+export:
+  crf: 20                       # H.264 quality (lower = better/bigger; 18-23 typical)
+  voiceover:
+    default_voice: "en-US-AriaNeural"   # any edge-tts voice; script.json can override
+  music:
+    default_gain_db: -18        # how far to duck music under the voiceover
+    auto_pick: true             # if script has no track, pick a random assets/music file
+  caption:
+    # Auto-detected if omitted; set a .ttf path to force a specific font.
+    font: null
+    fontsize_ratio: 0.045       # caption size as a fraction of video height
+    y_ratio: 0.80               # vertical position (0=top, 1=bottom)
+    box_opacity: 0.5            # background box behind caption text
