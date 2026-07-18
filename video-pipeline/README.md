@@ -8,7 +8,7 @@ Automated pipeline for tour-trip videos: **ingest → transcribe/analyze → scr
 > it needs your credentials and needs to stay running. Clone the repo there,
 > follow the setup below, and schedule it.
 
-Build status: **Stages 1–5 complete & tested.** Stage 6 (orchestration) lands next.
+Build status: **All 6 stages complete & tested.**
 
 > **These videos are mostly b-roll** (scenery, wildlife, bikes — little or no
 > narration), so Stage 2 treats the *visuals* as the content: keyframes + shot
@@ -177,17 +177,79 @@ export. Uses Blotato REST (`POST /v2/media/uploads` → `PUT` file → `POST /v2
 
 ---
 
+## Stage 6 — Orchestration & scheduling
+
+One command runs the whole flow on only-new work (and never posts):
+
+```bash
+make run                 # or: ./run.sh   /   .venv/bin/python src/pipeline.py run
+make status              # per-video state table + the next step for each
+```
+
+`pipeline.py run` does: ingest → analyze → script-request → edit (for anything
+that now has a `script.json`) → prepare publish summaries. Every stage is
+idempotent, so it's safe to run repeatedly and on a schedule.
+
+**Scheduling (auto-detects your OS):**
+
+```bash
+make schedule-show                                  # print the cron / Task Scheduler command
+make schedule-install                               # install it (every 2h by default)
+.venv/bin/python scripts/schedule.py --install --interval-hours 4
+.venv/bin/python scripts/schedule.py --uninstall
+```
+
+On Linux/macOS it writes a `crontab` entry; on Windows it registers a Scheduled
+Task. Either way it runs `pipeline.py run` — ingesting and processing new videos
+automatically, while publishing stays a manual `./publish <name>`.
+
+---
+
+## Running it in the cloud (recommended)
+
+This is designed to live on a small always-on box, not your PC:
+
+1. Spin up a cheap Linux VPS (Hetzner/DigitalOcean, ~$5/mo).
+2. `git clone` this repo, `cd video-pipeline`, `make setup`.
+3. Install FFmpeg + rclone (`sudo apt install ffmpeg rclone`).
+4. Fill in `.env` (Telegram + Blotato keys) and `config.yaml`; configure the
+   rclone `onedrive` remote; do the one-time Telegram login (`make ingest`).
+5. `make schedule-install` — new videos now flow in automatically.
+6. When a clip is waiting on a script, `make status` tells you; do Stage 3, drop
+   `script.json`, and the next run edits + prepares it. Then `./publish <name>`.
+
+### GitHub Actions alternative (no server)
+Run `pipeline.py run` on a schedule via a workflow, store secrets in GitHub
+Secrets, and persist `state/` (ledger + Telegram session) with the cache or by
+committing it back. Publishing stays a manual `workflow_dispatch`. Slower and
+capped at 6h/job, but free and serverless.
+
+---
+
 ## Directory layout
 
 ```
 video-pipeline/
 ├── src/                 # pipeline code
+│   ├── common.py            paths, config, logging, ingest ledger
+│   ├── ingest*.py           Stage 1: Telegram + OneDrive -> inbox/
+│   ├── analyze.py           Stage 2: keyframes, scenes, optional speech
+│   ├── script_request.py    Stage 3: SCRIPT_REQUEST.md
+│   ├── script_io.py         Stage 3: script.json validation
+│   ├── edit.py              Stage 4: cut/VO/music/captions/export
+│   ├── publish.py           Stage 5: Blotato (prepare + post)
+│   └── pipeline.py          Stage 6: orchestrator + status
+├── scripts/schedule.py  # OS-aware cron / Task Scheduler setup
+├── schema/              # script.json JSON Schema
+├── run.sh / run.cmd     # run the whole pipeline once
+├── publish / publish.cmd# ./publish <name>  (opt-in posting)
+├── Makefile             # convenience targets (Linux/macOS)
 ├── inbox/               # new videos land here (gitignored)
-├── work/                # per-video working dir: transcript, keyframes, script (gitignored)
-├── output/              # exported 16:9 and 9:16 videos (gitignored)
+├── work/                # per-video: keyframes, scenes, transcript, script (gitignored)
+├── output/              # exported 16:9 and 9:16 videos + summaries (gitignored)
 ├── assets/music/        # background music you drop in (gitignored)
 ├── state/               # ledger, logs, Telegram session (gitignored)
-├── config.example.yaml  # copy to config.yaml
+├── config.example.yaml  # copy to config.yaml (gitignored once copied)
 └── .env.example         # copy to .env
 ```
 
