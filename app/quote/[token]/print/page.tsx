@@ -1,6 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import PrintToolbar from './print-toolbar'
+import ItineraryMap, { type MapStop } from '@/components/quote/itinerary-map'
+import { haversineKm, type LatLng } from '@/lib/geo'
 
 const MEAL_LABELS: Record<string, string> = { B: 'Breakfast', L: 'Lunch', D: 'Dinner' }
 const MEAL_LABELS_AR: Record<string, string> = { B: 'إفطار', L: 'غداء', D: 'عشاء' }
@@ -128,7 +130,7 @@ export default async function QuotePrintPage({
       .select('id, quote_number, mode, client_id, tour_id')
       .eq('id', delivery.quote_id).single(),
     admin.from('quote_days')
-      .select('id, day_number, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_snapshot, meals, photos')
+      .select('id, day_number, day_number_end, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_snapshot, meals, photos, distance_km')
       .eq('quote_version_id', delivery.quote_version_id)
       .order('day_number'),
     admin.from('quote_price_lines')
@@ -196,15 +198,22 @@ export default async function QuotePrintPage({
     for (const a of acts ?? []) actDescMap[a.id] = { en: a.description_en, ar: a.description_ar }
   }
 
-  // Day descriptions are pulled from the selected destination in the Content library.
+  // Day descriptions + coordinates are pulled from the selected destination
+  // in the Content library.
   const destIds = [...new Set((quoteDays ?? []).map((d: any) => (d.destination_snapshot as any)?.id).filter(Boolean))]
   const destDescMap: Record<string, { en: string | null; ar: string | null }> = {}
+  const destCoordMap: Record<string, LatLng> = {}
   if (destIds.length > 0) {
     const { data: dests } = await admin
       .from('destinations')
-      .select('id, description_en, description_ar')
+      .select('id, description_en, description_ar, latitude, longitude')
       .in('id', destIds)
-    for (const d of dests ?? []) destDescMap[d.id] = { en: d.description_en, ar: d.description_ar }
+    for (const d of dests ?? []) {
+      destDescMap[d.id] = { en: d.description_en, ar: d.description_ar }
+      if (typeof d.latitude === 'number' && typeof d.longitude === 'number') {
+        destCoordMap[d.id] = { lat: d.latitude, lng: d.longitude }
+      }
+    }
   }
 
   const isArabic = (version as any)?.language === 'ar'
@@ -286,6 +295,33 @@ export default async function QuotePrintPage({
     return String(day.day_number)
   }
 
+  // Tour itinerary map: one pin per stop with coordinates (consecutive
+  // same-destination days collapse), staff distance_km override per leg with
+  // haversine fallback. Mirrors the portal proposal's map section.
+  const mapStops: MapStop[] = []
+  const mapRows: { dayLabel: string; destination: string; accommodation: string | null; distanceKm: number | null }[] = []
+  {
+    let prevDestId: string | null = null
+    for (const d of days as any[]) {
+      const dest = d.destination_snapshot as { id?: string; name?: string } | null
+      const destId = dest?.id ?? null
+      const coord = destId ? destCoordMap[destId] : undefined
+      const isNewStop = !!destId && destId !== prevDestId
+      if (coord && isNewStop) mapStops.push({ ...coord, label: String(d.day_number), name: dest?.name ?? '' })
+      const prevCoord = prevDestId ? destCoordMap[prevDestId] : undefined
+      const override = d.distance_km != null ? Number(d.distance_km) : null
+      const autoKm = isNewStop && coord && prevCoord ? haversineKm(prevCoord, coord) : null
+      mapRows.push({
+        dayLabel: dayLabel(d),
+        destination: dest?.name ?? '—',
+        accommodation: accomByDay[d.id]?.[0] ?? null,
+        distanceKm: override ?? autoKm,
+      })
+      if (destId) prevDestId = destId
+    }
+  }
+  const hasMapPage = mapStops.length >= 2
+
   const ml = isArabic ? MEAL_LABELS_AR : MEAL_LABELS
 
   const T = isArabic ? {
@@ -354,9 +390,10 @@ export default async function QuotePrintPage({
       : 'Pay by bank transfer using the details below, then send us your transfer confirmation.',
   }
 
-  const itinStart = 3
-  const itinEnd = 2 + days.length
-  const pricingPageNum = 3 + days.length
+  const mapPageOffset = hasMapPage ? 1 : 0
+  const itinStart = 3 + mapPageOffset
+  const itinEnd = 2 + mapPageOffset + days.length
+  const pricingPageNum = 3 + mapPageOffset + days.length
 
   return (
     <>
@@ -524,6 +561,64 @@ export default async function QuotePrintPage({
           </div>
         )}
 
+        {/* ── TOUR ITINERARY MAP ── */}
+        {hasMapPage && (
+          <div className="page pb">
+            <div className="sec-bar">
+              <div className="sec-pill">{isArabic ? 'خريطة مسار الرحلة' : 'Tour Itinerary Map'}</div>
+              <div className="sec-line" />
+            </div>
+
+            <div className="nb" style={{ marginBottom: 18 }}>
+              <ItineraryMap stops={mapStops} width={700} height={380} />
+            </div>
+
+            <table className="summary-tbl nb">
+              <thead>
+                <tr>
+                  <th style={{ width: '16%' }}>{isArabic ? 'اليوم' : 'Day'}</th>
+                  <th style={{ width: '32%' }}>{isArabic ? 'الوجهة' : 'Destination'}</th>
+                  <th style={{ width: '34%' }}>{isArabic ? 'الإقامة' : 'Accommodation'}</th>
+                  <th style={{ width: '18%' }}>{isArabic ? 'المسافة' : 'Distance'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {startDest && (
+                  <tr>
+                    <td colSpan={4} style={{ fontWeight: 700, color: G }}>
+                      ◉ {isArabic ? 'نقطة البداية' : 'Start Point'}: {startDest}
+                    </td>
+                  </tr>
+                )}
+                {mapRows.map((r, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{T.day} {r.dayLabel}</td>
+                    <td style={{ fontWeight: 600 }}>{r.destination}</td>
+                    <td>{r.accommodation ?? <span style={{ color: '#bbb', fontSize: 11 }}>{T.noAccom}</span>}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{r.distanceKm != null ? `~${Math.round(r.distanceKm)} ${isArabic ? 'كم' : 'km'}` : '—'}</td>
+                  </tr>
+                ))}
+                {endDest && (
+                  <tr>
+                    <td colSpan={4} style={{ fontWeight: 700, color: G }}>
+                      ◉ {isArabic ? 'نقطة النهاية' : 'End Point'}: {endDest}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            <p style={{ fontSize: 10, color: '#999', marginTop: 6 }}>
+              {isArabic ? 'المسافات تقريبية، مقاسة بين المحطات.' : 'Distances are approximate, measured between stops.'}
+            </p>
+
+            <div className="ft">
+              <span>Page 3</span>
+              <span>{quote.quote_number}</span>
+              <span>{companyName}</span>
+            </div>
+          </div>
+        )}
+
         {/* ── DAILY ITINERARY (flowing cards, fills pages) ── */}
         {days.length > 0 && (
           <div className="page pb">
@@ -568,7 +663,7 @@ export default async function QuotePrintPage({
                         const dd = a.activity_id ? actDescMap[a.activity_id] : null
                         const adesc = dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : null
                         const mom = a.moment ? (isArabic ? momentAr(a.moment) : a.moment) : ''
-                        const prevDest = idx > 0 ? ((days[idx - 1].destination_snapshot as any)?.name ?? null) : null
+                        const prevDest = idx > 0 ? ((days[idx - 1].destination_snapshot as { name?: string } | null)?.name ?? null) : null
                         const aName = a.transfer && prevDest && dest
                           ? (isArabic ? `${a.name}، ${prevDest} إلى ${dest}` : `${a.name}, ${prevDest} to ${dest}`)
                           : a.name

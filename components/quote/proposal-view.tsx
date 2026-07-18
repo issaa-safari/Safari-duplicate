@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { ProposalPhoto as Photo } from './proposal-photo'
 import ActivityTabs, { type ActivityGroup } from './activity-tabs'
+import ItineraryMap, { type MapStop } from './itinerary-map'
 
 // Client-facing tour proposal, styled to match the operator's PDF proposal.
 // Presentational only — all data arrives as props so it can be rendered with
@@ -28,6 +29,10 @@ export type ProposalDay = {
   meals: string[]               // localized meal labels
 }
 export type SummaryRow = { dayLabel: string; destination: string; accommodation: string; accommodationMeta?: string | null; meals: string }
+// "Tour Itinerary Map" section: pins for each stop with coordinates, plus a
+// start → day/destination/accommodation → end table with per-leg distances.
+export type RouteRow = { dayLabel: string; destination: string; accommodation: string | null; distanceKm: number | null }
+export type TourMapData = { stops: MapStop[]; rows: RouteRow[]; startPoint: string | null; endPoint: string | null }
 export type TravellerGroup = { name: string; count: number; perPerson: number; total: number }
 
 export type ProposalViewProps = {
@@ -53,6 +58,8 @@ export type ProposalViewProps = {
   } | null
   agentName?: string | null
   summaryRows: SummaryRow[]
+  /** Omitted/null when fewer than two stops have coordinates. */
+  tourMap?: TourMapData | null
   arrivalNote?: string | null
   startDestination?: string | null
   itinerary: ProposalDay[]
@@ -227,6 +234,63 @@ export default function ProposalView(p: ProposalViewProps) {
                 </tbody>
               </table>
             </div>
+          </section>
+        )}
+
+        {/* ── Tour itinerary map ────────────────────────────────── */}
+        {p.tourMap && p.tourMap.stops.length >= 2 && (
+          <section className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">
+            <Pill>{T(ar, 'Tour Itinerary Map', 'خريطة مسار الرحلة')}</Pill>
+
+            <div className="mt-5">
+              <ItineraryMap stops={p.tourMap.stops} />
+            </div>
+
+            <div className="mt-5 overflow-hidden rounded-xl border" style={{ borderColor: `${OLIVE}44` }}>
+              <table className="stack-table w-full text-sm">
+                <thead>
+                  <tr className="text-left" style={{ color: INK }}>
+                    <th className="px-4 py-2.5 font-semibold" style={{ width: '18%' }}>{T(ar, 'Days', 'الأيام')}</th>
+                    <th className="px-4 py-2.5 font-semibold" style={{ width: '32%' }}>{T(ar, 'Destination', 'الوجهة')}</th>
+                    <th className="px-4 py-2.5 font-semibold" style={{ width: '32%' }}>{T(ar, 'Accommodation', 'الإقامة')}</th>
+                    <th className="px-4 py-2.5 font-semibold" style={{ width: '18%' }}>{T(ar, 'Distance', 'المسافة')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {p.tourMap.startPoint && (
+                    <tr style={{ background: '#F1F6E3', borderTop: `1px solid ${OLIVE}22` }}>
+                      <td className="px-4 py-2.5 font-semibold" style={{ color: OLIVE }} colSpan={3}>
+                        {T(ar, 'Start Point', 'نقطة البداية')} · {p.tourMap.startPoint}
+                      </td>
+                      <td className="px-4 py-2.5" />
+                    </tr>
+                  )}
+                  {p.tourMap.rows.map((r, i) => (
+                    <tr key={i} style={{ background: i % 2 ? '#F7FAEE' : '#fff', borderTop: `1px solid ${OLIVE}22` }}>
+                      <td data-label={T(ar, 'Days', 'الأيام')} className="px-4 py-2.5 font-semibold" style={{ color: OLIVE }}>{r.dayLabel}</td>
+                      <td data-label={T(ar, 'Destination', 'الوجهة')} className="px-4 py-2.5 font-medium" style={{ color: INK }}>{r.destination}</td>
+                      <td data-label={T(ar, 'Accommodation', 'الإقامة')} className="px-4 py-2.5" style={{ color: INK }}>{r.accommodation ?? '—'}</td>
+                      <td data-label={T(ar, 'Distance', 'المسافة')} className="px-4 py-2.5 text-gray-600 whitespace-nowrap">
+                        {r.distanceKm != null ? `~${Math.round(r.distanceKm)} ${T(ar, 'km', 'كم')}` : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                  {p.tourMap.endPoint && (
+                    <tr style={{ background: '#F1F6E3', borderTop: `1px solid ${OLIVE}22` }}>
+                      <td className="px-4 py-2.5 font-semibold" style={{ color: OLIVE }} colSpan={3}>
+                        {T(ar, 'End Point', 'نقطة النهاية')} · {p.tourMap.endPoint}
+                      </td>
+                      <td className="px-4 py-2.5" />
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-xs text-gray-400">
+              {T(ar,
+                'Distances are approximate, measured between stops.',
+                'المسافات تقريبية، مقاسة بين المحطات.')}
+            </p>
           </section>
         )}
 

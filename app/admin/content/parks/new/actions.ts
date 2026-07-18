@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
+import { geoColumnsFromForm } from '@/lib/geo'
 import { redirect } from 'next/navigation'
 
 export async function createPark(formData: FormData) {
@@ -28,6 +29,7 @@ export async function createPark(formData: FormData) {
     description_en: descriptionEn || null,
     cover_image_url: coverImageUrl || null,
     is_active: isActive,
+    ...geoColumnsFromForm(formData),
   })
 
   if (error) throw new Error(error.message)

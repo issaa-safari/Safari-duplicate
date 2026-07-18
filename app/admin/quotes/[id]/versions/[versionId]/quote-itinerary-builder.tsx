@@ -37,6 +37,9 @@ type Day = {
   destinationSnapshot: Record<string, unknown>
   meals: string[]
   photos: string[]
+  // Staff override for the km of the leg *into* this stop; '' = auto
+  // (straight-line distance from destination coordinates in the proposal).
+  distanceKm: string
   items: DayItem[]
 }
 
@@ -159,6 +162,7 @@ function fromTourDays(
       destinationSnapshot: dest ? { id: dest.id, name: dest.name } : {},
       meals,
       photos: [],
+      distanceKm: '',
       items,
     }
   })
@@ -196,6 +200,7 @@ function loadInitialDays(
       destinationSnapshot: qd.destination_snapshot ?? {},
       meals: qd.meals ?? [],
       photos: qd.photos ?? [],
+      distanceKm: qd.distance_km != null ? String(qd.distance_km) : '',
       items,
     }
   })
@@ -388,7 +393,7 @@ export default function QuoteItineraryBuilder({
       _key: uid(), id: null, dayNumber: p.length + 1, nights: 1, dayNumberEnd: null, dayDate: '', title: '',
       descriptionEn: '', clientNotes: '',
       titleAr: '', descriptionAr: '', clientNotesAr: '',
-      destinationId: null, destinationSnapshot: {}, meals: [], photos: [], items: [],
+      destinationId: null, destinationSnapshot: {}, meals: [], photos: [], distanceKm: '', items: [],
     }]))
     if (language === 'ar') {
       setArOpenIndices(prev => new Set([...prev, newIdx]))
@@ -404,7 +409,7 @@ export default function QuoteItineraryBuilder({
       dayNumber: i + 1, nights: 1, dayNumberEnd: null, dayDate: '', title: '',
       descriptionEn: '', clientNotes: '',
       titleAr: '', descriptionAr: '', clientNotesAr: '',
-      destinationId: null, destinationSnapshot: {}, meals: [], photos: [], items: [],
+      destinationId: null, destinationSnapshot: {}, meals: [], photos: [], distanceKm: '', items: [],
     }))))
     if (language === 'ar') {
       setArOpenIndices(new Set(Array.from({ length: count }, (_, i) => i)))
@@ -729,7 +734,7 @@ export default function QuoteItineraryBuilder({
               </div>
 
               {/* Destination */}
-              <div data-label="Main Destination">
+              <div data-label="Main Destination" className="space-y-1.5">
                 <select value={day.destinationId ?? ''}
                   onChange={e => onDestSelect(i, e.target.value)}
                   aria-label={`Main destination of day ${day.dayNumber}`}
@@ -740,6 +745,17 @@ export default function QuoteItineraryBuilder({
                   ))}
                   <option value="__add__">+ Add new destination…</option>
                 </select>
+                {i > 0 && (
+                  <div>
+                    <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">Km from previous</span>
+                    <input type="number" min={0} step="any" value={day.distanceKm}
+                      onChange={e => update(i, { distanceKm: e.target.value })}
+                      placeholder="auto"
+                      title="Distance of the leg into this stop, shown on the proposal map. Leave empty to compute from destination coordinates."
+                      aria-label={`Distance in km from the previous stop to day ${day.dayNumber}`}
+                      className={smallSelectCls} disabled={isLocked} />
+                  </div>
+                )}
               </div>
 
               {/* Accommodation (primary + nights + optional alternative) */}
@@ -781,9 +797,9 @@ export default function QuoteItineraryBuilder({
                     <span aria-hidden="true">🚙</span>
                     {item.titleSnapshot}
                     {i > 0 && (() => {
-                      const from = (days[i - 1]?.destinationSnapshot as any)?.name
+                      const from = (days[i - 1]?.destinationSnapshot as { name?: string })?.name
                         ?? destinations.find(d => d.id === days[i - 1]?.destinationId)?.name
-                      const to = (day.destinationSnapshot as any)?.name
+                      const to = (day.destinationSnapshot as { name?: string })?.name
                         ?? destinations.find(d => d.id === day.destinationId)?.name
                       return from && to ? <span className="opacity-60">· {from as string} → {to as string}</span> : null
                     })()}

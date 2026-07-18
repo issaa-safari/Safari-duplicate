@@ -2,7 +2,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import AcceptForm from './accept-form'
 import { syncQuoteStatus } from '@/lib/server/quote-status'
-import ProposalView, { type ProposalDay, type SummaryRow, type TravellerGroup } from '@/components/quote/proposal-view'
+import ProposalView, { type ProposalDay, type SummaryRow, type TravellerGroup, type RouteRow, type TourMapData } from '@/components/quote/proposal-view'
+import type { MapStop } from '@/components/quote/itinerary-map'
+import { haversineKm, type LatLng } from '@/lib/geo'
 import { site } from '@/lib/site'
 
 import {
@@ -63,7 +65,7 @@ export default async function QuotePortalPage({
       .eq('id', delivery.quote_id)
       .single(),
     admin.from('quote_days')
-      .select('id, day_number, day_number_end, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_snapshot, meals, photos')
+      .select('id, day_number, day_number_end, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_snapshot, meals, photos, distance_km')
       .eq('quote_version_id', delivery.quote_version_id)
       .order('day_number'),
     admin.from('quote_price_lines')
@@ -121,12 +123,18 @@ export default async function QuotePortalPage({
     : { data: null as any }
   const heroImage = (tourData as any)?.hero_image_url ?? null
 
-  // Destination descriptions from the Content library.
+  // Destination descriptions + coordinates from the Content library.
   const destIds = [...new Set((quoteDays ?? []).map((d: any) => (d.destination_snapshot as any)?.id).filter(Boolean))]
   const destDescMap: Record<string, { en: string | null; ar: string | null }> = {}
+  const destCoordMap: Record<string, LatLng> = {}
   if (destIds.length > 0) {
-    const { data: dests } = await admin.from('destinations').select('id, description_en, description_ar').in('id', destIds)
-    for (const d of dests ?? []) destDescMap[d.id] = { en: d.description_en, ar: d.description_ar }
+    const { data: dests } = await admin.from('destinations').select('id, description_en, description_ar, latitude, longitude').in('id', destIds)
+    for (const d of dests ?? []) {
+      destDescMap[d.id] = { en: d.description_en, ar: d.description_ar }
+      if (typeof d.latitude === 'number' && typeof d.longitude === 'number') {
+        destCoordMap[d.id] = { lat: d.latitude, lng: d.longitude }
+      }
+    }
   }
 
   // Accommodation + activity items per day.
@@ -248,6 +256,45 @@ export default async function QuotePortalPage({
     }
   })
 
+  // ── Tour itinerary map ──
+  // One pin per stop with known coordinates (consecutive same-destination
+  // days collapse into one pin). Leg distance into a stop: the staff override
+  // (quote_days.distance_km) wins, else haversine between the two stops'
+  // destination coordinates. Section renders only with ≥2 located stops.
+  const mapStops: MapStop[] = []
+  const routeRows: RouteRow[] = []
+  {
+    let prevDestId: string | null = null
+    for (const d of (quoteDays ?? []) as any[]) {
+      const dest = d.destination_snapshot as { id?: string; name?: string } | null
+      const destId = dest?.id ?? null
+      const coord = destId ? destCoordMap[destId] : undefined
+      const isNewStop = !!destId && destId !== prevDestId
+      if (coord && isNewStop) {
+        mapStops.push({ ...coord, label: String(d.day_number), name: dest?.name ?? '' })
+      }
+      const prevCoord = prevDestId ? destCoordMap[prevDestId] : undefined
+      const override = d.distance_km != null ? Number(d.distance_km) : null
+      const autoKm = isNewStop && coord && prevCoord ? haversineKm(prevCoord, coord) : null
+      const item = accomItemByDay[d.id]
+      routeRows.push({
+        dayLabel: dayLabel(d),
+        destination: dest?.name ?? '—',
+        accommodation: item?.title_snapshot ?? null,
+        distanceKm: override ?? autoKm,
+      })
+      if (destId) prevDestId = destId
+    }
+  }
+  const tourMap: TourMapData | null = mapStops.length >= 2
+    ? {
+        stops: mapStops,
+        rows: routeRows,
+        startPoint: ((quoteDays?.[0]?.destination_snapshot ?? null) as { name?: string } | null)?.name ?? null,
+        endPoint: ((quoteDays?.[(quoteDays?.length ?? 1) - 1]?.destination_snapshot ?? null) as { name?: string } | null)?.name ?? null,
+      }
+    : null
+
   // ── Itinerary days ──
   const itinerary: ProposalDay[] = (quoteDays ?? []).map((d: any, di: number) => {
     const dest = d.destination_snapshot as Record<string, string> | null
@@ -258,7 +305,9 @@ export default async function QuotePortalPage({
     const accPhotos = acc?.cover ? [acc.cover] : []
     const acts = actsByDay[d.id] ?? []
     // Road transfers read "Transfer by Road, {previous stop} to {this stop}".
-    const prevDestName = di > 0 ? ((quoteDays as any)[di - 1].destination_snapshot as any)?.name ?? null : null
+    const prevDestName = di > 0
+      ? ((quoteDays?.[di - 1]?.destination_snapshot ?? null) as { name?: string } | null)?.name ?? null
+      : null
     const mapAct = (a: ActItem) => {
       const am = a.activity_id ? actDescMap[a.activity_id] : null
       const name = a.transfer && prevDestName && dest?.name
@@ -355,6 +404,7 @@ export default async function QuotePortalPage({
       arrivalNote={null}
       startDestination={(quoteDays ?? [])[0] ? ((quoteDays as any)[0].destination_snapshot as any)?.name ?? null : null}
       summaryRows={summaryRows}
+      tourMap={tourMap}
       itinerary={itinerary}
       included={included}
       excluded={excluded}
