@@ -4,9 +4,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { FileText } from 'lucide-react'
 import { ButtonLink } from '@/components/ui/button'
-import StatusBadge from '@/components/admin/status-badge'
 import { PageShell, PageHeader } from '@/components/admin/ui/page'
 import { EmptyState } from '@/components/admin/ui/empty-state'
+import QuotesListClient, { type QuoteRow } from './quotes-list-client'
 
 export default async function QuotesPage({
   searchParams,
@@ -114,59 +114,30 @@ export default async function QuotesPage({
           />
         </div>
       ) : (
-        <div className="space-y-3">
-          {quotes.map((q: any) => {
+        <QuotesListClient
+          quotes={quotes.map((q: any): QuoteRow => {
             const client = clientMap[q.client_id] ?? null
             const clientName = client
               ? `${client.first_name} ${client.last_name}`.trim()
               : '—'
             const versions: any[] = versionsByQuote[q.id] ?? []
             const latest = versions[0] // already ordered desc by version_number
-
-            return (
-              <Link
-                key={q.id}
-                href={`/admin/quotes/${q.id}`}
-                className="block rounded-xl border border-border bg-surface p-4 shadow-sm transition-all duration-150 hover:border-ring/50 hover:shadow">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-xs font-mono text-muted-foreground">{q.quote_number}</span>
-                      <StatusBadge status={q.status} />
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
-                        {q.mode === 'fixed_departure' ? 'Fixed Departure' : 'Custom Safari'}
-                      </span>
-                      {versions.length > 1 && (
-                        <span className="text-xs text-muted-foreground">v{latest?.version_number}</span>
-                      )}
-                    </div>
-                    <p className="font-medium text-foreground">{clientName}</p>
-                    {client?.email && (
-                      <p className="text-sm text-muted-foreground">{client.email}</p>
-                    )}
-                    {latest?.travel_start_date && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {new Date(latest.travel_start_date).toLocaleDateString('en-GB')}
-                        {latest.travel_end_date && (
-                          <> → {new Date(latest.travel_end_date).toLocaleDateString('en-GB')}</>
-                        )}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right text-xs text-muted-foreground shrink-0">
-                    {latest?.sharing_price_per_person_usd ? (
-                      <p className="text-base font-semibold text-foreground">
-                        ${Number(latest.sharing_price_per_person_usd).toLocaleString()}
-                        <span className="text-xs font-normal text-muted-foreground"> /pp</span>
-                      </p>
-                    ) : null}
-                    <p className="mt-1">{new Date(q.created_at).toLocaleDateString('en-GB')}</p>
-                  </div>
-                </div>
-              </Link>
-            )
+            return {
+              id: q.id,
+              quoteNumber: q.quote_number,
+              status: q.status,
+              mode: q.mode,
+              createdAt: q.created_at,
+              clientName,
+              clientEmail: client?.email ?? null,
+              versionCount: versions.length,
+              latestVersionNumber: latest?.version_number ?? null,
+              travelStartDate: latest?.travel_start_date ?? null,
+              travelEndDate: latest?.travel_end_date ?? null,
+              sharingPricePerPerson: latest?.sharing_price_per_person_usd ?? null,
+            }
           })}
-        </div>
+        />
       )}
     </PageShell>
   )
