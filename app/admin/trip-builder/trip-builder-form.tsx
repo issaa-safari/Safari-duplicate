@@ -294,13 +294,13 @@ export default function TripBuilderForm({
     const total = hotels + transportTotal + parksTotal
     return { hotels, total }
   })()
-  const payingGuests = guest.adults + guest.childAges.filter(a => a >= 3).length
+  const payingGuests = guest.adults + guest.childAges.filter(a => a >= 4).length
 
-  // Per-band sale pricing (mirrors the server's band mapping: 16+ → adult,
-  // 3–15 → child, under 3 free). When any per-person price is set, the sale
+  // Per-band sale pricing (mirrors the server's band mapping: 13+ → adult,
+  // 4–12 → child, under 4 free). When any per-person price is set, the sale
   // total is Σ count × price and the single total input is superseded.
-  const adultCount = guest.adults + guest.childAges.filter(a => a >= 16).length
-  const payingChildCount = guest.childAges.filter(a => a >= 3 && a <= 15).length
+  const adultCount = guest.adults + guest.childAges.filter(a => a >= 13).length
+  const payingChildCount = guest.childAges.filter(a => a >= 4 && a <= 12).length
   const bandPriceOf = (code: string) => {
     const n = Number(bandSalePrices[code])
     return Number.isFinite(n) && n > 0 ? n : null
@@ -940,7 +940,7 @@ export default function TripBuilderForm({
         </div>
         {payingGuests > 0 && (
           <p className="px-4 py-2 text-[11px] text-muted-foreground border-t border-gray-50">
-            Per guest = total ÷ {payingGuests} paying guest{payingGuests === 1 ? '' : 's'} (infants under 3 excluded).
+            Per guest = total ÷ {payingGuests} paying guest{payingGuests === 1 ? '' : 's'} (infants under 4 excluded).
           </p>
         )}
       </div>

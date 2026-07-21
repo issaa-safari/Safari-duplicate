@@ -682,15 +682,15 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
     const lines = [...hotelLines, ...sharedLines]
     const cost = round2(lines.reduce((s, l) => s + l.quantity * l.unitCostUsd, 0))
     // Per-band manual sale prices (per person) win over the single total.
-    // Ages 16+ fall in the adult band, 3–15 child, under 3 free (bandForAge).
+    // Ages 13+ fall in the adult band, 4–12 child, under 4 free (bandForAge).
     const bandPriceOf = (code: string) => {
       const n = Number((state.bandSalePrices ?? {})[code])
       return Number.isFinite(n) && n > 0 ? n : null
     }
     const adultPp = bandPriceOf('adult')
     const childPp = bandPriceOf('child')
-    const adultCount = guest.adults + guest.childAges.filter(a => a >= 16).length
-    const childCount = guest.childAges.filter(a => a >= 3 && a <= 15).length
+    const adultCount = guest.adults + guest.childAges.filter(a => a >= 13).length
+    const childCount = guest.childAges.filter(a => a >= 4 && a <= 12).length
     const usesBandPricing = adultPp !== null || childPp !== null
     const sale = usesBandPricing
       ? round2((adultPp ?? 0) * adultCount + (childPp ?? 0) * childCount)

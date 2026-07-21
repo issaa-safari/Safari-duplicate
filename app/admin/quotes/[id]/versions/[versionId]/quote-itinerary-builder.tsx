@@ -6,7 +6,7 @@ import ActivitiesModal, { DayActivity } from '@/components/admin/activities-moda
 import CreateLookupDialog from '@/components/admin/create-lookup-dialog'
 import { createLookup } from '@/lib/create-lookup'
 import { GalleryUpload } from '@/components/admin/image-upload'
-import { cloneVersion } from '../../version-actions'
+import { cloneVersionAndGo } from '../../clone-version'
 
 type ContentItem = { id: string; name: string; [key: string]: unknown }
 
@@ -284,6 +284,7 @@ export default function QuoteItineraryBuilder({
   const [loading, setLoading] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+  const [cloning, setCloning] = useState(false)
 
   // Unsaved-changes tracking for the embedding workspace's navigation guard —
   // low-risk (watches `days` rather than instrumenting every mutation site).
@@ -601,7 +602,17 @@ export default function QuoteItineraryBuilder({
   }
 
   // Sent/locked versions can't be edited — offer a one-click editable copy
-  // (the same clone action used in the versions sidebar).
+  // (the same clone flow as the versions sidebar): the API route copies the
+  // full version (itinerary + pricing) and we hard-navigate to the new draft.
+  async function handleCreateEditableCopy() {
+    setCloning(true)
+    setError('')
+    const err = await cloneVersionAndGo(quoteId, versionId)
+    if (err) {
+      setError(err)
+      setCloning(false)
+    }
+  }
   const lockedBanner = isLocked ? (
     <div role="alert"
       className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-warning-foreground">
@@ -609,14 +620,10 @@ export default function QuoteItineraryBuilder({
         This version has been <strong>sent to the client and is locked</strong> — the itinerary can no longer
         be changed. Create a new version to edit and re-send it.
       </span>
-      <form action={cloneVersion}>
-        <input type="hidden" name="versionId" value={versionId} />
-        <input type="hidden" name="quoteId" value={quoteId} />
-        <button type="submit"
-          className="rounded-md bg-primary-strong px-4 py-2 text-xs font-medium text-white shadow-sm transition-colors duration-150 hover:bg-primary-strong-hover">
-          Create new editable version
-        </button>
-      </form>
+      <button type="button" onClick={handleCreateEditableCopy} disabled={cloning}
+        className="rounded-md bg-primary-strong px-4 py-2 text-xs font-medium text-white shadow-sm transition-colors duration-150 hover:bg-primary-strong-hover disabled:opacity-50">
+        {cloning ? 'Creating…' : 'Create new editable version'}
+      </button>
     </div>
   ) : null
 

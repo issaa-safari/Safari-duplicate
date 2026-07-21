@@ -92,7 +92,7 @@ export const createQuote = safeAction(async (formData: FormData) => {
       })
 
       // Map the request composition to age bands:
-      //   adults -> adult, older children -> child (3–15), younger children -> infant (0–2)
+      //   adults -> adult, older children -> child (4–12), younger children -> infant (0–3)
       const groups = [
         { code: 'adult',  count: requestData.travelers_adults ?? 0,           label: 'Adult' },
         { code: 'child',  count: requestData.travelers_children_older ?? 0,   label: 'Child' },
