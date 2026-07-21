@@ -13,7 +13,7 @@ export interface GuestDetails {
   email: string
   phone: string
   adults: number
-  /** One age per child (3–15 → Child band, 0–2 → Infant band) */
+  /** One age per child (4–12 → Child band, 0–3 → Infant band) */
   childAges: number[]
   startDate: string
   endDate: string

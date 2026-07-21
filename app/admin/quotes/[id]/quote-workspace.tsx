@@ -110,9 +110,16 @@ export default function QuoteWorkspace({
   }
   const pricingDates = tripBuilderInitialVersionId ? versionDates[tripBuilderInitialVersionId] : undefined
 
+  // A successful pricing save moves the version draft → ready server-side;
+  // mirror that locally so badges and the share panel update instantly even
+  // if the background route refresh is slow (or dropped).
+  const [readyVersionIds, setReadyVersionIds] = useState<Set<string>>(new Set())
+  const effectiveVersions = versions.map(v =>
+    readyVersionIds.has(v.id) && v.status === 'draft' ? { ...v, status: 'ready' } : v)
+
   // Render an itinerary panel for every version the server loaded data for
   // (latest, all tracked versions, and/or an explicitly requested older one).
-  const versionsWithItinerary = versions.filter(v => itineraryByVersion[v.id])
+  const versionsWithItinerary = effectiveVersions.filter(v => itineraryByVersion[v.id])
   const showVersionPills = versionsWithItinerary.length > 1
 
   // Dirty flags — one per mounted itinerary builder (keyed by version id) plus pricing.
@@ -223,8 +230,11 @@ export default function QuoteWorkspace({
           tripEndDate={pricingDates?.end}
           onDirtyChange={setPricingDirty}
           onSaved={() => {
-            // The save action moves draft → ready server-side; refresh so the
-            // status badge and share panel pick it up without a reload.
+            // The save action moves draft → ready server-side; mirror that
+            // locally, jump to Preview, and refresh the route data.
+            if (tripBuilderInitialVersionId) {
+              setReadyVersionIds(prev => new Set(prev).add(tripBuilderInitialVersionId))
+            }
             setStep('preview')
             router.refresh()
           }}
@@ -234,7 +244,7 @@ export default function QuoteWorkspace({
       <div className={step === 'preview' || step === 'send' ? '' : 'hidden'}>
         <DeliveryPanel
           quoteId={quoteId}
-          versions={versions.map(v => ({ id: v.id, version_number: v.version_number, status: v.status }))}
+          versions={effectiveVersions.map(v => ({ id: v.id, version_number: v.version_number, status: v.status }))}
           deliveries={deliveries}
           dayCountByVersion={dayCountByVersion}
           baseUrl={baseUrl}
