@@ -4,9 +4,13 @@ import { NextResponse } from 'next/server'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { syncQuoteStatus } from '@/lib/server/quote-status'
 
-// A version is "locked" (can't be edited in place) once it leaves the
-// draft/ready working states — mirrors page.tsx's isLocked.
-const EDITABLE_STATUSES = ['draft', 'ready']
+// Cloning a version that is out with the client (sent/viewed) means "revise
+// and re-send it": supersede the source so the parent quote rolls back to the
+// new editable draft. Accepted/declined/expired versions are deliberately NOT
+// superseded — an accepted version is tied to a booking (quotes.accepted_version_id)
+// and silently un-accepting the quote would desync that state; the clone is
+// still created for reference, the source's standing is left untouched.
+const SUPERSEDE_ON_CLONE = ['sent', 'viewed']
 
 // Clone a quote version (any status) into a new editable draft: the version
 // row (minus identity/lifecycle columns — keeps builder_state, inclusions,
@@ -119,16 +123,17 @@ export async function POST(request: Request) {
       }
     }
 
-    // Cloning a locked version means "revise this quote": supersede the source
-    // so the parent quote's status rolls back to the new draft (via the
-    // STATUS_RANK rollup) and the clone becomes fully editable — otherwise
-    // save_trip refuses pricing edits because the quote is still 'sent'/etc.
-    // The source's existing share link stays viewable (gated on the delivery,
-    // not the version status). Cloning a draft/ready version leaves it be so
-    // parallel variants can coexist.
-    if (!EDITABLE_STATUSES.includes(src.status)) {
+    // Revising a sent/viewed version: supersede the source so the parent
+    // quote's status rolls back to the new draft (via the STATUS_RANK rollup)
+    // and the clone becomes fully editable — otherwise save_trip refuses
+    // pricing edits because the quote is still 'sent'/'viewed'. The source's
+    // existing share link stays viewable (gated on the delivery, not the
+    // version status). Draft/ready/accepted/etc. sources are left untouched.
+    if (SUPERSEDE_ON_CLONE.includes(src.status)) {
       await admin.from('quote_versions').update({ status: 'superseded' }).eq('id', versionId)
     }
+    // Keep quotes.status a true reflection of its versions (adds the new draft;
+    // reflects the supersede above). No-op when nothing changed the ranking.
     await syncQuoteStatus(admin, quoteId)
 
     return NextResponse.json({ url: `/admin/quotes/${quoteId}?step=itinerary&version=${newId}` })
