@@ -23,7 +23,12 @@ export default function VersionStatusControls({
   versionId: string
   status: string
 }) {
-  const [currentStatus, setCurrentStatus] = useState(status)
+  // The status can also change server-side while this stays mounted (e.g. a
+  // pricing save moves draft → ready and refreshes the route), so the shown
+  // status is derived from the prop; a local override from clicking a button
+  // here is dropped as soon as the prop catches up (or changes underneath).
+  const [localStatus, setLocalStatus] = useState<{ base: string; value: string } | null>(null)
+  const currentStatus = localStatus && localStatus.base === status ? localStatus.value : status
   const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
 
@@ -38,7 +43,7 @@ export default function VersionStatusControls({
     startTransition(async () => {
       const result = await setVersionStatus(fd)
       if (result.error) setError(result.error)
-      else setCurrentStatus(toStatus)
+      else setLocalStatus({ base: status, value: toStatus })
     })
   }
 

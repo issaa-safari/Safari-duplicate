@@ -16,7 +16,7 @@ export default async function AccommodationEditPage({ params }: { params: Promis
   const [{ data: accommodation }, { data: destinations }, { data: rooms }] = await Promise.all([
     admin
       .from('accommodations')
-      .select('id, name, destination_id, type, budget_tier, rating, description_en, description_ar, cover_image_url, is_active, google_maps_url, latitude, longitude, gallery_urls')
+      .select('id, name, destination_id, type, budget_tier, rating, description_en, description_ar, cover_image_url, is_active, google_maps_url, google_place_id, latitude, longitude, gallery_urls')
       .eq('id', id)
       .single(),
     admin

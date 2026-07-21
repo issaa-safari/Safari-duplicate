@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { createPark } from './actions'
 import { Button, ButtonLink } from '@/components/ui/button'
@@ -26,6 +26,12 @@ export default function NewParkForm() {
   const [loading, setLoading] = useState(false)
   const [isActive, setIsActive] = useState(true)
   const [galleryUrls, setGalleryUrls] = useState<string[]>([])
+  const nameRef = useRef<HTMLInputElement>(null)
+
+  // A picked Google Maps place fills the name only while it's still empty.
+  function onPlaceSelected(place: { name: string }) {
+    if (nameRef.current && !nameRef.current.value.trim()) nameRef.current.value = place.name
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -57,7 +63,7 @@ export default function NewParkForm() {
 
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">Name <span className="text-destructive">*</span></label>
-            <input id="name" type="text" name="name" required placeholder="e.g. Serengeti National Park" className={inputCls} />
+            <input id="name" ref={nameRef} type="text" name="name" required placeholder="e.g. Serengeti National Park" className={inputCls} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -82,7 +88,7 @@ export default function NewParkForm() {
 
         <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Location</h2>
-          <LocationFields />
+          <LocationFields onPlaceSelected={onPlaceSelected} />
         </div>
 
         <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">

@@ -2,7 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import PrintToolbar from './print-toolbar'
 import ItineraryMap, { type MapStop } from '@/components/quote/itinerary-map'
-import { haversineKm, type LatLng } from '@/lib/geo'
+import { googleMapsLinkFor, haversineKm, type LatLng } from '@/lib/geo'
 
 const MEAL_LABELS: Record<string, string> = { B: 'Breakfast', L: 'Lunch', D: 'Dinner' }
 const MEAL_LABELS_AR: Record<string, string> = { B: 'إفطار', L: 'غداء', D: 'عشاء' }
@@ -165,7 +165,7 @@ export default async function QuotePrintPage({
       .select('id, quote_number, mode, client_id, tour_id')
       .eq('id', delivery.quote_id).single(),
     admin.from('quote_days')
-      .select('id, day_number, day_number_end, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_snapshot, meals, photos, distance_km')
+      .select('id, day_number, day_number_end, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_snapshot, meals, photos, distance_km, road_distance_km')
       .eq('quote_version_id', delivery.quote_version_id)
       .order('day_number'),
     admin.from('quote_price_lines')
@@ -231,13 +231,15 @@ export default async function QuotePrintPage({
   const accGalleryMap: Record<string, string[]> = {}
   const accTypeMap: Record<string, string | null> = {}
   const accDescMapById: Record<string, { en: string | null; ar: string | null }> = {}
+  const accLinkMap: Record<string, string | null> = {}
   if (accIds.length > 0) {
-    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, gallery_urls, description_en, description_ar').in('id', accIds)
+    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, gallery_urls, description_en, description_ar, google_maps_url, google_place_id').in('id', accIds)
     for (const a of accs ?? []) {
       const gallery = Array.isArray(a.gallery_urls) ? (a.gallery_urls as string[]).filter(Boolean) : []
       accGalleryMap[a.id] = gallery.length > 0 ? gallery : a.cover_image_url ? [a.cover_image_url] : []
       accTypeMap[a.id] = a.type ?? null
       accDescMapById[a.id] = { en: a.description_en, ar: a.description_ar }
+      accLinkMap[a.id] = googleMapsLinkFor(a)
     }
   }
 
@@ -254,13 +256,15 @@ export default async function QuotePrintPage({
   const destIds = [...new Set((quoteDays ?? []).map((d: any) => (d.destination_snapshot as any)?.id).filter(Boolean))]
   const destDescMap: Record<string, { en: string | null; ar: string | null }> = {}
   const destCoordMap: Record<string, LatLng> = {}
+  const destLinkMap: Record<string, string | null> = {}
   if (destIds.length > 0) {
     const { data: dests } = await admin
       .from('destinations')
-      .select('id, description_en, description_ar, latitude, longitude')
+      .select('id, description_en, description_ar, latitude, longitude, google_maps_url, google_place_id')
       .in('id', destIds)
     for (const d of dests ?? []) {
       destDescMap[d.id] = { en: d.description_en, ar: d.description_ar }
+      destLinkMap[d.id] = googleMapsLinkFor(d)
       if (typeof d.latitude === 'number' && typeof d.longitude === 'number') {
         destCoordMap[d.id] = { lat: d.latitude, lng: d.longitude }
       }
@@ -361,12 +365,14 @@ export default async function QuotePrintPage({
       if (coord && isNewStop) mapStops.push({ ...coord, label: String(d.day_number), name: dest?.name ?? '' })
       const prevCoord = prevDestId ? destCoordMap[prevDestId] : undefined
       const override = d.distance_km != null ? Number(d.distance_km) : null
+      // Google Maps road distance stored at itinerary save; straight-line fallback.
+      const roadKm = d.road_distance_km != null ? Number(d.road_distance_km) : null
       const autoKm = isNewStop && coord && prevCoord ? haversineKm(prevCoord, coord) : null
       mapRows.push({
         dayLabel: dayLabel(d),
         destination: dest?.name ?? '—',
         accommodation: accomByDay[d.id]?.[0] ?? null,
-        distanceKm: override ?? autoKm,
+        distanceKm: override ?? roadKm ?? autoKm,
       })
       if (destId) prevDestId = destId
     }
@@ -472,6 +478,14 @@ export default async function QuotePrintPage({
   const FORK = (
     <svg viewBox="0 0 24 24" fill="none" stroke={G} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M6 3v7a2 2 0 0 0 4 0V3M8 10v11" /><path d="M17 3c-1.5 0-3 1.8-3 5s1.5 4 3 4M17 3v18" /></svg>
   )
+  // Small "open in Google Maps" link — stays clickable in the saved PDF.
+  const MapsA = ({ href }: { href: string | null }) => href ? (
+    <a href={href} target="_blank" rel="noopener"
+      title={isArabic ? 'عرض على خرائط جوجل' : 'View on Google Maps'}
+      style={{ color: G, fontSize: 10, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', marginInlineStart: 6 }}>
+      📍 {isArabic ? 'الخريطة' : 'Map'}
+    </a>
+  ) : null
 
   return (
     <>
@@ -593,7 +607,6 @@ export default async function QuotePrintPage({
                 {days.map((day: any) => {
                   const dest = (day.destination_snapshot as any)?.name ?? '—'
                   const accoms = accomByDay[day.id] ?? []
-                  const accomDesc = dayAccDesc(day.id)
                   const dayMeals: string[] = day.meals ?? []
                   const mealStr = dayMeals.map((m: string) => ml[m] ?? m).join(', ') || '—'
                   const dl = dayLabel(day)
@@ -605,14 +618,15 @@ export default async function QuotePrintPage({
                           <span style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{T.day} {dl}</span>
                         </span>
                       </td>
-                      <td style={{ fontWeight: 600, color: '#333' }}>{dest}</td>
+                      <td style={{ fontWeight: 600, color: '#333' }}>
+                        {dest}
+                        <MapsA href={day.destination_snapshot?.id ? destLinkMap[day.destination_snapshot.id] ?? null : null} />
+                      </td>
                       <td>
                         {accoms.length > 0 ? (
-                          <div>
-                            <div style={{ fontWeight: 600 }}>{accoms[0]}</div>
-                            {accomDesc && (
-                              <div style={{ fontSize: 10, color: '#999', marginTop: 2, fontStyle: 'italic' }}>{accomDesc}</div>
-                            )}
+                          <div style={{ fontWeight: 600 }}>
+                            {accoms[0]}
+                            <MapsA href={accomIdByDay[day.id] ? accLinkMap[accomIdByDay[day.id]] ?? null : null} />
                           </div>
                         ) : (
                           <span style={{ color: '#bbb', fontSize: 11 }}>{T.noAccom}</span>
@@ -686,7 +700,7 @@ export default async function QuotePrintPage({
               </tbody>
             </table>
             <p style={{ fontSize: 10, color: '#999', marginTop: 6 }}>
-              {isArabic ? 'المسافات تقريبية، مقاسة بين المحطات.' : 'Distances are approximate, measured between stops.'}
+              {isArabic ? 'المسافات تقريبية لمسافة الطريق بين المحطات (عبر خرائط جوجل حيثما توفرت).' : 'Distances are approximate road distances between stops (via Google Maps where available).'}
             </p>
 
             <div className="ft">
@@ -751,7 +765,7 @@ export default async function QuotePrintPage({
             <div key={day.id} className="page pb">
               <div className="mag-head">
                 <div className="mag-daypill">{T.day} <span>{dl}</span></div>
-                {dest && <div className="mag-loc">{PIN}{dest}</div>}
+                {dest && <div className="mag-loc">{PIN}{dest}<MapsA href={destId ? destLinkMap[destId] ?? null : null} /></div>}
               </div>
 
               <h1 className="mag-title">{title}</h1>
@@ -765,7 +779,7 @@ export default async function QuotePrintPage({
                       {HOUSE}
                       <div>
                         <div className="mag-accom-kick">{isArabic ? 'الإقامة' : 'Accommodation'} | {T.day} {dl}</div>
-                        <div className="mag-accom-name">{accName}</div>
+                        <div className="mag-accom-name">{accName}<MapsA href={accId ? accLinkMap[accId] ?? null : null} /></div>
                         {accType && <div className="mag-accom-type">{cap(accType.replace(/_/g, ' '))}</div>}
                       </div>
                     </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import QuoteItineraryBuilder from './versions/[versionId]/quote-itinerary-builder'
 import VersionEditorForm from './versions/[versionId]/form'
 import VersionStatusControls from './versions/[versionId]/version-status-controls'
@@ -84,15 +85,29 @@ export default function QuoteWorkspace({
   baseUrl: string
   clientEmail?: string | null
 }) {
-  const [step, setStep] = useState<Step>(initialStep)
-  const [activeVersionId, setActiveVersionId] = useState(initialVersionId)
+  const router = useRouter()
 
-  // Live travel dates per version — seeded from the server load, updated the
+  // The workspace stays mounted across soft navigations (e.g. the clone
+  // action's redirect only changes searchParams), so plain useState seeds
+  // would ignore fresh props. Instead, tab/version selection is *derived*
+  // from the props, with a local override that is dropped as soon as the
+  // props change — a clone redirect then lands on its version immediately.
+  const navKey = `${initialStep}|${initialVersionId}`
+  const [manualNav, setManualNav] = useState<{ key: string; step?: Step; versionId?: string }>({ key: navKey })
+  const nav = manualNav.key === navKey ? manualNav : { key: navKey }
+  const step = nav.step ?? initialStep
+  const activeVersionId = nav.versionId ?? initialVersionId
+  const setStep = (s: Step) => setManualNav({ ...nav, key: navKey, step: s })
+  const setActiveVersionId = (id: string) => setManualNav({ ...nav, key: navKey, versionId: id })
+
+  // Live travel dates per version — from the server load, overridden the
   // moment "Save Dates" succeeds so the Pricing tab (mounted alongside, not
   // remounted) can pick up the new trip window without a page reload.
-  const [versionDates, setVersionDates] = useState<Record<string, { start: string; end: string }>>(
-    () => Object.fromEntries(versions.map(v => [v.id, { start: v.travel_start_date ?? '', end: v.travel_end_date ?? '' }])),
-  )
+  const [savedDates, setSavedDates] = useState<Record<string, { start: string; end: string }>>({})
+  const versionDates: Record<string, { start: string; end: string }> = {
+    ...Object.fromEntries(versions.map(v => [v.id, { start: v.travel_start_date ?? '', end: v.travel_end_date ?? '' }])),
+    ...savedDates,
+  }
   const pricingDates = tripBuilderInitialVersionId ? versionDates[tripBuilderInitialVersionId] : undefined
 
   // Render an itinerary panel for every version the server loaded data for
@@ -169,7 +184,7 @@ export default function QuoteWorkspace({
                 travellers={data.travellers}
                 ageBands={ageBands}
                 quoteRequest={quoteRequest}
-                onDatesSaved={(start, end) => setVersionDates(prev => ({ ...prev, [v.id]: { start, end } }))}
+                onDatesSaved={(start, end) => setSavedDates(prev => ({ ...prev, [v.id]: { start, end } }))}
               />
               <ReadinessChecklist quoteDays={data.quoteDays} dayItems={data.dayItems} version={v} />
               <QuoteItineraryBuilder
@@ -196,7 +211,10 @@ export default function QuoteWorkspace({
       </div>
 
       <div className={step === 'pricing' ? '' : 'hidden'}>
+        {/* Keyed by target version so a clone re-seeds the pricing form instead
+            of silently editing the previous version. */}
         <TripBuilderForm
+          key={tripBuilderInitialVersionId ?? 'new'}
           {...tripBuilderLookups}
           initialQuoteId={quoteId}
           initialVersionId={tripBuilderInitialVersionId}
@@ -204,7 +222,12 @@ export default function QuoteWorkspace({
           tripStartDate={pricingDates?.start}
           tripEndDate={pricingDates?.end}
           onDirtyChange={setPricingDirty}
-          onSaved={() => setStep('preview')}
+          onSaved={() => {
+            // The save action moves draft → ready server-side; refresh so the
+            // status badge and share panel pick it up without a reload.
+            setStep('preview')
+            router.refresh()
+          }}
         />
       </div>
 
@@ -223,6 +246,13 @@ export default function QuoteWorkspace({
   )
 }
 
+// Calendar days a stop covers — a multi-night stop spans several, a day-only
+// stop (day_number_end === day_number, no overnight) spans one.
+type QuoteDaySpan = { day_number: number; day_number_end?: number | null }
+const spanOf = (d: QuoteDaySpan) =>
+  d.day_number_end && d.day_number_end > d.day_number ? d.day_number_end - d.day_number + 1 : 1
+const isDayOnly = (d: QuoteDaySpan) => d.day_number_end != null && d.day_number_end === d.day_number
+
 function ReadinessChecklist({
   quoteDays, dayItems, version,
 }: {
@@ -230,20 +260,32 @@ function ReadinessChecklist({
   dayItems: any[]
   version: VersionRow
 }) {
-  const dayCount = quoteDays.length
+  const dayCount = quoteDays.reduce((s: number, d: QuoteDaySpan) => s + spanOf(d), 0)
+
   const daysMissingAccom = useMemo(() => {
     const dayIdsWithAccom = new Set(
       dayItems.filter((it: any) => it.item_type === 'accommodation').map((it: any) => it.quote_day_id),
     )
-    return quoteDays.filter((d: any) => !dayIdsWithAccom.has(d.id)).length
+    // Day-only stops intentionally have no accommodation — don't flag them.
+    return quoteDays.filter((d: any) => !isDayOnly(d) && !dayIdsWithAccom.has(d.id)).length
   }, [quoteDays, dayItems])
 
-  if (dayCount === 0) return null
+  if (quoteDays.length === 0) return null
+
+  const tripDayCount = version.travel_start_date && version.travel_end_date
+    ? Math.max(1, Math.round((new Date(version.travel_end_date).getTime() - new Date(version.travel_start_date).getTime()) / 86_400_000) + 1)
+    : null
 
   const items = [
     { ok: true, label: `${dayCount} day${dayCount === 1 ? '' : 's'} added` },
     { ok: !!version.travel_start_date, label: version.travel_start_date ? 'Dates set' : 'No start date set' },
     { ok: daysMissingAccom === 0, label: daysMissingAccom === 0 ? 'Accommodation picked for every day' : `${daysMissingAccom} day${daysMissingAccom === 1 ? '' : 's'} missing accommodation` },
+    ...(tripDayCount != null ? [{
+      ok: dayCount === tripDayCount,
+      label: dayCount === tripDayCount
+        ? 'Itinerary matches trip dates'
+        : `Itinerary covers ${dayCount} day${dayCount === 1 ? '' : 's'} but the trip dates span ${tripDayCount}`,
+    }] : []),
   ]
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">

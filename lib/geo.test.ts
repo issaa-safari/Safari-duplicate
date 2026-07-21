@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { fitZoom, haversineKm, mercatorPx, parseLatLngFromMapsUrl } from './geo'
+import { describe, expect, it, vi, afterEach } from 'vitest'
+import { fitZoom, googleMapsLinkFor, haversineKm, mercatorPx, parseLatLngFromMapsUrl } from './geo'
+import { computeRoadKm } from './google-routes'
 
 describe('parseLatLngFromMapsUrl', () => {
   it('parses the place-marker (!3d…!4d…) form and prefers it over the viewport', () => {
@@ -27,6 +28,58 @@ describe('parseLatLngFromMapsUrl', () => {
     expect(parseLatLngFromMapsUrl('')).toBeNull()
     expect(parseLatLngFromMapsUrl(null)).toBeNull()
     expect(parseLatLngFromMapsUrl('https://www.google.com/maps/@-91.5,36.8,9z')).toBeNull()
+  })
+})
+
+describe('googleMapsLinkFor', () => {
+  it('prefers the stored URL over the place id', () => {
+    expect(googleMapsLinkFor({ google_maps_url: 'https://maps.google.com/x', google_place_id: 'abc' }))
+      .toBe('https://maps.google.com/x')
+  })
+
+  it('builds a place_id link when only the id is stored', () => {
+    expect(googleMapsLinkFor({ google_maps_url: null, google_place_id: 'ChIJx' }))
+      .toBe('https://www.google.com/maps/place/?q=place_id:ChIJx')
+  })
+
+  it('returns null when nothing is stored', () => {
+    expect(googleMapsLinkFor({ google_maps_url: null, google_place_id: null })).toBeNull()
+    expect(googleMapsLinkFor(null)).toBeNull()
+  })
+})
+
+describe('computeRoadKm', () => {
+  const a = { lat: -1.2921, lng: 36.8219 }
+  const b = { lat: -0.7167, lng: 36.431 }
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('returns null without an API key (falls back to straight line)', async () => {
+    vi.stubEnv('GOOGLE_PLACES_API_KEY', '')
+    vi.stubEnv('GOOGLE_MAPS_API_KEY', '')
+    expect(await computeRoadKm(a, b)).toBeNull()
+  })
+
+  it('converts distanceMeters to km, and caches per coordinate pair', async () => {
+    vi.stubEnv('GOOGLE_PLACES_API_KEY', 'test-key')
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ routes: [{ distanceMeters: 91_500 }] }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    expect(await computeRoadKm(a, b)).toBeCloseTo(91.5)
+    expect(await computeRoadKm(a, b)).toBeCloseTo(91.5)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns null on an HTTP failure instead of throwing', async () => {
+    vi.stubEnv('GOOGLE_PLACES_API_KEY', 'test-key')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 403 }))
+    // Different pair from the cached one above.
+    expect(await computeRoadKm(a, { lat: -4.0435, lng: 39.6682 })).toBeNull()
   })
 })
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { createAccommodation } from './actions'
 import { Button, ButtonLink } from '@/components/ui/button'
@@ -19,6 +19,17 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
   const [loading, setLoading] = useState(false)
   const [isActive, setIsActive] = useState(true)
   const [galleryUrls, setGalleryUrls] = useState<string[]>([])
+  const nameRef = useRef<HTMLInputElement>(null)
+  const ratingRef = useRef<HTMLInputElement>(null)
+
+  // A picked Google Maps place only fills fields that are still empty —
+  // anything already typed is never overwritten.
+  function onPlaceSelected(place: { name: string; rating: number | null }) {
+    if (nameRef.current && !nameRef.current.value.trim()) nameRef.current.value = place.name
+    if (ratingRef.current && !ratingRef.current.value.trim() && place.rating != null) {
+      ratingRef.current.value = String(Math.min(5, Math.max(1, Math.round(place.rating))))
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -50,7 +61,7 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
 
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">Name <span className="text-destructive">*</span></label>
-            <input id="name" type="text" name="name" required placeholder="e.g. Mahali Mzuri" className={inputCls} />
+            <input id="name" ref={nameRef} type="text" name="name" required placeholder="e.g. Mahali Mzuri" className={inputCls} />
           </div>
 
           <div>
@@ -88,7 +99,8 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="rating" className="block text-sm font-medium text-foreground mb-1">Rating (1–5)</label>
-              <input id="rating" type="number" name="rating" min={1} max={5} defaultValue={4} className={inputCls} />
+              {/* Left empty so a Google Maps pick can fill it; the server defaults a blank rating to 4. */}
+              <input id="rating" ref={ratingRef} type="number" name="rating" min={1} max={5} placeholder="4" className={inputCls} />
             </div>
             <div>
               <CoverImageField folder="accommodations/covers" />
@@ -100,7 +112,7 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
 
         <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Location</h2>
-          <LocationFields />
+          <LocationFields onPlaceSelected={onPlaceSelected} />
         </div>
 
         <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">

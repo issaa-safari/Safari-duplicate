@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { updateAccommodation } from './actions'
 import { Button, ButtonLink } from '@/components/ui/button'
@@ -23,6 +23,7 @@ interface Accommodation {
   cover_image_url: string | null
   is_active: boolean
   google_maps_url: string | null
+  google_place_id: string | null
   latitude: number | null
   longitude: number | null
   gallery_urls: string[] | null
@@ -40,6 +41,17 @@ export default function AccommodationEditForm({
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [isActive, setIsActive] = useState(accommodation.is_active)
+  const nameRef = useRef<HTMLInputElement>(null)
+  const ratingRef = useRef<HTMLInputElement>(null)
+
+  // A picked Google Maps place only fills fields that are still empty —
+  // existing values are never overwritten.
+  function onPlaceSelected(place: { name: string; rating: number | null }) {
+    if (nameRef.current && !nameRef.current.value.trim()) nameRef.current.value = place.name
+    if (ratingRef.current && !ratingRef.current.value.trim() && place.rating != null) {
+      ratingRef.current.value = String(Math.min(5, Math.max(1, Math.round(place.rating))))
+    }
+  }
   const [galleryUrls, setGalleryUrls] = useState<string[]>(
     Array.isArray(accommodation.gallery_urls) ? accommodation.gallery_urls : []
   )
@@ -74,7 +86,7 @@ export default function AccommodationEditForm({
 
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">Name <span className="text-destructive">*</span></label>
-            <input id="name" type="text" name="name" required defaultValue={accommodation.name} className={inputCls} />
+            <input id="name" ref={nameRef} type="text" name="name" required defaultValue={accommodation.name} className={inputCls} />
           </div>
 
           <div>
@@ -112,7 +124,7 @@ export default function AccommodationEditForm({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="rating" className="block text-sm font-medium text-foreground mb-1">Rating (1–5)</label>
-              <input id="rating" type="number" name="rating" min={1} max={5} defaultValue={accommodation.rating} className={inputCls} />
+              <input id="rating" ref={ratingRef} type="number" name="rating" min={1} max={5} defaultValue={accommodation.rating} className={inputCls} />
             </div>
             <div>
               <CoverImageField
@@ -131,6 +143,8 @@ export default function AccommodationEditForm({
             googleMapsUrl={accommodation.google_maps_url}
             latitude={accommodation.latitude}
             longitude={accommodation.longitude}
+            googlePlaceId={accommodation.google_place_id}
+            onPlaceSelected={onPlaceSelected}
           />
         </div>
 

@@ -41,17 +41,20 @@ export function parseLatLngFromMapsUrl(url: string | null | undefined): LatLng |
 }
 
 /**
- * Read the shared location fields (googleMapsUrl / latitude / longitude) from
- * a content-form submission into DB column values. Explicit lat/lng wins;
- * otherwise coordinates are parsed from the pasted Maps link. Invalid or
- * partial input degrades to null rather than failing the save.
+ * Read the shared location fields (googleMapsUrl / latitude / longitude /
+ * googlePlaceId) from a content-form submission into DB column values.
+ * Explicit lat/lng wins; otherwise coordinates are parsed from the pasted
+ * Maps link. Invalid or partial input degrades to null rather than failing
+ * the save.
  */
 export function geoColumnsFromForm(formData: FormData): {
   google_maps_url: string | null
   latitude: number | null
   longitude: number | null
+  google_place_id: string | null
 } {
   const url = ((formData.get('googleMapsUrl') as string) ?? '').trim() || null
+  const placeId = ((formData.get('googlePlaceId') as string) ?? '').trim() || null
   const latRaw = ((formData.get('latitude') as string) ?? '').trim()
   const lngRaw = ((formData.get('longitude') as string) ?? '').trim()
   let lat: number | null = latRaw ? Number(latRaw) : null
@@ -61,7 +64,18 @@ export function geoColumnsFromForm(formData: FormData): {
     if (parsed) { lat = parsed.lat; lng = parsed.lng }
   }
   if (lat == null || lng == null || !inRange(lat, lng)) { lat = null; lng = null }
-  return { google_maps_url: url, latitude: lat, longitude: lng }
+  return { google_maps_url: url, latitude: lat, longitude: lng, google_place_id: placeId }
+}
+
+/**
+ * Client-facing Google Maps link for a content record: the stored URL when
+ * present, else one built from the place id, else null.
+ */
+export function googleMapsLinkFor(row: { google_maps_url?: string | null; google_place_id?: string | null } | null | undefined): string | null {
+  if (!row) return null
+  if (row.google_maps_url) return row.google_maps_url
+  if (row.google_place_id) return `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(row.google_place_id)}`
+  return null
 }
 
 /** Great-circle distance in kilometres (straight line, not road distance). */

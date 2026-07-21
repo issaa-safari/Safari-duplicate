@@ -4,7 +4,7 @@ import AcceptForm from './accept-form'
 import { syncQuoteStatus } from '@/lib/server/quote-status'
 import ProposalView, { type ProposalDay, type SummaryRow, type TravellerGroup, type RouteRow, type TourMapData } from '@/components/quote/proposal-view'
 import type { MapStop } from '@/components/quote/itinerary-map'
-import { haversineKm, type LatLng } from '@/lib/geo'
+import { googleMapsLinkFor, haversineKm, type LatLng } from '@/lib/geo'
 import { site } from '@/lib/site'
 
 import {
@@ -65,7 +65,7 @@ export default async function QuotePortalPage({
       .eq('id', delivery.quote_id)
       .single(),
     admin.from('quote_days')
-      .select('id, day_number, day_number_end, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_snapshot, meals, photos, distance_km')
+      .select('id, day_number, day_number_end, day_date, title, description_en, client_notes, title_ar, description_ar, client_notes_ar, destination_snapshot, meals, photos, distance_km, road_distance_km')
       .eq('quote_version_id', delivery.quote_version_id)
       .order('day_number'),
     admin.from('quote_price_lines')
@@ -127,10 +127,12 @@ export default async function QuotePortalPage({
   const destIds = [...new Set((quoteDays ?? []).map((d: any) => (d.destination_snapshot as any)?.id).filter(Boolean))]
   const destDescMap: Record<string, { en: string | null; ar: string | null }> = {}
   const destCoordMap: Record<string, LatLng> = {}
+  const destLinkMap: Record<string, string | null> = {}
   if (destIds.length > 0) {
-    const { data: dests } = await admin.from('destinations').select('id, description_en, description_ar, latitude, longitude').in('id', destIds)
+    const { data: dests } = await admin.from('destinations').select('id, description_en, description_ar, latitude, longitude, google_maps_url, google_place_id').in('id', destIds)
     for (const d of dests ?? []) {
       destDescMap[d.id] = { en: d.description_en, ar: d.description_ar }
+      destLinkMap[d.id] = googleMapsLinkFor(d)
       if (typeof d.latitude === 'number' && typeof d.longitude === 'number') {
         destCoordMap[d.id] = { lat: d.latitude, lng: d.longitude }
       }
@@ -169,13 +171,14 @@ export default async function QuotePortalPage({
 
   // Accommodation records (type, photos, description) for the day pages.
   const accIds = [...new Set(Object.values(accomItemByDay).map((i: any) => i.accommodation_id).filter(Boolean))] as string[]
-  const accMap: Record<string, { type: string | null; cover: string | null; gallery: string[]; en: string | null; ar: string | null }> = {}
+  const accMap: Record<string, { type: string | null; cover: string | null; gallery: string[]; en: string | null; ar: string | null; mapsUrl: string | null }> = {}
   if (accIds.length > 0) {
-    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, gallery_urls, description_en, description_ar').in('id', accIds)
+    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, gallery_urls, description_en, description_ar, google_maps_url, google_place_id').in('id', accIds)
     for (const a of accs ?? []) accMap[a.id] = {
       type: a.type, cover: a.cover_image_url,
       gallery: Array.isArray(a.gallery_urls) ? (a.gallery_urls as string[]).filter(Boolean) : [],
       en: a.description_en, ar: a.description_ar,
+      mapsUrl: googleMapsLinkFor(a),
     }
   }
 
@@ -254,8 +257,10 @@ export default async function QuotePortalPage({
     return {
       dayLabel: dayLabel(d),
       destination: (d.destination_snapshot as any)?.name ?? '—',
+      destinationMapsUrl: d.destination_snapshot?.id ? destLinkMap[d.destination_snapshot.id] ?? null : null,
       accommodation: item?.title_snapshot ?? (isArabic ? 'بدون إقامة' : 'No accommodation'),
       accommodationMeta: meta,
+      accommodationMapsUrl: acc?.mapsUrl ?? null,
       meals: meals.map((m) => mealLabels[m] ?? m).join(', ') || '—',
     }
   })
@@ -279,13 +284,15 @@ export default async function QuotePortalPage({
       }
       const prevCoord = prevDestId ? destCoordMap[prevDestId] : undefined
       const override = d.distance_km != null ? Number(d.distance_km) : null
+      // Google Maps road distance stored at itinerary save; straight-line fallback.
+      const roadKm = d.road_distance_km != null ? Number(d.road_distance_km) : null
       const autoKm = isNewStop && coord && prevCoord ? haversineKm(prevCoord, coord) : null
       const item = accomItemByDay[d.id]
       routeRows.push({
         dayLabel: dayLabel(d),
         destination: dest?.name ?? '—',
         accommodation: item?.title_snapshot ?? null,
-        distanceKm: override ?? autoKm,
+        distanceKm: override ?? roadKm ?? autoKm,
       })
       if (destId) prevDestId = destId
     }
@@ -333,6 +340,7 @@ export default async function QuotePortalPage({
       label: dayLabel(d),
       date: d.day_date ?? null,
       destination: dest?.name ?? null,
+      destinationMapsUrl: dest?.id ? destLinkMap[dest.id] ?? null : null,
       title: (isArabic && d.title_ar ? d.title_ar : d.title) || dayLabel(d),
       description: dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : (isArabic ? d.description_ar : d.description_en),
       heroPhoto: photos[0] ?? acc?.cover ?? null,
@@ -343,6 +351,7 @@ export default async function QuotePortalPage({
         type: acc?.type ? acc.type.replace(/_/g, ' ') : null,
         room: item.room_category ? item.room_category.replace(/_/g, ' ') : null,
         description: acc ? (isArabic ? (acc.ar || acc.en) : acc.en) : null,
+        mapsUrl: acc?.mapsUrl ?? null,
         // Left column = the accommodation's own gallery (cover as fallback).
         photos: accPhotos.slice(0, 3),
       } : null,
