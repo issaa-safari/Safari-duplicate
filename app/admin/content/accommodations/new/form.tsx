@@ -8,6 +8,7 @@ import { Alert } from '@/components/ui/alert'
 import { Toggle } from '@/components/ui/toggle'
 import LocationFields from '@/components/admin/location-fields'
 import CoverImageField from '@/components/admin/cover-image-field'
+import { GalleryUpload } from '@/components/admin/image-upload'
 
 interface Destination { id: string; name: string }
 
@@ -17,6 +18,7 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [isActive, setIsActive] = useState(true)
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -24,6 +26,7 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
     setLoading(true)
     const formData = new FormData(e.currentTarget)
     formData.set('isActive', isActive ? 'true' : 'false')
+    formData.set('galleryUrls', JSON.stringify(galleryUrls))
     try {
       await createAccommodation(formData)
     } catch (err: any) {
@@ -112,6 +115,18 @@ export default function NewAccommodationForm({ destinations }: { destinations: D
           <div>
             <label htmlFor="descriptionAr" className="block text-sm font-medium text-foreground mb-1">Description (Arabic)</label>
             <textarea id="descriptionAr" name="descriptionAr" rows={4} placeholder="وصف مكان الإقامة…" dir="rtl" className={inputCls} />
+          </div>
+
+          <div>
+            <span className="block text-sm font-medium text-foreground mb-1">Gallery photos</span>
+            <p className="text-xs text-muted-foreground mb-2">
+              Shown in the client proposal&apos;s accommodation block when the itinerary day has no custom photos.
+            </p>
+            <GalleryUpload
+              value={galleryUrls}
+              onChange={setGalleryUrls}
+              folder="accommodations/gallery"
+            />
           </div>
         </div>
 

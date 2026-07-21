@@ -8,6 +8,7 @@ import { Alert } from '@/components/ui/alert'
 import { Toggle } from '@/components/ui/toggle'
 import LocationFields from '@/components/admin/location-fields'
 import CoverImageField from '@/components/admin/cover-image-field'
+import { GalleryUpload } from '@/components/admin/image-upload'
 
 const PARK_TYPES = [
   { value: 'national_park',  label: 'National Park' },
@@ -24,6 +25,7 @@ export default function NewParkForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [isActive, setIsActive] = useState(true)
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -31,6 +33,7 @@ export default function NewParkForm() {
     setLoading(true)
     const formData = new FormData(e.currentTarget)
     formData.set('isActive', isActive ? 'true' : 'false')
+    formData.set('galleryUrls', JSON.stringify(galleryUrls))
     try {
       await createPark(formData)
     } catch (err: any) {
@@ -88,6 +91,15 @@ export default function NewParkForm() {
           <div>
             <label htmlFor="descriptionEn" className="block text-sm font-medium text-foreground mb-1">Description (English)</label>
             <textarea id="descriptionEn" name="descriptionEn" rows={4} placeholder="Brief description of the park…" className={inputCls} />
+          </div>
+
+          <div>
+            <span className="block text-sm font-medium text-foreground mb-1">Gallery photos</span>
+            <GalleryUpload
+              value={galleryUrls}
+              onChange={setGalleryUrls}
+              folder="parks/gallery"
+            />
           </div>
         </div>
 

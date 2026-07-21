@@ -18,6 +18,15 @@ export async function createPark(formData: FormData) {
   const coverImageUrl = (formData.get('coverImageUrl') as string)?.trim()
   const isActive = formData.get('isActive') === 'true'
 
+  // Gallery photos arrive as a JSON array of already-uploaded URLs.
+  let galleryUrls: string[] = []
+  try {
+    const parsed = JSON.parse((formData.get('galleryUrls') as string) || '[]')
+    if (Array.isArray(parsed)) galleryUrls = parsed.filter((u): u is string => typeof u === 'string' && !!u)
+  } catch {
+    // malformed input → keep an empty gallery rather than failing the save
+  }
+
   if (!name) throw new Error('Name is required.')
 
   const admin = createAdminClient()
@@ -28,6 +37,7 @@ export async function createPark(formData: FormData) {
     park_type: parkType,
     description_en: descriptionEn || null,
     cover_image_url: coverImageUrl || null,
+    gallery_urls: galleryUrls,
     is_active: isActive,
     ...geoColumnsFromForm(formData),
   })
