@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { ProposalPhoto as Photo } from './proposal-photo'
-import ActivityTabs, { type ActivityGroup } from './activity-tabs'
+import { type ActivityGroup } from './activity-tabs'
 import ItineraryMap, { type MapStop } from './itinerary-map'
 
 // Client-facing tour proposal, styled to match the operator's PDF proposal.
@@ -26,6 +26,9 @@ export type ProposalDay = {
   // Present for multi-night stops: activities split per sub-day → rendered as tabs.
   activityGroups?: ActivityGroup[]
   accommodation?: ProposalAccommodation | null
+  // Scenic/destination photos (day photos) — shown in the right column,
+  // distinct from the accommodation's own gallery in the left column.
+  scenicPhotos?: string[]
   meals: string[]               // localized meal labels
 }
 export type SummaryRow = { dayLabel: string; destination: string; accommodation: string; accommodationMeta?: string | null; meals: string }
@@ -88,6 +91,30 @@ function Pill({ children }: { children: ReactNode }) {
       <span className="-ml-3 h-8 flex-1 rounded-full border" style={{ borderColor: `${OLIVE}66` }} />
     </div>
   )
+}
+
+const svg = { fill: 'none', stroke: OLIVE, strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round' } as const
+function PinIcon() {
+  return <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" {...svg}><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z" /><circle cx="12" cy="10" r="2.4" /></svg>
+}
+function HouseIcon() {
+  return <svg viewBox="0 0 24 24" className="mt-0.5 h-7 w-7 shrink-0" {...svg} strokeWidth={1.5}><path d="M3 11l9-7 9 7" /><path d="M5 10v9h14v-9" /><path d="M9.5 19v-5h5v5" /></svg>
+}
+function ForkIcon() {
+  return <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" {...svg}><path d="M6 3v7a2 2 0 0 0 4 0V3M8 10v11" /><path d="M17 3c-1.5 0-3 1.8-3 5s1.5 4 3 4M17 3v18" /></svg>
+}
+
+// Group a day's activities by their (already localized) moment label, keeping
+// first-encounter order — activities arrive pre-sorted by the builder.
+function groupByMoment(acts: ProposalActivity[]) {
+  const order: string[] = []
+  const map: Record<string, ProposalActivity[]> = {}
+  for (const a of acts) {
+    const key = a.moment || ''
+    if (!(key in map)) { map[key] = []; order.push(key) }
+    map[key].push(a)
+  }
+  return order.map((moment) => ({ moment, items: map[moment] }))
 }
 
 export default function ProposalView(p: ProposalViewProps) {
@@ -294,87 +321,126 @@ export default function ProposalView(p: ProposalViewProps) {
           </section>
         )}
 
-        {/* ── Day by day ────────────────────────────────────────── */}
-        {p.itinerary.map((d) => (
-          <section key={d.key} className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">
-            <Pill>{d.label}</Pill>
-            <div className="mt-5 overflow-hidden rounded-xl">
-              <div className="relative">
-                <Photo src={d.heroPhoto} alt={d.destination ?? d.title} className="h-52 w-full sm:h-64" />
+        {/* ── Day by day — magazine layout, one card per day ────── */}
+        {p.itinerary.map((d) => {
+          const groups = groupByMoment(d.activities)
+          const hotelPhotos = d.accommodation?.photos ?? []
+          const scenic = d.scenicPhotos ?? []
+          const hasActs = d.activities.length > 0
+          const hasActCard = hasActs || d.meals.length > 0
+          const mealStr = d.meals.length > 1
+            ? d.meals.slice(0, -1).join(ar ? '، ' : ', ') + (ar ? ' و ' : ' & ') + d.meals[d.meals.length - 1]
+            : d.meals.join('')
+          const accMeta = [d.accommodation?.type, d.accommodation?.room].filter(Boolean).join(' · ')
+
+          return (
+            <section key={d.key} className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">
+              {/* header: Day pill + location */}
+              <div className="flex items-center justify-between gap-3 rounded-full border py-1 pl-1 pr-4" style={{ borderColor: `${OLIVE}55` }}>
+                <span className="inline-flex items-center rounded-full px-5 py-1.5 text-sm font-bold text-white" style={{ background: `linear-gradient(90deg, ${OLIVE}, ${LIME})`, ...display }}>
+                  {d.label}
+                </span>
                 {d.destination && (
-                  <span className="absolute bottom-3 left-3 rounded-md bg-black/55 px-2.5 py-1 text-xs font-medium text-white">{d.destination}</span>
+                  <span className="flex items-center gap-1.5 text-sm font-bold" style={{ color: INK, ...display }}>
+                    <PinIcon /> {d.destination}
+                  </span>
                 )}
               </div>
-            </div>
 
-            <h2 className="mt-5 text-2xl font-bold sm:text-3xl" style={{ color: INK, ...display }}>{d.destination ?? d.title}</h2>
+              <h2 className="mt-5 text-3xl font-bold sm:text-4xl" style={{ color: INK, ...display, textWrap: 'balance' } as React.CSSProperties}>
+                {d.destination ?? d.title}
+              </h2>
 
-            <div className="mt-3 grid gap-5 sm:grid-cols-[1fr_240px]">
-              <div className="text-sm leading-relaxed text-gray-600" style={{ textWrap: 'pretty' } as React.CSSProperties}>
-                {d.description
-                  ? <p>{d.description}</p>
-                  : <p className="text-gray-400">{d.title}</p>}
-              </div>
-              {d.activityGroups && d.activityGroups.length > 0 ? (
-                <ActivityTabs
-                  groups={d.activityGroups}
-                  isArabic={ar}
-                  heading={`${T(ar, 'Activity', 'الأنشطة')} ${d.label}`}
-                />
-              ) : d.activities.length > 0 ? (
-                <aside className="self-start rounded-xl p-4" style={{ border: `1px solid ${OLIVE}44`, background: '#F7FAEE' }}>
-                  <p className="mb-2 text-sm font-bold" style={{ color: INK, ...display }}>
-                    {T(ar, 'Activity', 'الأنشطة')} <span className="font-normal text-gray-500">{d.label}</span>
-                  </p>
-                  <ul className="space-y-1.5">
-                    {d.activities.map((a, ai) => (
-                      <li key={ai} className="flex gap-2 text-sm text-gray-700">
-                        <span aria-hidden="true" style={{ color: OLIVE }}>→</span>
-                        <span>
-                          {a.name}
-                          {a.moment && <span className="text-gray-400"> · {a.moment}</span>}
-                          {a.optional && <span className="text-amber-600"> · {T(ar, 'optional', 'اختياري')}</span>}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </aside>
-              ) : null}
-            </div>
+              <div className="mt-4 grid gap-6 md:grid-cols-2">
+                {/* LEFT: intro · accommodation · hotel photos */}
+                <div>
+                  {d.description && <p className="text-sm leading-relaxed text-gray-600" style={{ textWrap: 'pretty' } as React.CSSProperties}>{d.description}</p>}
 
-            {/* accommodation block */}
-            {d.accommodation && (
-              <div className="mt-6">
-                <div className="inline-flex items-center gap-2 rounded-xl px-3 py-2" style={{ border: `1px solid ${OLIVE}44` }}>
-                  <span aria-hidden="true" style={{ color: OLIVE }}>⌂</span>
-                  <span className="text-xs text-gray-500">{T(ar, 'Accommodation', 'الإقامة')} · {d.label}</span>
-                  <span className="text-sm font-bold" style={{ color: INK, ...display }}>{d.accommodation.name}</span>
+                  {d.accommodation && (
+                    <>
+                      <div className="mt-4 flex items-start gap-3 rounded-xl border px-3.5 py-3" style={{ borderColor: '#e2e2e2' }}>
+                        <HouseIcon />
+                        <div>
+                          <p className="text-xs text-gray-400">{T(ar, 'Accommodation', 'الإقامة')} | {d.label}</p>
+                          <p className="text-[15px] font-bold" style={{ color: INK, ...display }}>{d.accommodation.name}</p>
+                          {accMeta && <p className="text-xs capitalize text-gray-500">{accMeta}</p>}
+                        </div>
+                      </div>
+                      {d.accommodation.description && <p className="mt-3 text-sm leading-relaxed text-gray-600">{d.accommodation.description}</p>}
+                      {hotelPhotos.length > 0 && (
+                        <div className="mt-3">
+                          <div className="relative overflow-hidden rounded-xl">
+                            <Photo src={hotelPhotos[0]} alt={d.accommodation.name} className="h-48 w-full" />
+                            <span className="absolute left-2.5 top-2.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-gray-800 shadow">{d.accommodation.name}</span>
+                          </div>
+                          {hotelPhotos.length > 1 && (
+                            <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+                              {hotelPhotos.slice(1, 3).map((src, pi) => (
+                                <Photo key={pi} src={src} alt={d.accommodation!.name} className="h-24 w-full rounded-xl" />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
-                <div className="mt-3 grid gap-4 sm:grid-cols-[1fr_260px]">
-                  <div className="text-sm leading-relaxed text-gray-600">
-                    {d.accommodation.type && <p className="mb-1 text-xs uppercase tracking-wide text-gray-400">{d.accommodation.type}{d.accommodation.room ? ` · ${d.accommodation.room}` : ''}</p>}
-                    {d.accommodation.description && <p>{d.accommodation.description}</p>}
-                  </div>
-                  {d.accommodation.photos.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2">
-                      {d.accommodation.photos.slice(0, 4).map((src, pi) => (
-                        <Photo key={pi} src={src} alt={d.accommodation!.name} className="h-24 w-full rounded-lg" />
+
+                {/* RIGHT: activities · meal plan · scenic photos */}
+                <div>
+                  {hasActCard && (
+                    <div className="rounded-2xl p-5" style={{ background: '#F1F6E3', border: `1px solid ${OLIVE}33` }}>
+                      {hasActs && (
+                        <>
+                          <p className="text-lg font-bold" style={{ color: INK, ...display }}>
+                            {d.activities.length > 1 ? T(ar, 'Activities', 'الأنشطة') : T(ar, 'Activity', 'نشاط')}{' '}
+                            <span className="font-normal text-gray-500">{d.label}</span>
+                          </p>
+                          {groups.map((g, gi) => (
+                            <div key={gi} className={gi === 0 ? 'mt-3' : 'mt-4'}>
+                              {g.moment && <p className="mb-1.5 text-sm font-bold" style={{ color: INK }}>{g.moment}</p>}
+                              <ul className="space-y-2">
+                                {g.items.map((a, ai) => (
+                                  <li key={ai} className="flex gap-2 text-sm text-gray-700">
+                                    <span aria-hidden="true" style={{ color: OLIVE }}>→</span>
+                                    <span>
+                                      <span className="font-semibold">{a.name}</span>
+                                      {a.optional && <span className="text-amber-600"> · {T(ar, 'optional', 'اختياري')}</span>}
+                                      {a.description && <span className="mt-0.5 block font-normal text-gray-500">{a.description}</span>}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                      {d.meals.length > 0 && (
+                        <div className={hasActs ? 'mt-4 border-t pt-3.5' : ''} style={hasActs ? { borderColor: `${OLIVE}44` } : undefined}>
+                          <p className="flex items-center gap-1.5 text-sm font-bold" style={{ color: INK, ...display }}>
+                            <ForkIcon /> {T(ar, 'Meal Plan', 'خطة الوجبات')} — {d.label}
+                          </p>
+                          <p className="mt-1 flex gap-2 text-sm text-gray-700"><span aria-hidden="true" style={{ color: OLIVE }}>→</span><span>{mealStr}</span></p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {scenic.length > 0 && (
+                    <div className="mt-3 space-y-2.5">
+                      {scenic.map((src, i) => (
+                        <div key={i} className="relative overflow-hidden rounded-xl">
+                          <Photo src={src} alt={d.destination ?? ''} className={i === 0 ? 'h-48 w-full' : 'h-40 w-full'} />
+                          {d.destination && <span className="absolute bottom-0 left-0 rounded-tr-lg bg-black/70 px-3 py-1 text-[11px] font-semibold text-white">{d.destination}</span>}
+                        </div>
                       ))}
                     </div>
                   )}
                 </div>
               </div>
-            )}
-
-            {d.meals.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {d.meals.map((m) => (
-                  <span key={m} className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ background: '#F7FAEE', color: OLIVE, border: `1px solid ${OLIVE}33` }}>{m}</span>
-                ))}
-              </div>
-            )}
-          </section>
-        ))}
+            </section>
+          )
+        })}
 
         {/* ── Pricing ───────────────────────────────────────────── */}
         <section className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">

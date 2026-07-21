@@ -343,8 +343,11 @@ export default async function QuotePortalPage({
         type: acc?.type ? acc.type.replace(/_/g, ' ') : null,
         room: item.room_category ? item.room_category.replace(/_/g, ' ') : null,
         description: acc ? (isArabic ? (acc.ar || acc.en) : acc.en) : null,
-        photos: photos.length > 1 ? photos.slice(0, 4) : accPhotos.slice(0, 4),
+        // Left column = the accommodation's own gallery (cover as fallback).
+        photos: accPhotos.slice(0, 3),
       } : null,
+      // Right column = the day's own scenic photos.
+      scenicPhotos: photos.slice(0, 2),
       meals: (d.meals ?? []).map((m: string) => mealLabels[m] ?? m),
     }
   })

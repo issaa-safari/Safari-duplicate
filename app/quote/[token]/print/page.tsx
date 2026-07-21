@@ -86,6 +86,41 @@ body { font-family: Georgia, 'Times New Roman', serif; color: #1a1a1a; font-size
 .day-notes { font-size: 11px; color: #666; font-style: italic; margin: 6px 0 0; }
 .day-photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0 0; }
 .day-photos img { width: 100%; height: 62px; object-fit: cover; border-radius: 6px; border: 1px solid #e6e6e6; }
+
+/* ── Per-day magazine layout ── */
+.mag-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1.5px solid #d3e3b4; border-radius: 24px; padding: 5px 18px 5px 6px; margin-bottom: 18px; }
+.mag-daypill { background: linear-gradient(90deg, #6d8f31 0%, ${G} 55%, #a6ce39 100%); color: #fff; font-weight: 800; font-size: 15px; padding: 7px 24px; border-radius: 20px; font-family: 'Helvetica Neue', Arial, sans-serif; letter-spacing: 0.3px; white-space: nowrap; }
+.mag-daypill span { font-weight: 600; opacity: 0.92; }
+.mag-loc { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #1a1a1a; font-family: 'Helvetica Neue', Arial, sans-serif; white-space: nowrap; }
+.mag-loc svg { width: 16px; height: 16px; flex-shrink: 0; }
+.mag-title { font-size: 42px; font-weight: 800; line-height: 1.04; margin: 2px 0 22px; letter-spacing: -1px; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.mag-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: start; }
+.mag-intro { font-size: 12.5px; line-height: 1.75; color: #333; margin: 0 0 16px; }
+.mag-accom { display: flex; align-items: flex-start; gap: 12px; border: 1px solid #dcdcdc; border-radius: 12px; padding: 11px 14px; margin-bottom: 14px; }
+.mag-accom svg { width: 30px; height: 30px; flex-shrink: 0; }
+.mag-accom-kick { font-size: 11px; color: #8a8a8a; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.mag-accom-name { font-size: 15px; font-weight: 800; margin: 1px 0; line-height: 1.2; }
+.mag-accom-type { font-size: 12px; color: #666; }
+.mag-accom-desc { font-size: 12.5px; line-height: 1.7; color: #333; margin: 0 0 14px; }
+.mag-actcard { background: #f1f6e3; border: 1px solid #dae7bd; border-radius: 16px; padding: 18px 20px; margin-bottom: 14px; }
+.mag-actcard h4 { font-size: 18px; font-weight: 800; margin: 0 0 12px; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.mag-actcard h4 span { font-weight: 600; color: #555; }
+.mag-mom { font-size: 12px; font-weight: 800; color: #2a2a2a; margin: 12px 0 5px; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.mag-mom.first { margin-top: 0; }
+.mag-act-item { display: flex; gap: 8px; font-size: 12px; line-height: 1.55; color: #333; margin-bottom: 8px; }
+.mag-act-item .arrow { color: ${G}; flex-shrink: 0; font-style: normal; }
+.mag-meal { border-top: 1px solid #cfe0a8; margin-top: 14px; padding-top: 13px; }
+.mag-meal-h { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 800; margin: 0 0 6px; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.mag-meal-h svg { width: 15px; height: 15px; flex-shrink: 0; }
+.mag-meal-body { display: flex; gap: 8px; font-size: 12px; color: #333; line-height: 1.5; }
+.mag-photo { position: relative; border-radius: 14px; overflow: hidden; margin-bottom: 10px; }
+.mag-photo img { display: block; width: 100%; object-fit: cover; }
+.mag-photo-top { position: absolute; left: 10px; top: 10px; background: #fff; color: #222; font-size: 10.5px; font-weight: 600; padding: 4px 10px; border-radius: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); font-family: 'Helvetica Neue', Arial, sans-serif; }
+.mag-photo-bot { position: absolute; left: 0; bottom: 0; background: rgba(0,0,0,0.72); color: #fff; font-size: 10.5px; font-weight: 600; padding: 4px 12px; border-radius: 0 8px 0 8px; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.mag-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mag-ft { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e2e2; margin-top: 26px; padding-top: 9px; font-size: 10.5px; color: #999; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.mag-ft b { color: #444; font-weight: 700; }
+
 h1 { font-size: 30px; font-weight: 800; margin: 0 0 6px; line-height: 1.2; }
 h2 { font-size: 22px; font-weight: 800; margin: 0 0 14px; line-height: 1.2; }
 h3 { font-size: 15px; font-weight: 700; margin: 0 0 12px; }
@@ -171,15 +206,12 @@ export default async function QuotePrintPage({
 
   type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean; transfer: boolean }
   const accomByDay: Record<string, string[]> = {}
-  const accomDescByDay: Record<string, string[]> = {}
   const accomIdByDay: Record<string, string> = {}
   const actsByDay: Record<string, ActItem[]> = {}
   for (const item of dayItems ?? []) {
     if (item.item_type === 'accommodation') {
       if (!accomByDay[item.quote_day_id]) accomByDay[item.quote_day_id] = []
-      if (!accomDescByDay[item.quote_day_id]) accomDescByDay[item.quote_day_id] = []
       if (item.title_snapshot) accomByDay[item.quote_day_id].push(item.title_snapshot)
-      if (item.content_snapshot) accomDescByDay[item.quote_day_id].push(item.content_snapshot)
       if (item.accommodation_id && !accomIdByDay[item.quote_day_id]) accomIdByDay[item.quote_day_id] = item.accommodation_id
     } else if (item.item_type === 'activity') {
       if (!actsByDay[item.quote_day_id]) actsByDay[item.quote_day_id] = []
@@ -192,14 +224,20 @@ export default async function QuotePrintPage({
     }
   }
 
-  // Accommodation gallery photos — fallback for days without custom photos.
+  // Accommodation gallery photos + type + description — for the per-day
+  // magazine pages. Descriptions come from the live Content library (the
+  // quote item's content_snapshot is not a description string).
   const accIds = [...new Set(Object.values(accomIdByDay))]
   const accGalleryMap: Record<string, string[]> = {}
+  const accTypeMap: Record<string, string | null> = {}
+  const accDescMapById: Record<string, { en: string | null; ar: string | null }> = {}
   if (accIds.length > 0) {
-    const { data: accs } = await admin.from('accommodations').select('id, cover_image_url, gallery_urls').in('id', accIds)
+    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, gallery_urls, description_en, description_ar').in('id', accIds)
     for (const a of accs ?? []) {
       const gallery = Array.isArray(a.gallery_urls) ? (a.gallery_urls as string[]).filter(Boolean) : []
       accGalleryMap[a.id] = gallery.length > 0 ? gallery : a.cover_image_url ? [a.cover_image_url] : []
+      accTypeMap[a.id] = a.type ?? null
+      accDescMapById[a.id] = { en: a.description_en, ar: a.description_ar }
     }
   }
 
@@ -408,6 +446,33 @@ export default async function QuotePrintPage({
   const itinEnd = 2 + mapPageOffset + days.length
   const pricingPageNum = 3 + mapPageOffset + days.length
 
+  // ── Per-day magazine helpers ──
+  const MOMENTS = ['morning', 'afternoon', 'evening', 'night']
+  const momentLabel = (m: string) =>
+    isArabic ? momentAr(m) : ({ morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening', night: 'Night' } as Record<string, string>)[m] ?? m
+  const mealPlan = (codes: string[]) => {
+    const labels = codes.map((m) => ml[m] ?? m)
+    if (labels.length <= 1) return labels.join('')
+    return labels.slice(0, -1).join(', ') + (isArabic ? ' و ' : ' & ') + labels[labels.length - 1]
+  }
+  const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
+  const dayAccDesc = (dayId: string) => {
+    const id = accomIdByDay[dayId]
+    const d = id ? accDescMapById[id] : null
+    return d ? (isArabic ? (d.ar || d.en) : d.en) : null
+  }
+  const refNum = String(quote.quote_number)
+  const refWithHash = refNum.startsWith('#') ? refNum : `#${refNum}`
+  const PIN = (
+    <svg viewBox="0 0 24 24" fill="none" stroke={G} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z" /><circle cx="12" cy="10" r="2.4" /></svg>
+  )
+  const HOUSE = (
+    <svg viewBox="0 0 24 24" fill="none" stroke={G} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l9-7 9 7" /><path d="M5 10v9h14v-9" /><path d="M9.5 19v-5h5v5" /></svg>
+  )
+  const FORK = (
+    <svg viewBox="0 0 24 24" fill="none" stroke={G} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M6 3v7a2 2 0 0 0 4 0V3M8 10v11" /><path d="M17 3c-1.5 0-3 1.8-3 5s1.5 4 3 4M17 3v18" /></svg>
+  )
+
   return (
     <>
       <style>{CSS + (isArabic ? `[dir="rtl"], [dir="rtl"] * { font-family: 'Cairo', var(--font-arabic), Arial, sans-serif !important; }` : '')}</style>
@@ -528,7 +593,7 @@ export default async function QuotePrintPage({
                 {days.map((day: any) => {
                   const dest = (day.destination_snapshot as any)?.name ?? '—'
                   const accoms = accomByDay[day.id] ?? []
-                  const accomDescs = accomDescByDay[day.id] ?? []
+                  const accomDesc = dayAccDesc(day.id)
                   const dayMeals: string[] = day.meals ?? []
                   const mealStr = dayMeals.map((m: string) => ml[m] ?? m).join(', ') || '—'
                   const dl = dayLabel(day)
@@ -545,8 +610,8 @@ export default async function QuotePrintPage({
                         {accoms.length > 0 ? (
                           <div>
                             <div style={{ fontWeight: 600 }}>{accoms[0]}</div>
-                            {accomDescs[0] && (
-                              <div style={{ fontSize: 10, color: '#999', marginTop: 2, fontStyle: 'italic' }}>{accomDescs[0]}</div>
+                            {accomDesc && (
+                              <div style={{ fontSize: 10, color: '#999', marginTop: 2, fontStyle: 'italic' }}>{accomDesc}</div>
                             )}
                           </div>
                         ) : (
@@ -632,91 +697,153 @@ export default async function QuotePrintPage({
           </div>
         )}
 
-        {/* ── DAILY ITINERARY (flowing cards, fills pages) ── */}
-        {days.length > 0 && (
-          <div className="page pb">
-            <div className="sec-bar">
-              <div className="sec-pill">{T.dayByDay}</div>
-              <div className="sec-line" />
-            </div>
+        {/* ── DAILY ITINERARY — one magazine page per day ── */}
+        {days.map((day: any, idx: number) => {
+          const destId = (day.destination_snapshot as any)?.id
+          const dest = (day.destination_snapshot as any)?.name ?? ''
+          const dl = dayLabel(day)
+          const isLast = idx === days.length - 1
+          const title = (isArabic && day.title_ar ? day.title_ar : day.title)
+            || (isLast ? (isArabic ? 'اليوم الأخير معنا' : 'The last day with us') : (dest || `Day ${day.day_number}`))
+          const dd = destId ? destDescMap[destId] : null
+          const intro = dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : null
+          const notes = isArabic && day.client_notes_ar ? day.client_notes_ar : day.client_notes
 
-            {days.map((day: any, idx: number) => {
-              const destId = (day.destination_snapshot as any)?.id
-              const dest = (day.destination_snapshot as any)?.name ?? ''
-              const accoms = accomByDay[day.id] ?? []
-              const acts = actsByDay[day.id] ?? []
-              const dayMeals: string[] = day.meals ?? []
-              const isLast = idx === days.length - 1
-              const dl = dayLabel(day)
-              const title = (isArabic && day.title_ar ? day.title_ar : day.title)
-                || (isLast ? (isArabic ? 'اليوم الأخير معنا' : 'The last day with us') : (dest || `Day ${day.day_number}`))
-              const dd = destId ? destDescMap[destId] : null
-              const desc = dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : null
-              const notes = isArabic && day.client_notes_ar ? day.client_notes_ar : day.client_notes
-              const actLabel = acts.length > 1 ? (isArabic ? 'أنشطة' : 'Activities') : (isArabic ? 'نشاط' : 'Activity')
+          const accName = accomByDay[day.id]?.[0] ?? null
+          const accDesc = dayAccDesc(day.id)
+          const accId = accomIdByDay[day.id] ?? ''
+          const accType = accId ? accTypeMap[accId] : null
+          const hotelPhotos = (accGalleryMap[accId] ?? []).slice(0, 3)
+          const scenicPhotos = (Array.isArray(day.photos) ? day.photos : []).slice(0, 2)
 
-              return (
-                <div key={day.id} className="day-card nb">
-                  <div className="day-card-head">
-                    <span className="day-pill">{T.day} {dl}</span>
-                    {dest && <span className="day-dest">📍 {dest}</span>}
-                    {dayMeals.length > 0 && (
-                      <span className="day-meals">🍴 {dayMeals.map((m: string) => ml[m] ?? m).join(', ')}</span>
-                    )}
-                  </div>
-                  <h3 className="day-title">{title}</h3>
-                  {desc && <p className="day-desc">{desc}</p>}
-                  {accoms.length > 0 && (
-                    <p className="day-line"><span className="day-ico">🏠</span><strong>{T.dayCols[2]}:</strong> {accoms.join(' · ')}</p>
-                  )}
-                  {acts.length > 0 && (
-                    <div className="day-line">
-                      <strong>{actLabel}:</strong>
-                      {acts.map((a, ai) => {
-                        const dd = a.activity_id ? actDescMap[a.activity_id] : null
-                        const adesc = dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : null
-                        const mom = a.moment ? (isArabic ? momentAr(a.moment) : a.moment) : ''
-                        const prevDest = idx > 0 ? ((days[idx - 1].destination_snapshot as { name?: string } | null)?.name ?? null) : null
-                        const aName = a.transfer && prevDest && dest
-                          ? (isArabic ? `${a.name}، ${prevDest} إلى ${dest}` : `${a.name}, ${prevDest} to ${dest}`)
-                          : a.name
-                        return (
-                          <div key={ai} style={{ marginTop: 3 }}>
-                            <span className="day-ico">→</span>
-                            <strong>{aName}</strong>
-                            {mom ? <span style={{ color: '#999' }}> · {mom}</span> : null}
-                            {a.optional ? <span style={{ color: '#C97A1A' }}> · {isArabic ? 'اختياري' : 'optional'}</span> : null}
-                            {adesc ? <div style={{ color: '#666', fontSize: 11 }}>{adesc}</div> : null}
-                          </div>
-                        )
-                      })}
+          const acts = actsByDay[day.id] ?? []
+          const prevDest = idx > 0 ? ((days[idx - 1].destination_snapshot as any)?.name ?? null) : null
+          const actName = (a: ActItem) =>
+            a.transfer && prevDest && dest
+              ? (isArabic ? `${a.name}، ${prevDest} إلى ${dest}` : `${a.name}, ${prevDest} to ${dest}`)
+              : a.name
+          const actDesc = (a: ActItem) => {
+            const d = a.activity_id ? actDescMap[a.activity_id] : null
+            return d ? (isArabic ? (d.ar || d.en) : d.en) : null
+          }
+          const buckets = MOMENTS.map((m) => ({ m, items: acts.filter((a) => a.moment === m) })).filter((b) => b.items.length)
+          const noMoment = acts.filter((a) => !a.moment || !MOMENTS.includes(a.moment))
+          const dayMeals: string[] = day.meals ?? []
+          const actLabel = acts.length > 1 ? (isArabic ? 'الأنشطة' : 'Activities') : (isArabic ? 'نشاط' : 'Activity')
+          const hasActCard = acts.length > 0 || dayMeals.length > 0
+          const pageNum = itinStart + idx
+
+          const ActItemRow = ({ a, k }: { a: ActItem; k: string | number }) => {
+            const ad = actDesc(a)
+            return (
+              <div className="mag-act-item" key={k}>
+                <span className="arrow">→</span>
+                <span>
+                  <strong>{actName(a)}</strong>
+                  {a.optional ? <span style={{ color: '#C97A1A' }}> · {isArabic ? 'اختياري' : 'optional'}</span> : null}
+                  {ad ? <span style={{ display: 'block', color: '#555', fontWeight: 400, marginTop: 2 }}>{ad}</span> : null}
+                </span>
+              </div>
+            )
+          }
+
+          return (
+            <div key={day.id} className="page pb">
+              <div className="mag-head">
+                <div className="mag-daypill">{T.day} <span>{dl}</span></div>
+                {dest && <div className="mag-loc">{PIN}{dest}</div>}
+              </div>
+
+              <h1 className="mag-title">{title}</h1>
+
+              <div className="mag-cols">
+                {/* LEFT: intro · accommodation · hotel photos */}
+                <div>
+                  {intro && <p className="mag-intro">{intro}</p>}
+                  {accName && (
+                    <div className="mag-accom nb">
+                      {HOUSE}
+                      <div>
+                        <div className="mag-accom-kick">{isArabic ? 'الإقامة' : 'Accommodation'} | {T.day} {dl}</div>
+                        <div className="mag-accom-name">{accName}</div>
+                        {accType && <div className="mag-accom-type">{cap(accType.replace(/_/g, ' '))}</div>}
+                      </div>
                     </div>
                   )}
-                  {notes && <p className="day-notes">{notes}</p>}
-                  {(() => {
-                    // Day photos win; otherwise the accommodation's gallery.
-                    const dayPhotos: string[] = Array.isArray(day.photos) && day.photos.length > 0
-                      ? day.photos
-                      : accGalleryMap[accomIdByDay[day.id] ?? ''] ?? []
-                    return dayPhotos.length > 0 ? (
-                      <div className="day-photos">
-                        {dayPhotos.slice(0, 4).map((url: string, pi: number) => (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img key={pi} src={url} alt="" />
-                        ))}
+                  {accDesc && <p className="mag-accom-desc">{accDesc}</p>}
+                  {hotelPhotos.length > 0 && (
+                    <div className="nb">
+                      <div className="mag-photo">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={hotelPhotos[0]} alt="" style={{ height: 210 }} />
+                        {accName && <span className="mag-photo-top">{accName}</span>}
                       </div>
-                    ) : null
-                  })()}
+                      {hotelPhotos.length > 1 && (
+                        <div className="mag-photo-grid">
+                          {hotelPhotos.slice(1, 3).map((u: string, i: number) => (
+                            <div className="mag-photo" key={i} style={{ marginBottom: 0 }}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={u} alt="" style={{ height: 96 }} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )
-            })}
 
-            <div className="ft">
-              <span>{quote.quote_number}</span>
-              <span>{companyName}</span>
+                {/* RIGHT: activities · meal plan · scenic photos */}
+                <div>
+                  {hasActCard && (
+                    <div className="mag-actcard nb">
+                      {acts.length > 0 && (
+                        <>
+                          <h4>{actLabel} <span>{T.day} {dl}</span></h4>
+                          {buckets.map((b, bi) => (
+                            <div key={b.m}>
+                              <div className={'mag-mom' + (bi === 0 ? ' first' : '')}>{momentLabel(b.m)}</div>
+                              {b.items.map((a, ai) => <ActItemRow a={a} k={ai} key={ai} />)}
+                            </div>
+                          ))}
+                          {noMoment.map((a, ai) => <ActItemRow a={a} k={'n' + ai} key={'n' + ai} />)}
+                        </>
+                      )}
+                      {dayMeals.length > 0 && (
+                        <div className="mag-meal" style={acts.length === 0 ? { borderTop: 'none', marginTop: 0, paddingTop: 0 } : undefined}>
+                          <div className="mag-meal-h">{FORK}{isArabic ? 'خطة الوجبات' : 'Meal Plan'} — {T.day} {dl}</div>
+                          <div className="mag-meal-body"><span className="arrow" style={{ color: G }}>→</span><span>{mealPlan(dayMeals)}</span></div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {scenicPhotos.length > 0 && (
+                    <div className="nb">
+                      <div className="mag-photo">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={scenicPhotos[0]} alt="" style={{ height: 200 }} />
+                        {dest && <span className="mag-photo-bot">{dest}</span>}
+                      </div>
+                      {scenicPhotos[1] && (
+                        <div className="mag-photo">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={scenicPhotos[1]} alt="" style={{ height: 168 }} />
+                          {dest && <span className="mag-photo-bot">{dest}</span>}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {notes && <p className="day-notes" style={{ marginTop: 14 }}>{notes}</p>}
+
+              <div className="mag-ft">
+                <span><b>Page {pageNum}</b>&nbsp;&nbsp;&nbsp;Ref. Number: {refWithHash} - {clientFirst.toUpperCase()}</span>
+                <span>{companyName}</span>
+              </div>
             </div>
-          </div>
-        )}
+          )
+        })}
 
         {/* ── PRICING PAGE ── */}
         <div className="page pb">
