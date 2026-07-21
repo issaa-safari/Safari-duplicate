@@ -19,6 +19,7 @@ interface Destination {
   cover_image_url: string | null
   is_active: boolean
   google_maps_url: string | null
+  google_place_id: string | null
   latitude: number | null
   longitude: number | null
   gallery_urls: string[] | null
@@ -89,6 +90,7 @@ export default function DestinationEditForm({ destination }: { destination: Dest
             googleMapsUrl={destination.google_maps_url}
             latitude={destination.latitude}
             longitude={destination.longitude}
+            googlePlaceId={destination.google_place_id}
           />
         </div>
 

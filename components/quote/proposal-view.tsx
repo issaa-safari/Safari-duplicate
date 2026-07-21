@@ -13,12 +13,13 @@ const OLIVE = '#7A9A4A'
 const INK = '#232821'
 
 export type ProposalActivity = { name: string; moment?: string | null; optional?: boolean; description?: string | null }
-export type ProposalAccommodation = { name: string; type?: string | null; room?: string | null; description?: string | null; photos: string[] }
+export type ProposalAccommodation = { name: string; type?: string | null; room?: string | null; description?: string | null; photos: string[]; mapsUrl?: string | null }
 export type ProposalDay = {
   key: string
   label: string                 // "Day 1" / "Day 4–5"
   date?: string | null
   destination?: string | null
+  destinationMapsUrl?: string | null
   title: string
   description?: string | null
   heroPhoto?: string | null
@@ -31,7 +32,15 @@ export type ProposalDay = {
   scenicPhotos?: string[]
   meals: string[]               // localized meal labels
 }
-export type SummaryRow = { dayLabel: string; destination: string; accommodation: string; accommodationMeta?: string | null; meals: string }
+export type SummaryRow = {
+  dayLabel: string
+  destination: string
+  destinationMapsUrl?: string | null
+  accommodation: string
+  accommodationMeta?: string | null
+  accommodationMapsUrl?: string | null
+  meals: string
+}
 // "Tour Itinerary Map" section: pins for each stop with coordinates, plus a
 // start → day/destination/accommodation → end table with per-leg distances.
 export type RouteRow = { dayLabel: string; destination: string; accommodation: string | null; distanceKm: number | null }
@@ -102,6 +111,23 @@ function HouseIcon() {
 }
 function ForkIcon() {
   return <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" {...svg}><path d="M6 3v7a2 2 0 0 0 4 0V3M8 10v11" /><path d="M17 3c-1.5 0-3 1.8-3 5s1.5 4 3 4M17 3v18" /></svg>
+}
+
+// Subtle "open in Google Maps" link shown next to accommodation/destination names.
+function MapsLink({ href, ar }: { href?: string | null; ar: boolean }) {
+  if (!href) return null
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener"
+      className="inline-flex items-center gap-0.5 text-xs font-medium hover:underline"
+      style={{ color: OLIVE }}
+      title={T(ar, 'View on Google Maps', 'عرض على خرائط جوجل')}
+    >
+      <span aria-hidden="true">📍</span> {T(ar, 'Map', 'الخريطة')}
+    </a>
+  )
 }
 
 // Group a day's activities by their (already localized) moment label, keeping
@@ -250,9 +276,13 @@ export default function ProposalView(p: ProposalViewProps) {
                   {p.summaryRows.map((r, i) => (
                     <tr key={i} style={{ background: i % 2 ? '#fff' : '#F7FAEE', borderTop: `1px solid ${OLIVE}22` }}>
                       <td data-label={T(ar, 'Days', 'الأيام')} className="px-4 py-3 font-semibold" style={{ color: OLIVE }}>{r.dayLabel}</td>
-                      <td data-label={T(ar, 'Main Destination', 'الوجهة')} className="px-4 py-3 font-medium" style={{ color: INK }}>{r.destination}</td>
+                      <td data-label={T(ar, 'Main Destination', 'الوجهة')} className="px-4 py-3 font-medium" style={{ color: INK }}>
+                        {r.destination}
+                        {r.destinationMapsUrl && <span className="ms-2"><MapsLink href={r.destinationMapsUrl} ar={ar} /></span>}
+                      </td>
                       <td data-label={T(ar, 'Accommodation', 'الإقامة')} className="px-4 py-3" style={{ color: INK }}>
                         {r.accommodation}
+                        {r.accommodationMapsUrl && <span className="ms-2"><MapsLink href={r.accommodationMapsUrl} ar={ar} /></span>}
                         {r.accommodationMeta && <span className="block text-xs text-gray-500">{r.accommodationMeta}</span>}
                       </td>
                       <td data-label={T(ar, 'Meal Plan', 'الوجبات')} className="px-4 py-3 text-gray-600">{r.meals}</td>
@@ -343,6 +373,7 @@ export default function ProposalView(p: ProposalViewProps) {
                 {d.destination && (
                   <span className="flex items-center gap-1.5 text-sm font-bold" style={{ color: INK, ...display }}>
                     <PinIcon /> {d.destination}
+                    {d.destinationMapsUrl && <MapsLink href={d.destinationMapsUrl} ar={ar} />}
                   </span>
                 )}
               </div>
@@ -362,7 +393,10 @@ export default function ProposalView(p: ProposalViewProps) {
                         <HouseIcon />
                         <div>
                           <p className="text-xs text-gray-400">{T(ar, 'Accommodation', 'الإقامة')} | {d.label}</p>
-                          <p className="text-[15px] font-bold" style={{ color: INK, ...display }}>{d.accommodation.name}</p>
+                          <p className="text-[15px] font-bold" style={{ color: INK, ...display }}>
+                            {d.accommodation.name}
+                            {d.accommodation.mapsUrl && <span className="ms-2 align-middle"><MapsLink href={d.accommodation.mapsUrl} ar={ar} /></span>}
+                          </p>
                           {accMeta && <p className="text-xs capitalize text-gray-500">{accMeta}</p>}
                         </div>
                       </div>

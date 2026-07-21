@@ -70,16 +70,21 @@ const ITEM_COLORS: Record<string, string> = {
 
 const uid = () => Math.random().toString(36).slice(2)
 
+// Days a stop occupies in the numbering: a 0-night (day-only) stop still takes
+// one calendar day.
+const daySpan = (d: Pick<Day, 'nights'>) => Math.max(1, d.nights)
+
 // Walk stops in order, assigning each a start day_number from the running total
 // of nights, so a 2-night stop occupies "Day 1-2" and the next stop starts at
-// Day 3. dayNumberEnd is null for single-night stops.
+// Day 3. dayNumberEnd encodes the span: null = single night, > dayNumber =
+// multi-night, === dayNumber = day-only stop with no overnight (0 nights).
 function renumberDays(list: Day[]): Day[] {
   let start = 1
   return list.map(d => {
-    const nights = Math.max(1, d.nights || 1)
+    const nights = Number.isFinite(d.nights) ? Math.max(0, Math.floor(d.nights)) : 1
     const dayNumber = start
-    const dayNumberEnd = nights > 1 ? dayNumber + nights - 1 : null
-    start = dayNumber + nights
+    const dayNumberEnd = nights === 0 ? dayNumber : nights > 1 ? dayNumber + nights - 1 : null
+    start = dayNumber + Math.max(1, nights)
     return { ...d, dayNumber, nights, dayNumberEnd }
   })
 }
@@ -187,7 +192,8 @@ function loadInitialDays(
       _key: uid(),
       id: qd.id,
       dayNumber: qd.day_number,
-      nights: qd.day_number_end && qd.day_number_end > qd.day_number ? qd.day_number_end - qd.day_number + 1 : 1,
+      nights: qd.day_number_end && qd.day_number_end > qd.day_number ? qd.day_number_end - qd.day_number + 1
+        : qd.day_number_end != null && qd.day_number_end === qd.day_number ? 0 : 1,
       dayNumberEnd: qd.day_number_end ?? null,
       dayDate: qd.day_date ?? '',
       title: qd.title ?? '',
@@ -417,11 +423,31 @@ export default function QuoteItineraryBuilder({
     setSaved(false)
   }
 
-  // Nights at a stop → recompute all day numbers cumulatively.
+  // Nights at a stop → recompute all day numbers cumulatively. 0 nights =
+  // day-only stop (no overnight). When the trip dates are set and the change
+  // pushes the itinerary past the trip length, the surplus is absorbed by
+  // trimming days from the end (never the stop being edited).
   function setNights(i: number, nights: number) {
     if (isLocked) return
-    const n = Math.max(1, Math.min(30, Math.floor(nights) || 1))
-    setDays(prev => renumberDays(prev.map((d, idx) => idx === i ? { ...d, nights: n } : d)))
+    const n = Math.max(0, Math.min(30, Math.floor(nights) || 0))
+    setDays(prev => {
+      let next = prev.map((d, idx) => idx === i ? { ...d, nights: n } : d)
+      if (tripDays != null) {
+        let overshoot = next.reduce((s, d) => s + daySpan(d), 0) - tripDays
+        while (overshoot > 0 && next.length - 1 > i) {
+          const last = next[next.length - 1]
+          const lastSpan = daySpan(last)
+          if (lastSpan <= overshoot) {
+            next = next.slice(0, -1)
+            overshoot -= lastSpan
+          } else {
+            next = next.map((d, idx) => idx === next.length - 1 ? { ...d, nights: d.nights - overshoot } : d)
+            overshoot = 0
+          }
+        }
+      }
+      return renumberDays(next)
+    })
     setSaved(false)
   }
 
@@ -772,6 +798,7 @@ export default function QuoteItineraryBuilder({
                   onChange={e => setNights(i, Number(e.target.value))}
                   aria-label={`Nights at day ${day.dayNumber}`}
                   className={smallSelectCls} disabled={isLocked}>
+                  <option value={0}>No overnight (day only)</option>
                   {Array.from({ length: 21 }, (_, k) => k + 1).map(n => (
                     <option key={n} value={n}>{n} night{n > 1 ? 's' : ''}</option>
                   ))}
@@ -810,7 +837,7 @@ export default function QuoteItineraryBuilder({
                     )}
                   </span>
                 ))}
-                {Array.from({ length: day.nights }, (_, k) => {
+                {Array.from({ length: daySpan(day) }, (_, k) => {
                   const subDayNumber = day.dayNumber + k
                   const acts = day.items.filter(it => it.itemType === 'activity' && !isTransferItem(it) && dayOffsetOf(it) === k)
                   return (

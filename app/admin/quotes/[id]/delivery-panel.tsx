@@ -56,9 +56,6 @@ export default function DeliveryPanel({
   onGoToItinerary?: () => void
 }) {
   const [deliveries, setDeliveries] = useState(initial)
-  const [selectedVersionId, setSelectedVersionId] = useState(
-    versions.find(v => ['ready', 'sent', 'viewed'].includes(v.status))?.id ?? versions[0]?.id ?? ''
-  )
   const [copiedToken, setCopiedToken] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -67,6 +64,16 @@ export default function DeliveryPanel({
   // Must match the statuses the server actions accept (see delivery-actions.ts);
   // offering 'accepted' here only produced a guaranteed throw on send.
   const shareableVersions = versions.filter(v => ['ready', 'sent', 'viewed'].includes(v.status))
+
+  // Statuses change server-side while this stays mounted (a pricing save
+  // moves draft → ready and refreshes the route), so the selection is derived:
+  // an explicit pick wins while it stays shareable, else the first shareable
+  // version, else the first version.
+  const [pickedVersionId, setPickedVersionId] = useState('')
+  const selectedVersionId =
+    pickedVersionId && shareableVersions.some(v => v.id === pickedVersionId)
+      ? pickedVersionId
+      : (shareableVersions[0]?.id ?? versions[0]?.id ?? '')
 
   function handleCreate() {
     if (!selectedVersionId) return
@@ -178,7 +185,7 @@ export default function DeliveryPanel({
               <label htmlFor="version-to-share" className="block text-xs text-muted-foreground mb-1">Version to share</label>
               <select id="version-to-share"
                 value={selectedVersionId}
-                onChange={e => setSelectedVersionId(e.target.value)}
+                onChange={e => setPickedVersionId(e.target.value)}
                 className="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
               >
                 {shareableVersions.map(v => (

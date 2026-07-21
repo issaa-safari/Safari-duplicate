@@ -30,6 +30,7 @@ interface Park {
   cover_image_url: string | null
   is_active: boolean
   google_maps_url: string | null
+  google_place_id: string | null
   latitude: number | null
   longitude: number | null
   gallery_urls: string[] | null
@@ -117,6 +118,7 @@ export default function ParkEditForm({ park }: { park: Park }) {
             googleMapsUrl={park.google_maps_url}
             latitude={park.latitude}
             longitude={park.longitude}
+            googlePlaceId={park.google_place_id}
           />
         </div>
 
