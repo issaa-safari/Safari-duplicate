@@ -7,6 +7,7 @@ import { Button, ButtonLink } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Toggle } from '@/components/ui/toggle'
 import LocationFields from '@/components/admin/location-fields'
+import CoverImageField from '@/components/admin/cover-image-field'
 
 const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
@@ -54,10 +55,7 @@ export default function NewDestinationForm() {
             </div>
           </div>
 
-          <div>
-            <label htmlFor="coverImageUrl" className="block text-sm font-medium text-foreground mb-1">Cover Image URL</label>
-            <input id="coverImageUrl" type="url" name="coverImageUrl" placeholder="https://…" className={inputCls} />
-          </div>
+          <CoverImageField folder="destinations/covers" />
 
           <Toggle checked={isActive} onChange={() => setIsActive(!isActive)} label="Active (visible on website)" />
         </div>
