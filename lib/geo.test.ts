@@ -81,6 +81,18 @@ describe('computeRoadKm', () => {
     // Different pair from the cached one above.
     expect(await computeRoadKm(a, { lat: -4.0435, lng: 39.6682 })).toBeNull()
   })
+
+  it('does not cache a transient failure — a later success is not masked by a cached null', async () => {
+    vi.stubEnv('GOOGLE_PLACES_API_KEY', 'test-key')
+    const pair = { lat: 1.234, lng: 5.678 } // fresh coord pair, not cached by other tests
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 500 }) // transient failure
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ routes: [{ distanceMeters: 42_000 }] }) })
+    vi.stubGlobal('fetch', fetchMock)
+    expect(await computeRoadKm(a, pair)).toBeNull()        // failure, not cached
+    expect(await computeRoadKm(a, pair)).toBeCloseTo(42)   // retried, succeeds
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('haversineKm', () => {

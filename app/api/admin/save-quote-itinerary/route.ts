@@ -27,18 +27,43 @@ async function withRoadDistances(admin: ReturnType<typeof createAdminClient>, da
     if (d.latitude != null && d.longitude != null) coordMap[d.id] = { lat: d.latitude, lng: d.longitude }
   }
 
-  let prevDestId: string | null = null
-  const out: DayPayload[] = []
-  for (const day of days) {
+  // Existing stored distances, so a leg that can't be recomputed this save (a
+  // transient Google failure) keeps its previous value instead of being wiped.
+  const dayIds = days.map(d => d?.id).filter(Boolean) as string[]
+  const priorRoadKm: Record<string, number | null> = {}
+  if (dayIds.length) {
+    const { data: prior } = await admin.from('quote_days').select('id, road_distance_km').in('id', dayIds)
+    for (const p of prior ?? []) priorRoadKm[p.id] = p.road_distance_km
+  }
+
+  // The legs are independent — resolve them concurrently rather than serially.
+  const roadKms = await Promise.all(days.map((day, i) => {
     const destId = day?.destinationId ?? null
+    const prevDestId = lastDistinctDestBefore(days, i)
+    const isNewStop = !!destId && destId !== prevDestId
     const coord = destId ? coordMap[destId] : undefined
     const prevCoord = prevDestId ? coordMap[prevDestId] : undefined
-    const isNewStop = !!destId && destId !== prevDestId
-    const roadKm = isNewStop && coord && prevCoord ? await computeRoadKm(prevCoord, coord) : null
-    out.push({ ...day, roadDistanceKm: roadKm != null ? Math.round(roadKm * 10) / 10 : null })
-    if (destId) prevDestId = destId
+    return isNewStop && coord && prevCoord ? computeRoadKm(prevCoord, coord) : Promise.resolve(null)
+  }))
+
+  return days.map((day, i) => {
+    const fresh = roadKms[i]
+    const dayId = typeof day?.id === 'string' ? day.id : null
+    // Fresh value wins; on null keep the previously stored value (avoids
+    // clobbering good data when a single leg's lookup transiently fails).
+    const value = fresh != null ? Math.round(fresh * 10) / 10 : (dayId ? priorRoadKm[dayId] ?? null : null)
+    return { ...day, roadDistanceKm: value }
+  })
+}
+
+// The destination id of the most recent earlier day that has one — i.e. the
+// previous stop's destination, skipping days without a destination.
+function lastDistinctDestBefore(days: DayPayload[], i: number): string | null {
+  for (let j = i - 1; j >= 0; j--) {
+    const id = days[j]?.destinationId ?? null
+    if (id) return id
   }
-  return out
+  return null
 }
 
 export async function POST(request: Request) {
