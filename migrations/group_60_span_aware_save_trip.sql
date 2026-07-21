@@ -23,13 +23,14 @@
 
 -- ── 1. One-time data cleanup ────────────────────────────────────────────────
 -- Remove filler rows already created for days folded into another row's span.
--- session_replication_role=replica suspends user triggers for this session so
--- the guard from group_13 (quote_days_require_mutable_version) doesn't block
--- the repair on already-sent/locked versions — the quotes clients have already
--- seen are exactly the ones that need it. Only empty rows are touched (no
--- destination is irrelevant; the item/price-line guards ensure nothing real is
--- deleted), so this alters no substantive quote content.
-set session_replication_role = replica;
+-- The mutable-version guard from group_13 (quote_days_require_mutable_version)
+-- would block this repair on already-sent/locked versions — the quotes clients
+-- have already seen, which are exactly the ones that need it — so the trigger is
+-- disabled for the duration of the delete. This is transactional: if the delete
+-- fails the whole migration (trigger disable included) rolls back. Only empty
+-- rows are touched (the item/price-line guards ensure nothing real is deleted),
+-- so this alters no substantive quote content.
+alter table quote_days disable trigger quote_days_require_mutable_version;
 
 delete from quote_days qd
 using quote_days span
@@ -41,7 +42,7 @@ where qd.quote_version_id = span.quote_version_id
   and not exists (select 1 from quote_day_items  i  where i.quote_day_id  = qd.id)
   and not exists (select 1 from quote_price_lines pl where pl.quote_day_id = qd.id);
 
-reset session_replication_role;
+alter table quote_days enable trigger quote_days_require_mutable_version;
 
 -- ── 2. Span-aware save_trip ─────────────────────────────────────────────────
 create or replace function save_trip(p_payload jsonb)
