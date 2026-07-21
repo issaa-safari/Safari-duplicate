@@ -7,6 +7,8 @@ import { Button, ButtonLink } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Toggle } from '@/components/ui/toggle'
 import LocationFields from '@/components/admin/location-fields'
+import CoverImageField from '@/components/admin/cover-image-field'
+import { GalleryUpload } from '@/components/admin/image-upload'
 
 interface Destination {
   id: string
@@ -19,6 +21,7 @@ interface Destination {
   google_maps_url: string | null
   latitude: number | null
   longitude: number | null
+  gallery_urls: string[] | null
 }
 
 const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
@@ -27,6 +30,9 @@ export default function DestinationEditForm({ destination }: { destination: Dest
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [isActive, setIsActive] = useState(destination.is_active)
+  const [galleryUrls, setGalleryUrls] = useState<string[]>(
+    Array.isArray(destination.gallery_urls) ? destination.gallery_urls : []
+  )
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -34,6 +40,7 @@ export default function DestinationEditForm({ destination }: { destination: Dest
     setLoading(true)
     const formData = new FormData(e.currentTarget)
     formData.set('isActive', isActive ? 'true' : 'false')
+    formData.set('galleryUrls', JSON.stringify(galleryUrls))
     try {
       await updateDestination(destination.id, formData)
     } catch (err: any) {
@@ -67,16 +74,10 @@ export default function DestinationEditForm({ destination }: { destination: Dest
             </div>
           </div>
 
-          <div>
-            <label htmlFor="coverImageUrl" className="block text-sm font-medium text-foreground mb-1">Cover Image URL</label>
-            <input id="coverImageUrl"
-              type="url"
-              name="coverImageUrl"
-              defaultValue={destination.cover_image_url ?? ''}
-              placeholder="https://…"
-              className={inputCls}
-            />
-          </div>
+          <CoverImageField
+            initialUrl={destination.cover_image_url}
+            folder={`destinations/${destination.id}`}
+          />
 
           <Toggle checked={isActive} onChange={() => setIsActive(!isActive)} label="Active (visible on website)" />
         </div>
@@ -116,6 +117,15 @@ export default function DestinationEditForm({ destination }: { destination: Dest
               placeholder="وصف الوجهة…"
               dir="rtl"
               className={inputCls}
+            />
+          </div>
+
+          <div>
+            <span className="block text-sm font-medium text-foreground mb-1">Gallery photos</span>
+            <GalleryUpload
+              value={galleryUrls}
+              onChange={setGalleryUrls}
+              folder={`destinations/${destination.id}`}
             />
           </div>
         </div>
