@@ -206,15 +206,12 @@ export default async function QuotePrintPage({
 
   type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean; transfer: boolean }
   const accomByDay: Record<string, string[]> = {}
-  const accomDescByDay: Record<string, string[]> = {}
   const accomIdByDay: Record<string, string> = {}
   const actsByDay: Record<string, ActItem[]> = {}
   for (const item of dayItems ?? []) {
     if (item.item_type === 'accommodation') {
       if (!accomByDay[item.quote_day_id]) accomByDay[item.quote_day_id] = []
-      if (!accomDescByDay[item.quote_day_id]) accomDescByDay[item.quote_day_id] = []
       if (item.title_snapshot) accomByDay[item.quote_day_id].push(item.title_snapshot)
-      if (item.content_snapshot) accomDescByDay[item.quote_day_id].push(item.content_snapshot)
       if (item.accommodation_id && !accomIdByDay[item.quote_day_id]) accomIdByDay[item.quote_day_id] = item.accommodation_id
     } else if (item.item_type === 'activity') {
       if (!actsByDay[item.quote_day_id]) actsByDay[item.quote_day_id] = []
@@ -227,16 +224,20 @@ export default async function QuotePrintPage({
     }
   }
 
-  // Accommodation gallery photos + type — for the per-day magazine pages.
+  // Accommodation gallery photos + type + description — for the per-day
+  // magazine pages. Descriptions come from the live Content library (the
+  // quote item's content_snapshot is not a description string).
   const accIds = [...new Set(Object.values(accomIdByDay))]
   const accGalleryMap: Record<string, string[]> = {}
   const accTypeMap: Record<string, string | null> = {}
+  const accDescMapById: Record<string, { en: string | null; ar: string | null }> = {}
   if (accIds.length > 0) {
-    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, gallery_urls').in('id', accIds)
+    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, gallery_urls, description_en, description_ar').in('id', accIds)
     for (const a of accs ?? []) {
       const gallery = Array.isArray(a.gallery_urls) ? (a.gallery_urls as string[]).filter(Boolean) : []
       accGalleryMap[a.id] = gallery.length > 0 ? gallery : a.cover_image_url ? [a.cover_image_url] : []
       accTypeMap[a.id] = a.type ?? null
+      accDescMapById[a.id] = { en: a.description_en, ar: a.description_ar }
     }
   }
 
@@ -455,6 +456,11 @@ export default async function QuotePrintPage({
     return labels.slice(0, -1).join(', ') + (isArabic ? ' و ' : ' & ') + labels[labels.length - 1]
   }
   const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
+  const dayAccDesc = (dayId: string) => {
+    const id = accomIdByDay[dayId]
+    const d = id ? accDescMapById[id] : null
+    return d ? (isArabic ? (d.ar || d.en) : d.en) : null
+  }
   const refNum = String(quote.quote_number)
   const refWithHash = refNum.startsWith('#') ? refNum : `#${refNum}`
   const PIN = (
@@ -587,7 +593,7 @@ export default async function QuotePrintPage({
                 {days.map((day: any) => {
                   const dest = (day.destination_snapshot as any)?.name ?? '—'
                   const accoms = accomByDay[day.id] ?? []
-                  const accomDescs = accomDescByDay[day.id] ?? []
+                  const accomDesc = dayAccDesc(day.id)
                   const dayMeals: string[] = day.meals ?? []
                   const mealStr = dayMeals.map((m: string) => ml[m] ?? m).join(', ') || '—'
                   const dl = dayLabel(day)
@@ -604,8 +610,8 @@ export default async function QuotePrintPage({
                         {accoms.length > 0 ? (
                           <div>
                             <div style={{ fontWeight: 600 }}>{accoms[0]}</div>
-                            {accomDescs[0] && (
-                              <div style={{ fontSize: 10, color: '#999', marginTop: 2, fontStyle: 'italic' }}>{accomDescs[0]}</div>
+                            {accomDesc && (
+                              <div style={{ fontSize: 10, color: '#999', marginTop: 2, fontStyle: 'italic' }}>{accomDesc}</div>
                             )}
                           </div>
                         ) : (
@@ -704,7 +710,7 @@ export default async function QuotePrintPage({
           const notes = isArabic && day.client_notes_ar ? day.client_notes_ar : day.client_notes
 
           const accName = accomByDay[day.id]?.[0] ?? null
-          const accDesc = accomDescByDay[day.id]?.[0] ?? null
+          const accDesc = dayAccDesc(day.id)
           const accId = accomIdByDay[day.id] ?? ''
           const accType = accId ? accTypeMap[accId] : null
           const hotelPhotos = (accGalleryMap[accId] ?? []).slice(0, 3)
