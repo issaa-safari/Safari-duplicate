@@ -191,7 +191,14 @@ export default function QuoteWorkspace({
                 travellers={data.travellers}
                 ageBands={ageBands}
                 quoteRequest={quoteRequest}
-                onDatesSaved={(start, end) => setSavedDates(prev => ({ ...prev, [v.id]: { start, end } }))}
+                onDatesSaved={(start, end) => {
+                  // Mirror the new window locally for the Pricing tab, then
+                  // re-sync the server-derived panels (day-by-day dates,
+                  // readiness checklist) so nothing needs a manual reload.
+                  setSavedDates(prev => ({ ...prev, [v.id]: { start, end } }))
+                  router.refresh()
+                }}
+                onTravellersChanged={() => router.refresh()}
               />
               <ReadinessChecklist quoteDays={data.quoteDays} dayItems={data.dayItems} version={v} />
               <QuoteItineraryBuilder
