@@ -11,6 +11,19 @@ const arrToLines = (a: any) => (Array.isArray(a) ? a.join('\n') : '')
 
 interface Faq { q_en: string; a_en: string; q_ar: string; a_ar: string }
 
+// Kept at module scope: defining these inside TourEditForm would give them a new
+// identity on every render, remounting every input (and dropping focus) on each
+// keystroke.
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="rounded-xl border border-border bg-surface shadow-sm p-5 space-y-4">
+    <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+    {children}
+  </div>
+)
+const Label = ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
+  <label htmlFor={htmlFor} className="block text-sm font-medium text-foreground mb-1">{children}</label>
+)
+
 export default function TourEditForm({ tour }: { tour: any }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -99,16 +112,6 @@ export default function TourEditForm({ tour }: { tour: any }) {
       setLoading(false)
     }
   }
-
-  const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div className="rounded-xl border border-border bg-surface shadow-sm p-5 space-y-4">
-      <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-      {children}
-    </div>
-  )
-  const Label = ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
-    <label htmlFor={htmlFor} className="block text-sm font-medium text-foreground mb-1">{children}</label>
-  )
 
   return (
     <form onSubmit={handleSave} className="space-y-4 max-w-3xl">

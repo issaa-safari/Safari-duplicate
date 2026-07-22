@@ -31,9 +31,14 @@ export async function addTask(formData: FormData) {
   const { data: request } = await admin.from('requests').select('id').eq('id', requestId).single()
   if (!request) throw new Error('Request not found.')
 
-  const { error } = await admin.from('tasks').insert({ request_id: requestId, title, type, is_done: false })
+  const { data: inserted, error } = await admin
+    .from('tasks')
+    .insert({ request_id: requestId, title, type, is_done: false })
+    .select('id, title, is_done, created_at, type, auto_generated, sort_order')
+    .single()
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/requests/${requestId}`)
+  return inserted
 }
 
 export async function toggleTask(formData: FormData) {
