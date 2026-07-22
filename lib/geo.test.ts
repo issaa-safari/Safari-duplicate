@@ -42,6 +42,15 @@ describe('googleMapsLinkFor', () => {
       .toBe('https://www.google.com/maps/place/?q=place_id:ChIJx')
   })
 
+  it('falls back to a coordinate search link when only lat/lng are stored', () => {
+    expect(googleMapsLinkFor({ google_maps_url: null, google_place_id: null, latitude: -1.2921, longitude: 36.8219 }))
+      .toBe('https://www.google.com/maps/search/?api=1&query=-1.2921,36.8219')
+  })
+
+  it('ignores out-of-range coordinates', () => {
+    expect(googleMapsLinkFor({ google_maps_url: null, google_place_id: null, latitude: 999, longitude: 999 })).toBeNull()
+  })
+
   it('returns null when nothing is stored', () => {
     expect(googleMapsLinkFor({ google_maps_url: null, google_place_id: null })).toBeNull()
     expect(googleMapsLinkFor(null)).toBeNull()

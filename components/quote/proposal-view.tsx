@@ -43,7 +43,7 @@ export type SummaryRow = {
 }
 // "Tour Itinerary Map" section: pins for each stop with coordinates, plus a
 // start → day/destination/accommodation → end table with per-leg distances.
-export type RouteRow = { dayLabel: string; destination: string; accommodation: string | null; distanceKm: number | null }
+export type RouteRow = { dayLabel: string; destination: string; destinationMapsUrl?: string | null; accommodation: string | null; accommodationMapsUrl?: string | null; distanceKm: number | null }
 export type TourMapData = { stops: MapStop[]; rows: RouteRow[]; startPoint: string | null; endPoint: string | null }
 export type TravellerGroup = { name: string; count: number; perPerson: number; total: number }
 
@@ -263,7 +263,7 @@ export default function ProposalView(p: ProposalViewProps) {
             )}
 
             <div className="mt-4 overflow-hidden rounded-xl border" style={{ borderColor: `${OLIVE}44` }}>
-              <table className="stack-table w-full text-sm">
+              <table className="stack-table proposal-stack w-full text-sm">
                 <thead>
                   <tr className="text-left" style={{ color: INK }}>
                     <th className="px-4 py-2.5 font-semibold" style={{ width: '15%' }}>{T(ar, 'Days', 'الأيام')}</th>
@@ -275,17 +275,21 @@ export default function ProposalView(p: ProposalViewProps) {
                 <tbody>
                   {p.summaryRows.map((r, i) => (
                     <tr key={i} style={{ background: i % 2 ? '#fff' : '#F7FAEE', borderTop: `1px solid ${OLIVE}22` }}>
-                      <td data-label={T(ar, 'Days', 'الأيام')} className="px-4 py-3 font-semibold" style={{ color: OLIVE }}>{r.dayLabel}</td>
+                      <td data-label={T(ar, 'Days', 'الأيام')} className="px-4 py-3 font-semibold" style={{ color: OLIVE }}><span className="cell-v">{r.dayLabel}</span></td>
                       <td data-label={T(ar, 'Main Destination', 'الوجهة')} className="px-4 py-3 font-medium" style={{ color: INK }}>
-                        {r.destination}
-                        {r.destinationMapsUrl && <span className="ms-2"><MapsLink href={r.destinationMapsUrl} ar={ar} /></span>}
+                        <span className="cell-v">
+                          {r.destination}
+                          {r.destinationMapsUrl && <span className="ms-2"><MapsLink href={r.destinationMapsUrl} ar={ar} /></span>}
+                        </span>
                       </td>
                       <td data-label={T(ar, 'Accommodation', 'الإقامة')} className="px-4 py-3" style={{ color: INK }}>
-                        {r.accommodation}
-                        {r.accommodationMapsUrl && <span className="ms-2"><MapsLink href={r.accommodationMapsUrl} ar={ar} /></span>}
-                        {r.accommodationMeta && <span className="block text-xs text-gray-500">{r.accommodationMeta}</span>}
+                        <span className="cell-v">
+                          {r.accommodation}
+                          {r.accommodationMapsUrl && <span className="ms-2"><MapsLink href={r.accommodationMapsUrl} ar={ar} /></span>}
+                          {r.accommodationMeta && <span className="block text-xs text-gray-500">{r.accommodationMeta}</span>}
+                        </span>
                       </td>
-                      <td data-label={T(ar, 'Meal Plan', 'الوجبات')} className="px-4 py-3 text-gray-600">{r.meals}</td>
+                      <td data-label={T(ar, 'Meal Plan', 'الوجبات')} className="px-4 py-3 text-gray-600"><span className="cell-v">{r.meals}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -304,7 +308,7 @@ export default function ProposalView(p: ProposalViewProps) {
             </div>
 
             <div className="mt-5 overflow-hidden rounded-xl border" style={{ borderColor: `${OLIVE}44` }}>
-              <table className="stack-table w-full text-sm">
+              <table className="stack-table proposal-stack w-full text-sm">
                 <thead>
                   <tr className="text-left" style={{ color: INK }}>
                     <th className="px-4 py-2.5 font-semibold" style={{ width: '18%' }}>{T(ar, 'Days', 'الأيام')}</th>
@@ -324,11 +328,21 @@ export default function ProposalView(p: ProposalViewProps) {
                   )}
                   {p.tourMap.rows.map((r, i) => (
                     <tr key={i} style={{ background: i % 2 ? '#F7FAEE' : '#fff', borderTop: `1px solid ${OLIVE}22` }}>
-                      <td data-label={T(ar, 'Days', 'الأيام')} className="px-4 py-2.5 font-semibold" style={{ color: OLIVE }}>{r.dayLabel}</td>
-                      <td data-label={T(ar, 'Destination', 'الوجهة')} className="px-4 py-2.5 font-medium" style={{ color: INK }}>{r.destination}</td>
-                      <td data-label={T(ar, 'Accommodation', 'الإقامة')} className="px-4 py-2.5" style={{ color: INK }}>{r.accommodation ?? '—'}</td>
+                      <td data-label={T(ar, 'Days', 'الأيام')} className="px-4 py-2.5 font-semibold" style={{ color: OLIVE }}><span className="cell-v">{r.dayLabel}</span></td>
+                      <td data-label={T(ar, 'Destination', 'الوجهة')} className="px-4 py-2.5 font-medium" style={{ color: INK }}>
+                        <span className="cell-v">
+                          {r.destination}
+                          {r.destinationMapsUrl && <span className="ms-2"><MapsLink href={r.destinationMapsUrl} ar={ar} /></span>}
+                        </span>
+                      </td>
+                      <td data-label={T(ar, 'Accommodation', 'الإقامة')} className="px-4 py-2.5" style={{ color: INK }}>
+                        <span className="cell-v">
+                          {r.accommodation ?? '—'}
+                          {r.accommodationMapsUrl && <span className="ms-2"><MapsLink href={r.accommodationMapsUrl} ar={ar} /></span>}
+                        </span>
+                      </td>
                       <td data-label={T(ar, 'Distance', 'المسافة')} className="px-4 py-2.5 text-gray-600 whitespace-nowrap">
-                        {r.distanceKm != null ? `~${Math.round(r.distanceKm)} ${T(ar, 'km', 'كم')}` : '—'}
+                        <span className="cell-v">{r.distanceKm != null ? `~${Math.round(r.distanceKm)} ${T(ar, 'km', 'كم')}` : '—'}</span>
                       </td>
                     </tr>
                   ))}

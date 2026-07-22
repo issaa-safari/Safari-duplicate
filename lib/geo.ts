@@ -69,12 +69,22 @@ export function geoColumnsFromForm(formData: FormData): {
 
 /**
  * Client-facing Google Maps link for a content record: the stored URL when
- * present, else one built from the place id, else null.
+ * present, else one built from the place id, else one built from the saved
+ * coordinates, else null. The coordinate fallback means any accommodation or
+ * destination with a located pin is clickable, even without a pasted link.
  */
-export function googleMapsLinkFor(row: { google_maps_url?: string | null; google_place_id?: string | null } | null | undefined): string | null {
+export function googleMapsLinkFor(
+  row:
+    | { google_maps_url?: string | null; google_place_id?: string | null; latitude?: number | null; longitude?: number | null }
+    | null
+    | undefined,
+): string | null {
   if (!row) return null
   if (row.google_maps_url) return row.google_maps_url
   if (row.google_place_id) return `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(row.google_place_id)}`
+  if (typeof row.latitude === 'number' && typeof row.longitude === 'number' && inRange(row.latitude, row.longitude)) {
+    return `https://www.google.com/maps/search/?api=1&query=${row.latitude},${row.longitude}`
+  }
   return null
 }
 
