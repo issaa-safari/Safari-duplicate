@@ -46,6 +46,17 @@ export type AccommodationCost =
       /** Travellers who stayed here. Defaults to every traveller. */
       travellerIds?: string[]
     }
+  | {
+      label: string
+      mode: 'itemized'
+      /**
+       * Explicit per-guest costs the operator typed (per band, with a count),
+       * e.g. "2 × adult @ $380, 1 × child @ $228". Each item bills that many
+       * distinct travellers of its band, so multiple items of the same band at
+       * different prices are supported. The item costs are the whole stay.
+       */
+      items: { category: BandCode; count: number; perPersonUsd: number }[]
+    }
 
 /** A cost shared equally across all travellers (vehicles, group fees, …). */
 export interface SharedLineCost {
@@ -135,8 +146,23 @@ export function computePerPersonCost(input: PerPersonCostInput): PerPersonCostRe
   const transport = new Map<string, number>(travellers.map(t => [t.id, 0]))
   const parks = new Map<string, number>(travellers.map(t => [t.id, 0]))
 
+  // Roster ids grouped by band, for itemized assignment.
+  const idsByBand: Record<BandCode, string[]> = { adult: [], child: [], infant: [] }
+  for (const t of travellers) idsByBand[t.category].push(t.id)
+
   // ── Accommodation ──
   for (const stay of input.accommodations) {
+    if (stay.mode === 'itemized') {
+      // Each item bills `count` distinct not-yet-used travellers of its band.
+      const cursor: Record<BandCode, number> = { adult: 0, child: 0, infant: 0 }
+      for (const item of stay.items) {
+        for (let k = 0; k < item.count; k++) {
+          const id = idsByBand[item.category][cursor[item.category]++]
+          if (id) acc.set(id, acc.get(id)! + item.perPersonUsd)
+        }
+      }
+      continue
+    }
     const occupantIds = (stay.travellerIds ?? travellers.map(t => t.id)).filter(id => byId.has(id))
     if (occupantIds.length === 0) continue
     if (stay.mode === 'per_person') {

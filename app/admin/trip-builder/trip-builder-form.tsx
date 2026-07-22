@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { Fragment, useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import CreateLookupDialog from '@/components/admin/create-lookup-dialog'
 import { createLookup } from '@/lib/create-lookup'
@@ -12,6 +12,7 @@ import {
   ROOM_CATEGORIES,
   type GuestDetails,
   type HotelRowInput,
+  type OccupantLine,
   type ParkRowInput,
   type ResolveRowRequest,
   type ResolveRowResult,
@@ -528,6 +529,77 @@ export default function TripBuilderForm({
     const remove = (key: string) =>
       setHotelRows(prev => prev.filter(r => r.key !== key))
 
+    // Seed per-guest pricing from the roster: adults as an amount, children /
+    // infants as a % of adult (50% / free by default — the operator edits).
+    const paxDefaults = (): OccupantLine[] => {
+      const lines: OccupantLine[] = [{ band: 'adult', count: Math.max(1, adultCount), mode: 'amount', amountUsd: 0, percentOfAdult: 100 }]
+      if (payingChildCount > 0) lines.push({ band: 'child', count: payingChildCount, mode: 'percent', amountUsd: 0, percentOfAdult: 50 })
+      if (infantCount > 0) lines.push({ band: 'infant', count: infantCount, mode: 'percent', amountUsd: 0, percentOfAdult: 0 })
+      return lines
+    }
+
+    function paxEditor(row: HotelRowInput) {
+      const nights = nightsOf(row.checkIn, row.checkOut) ?? 0
+      const occ = row.occupants ?? []
+      const adultBase = occ.find(o => o.band === 'adult' && o.mode === 'amount')?.amountUsd ?? 0
+      const setLine = (i: number, patch: Partial<OccupantLine>) =>
+        update(row.key, { occupants: occ.map((o, idx) => (idx === i ? { ...o, ...patch } : o)) })
+      const nightlyOf = (o: OccupantLine) => (o.mode === 'amount' ? o.amountUsd : adultBase * (o.percentOfAdult / 100))
+      const total = occ.reduce((s, o) => s + nightlyOf(o) * nights * Math.max(0, o.count), 0)
+      const segBtn = (on: boolean) => 'px-2 py-1 text-[11px] font-medium ' + (on ? 'bg-primary-strong text-white' : 'text-muted-foreground hover:text-foreground')
+      return (
+        <div className="rounded-lg border border-primary-strong/30 bg-accent/40 p-3">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <p className="text-xs font-semibold text-foreground">Price per guest
+              <span className="font-normal text-muted-foreground"> — overrides the rate card for this stay · {nights} night{nights === 1 ? '' : 's'}</span></p>
+            <button type="button" className="text-[11px] text-muted-foreground hover:text-destructive"
+              onClick={() => update(row.key, { occupants: undefined })}>Use rate card instead ✕</button>
+          </div>
+          <div className="space-y-1.5">
+            {occ.map((o, i) => (
+              <div key={i} className="flex flex-wrap items-center gap-2">
+                <select className={inputCls + ' w-32'} value={o.band} aria-label="Guest type"
+                  onChange={e => setLine(i, { band: e.target.value as OccupantLine['band'], mode: e.target.value === 'adult' ? 'amount' : o.mode })}>
+                  <option value="adult">Adult</option><option value="child">Child (4–12)</option><option value="infant">Infant (0–3)</option>
+                </select>
+                <span className="text-xs text-muted-foreground">×</span>
+                <input type="number" min={0} className={inputCls + ' w-14'} value={o.count} aria-label="Count"
+                  onChange={e => setLine(i, { count: Math.max(0, parseInt(e.target.value) || 0) })} />
+                {o.band === 'adult' ? (
+                  <span className="text-[11px] text-muted-foreground px-1">Amount</span>
+                ) : (
+                  <span className="inline-flex rounded-md border border-border overflow-hidden">
+                    <button type="button" className={segBtn(o.mode === 'amount')} onClick={() => setLine(i, { mode: 'amount' })}>Amount</button>
+                    <button type="button" className={segBtn(o.mode === 'percent')} onClick={() => setLine(i, { mode: 'percent' })}>% of adult</button>
+                  </span>
+                )}
+                {o.mode === 'amount' ? (
+                  <span className="inline-flex items-center gap-1"><span className="text-xs text-muted-foreground">$</span>
+                    <input type="number" min={0} step="0.01" className={inputCls + ' w-24 text-right tabular-nums'} value={o.amountUsd || ''} placeholder="/night"
+                      aria-label="Amount per night" onChange={e => setLine(i, { amountUsd: Math.max(0, parseFloat(e.target.value) || 0) })} />
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1">
+                    <input type="number" min={0} max={100} step="1" className={inputCls + ' w-16 text-right tabular-nums'} value={o.percentOfAdult}
+                      aria-label="Percent of adult" onChange={e => setLine(i, { percentOfAdult: Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)) })} />
+                    <span className="text-xs text-muted-foreground">% of adult</span>
+                  </span>
+                )}
+                <span className="ml-auto text-xs text-muted-foreground tabular-nums">= ${fmt(nightlyOf(o) * nights)}<span className="text-[10px]"> /person</span></span>
+                <button type="button" className="text-gray-300 hover:text-destructive text-xs px-1" title="Remove guest type"
+                  onClick={() => update(row.key, { occupants: occ.filter((_, idx) => idx !== i) })}>✕</button>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/60">
+            <button type="button" className="text-xs font-medium text-primary-strong hover:underline"
+              onClick={() => update(row.key, { occupants: [...occ, { band: 'child', count: 1, mode: 'percent', amountUsd: 0, percentOfAdult: 50 }] })}>+ Add guest type</button>
+            <span className="text-xs font-semibold text-foreground tabular-nums">Room total ${fmt(total)}</span>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className={section} onKeyDown={sectionKeyDown(addRow)}>
         <div className={sectionHead}>
@@ -570,7 +642,8 @@ export default function TripBuilderForm({
                 {rows.map(row => {
                   const nights = nightsOf(row.checkIn, row.checkOut)
                   return (
-                    <tr key={row.key} className="border-b border-gray-50 last:border-0 align-top">
+                    <Fragment key={row.key}>
+                    <tr className="border-b border-gray-50 last:border-0 align-top">
                       <td data-label="Location" className="px-3 py-1.5 min-w-[120px]">
                         <select className={inputCls} value={row.destinationId}
                           onChange={e => {
@@ -660,10 +733,19 @@ export default function TripBuilderForm({
                         {rateCell(row, '', v => update(row.key, { manualUnitCostUsd: v }))}
                       </td>
                       <td data-label="Total" className="px-2 py-1.5 text-right whitespace-nowrap">{totalCell(row, hotelUnits(row))}</td>
-                      <td className="px-1 py-1.5">
+                      <td className="px-1 py-1.5 whitespace-nowrap">
+                        <button type="button" title="Price this stay per guest"
+                          onClick={() => update(row.key, { occupants: row.occupants ? undefined : paxDefaults() })}
+                          className={'text-[11px] px-1 mr-0.5 ' + (row.occupants ? 'text-primary-strong font-semibold' : 'text-gray-400 hover:text-primary-strong')}>$/pax</button>
                         <button type="button" onClick={() => remove(row.key)} className={removeBtn} title="Remove row">✕</button>
                       </td>
                     </tr>
+                    {row.occupants && (
+                      <tr className="border-b border-gray-50">
+                        <td colSpan={13} className="px-3 pb-3 pt-0">{paxEditor(row)}</td>
+                      </tr>
+                    )}
+                    </Fragment>
                   )
                 })}
               </tbody>
