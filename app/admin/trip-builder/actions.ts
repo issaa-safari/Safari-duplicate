@@ -22,6 +22,15 @@ import {
   type PricedSegment,
   type RateCardRow,
 } from '@/lib/rate-resolution'
+import {
+  computePerPersonCost,
+  type AccommodationCost,
+  type BandCode,
+  type ParkFeeCost,
+  type PerPersonCostResult,
+  type PerPersonTraveller,
+  type SharedLineCost,
+} from '@/lib/per-person-cost'
 import type {
   HotelRowInput,
   ParkRowInput,
@@ -33,6 +42,10 @@ import type {
   TransportRowInput,
   TripBuilderState,
 } from './types'
+
+export type PerPersonCostResolveResult =
+  | { ok: true; result: PerPersonCostResult }
+  | { ok: false; message: string }
 
 const DEFAULT_USD_TO_KES = 129
 
@@ -249,6 +262,150 @@ function okResult(segments: PricedSegment[]): ResolveRowResult {
   const units = views.reduce((s, v) => s + v.units, 0)
   const totalCostUsd = Math.round(views.reduce((s, v) => s + v.totalCostUsd, 0) * 100) / 100
   return { ok: true, units, unitCostUsd: views[0]?.unitCostUsd ?? 0, totalCostUsd, segments: views }
+}
+
+// ── resolvePerPersonCost ───────────────────────────────────────────────────────
+
+const round2 = (n: number) => Math.round(n * 100) / 100
+
+/** Total USD across all segments of a priced stay/hire. */
+function segmentsTotal(segments: PricedSegment[]): number {
+  return segments.reduce((s, seg) => s + seg.units * seg.resolved.unitCostUsd, 0)
+}
+
+/**
+ * Resolve a quote's costs and roll them down to a per-person breakdown for the
+ * Pricing tab. Every rate is re-resolved server-side by its service date — the
+ * client never sends prices. Rows that can't be priced (a rate gap with no
+ * manual override) are skipped; the main cost summary already surfaces gaps.
+ *
+ * Accommodation is an allocation view: each hotel's room total (exactly as the
+ * quote prices it) is split across the travellers, weighted by each band's own
+ * resolved per-person rate — so a hotel's child rate (absolute or % of adult)
+ * makes children carry proportionally less, while the quote total is unchanged.
+ */
+export async function resolvePerPersonCost(
+  state: TripBuilderState,
+): Promise<PerPersonCostResolveResult> {
+  try {
+    const { admin } = await authGuard()
+    const fx = buildFxToUsd(await getUsdToKes(admin))
+    const bands = await fetchAgeBands(admin)
+    const guest = state.guest
+
+    // ── Traveller roster (ages 13+ fall in the adult band) ──
+    const travellers: PerPersonTraveller[] = []
+    for (let i = 0; i < Math.max(0, guest.adults); i++) {
+      travellers.push({ id: `adult-${i}`, category: 'adult' })
+    }
+    guest.childAges.forEach((age, i) => {
+      const band = bandForAge(bands, age)
+      const category = (band?.code === 'infant' || band?.code === 'child' ? band.code : 'adult') as BandCode
+      travellers.push({ id: `child-${i}`, category, age })
+    })
+    if (travellers.length === 0) {
+      return { ok: true, result: { perPerson: [], byBand: [], totalUsd: 0 } }
+    }
+    const presentBands = [...new Set(travellers.map(t => t.category))]
+
+    // ── Accommodation: room total per hotel, split by per-band weights ──
+    const accommodations: AccommodationCost[] = []
+    for (const row of state.hotelRows) {
+      if (!row.accommodationId || !isIsoDate(row.checkIn) || !isIsoDate(row.checkOut)) continue
+      const nights = nightsBetween(row.checkIn, row.checkOut)
+      const rooms = Math.max(1, row.rooms)
+      const manual = manualPriceOf(row.manualUnitCostUsd)
+      const roomCategory = row.roomCategory || undefined
+
+      if (manual !== null) {
+        accommodations.push({
+          label: row.accommodationId,
+          mode: 'per_room',
+          totalUsd: round2(manual * nights * rooms),
+        })
+        continue
+      }
+
+      const cards = filterByMealPlan(
+        await fetchCards(admin, 'accommodation', row.accommodationId, row.checkIn, row.checkOut),
+        row.mealPlan,
+      )
+      try {
+        const roomTotal = segmentsTotal(priceAccommodationStay(
+          { accommodationId: row.accommodationId, checkIn: row.checkIn, checkOut: row.checkOut, roomCategory, unitsPerNight: rooms },
+          cards, fx,
+        ))
+        const bandWeights: Partial<Record<BandCode, number>> = {}
+        for (const cat of presentBands) {
+          const band = bands.find(b => b.code === cat)
+          const ageBand = cat === 'adult' ? undefined : band ? bandPricing(band) : undefined
+          bandWeights[cat] = round2(segmentsTotal(priceAccommodationStay(
+            { accommodationId: row.accommodationId, checkIn: row.checkIn, checkOut: row.checkOut, roomCategory, travellerCategory: cat, ageBand, unitsPerNight: 1 },
+            cards, fx,
+          )))
+        }
+        accommodations.push({ label: row.accommodationId, mode: 'per_room', totalUsd: round2(roomTotal), bandWeights })
+      } catch (err) {
+        if (err instanceof RateGapError) continue
+        throw err
+      }
+    }
+
+    // ── Transport: shared lines split equally across every traveller ──
+    const sharedLines: SharedLineCost[] = []
+    for (const row of state.transportRows) {
+      if (!row.vehicleId || !isIsoDate(row.startDate) || !isIsoDate(row.endDate)) continue
+      const days = vehicleDaysInclusive(row.startDate, row.endDate)
+      const count = Math.max(1, row.vehicleCount)
+      const manual = manualPriceOf(row.manualUnitCostUsd)
+      if (manual !== null) {
+        sharedLines.push({ label: row.vehicleId, category: 'transport', totalUsd: round2(manual * days * count) })
+        continue
+      }
+      const cards = await fetchCards(admin, 'vehicle', row.vehicleId, row.startDate, row.endDate)
+      try {
+        const total = segmentsTotal(priceVehicleHire(
+          { vehicleId: row.vehicleId, startDate: row.startDate, endDate: row.endDate, vehicleCount: count },
+          cards, fx,
+        ))
+        sharedLines.push({ label: row.vehicleId, category: 'transport', totalUsd: round2(total) })
+      } catch (err) {
+        if (err instanceof RateGapError) continue
+        throw err
+      }
+    }
+
+    // ── Park fees: each person pays their own band's per-ticket cost ──
+    const parkFees: ParkFeeCost[] = []
+    for (const row of state.parkRows) {
+      if (!row.parkId || !isIsoDate(row.entryDate)) continue
+      const manual = manualPriceOf(row.manualUnitCostUsd)
+      if (manual !== null) {
+        parkFees.push({ label: row.parkId, category: row.travellerCategory as BandCode, perPersonUsd: round2(manual) })
+        continue
+      }
+      const cards = await fetchCards(admin, 'park_fee', row.parkId, row.entryDate, row.entryDate)
+      let ageBand: AgeBandPricing | undefined
+      if (row.travellerCategory === 'child') {
+        const child = bands.find(b => b.code === 'child')
+        if (child) ageBand = bandPricing(child)
+      }
+      try {
+        const entry = pricePark(
+          { parkId: row.parkId, entryDate: row.entryDate, travellerCategory: row.travellerCategory, residency: row.residency, tickets: Math.max(1, row.tickets), ageBand },
+          cards, fx,
+        )
+        parkFees.push({ label: row.parkId, category: row.travellerCategory as BandCode, perPersonUsd: round2(entry.resolved.unitCostUsd) })
+      } catch (err) {
+        if (err instanceof RateGapError) continue
+        throw err
+      }
+    }
+
+    return { ok: true, result: computePerPersonCost({ travellers, accommodations, sharedLines, parkFees }) }
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : 'Could not resolve per-person costs.' }
+  }
 }
 
 // ── saveTrip ─────────────────────────────────────────────────────────────────
@@ -686,7 +843,6 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
     }
 
     // ── Payload with sale-price-derived markup ──
-    const round2 = (n: number) => Math.round(n * 100) / 100
     const lines = [...hotelLines, ...sharedLines]
     const cost = round2(lines.reduce((s, l) => s + l.quantity * l.unitCostUsd, 0))
     // Per-band manual sale prices (per person) win over the single total.
