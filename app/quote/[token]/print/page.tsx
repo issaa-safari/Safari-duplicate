@@ -88,37 +88,37 @@ body { font-family: Georgia, 'Times New Roman', serif; color: #1a1a1a; font-size
 .day-photos img { width: 100%; height: 62px; object-fit: cover; border-radius: 6px; border: 1px solid #e6e6e6; }
 
 /* ── Per-day magazine layout ── */
-.mag-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1.5px solid #d3e3b4; border-radius: 24px; padding: 5px 18px 5px 6px; margin-bottom: 18px; }
-.mag-daypill { background: linear-gradient(90deg, #6d8f31 0%, ${G} 55%, #a6ce39 100%); color: #fff; font-weight: 800; font-size: 15px; padding: 7px 24px; border-radius: 20px; font-family: 'Helvetica Neue', Arial, sans-serif; letter-spacing: 0.3px; white-space: nowrap; }
+.mag-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1.5px solid #d3e3b4; border-radius: 24px; padding: 3px 14px 3px 5px; margin-bottom: 10px; }
+.mag-daypill { background: linear-gradient(90deg, #6d8f31 0%, ${G} 55%, #a6ce39 100%); color: #fff; font-weight: 800; font-size: 13px; padding: 5px 18px; border-radius: 20px; font-family: 'Helvetica Neue', Arial, sans-serif; letter-spacing: 0.3px; white-space: nowrap; }
 .mag-daypill span { font-weight: 600; opacity: 0.92; }
-.mag-loc { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #1a1a1a; font-family: 'Helvetica Neue', Arial, sans-serif; white-space: nowrap; }
-.mag-loc svg { width: 16px; height: 16px; flex-shrink: 0; }
-.mag-title { font-size: 42px; font-weight: 800; line-height: 1.04; margin: 2px 0 22px; letter-spacing: -1px; font-family: 'Helvetica Neue', Arial, sans-serif; }
-.mag-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: start; }
-.mag-intro { font-size: 12.5px; line-height: 1.75; color: #333; margin: 0 0 16px; }
-.mag-accom { display: flex; align-items: flex-start; gap: 12px; border: 1px solid #dcdcdc; border-radius: 12px; padding: 11px 14px; margin-bottom: 14px; }
-.mag-accom svg { width: 30px; height: 30px; flex-shrink: 0; }
-.mag-accom-kick { font-size: 11px; color: #8a8a8a; font-family: 'Helvetica Neue', Arial, sans-serif; }
-.mag-accom-name { font-size: 15px; font-weight: 800; margin: 1px 0; line-height: 1.2; }
-.mag-accom-type { font-size: 12px; color: #666; }
-.mag-accom-desc { font-size: 12.5px; line-height: 1.7; color: #333; margin: 0 0 14px; }
-.mag-actcard { background: #f1f6e3; border: 1px solid #dae7bd; border-radius: 16px; padding: 18px 20px; margin-bottom: 14px; }
-.mag-actcard h4 { font-size: 18px; font-weight: 800; margin: 0 0 12px; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.mag-loc { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #1a1a1a; font-family: 'Helvetica Neue', Arial, sans-serif; white-space: nowrap; }
+.mag-loc svg { width: 15px; height: 15px; flex-shrink: 0; }
+.mag-title { font-size: 27px; font-weight: 800; line-height: 1.06; margin: 2px 0 12px; letter-spacing: -0.5px; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.mag-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+.mag-intro { font-size: 11px; line-height: 1.5; color: #333; margin: 0 0 10px; }
+.mag-accom { display: flex; align-items: flex-start; gap: 10px; border: 1px solid #dcdcdc; border-radius: 12px; padding: 8px 11px; margin-bottom: 9px; }
+.mag-accom svg { width: 24px; height: 24px; flex-shrink: 0; }
+.mag-accom-kick { font-size: 10.5px; color: #8a8a8a; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.mag-accom-name { font-size: 13px; font-weight: 800; margin: 1px 0; line-height: 1.2; }
+.mag-accom-type { font-size: 11px; color: #666; }
+.mag-accom-desc { font-size: 11px; line-height: 1.5; color: #333; margin: 0 0 9px; }
+.mag-actcard { background: #f1f6e3; border: 1px solid #dae7bd; border-radius: 16px; padding: 12px 15px; margin-bottom: 9px; }
+.mag-actcard h4 { font-size: 15px; font-weight: 800; margin: 0 0 8px; font-family: 'Helvetica Neue', Arial, sans-serif; }
 .mag-actcard h4 span { font-weight: 600; color: #555; }
-.mag-mom { font-size: 12px; font-weight: 800; color: #2a2a2a; margin: 12px 0 5px; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.mag-mom { font-size: 11.5px; font-weight: 800; color: #2a2a2a; margin: 9px 0 4px; font-family: 'Helvetica Neue', Arial, sans-serif; }
 .mag-mom.first { margin-top: 0; }
-.mag-act-item { display: flex; gap: 8px; font-size: 12px; line-height: 1.55; color: #333; margin-bottom: 8px; }
+.mag-act-item { display: flex; gap: 8px; font-size: 11px; line-height: 1.45; color: #333; margin-bottom: 6px; }
 .mag-act-item .arrow { color: ${G}; flex-shrink: 0; font-style: normal; }
-.mag-meal { border-top: 1px solid #cfe0a8; margin-top: 14px; padding-top: 13px; }
-.mag-meal-h { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 800; margin: 0 0 6px; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.mag-meal { border-top: 1px solid #cfe0a8; margin-top: 10px; padding-top: 9px; }
+.mag-meal-h { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 800; margin: 0 0 5px; font-family: 'Helvetica Neue', Arial, sans-serif; }
 .mag-meal-h svg { width: 15px; height: 15px; flex-shrink: 0; }
-.mag-meal-body { display: flex; gap: 8px; font-size: 12px; color: #333; line-height: 1.5; }
-.mag-photo { position: relative; border-radius: 14px; overflow: hidden; margin-bottom: 10px; }
+.mag-meal-body { display: flex; gap: 8px; font-size: 11px; color: #333; line-height: 1.45; }
+.mag-photo { position: relative; border-radius: 14px; overflow: hidden; margin-bottom: 8px; }
 .mag-photo img { display: block; width: 100%; object-fit: cover; }
 .mag-photo-top { position: absolute; left: 10px; top: 10px; background: #fff; color: #222; font-size: 10.5px; font-weight: 600; padding: 4px 10px; border-radius: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); font-family: 'Helvetica Neue', Arial, sans-serif; }
 .mag-photo-bot { position: absolute; left: 0; bottom: 0; background: rgba(0,0,0,0.72); color: #fff; font-size: 10.5px; font-weight: 600; padding: 4px 12px; border-radius: 0 8px 0 8px; font-family: 'Helvetica Neue', Arial, sans-serif; }
-.mag-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.mag-ft { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e2e2; margin-top: 26px; padding-top: 9px; font-size: 10.5px; color: #999; font-family: 'Helvetica Neue', Arial, sans-serif; }
+.mag-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mag-ft { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e2e2; margin-top: 14px; padding-top: 7px; font-size: 10.5px; color: #999; font-family: 'Helvetica Neue', Arial, sans-serif; }
 .mag-ft b { color: #444; font-weight: 700; }
 
 h1 { font-size: 30px; font-weight: 800; margin: 0 0 6px; line-height: 1.2; }
@@ -129,6 +129,14 @@ h3 { font-size: 15px; font-weight: 700; margin: 0 0 12px; }
   @page { margin: 1.5cm 2cm; size: A4 portrait; }
   .pb { break-after: page; page-break-after: always; }
   .nb { break-inside: avoid; page-break-inside: avoid; }
+  /* Never split a table row across a page — the whole label+description
+     stays together. The table itself is free to flow onto the next page
+     (with its header repeated) so it fills the page instead of jumping
+     wholesale and leaving a blank gap. */
+  .summary-tbl tr, .cost-tbl tr { break-inside: avoid; page-break-inside: avoid; }
+  .summary-tbl thead, .cost-tbl thead { display: table-header-group; }
+  /* Each day is a self-contained magazine page: keep it whole. */
+  .mag-page { break-inside: avoid; page-break-inside: avoid; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .confirm-btn { display: none !important; }
 }
@@ -668,7 +676,7 @@ export default async function QuotePrintPage({
               <ItineraryMap stops={mapStops} width={700} height={380} />
             </div>
 
-            <table className="summary-tbl nb">
+            <table className="summary-tbl">
               <thead>
                 <tr>
                   <th style={{ width: '16%' }}>{isArabic ? 'اليوم' : 'Day'}</th>
@@ -765,7 +773,7 @@ export default async function QuotePrintPage({
           }
 
           return (
-            <div key={day.id} className="page pb">
+            <div key={day.id} className="page pb mag-page">
               <div className="mag-head">
                 <div className="mag-daypill">{T.day} <span>{dl}</span></div>
                 {dest && <div className="mag-loc">{PIN}{dest}<MapsA href={destId ? destLinkMap[destId] ?? null : null} /></div>}
@@ -792,7 +800,7 @@ export default async function QuotePrintPage({
                     <div className="nb">
                       <div className="mag-photo">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={hotelPhotos[0]} alt="" style={{ height: 210 }} />
+                        <img src={hotelPhotos[0]} alt="" style={{ height: 150 }} />
                         {accName && <span className="mag-photo-top">{accName}</span>}
                       </div>
                       {hotelPhotos.length > 1 && (
@@ -800,7 +808,7 @@ export default async function QuotePrintPage({
                           {hotelPhotos.slice(1, 3).map((u: string, i: number) => (
                             <div className="mag-photo" key={i} style={{ marginBottom: 0 }}>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={u} alt="" style={{ height: 96 }} />
+                              <img src={u} alt="" style={{ height: 76 }} />
                             </div>
                           ))}
                         </div>
@@ -837,13 +845,13 @@ export default async function QuotePrintPage({
                     <div className="nb">
                       <div className="mag-photo">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={scenicPhotos[0]} alt="" style={{ height: 200 }} />
+                        <img src={scenicPhotos[0]} alt="" style={{ height: 150 }} />
                         {dest && <span className="mag-photo-bot">{dest}</span>}
                       </div>
                       {scenicPhotos[1] && (
                         <div className="mag-photo">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={scenicPhotos[1]} alt="" style={{ height: 168 }} />
+                          <img src={scenicPhotos[1]} alt="" style={{ height: 120 }} />
                           {dest && <span className="mag-photo-bot">{dest}</span>}
                         </div>
                       )}
