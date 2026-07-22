@@ -32,6 +32,16 @@ type Day = {
 
 const GRID_COLS = '90px 1fr 1.2fr 1.4fr 120px 70px'
 
+// Module scope so it keeps a stable identity across ItineraryBuilder renders —
+// defined inline it would remount on every keystroke elsewhere in the form.
+const MealPill = ({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) => (
+  <button type="button" onClick={onClick}
+    className={'h-7 w-7 rounded-md text-xs font-semibold border ' +
+      (on ? 'bg-primary-strong text-white border-primary-strong' : 'bg-surface text-muted-foreground border-border')}>
+    {label}
+  </button>
+)
+
 function blankDay(n: number): Day {
   return {
     _key: Math.random().toString(36).slice(2),
@@ -209,14 +219,6 @@ export default function ItineraryBuilder({
       setLoading(false)
     }
   }
-
-  const MealPill = ({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) => (
-    <button type="button" onClick={onClick}
-      className={'h-7 w-7 rounded-md text-xs font-semibold border ' +
-        (on ? 'bg-primary-strong text-white border-primary-strong' : 'bg-surface text-muted-foreground border-border')}>
-      {label}
-    </button>
-  )
 
   return (
     <div className="space-y-4">

@@ -182,6 +182,13 @@ export default function QuoteWorkspace({
         {versionsWithItinerary.map(v => {
           const data = itineraryByVersion[v.id]
           if (!data) return null
+          // Prefer just-saved dates over the server-loaded ones so the trip-date
+          // frame and readiness checks update the moment "Save Dates" succeeds,
+          // without waiting on a manual page refresh.
+          const override = savedDates[v.id]
+          const effectiveStart = override ? (override.start || null) : v.travel_start_date
+          const effectiveEnd = override ? (override.end || null) : v.travel_end_date
+          const effectiveVersion = { ...v, travel_start_date: effectiveStart, travel_end_date: effectiveEnd }
           return (
             <div key={v.id} className={v.id === activeVersionId ? 'space-y-6' : 'hidden'}>
               <VersionStatusControls quoteId={quoteId} versionId={v.id} status={v.status} />
@@ -193,12 +200,12 @@ export default function QuoteWorkspace({
                 quoteRequest={quoteRequest}
                 onDatesSaved={(start, end) => setSavedDates(prev => ({ ...prev, [v.id]: { start, end } }))}
               />
-              <ReadinessChecklist quoteDays={data.quoteDays} dayItems={data.dayItems} version={v} />
+              <ReadinessChecklist quoteDays={data.quoteDays} dayItems={data.dayItems} version={effectiveVersion} />
               <QuoteItineraryBuilder
                 quoteId={quoteId}
                 versionId={v.id}
-                travelStartDate={v.travel_start_date}
-                travelEndDate={v.travel_end_date}
+                travelStartDate={effectiveStart}
+                travelEndDate={effectiveEnd}
                 quoteDays={data.quoteDays}
                 dayItems={data.dayItems}
                 tourDays={tourDays}

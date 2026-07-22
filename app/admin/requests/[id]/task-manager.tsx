@@ -44,7 +44,8 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
     fd.set('type', type)
     startTransition(async () => {
       try {
-        await addTask(fd)
+        const created = await addTask(fd)
+        if (created) setTasks(ts => [...ts, created as Task])
         setTitle('')
         setType('other')
         setShowAdd(false)
