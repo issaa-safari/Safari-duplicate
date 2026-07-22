@@ -57,7 +57,7 @@ async function getUsdToKes(admin: Admin): Promise<number> {
 
 const CARD_SELECT =
   'id, name, entity_type, entity_id, cost_category, valid_from, valid_to, currency, is_active, ' +
-  'supplier_rates(id, traveller_category, room_category, residency, pricing_unit, amount, min_group_size, max_group_size, metadata, sort_order)'
+  'supplier_rates(id, traveller_category, room_category, residency, pricing_unit, amount, percent_of_adult, min_group_size, max_group_size, metadata, sort_order)'
 
 async function fetchCards(
   admin: Admin,

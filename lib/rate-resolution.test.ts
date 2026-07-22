@@ -220,6 +220,83 @@ describe('resolveRate', () => {
   })
 })
 
+describe('resolveRate — percent_of_adult', () => {
+  const params = {
+    entityType: 'accommodation', entityId: 'hotel-1',
+    serviceDate: '2026-06-10',
+  }
+
+  it('prices a percentage-only child row as that % of the same card adult rate', () => {
+    const cards = [card({ supplier_rates: [
+      rate({ amount: 200, traveller_category: 'adult' }),
+      rate({ amount: null, percent_of_adult: 50, traveller_category: 'child' }),
+    ] })]
+    const child = resolveRate({ ...params, travellerCategory: 'child' }, cards, FX)
+    expect(child.matchedTravellerCategory).toBe('child')
+    expect(child.sourceUnitCost).toBe(100)
+    expect(child.unitCostUsd).toBe(100)
+  })
+
+  it('derives the base from the generic (null-category) rate when no explicit adult row exists', () => {
+    const cards = [card({ supplier_rates: [
+      rate({ amount: 300, traveller_category: null }),
+      rate({ amount: null, percent_of_adult: 25, traveller_category: 'infant' }),
+    ] })]
+    const infant = resolveRate({ ...params, travellerCategory: 'infant' }, cards, FX)
+    expect(infant.sourceUnitCost).toBe(75)
+    expect(infant.unitCostUsd).toBe(75)
+  })
+
+  it('an absolute amount takes precedence when a row has both amount and percent', () => {
+    const cards = [card({ supplier_rates: [
+      rate({ amount: 200, traveller_category: 'adult' }),
+      rate({ amount: 40, percent_of_adult: 50, traveller_category: 'child' }),
+    ] })]
+    const child = resolveRate({ ...params, travellerCategory: 'child' }, cards, FX)
+    expect(child.sourceUnitCost).toBe(40)
+  })
+
+  it('converts a percentage of a KES adult rate to USD', () => {
+    const cards = [card({ currency: 'KES', supplier_rates: [
+      rate({ amount: 12900, traveller_category: 'adult' }),
+      rate({ amount: null, percent_of_adult: 50, traveller_category: 'child' }),
+    ] })]
+    const child = resolveRate({ ...params, travellerCategory: 'child' }, cards, FX)
+    expect(child.sourceUnitCost).toBe(6450)
+    expect(child.unitCostUsd).toBeCloseTo(50, 2)
+  })
+
+  it('picks the base matching the same room and residency', () => {
+    const cards = [card({ supplier_rates: [
+      rate({ amount: 200, traveller_category: 'adult', room_category: 'sharing' }),
+      rate({ amount: 320, traveller_category: 'adult', room_category: 'single' }),
+      rate({ amount: null, percent_of_adult: 50, traveller_category: 'child', room_category: 'single' }),
+    ] })]
+    const child = resolveRate(
+      { ...params, travellerCategory: 'child', roomCategory: 'single' }, cards, FX,
+    )
+    expect(child.sourceUnitCost).toBe(160)
+  })
+
+  it('rounds a percentage of the adult rate to cents', () => {
+    const cards = [card({ supplier_rates: [
+      rate({ amount: 200, traveller_category: 'adult' }),
+      rate({ amount: null, percent_of_adult: 33.33, traveller_category: 'child' }),
+    ] })]
+    const child = resolveRate({ ...params, travellerCategory: 'child' }, cards, FX)
+    expect(child.sourceUnitCost).toBe(66.66)
+  })
+
+  it('throws a clear error when a percent row has no adult rate to derive from', () => {
+    const cards = [card({ name: 'Mara Lodge', supplier_rates: [
+      rate({ amount: null, percent_of_adult: 50, traveller_category: 'child' }),
+    ] })]
+    expect(() =>
+      resolveRate({ ...params, travellerCategory: 'child', entityLabel: 'Mara Lodge' }, cards, FX),
+    ).toThrowError(/no adult rate/)
+  })
+})
+
 describe('applyAgeBand', () => {
   const base = () =>
     resolveRate(
