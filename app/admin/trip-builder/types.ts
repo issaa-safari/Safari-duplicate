@@ -19,6 +19,13 @@ export interface GuestDetails {
   endDate: string
 }
 
+/** How many guests of each band occupy a hotel row's room(s). */
+export interface RoomOccupancy {
+  adults: number
+  children: number
+  infants: number
+}
+
 export interface HotelRowInput {
   /** Client-side row key */
   key: string
@@ -32,6 +39,12 @@ export interface HotelRowInput {
   checkOut: string
   /** Manual per-night USD price; when set it replaces the rate-card price. */
   manualUnitCostUsd?: string
+  /**
+   * Guests occupying this row's room(s), used only for the per-person cost
+   * breakdown. Omitted = the whole traveller roster (backward compatible).
+   * Lets multiple rooms on the same stay carry different age mixes.
+   */
+  occupancy?: RoomOccupancy
 }
 
 export interface TransportRowInput {

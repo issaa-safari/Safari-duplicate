@@ -548,7 +548,7 @@ export default function TripBuilderForm({
           <p className="px-4 py-4 text-sm text-muted-foreground">No hotel rows yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="stack-table w-full text-sm min-w-[1080px]">
+            <table className="stack-table w-full text-sm min-w-[1200px]">
               <thead>
                 <tr className="text-left text-[11px] text-muted-foreground border-b border-border/70">
                   <th className="px-3 py-2 font-medium">Location</th>
@@ -556,6 +556,7 @@ export default function TripBuilderForm({
                   <th className="px-2 py-2 font-medium">Hotel</th>
                   <th className="px-2 py-2 font-medium">Room</th>
                   <th className="px-2 py-2 font-medium">Rooms</th>
+                  {(payingChildCount + infantCount) > 0 && <th className="px-2 py-2 font-medium" title="Guests occupying this row's room(s), for the per-person cost split">Guests</th>}
                   <th className="px-2 py-2 font-medium">Meal</th>
                   <th className="px-2 py-2 font-medium">Check-in</th>
                   <th className="px-2 py-2 font-medium">Check-out</th>
@@ -611,6 +612,30 @@ export default function TripBuilderForm({
                         <input type="number" min={1} className={inputCls} value={row.rooms}
                           onChange={e => update(row.key, { rooms: Math.max(1, parseInt(e.target.value) || 1) })} />
                       </td>
+                      {(payingChildCount + infantCount) > 0 && (
+                        <td data-label="Guests" className="px-2 py-1.5 min-w-[140px]">
+                          <div className="flex items-center gap-1">
+                            {([['adults', 'A', adultCount], ['children', 'C', payingChildCount], ['infants', 'I', infantCount]] as const)
+                              .filter(([, , max]) => max > 0)
+                              .map(([band, lbl, max]) => {
+                                const eff = row.occupancy ?? { adults: adultCount, children: payingChildCount, infants: infantCount }
+                                return (
+                                  <label key={band} className="flex items-center gap-0.5 text-[10px] text-muted-foreground" title={`${lbl === 'A' ? 'Adults' : lbl === 'C' ? 'Children (4–12)' : 'Infants (0–3)'} in this row's room(s)`}>
+                                    {lbl}
+                                    <input type="number" min={0} max={max} className={inputCls + ' w-10 px-1'}
+                                      value={eff[band]}
+                                      aria-label={`${lbl === 'A' ? 'Adults' : lbl === 'C' ? 'Children' : 'Infants'} in room`}
+                                      onChange={e => {
+                                        const base = row.occupancy ?? { adults: adultCount, children: payingChildCount, infants: infantCount }
+                                        const v = Math.max(0, Math.min(max, parseInt(e.target.value) || 0))
+                                        update(row.key, { occupancy: { ...base, [band]: v } })
+                                      }} />
+                                  </label>
+                                )
+                              })}
+                          </div>
+                        </td>
+                      )}
                       <td data-label="Meal" className="px-2 py-1.5 min-w-[75px]">
                         <select className={inputCls} value={row.mealPlan}
                           onChange={e => update(row.key, { mealPlan: e.target.value as HotelRowInput['mealPlan'] })}>
@@ -950,7 +975,7 @@ export default function TripBuilderForm({
             <p className="text-xs font-semibold text-foreground">
               Cost per person
               <span className="ml-2 font-normal text-muted-foreground">
-                each hotel split across guests, transport shared equally, parks per person — set a sale price to see margin
+                each hotel split across its room guests, transport shared equally, parks per person — set a sale price to see margin
               </span>
             </p>
             {ppcLoading && <span className="text-[11px] text-muted-foreground">recalculating…</span>}

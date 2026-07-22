@@ -308,6 +308,24 @@ export async function resolvePerPersonCost(
     }
     const presentBands = [...new Set(travellers.map(t => t.category))]
 
+    // Roster ids grouped by band, so a hotel row's occupancy counts can pick
+    // out specific travellers (which ones is immaterial to the per-band view).
+    const rosterByBand: Record<BandCode, string[]> = { adult: [], child: [], infant: [] }
+    for (const t of travellers) rosterByBand[t.category].push(t.id)
+    // Occupant ids for a hotel row, or undefined (= the whole roster) when the
+    // row carries no occupancy. A zero-guest row also falls back to the roster
+    // so its cost is never dropped from the breakdown.
+    const occupantsOf = (row: typeof state.hotelRows[number]): string[] | undefined => {
+      const occ = row.occupancy
+      if (!occ) return undefined
+      const ids = [
+        ...rosterByBand.adult.slice(0, Math.max(0, occ.adults)),
+        ...rosterByBand.child.slice(0, Math.max(0, occ.children)),
+        ...rosterByBand.infant.slice(0, Math.max(0, occ.infants)),
+      ]
+      return ids.length > 0 ? ids : undefined
+    }
+
     // ── Accommodation: room total per hotel, split by per-band weights ──
     const accommodations: AccommodationCost[] = []
     for (const row of state.hotelRows) {
@@ -316,12 +334,14 @@ export async function resolvePerPersonCost(
       const rooms = Math.max(1, row.rooms)
       const manual = manualPriceOf(row.manualUnitCostUsd)
       const roomCategory = row.roomCategory || undefined
+      const travellerIds = occupantsOf(row)
 
       if (manual !== null) {
         accommodations.push({
           label: row.accommodationId,
           mode: 'per_room',
           totalUsd: round2(manual * nights * rooms),
+          travellerIds,
         })
         continue
       }
@@ -344,7 +364,7 @@ export async function resolvePerPersonCost(
             cards, fx,
           )))
         }
-        accommodations.push({ label: row.accommodationId, mode: 'per_room', totalUsd: round2(roomTotal), bandWeights })
+        accommodations.push({ label: row.accommodationId, mode: 'per_room', totalUsd: round2(roomTotal), bandWeights, travellerIds })
       } catch (err) {
         if (err instanceof RateGapError) continue
         throw err
