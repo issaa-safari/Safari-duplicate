@@ -19,7 +19,9 @@ export interface SupplierRateRow {
   room_category: string | null
   residency: Residency | string
   pricing_unit: PricingUnit | string
-  amount: number | string
+  amount: number | string | null
+  /** When set, this rate is that % of the same card's adult/generic rate. */
+  percent_of_adult?: number | string | null
   min_group_size: number | null
   max_group_size: number | null
   sort_order: number | null

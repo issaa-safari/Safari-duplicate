@@ -15,7 +15,7 @@ type Card = {
 }
 type Rate = {
   id: string; traveller_category: string | null; room_category: string | null; residency: string;
-  pricing_unit: string; amount: number; min_group_size: number | null; max_group_size: number | null
+  pricing_unit: string; amount: number | null; percent_of_adult: number | null; min_group_size: number | null; max_group_size: number | null
 }
 
 const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
@@ -29,7 +29,8 @@ function RateFields({ rate, ageBands }: { rate?: Rate; ageBands: AgeBand[] }) {
     <select name="roomCategory" aria-label="Room category" defaultValue={rate?.room_category ?? ''} className={smallInputCls}><option value="">All rooms</option>{roomCategories.map(value => <option key={value} value={value}>{label(value)}</option>)}</select>
     <select name="residency" aria-label="Residency" defaultValue={rate?.residency ?? 'all'} className={smallInputCls}>{RESIDENCIES.map(value => <option key={value} value={value}>{label(value)}</option>)}</select>
     <select name="pricingUnit" aria-label="Pricing unit" defaultValue={rate?.pricing_unit ?? 'person'} className={smallInputCls}>{PRICING_UNITS.map(value => <option key={value} value={value}>Per {label(value)}</option>)}</select>
-    <input type="number" name="amount" aria-label="Amount" min={0} step="0.01" required defaultValue={rate?.amount ?? ''} placeholder="Amount" className={smallInputCls} />
+    <input type="number" name="amount" aria-label="Amount" min={0} step="0.01" defaultValue={rate?.amount ?? ''} placeholder="Amount" className={smallInputCls} />
+    <input type="number" name="percentOfAdult" aria-label="Percent of adult rate" min={0} max={100} step="0.01" defaultValue={rate?.percent_of_adult ?? ''} placeholder="% of adult" className={smallInputCls} />
     <input type="number" name="minGroupSize" aria-label="Minimum group size" min={1} defaultValue={rate?.min_group_size ?? ''} placeholder="Min group" className={smallInputCls} />
     <input type="number" name="maxGroupSize" aria-label="Maximum group size" min={1} defaultValue={rate?.max_group_size ?? ''} placeholder="Max group" className={smallInputCls} />
   </>
@@ -93,8 +94,8 @@ export default function RateCardEditor({ card, rates, ageBands, entities, suppli
 
       <section className="space-y-3">
         <div><h2 className="text-sm font-semibold text-foreground">Rates</h2><p className="text-xs text-muted-foreground">Use blank traveller or room categories when the rate applies to all.</p></div>
-        {rates.map(rate => <form key={rate.id} onSubmit={event => rateSubmit(event, rate.id)} className="rounded-xl border border-border bg-surface shadow-sm p-4"><div className="grid grid-cols-2 md:grid-cols-7 gap-2"><RateFields rate={rate} ageBands={ageBands} /></div><div className="flex justify-end gap-2 mt-3"><Button type="button" variant="danger-text" size="sm" onClick={() => removeRate(rate.id)} disabled={pending}>Delete</Button><Button type="submit" size="sm" loading={pending} loadingText="Saving…">Save Rate</Button></div></form>)}
-        <form onSubmit={event => rateSubmit(event)} className="bg-accent/50 rounded-lg border border-primary-strong/30 p-4"><p className="text-sm font-medium text-foreground mb-3">Add Rate</p><div className="grid grid-cols-2 md:grid-cols-7 gap-2"><RateFields ageBands={ageBands} /></div><div className="flex justify-end mt-3"><Button type="submit" loading={pending} loadingText="Adding…">+ Add Rate</Button></div></form>
+        {rates.map(rate => <form key={rate.id} onSubmit={event => rateSubmit(event, rate.id)} className="rounded-xl border border-border bg-surface shadow-sm p-4"><div className="grid grid-cols-2 md:grid-cols-8 gap-2"><RateFields rate={rate} ageBands={ageBands} /></div><div className="flex justify-end gap-2 mt-3"><Button type="button" variant="danger-text" size="sm" onClick={() => removeRate(rate.id)} disabled={pending}>Delete</Button><Button type="submit" size="sm" loading={pending} loadingText="Saving…">Save Rate</Button></div></form>)}
+        <form onSubmit={event => rateSubmit(event)} className="bg-accent/50 rounded-lg border border-primary-strong/30 p-4"><p className="text-sm font-medium text-foreground mb-3">Add Rate</p><div className="grid grid-cols-2 md:grid-cols-8 gap-2"><RateFields ageBands={ageBands} /></div><div className="flex justify-end mt-3"><Button type="submit" loading={pending} loadingText="Adding…">+ Add Rate</Button></div></form>
       </section>
 
       {error && <Alert variant="error">{error}</Alert>}

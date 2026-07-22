@@ -23,15 +23,32 @@ function optionalPositiveInteger(value: FormDataEntryValue | null) {
   return number
 }
 
+function optionalAmount(value: FormDataEntryValue | null) {
+  const raw = (value as string)?.trim()
+  if (!raw) return null
+  const number = Number(raw)
+  if (!Number.isFinite(number) || number < 0) throw new Error('Amount must be zero or greater.')
+  return number
+}
+
+function optionalPercent(value: FormDataEntryValue | null) {
+  const raw = (value as string)?.trim()
+  if (!raw) return null
+  const number = Number(raw)
+  if (!Number.isFinite(number) || number < 0 || number > 100) throw new Error('% of adult must be between 0 and 100.')
+  return number
+}
+
 function rateValues(formData: FormData) {
   const pricingUnit = formData.get('pricingUnit') as string
   const residency = (formData.get('residency') as string) || 'all'
-  const amount = Number(formData.get('amount'))
+  const amount = optionalAmount(formData.get('amount'))
+  const percentOfAdult = optionalPercent(formData.get('percentOfAdult'))
   const minGroupSize = optionalPositiveInteger(formData.get('minGroupSize'))
   const maxGroupSize = optionalPositiveInteger(formData.get('maxGroupSize'))
   if (!PRICING_UNITS.includes(pricingUnit as typeof PRICING_UNITS[number])) throw new Error('Invalid pricing unit.')
   if (!RESIDENCIES.includes(residency as typeof RESIDENCIES[number])) throw new Error('Invalid residency.')
-  if (!Number.isFinite(amount) || amount < 0) throw new Error('Amount must be zero or greater.')
+  if (amount === null && percentOfAdult === null) throw new Error('Enter an amount or a % of adult.')
   if (minGroupSize && maxGroupSize && maxGroupSize < minGroupSize) throw new Error('Maximum group size cannot be below minimum group size.')
   return {
     traveller_category: (formData.get('travellerCategory') as string)?.trim() || null,
@@ -39,6 +56,7 @@ function rateValues(formData: FormData) {
     residency,
     pricing_unit: pricingUnit,
     amount,
+    percent_of_adult: percentOfAdult,
     min_group_size: minGroupSize,
     max_group_size: maxGroupSize,
   }
