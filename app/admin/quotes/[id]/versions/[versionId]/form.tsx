@@ -265,6 +265,7 @@ export default function VersionEditorForm({
   ageBands,
   quoteRequest,
   onDatesSaved,
+  onTravellersChanged,
 }: {
   quoteId: string
   version: Version
@@ -273,6 +274,8 @@ export default function VersionEditorForm({
   quoteRequest?: { start_date: string | null; duration_days: number | null } | null
   /** Called after travel dates save successfully, so an embedding workspace can carry them into Pricing. */
   onDatesSaved?: (startDate: string, endDate: string) => void
+  /** Called after a traveller is added/edited/removed, so an embedding workspace can re-sync server-derived panels. */
+  onTravellersChanged?: () => void
 }) {
   const isLocked = !['draft', 'ready'].includes(version.status)
 
@@ -393,6 +396,7 @@ export default function VersionEditorForm({
       setTravellers(prev => [...prev, result.traveller as unknown as Traveller])
       setAddForm(blankTravellerForm(ageBands))
       setShowAdd(false)
+      onTravellersChanged?.()
     })
   }
 
@@ -428,6 +432,7 @@ export default function VersionEditorForm({
       const updated = result.traveller as unknown as Traveller
       setTravellers(prev => prev.map(t => (t.id === updated.id ? updated : t)))
       setEditingId(null)
+      onTravellersChanged?.()
     })
   }
 
@@ -440,7 +445,10 @@ export default function VersionEditorForm({
     startDeleteTransition(async () => {
       const result = await deleteTraveller(fd)
       if (result.error) setDeleteError(result.error)
-      else setTravellers(prev => prev.filter(t => t.id !== travellerId))
+      else {
+        setTravellers(prev => prev.filter(t => t.id !== travellerId))
+        onTravellersChanged?.()
+      }
     })
   }
 
