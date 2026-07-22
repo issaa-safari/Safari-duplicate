@@ -5,7 +5,8 @@ import Link from 'next/link'
 import CreateLookupDialog from '@/components/admin/create-lookup-dialog'
 import { createLookup } from '@/lib/create-lookup'
 import { INCLUDED_DEFAULT_EN, EXCLUDED_DEFAULT_EN } from '@/lib/quote-defaults'
-import { resolveTripRate, resyncHotelRowsFromItinerary, saveTrip } from './actions'
+import { resolvePerPersonCost, resolveTripRate, resyncHotelRowsFromItinerary, saveTrip } from './actions'
+import type { BandCostSummary, PerPersonCostResult } from '@/lib/per-person-cost'
 import {
   MEAL_PLANS,
   ROOM_CATEGORIES,
@@ -268,6 +269,35 @@ export default function TripBuilderForm({
     }
   }, [hotelRows, transportRows, parkRows])
 
+  // ── Per-person cost breakdown (server re-resolves; debounced) ──
+  const [perPersonCost, setPerPersonCost] = useState<PerPersonCostResult | null>(null)
+  const [ppcLoading, setPpcLoading] = useState(false)
+  const ppcSig = useRef('')
+  useEffect(() => {
+    const sig = JSON.stringify({ guest, hotelRows, transportRows, parkRows })
+    if (sig === ppcSig.current) return
+    ppcSig.current = sig
+    const hasTravellers = guest.adults > 0 || guest.childAges.length > 0
+    const hasRows = hotelRows.length + transportRows.length + parkRows.length > 0
+    const handle = setTimeout(() => {
+      if (!hasTravellers || !hasRows) { setPerPersonCost(null); setPpcLoading(false); return }
+      setPpcLoading(true)
+      // Only cost inputs matter here; the breakdown ignores sale price/text.
+      const state: TripBuilderState = {
+        guest, title: '', hotelRows, transportRows, parkRows,
+        salePrice: '', bandSalePrices: {}, inclusions: [], exclusions: [],
+      }
+      resolvePerPersonCost(state)
+        .then(res => {
+          if (ppcSig.current !== sig) return
+          setPerPersonCost(res.ok ? res.result : null)
+          setPpcLoading(false)
+        })
+        .catch(() => { if (ppcSig.current === sig) { setPerPersonCost(null); setPpcLoading(false) } })
+    }, 400)
+    return () => clearTimeout(handle)
+  }, [guest, hotelRows, transportRows, parkRows])
+
   // ── Summary math (display only — the server recomputes on save) ──
   // Manual prices win over the resolved rate; their units are computable
   // locally (nights × rooms / days × vehicles / tickets).
@@ -312,6 +342,15 @@ export default function TripBuilderForm({
   const usesBandPricing = adultPp !== null || childPp !== null || infantPp !== null
   const bandSaleTotal =
     (adultPp ?? 0) * adultCount + (childPp ?? 0) * payingChildCount + (infantPp ?? 0) * infantCount
+
+  // Resolved per-person cost by band (server-fed), keyed for the panel below.
+  const ppcByBand: Partial<Record<string, BandCostSummary>> = {}
+  for (const b of perPersonCost?.byBand ?? []) ppcByBand[b.category] = b
+  const bandRows = ([
+    { code: 'adult', label: 'Adult', count: adultCount },
+    { code: 'child', label: 'Child (4–12)', count: payingChildCount },
+    { code: 'infant', label: 'Infant (0–3)', count: infantCount },
+  ] as const).filter(b => b.count > 0)
 
   // Rows priced manually don't need a rate card — their gaps don't block saving.
   const manualKeys = new Set<string>()
@@ -905,42 +944,78 @@ export default function TripBuilderForm({
             </tbody>
           </table>
         </div>
-        {/* Per-traveller-type sale prices (Adult / Child set manually) */}
+        {/* Cost per person — itemised cost, sale price & margin by traveller type */}
         <div className="px-4 py-3 border-t border-border/70">
-          <p className="text-xs font-semibold text-foreground">
-            Sale price per traveller type
-            <span className="ml-2 font-normal text-muted-foreground">
-              set a per-person price for each type — or leave blank and use the single total above
-            </span>
-          </p>
-          <div className="mt-2 flex flex-wrap items-end gap-x-6 gap-y-2">
-            {([
-              { code: 'adult', label: 'Adult', count: adultCount, pp: adultPp },
-              { code: 'child', label: 'Child', count: payingChildCount, pp: childPp },
-              { code: 'infant', label: 'Infant (0–3)', count: infantCount, pp: infantPp },
-            ] as const).filter(b => b.count > 0).map(b => (
-              <div key={b.code} className="flex items-center gap-2">
-                <span className="text-sm text-foreground w-20">{b.count} × {b.label}</span>
-                <span className="text-sm text-muted-foreground">$</span>
-                <input
-                  type="number" min={0} step="1"
-                  className={inputCls + ' w-28 text-right tabular-nums' + (b.pp !== null ? ' border-amber-400 bg-amber-50' : '')}
-                  value={bandSalePrices[b.code] ?? ''}
-                  placeholder="per person"
-                  aria-label={`${b.label} sale price per person`}
-                  onChange={e => setBandSalePrices(prev => ({ ...prev, [b.code]: e.target.value }))}
-                />
-                <span className="text-xs text-muted-foreground tabular-nums w-24">
-                  {b.pp !== null ? `= $${fmt(b.pp * b.count)}` : ''}
-                </span>
-              </div>
-            ))}
-            {usesBandPricing && (
-              <span className="text-sm font-semibold text-foreground tabular-nums">
-                Total sale: ${fmt(bandSaleTotal)}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <p className="text-xs font-semibold text-foreground">
+              Cost per person
+              <span className="ml-2 font-normal text-muted-foreground">
+                each hotel split across guests, transport shared equally, parks per person — set a sale price to see margin
               </span>
-            )}
+            </p>
+            {ppcLoading && <span className="text-[11px] text-muted-foreground">recalculating…</span>}
           </div>
+          <div className="overflow-x-auto mt-2">
+            <table className="stack-table w-full text-sm min-w-[680px]">
+              <thead>
+                <tr className="text-left text-[11px] text-muted-foreground border-b border-border/70">
+                  <th className="px-3 py-2 font-medium">Traveller type</th>
+                  <th className="px-3 py-2 font-medium text-right">Hotels</th>
+                  <th className="px-3 py-2 font-medium text-right">Transport</th>
+                  <th className="px-3 py-2 font-medium text-right">Parks</th>
+                  <th className="px-3 py-2 font-medium text-right">Cost / person</th>
+                  <th className="px-3 py-2 font-medium text-right">Sale / person</th>
+                  <th className="px-3 py-2 font-medium text-right">Margin / person</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bandRows.map(b => {
+                  const c = ppcByBand[b.code]
+                  const per = c ? c.perPersonUsd : null
+                  const hotelPp = c && c.count > 0 ? c.accommodationUsd / c.count : null
+                  const transPp = c && c.count > 0 ? c.transportShareUsd / c.count : null
+                  const parkPp = c && c.count > 0 ? c.parkFeesUsd / c.count : null
+                  const salePp = bandPriceOf(b.code)
+                  const margin = salePp !== null && per !== null ? salePp - per : null
+                  const marginPct = margin !== null && salePp! > 0 ? (margin / salePp!) * 100 : null
+                  return (
+                    <tr key={b.code} className="border-b border-gray-50 last:border-0">
+                      <td data-label="Type" className="px-3 py-2.5 text-foreground">{b.count} × {b.label}</td>
+                      <td data-label="Hotels" className="px-3 py-2.5 text-right tabular-nums">{hotelPp !== null ? `$${fmt(hotelPp)}` : '—'}</td>
+                      <td data-label="Transport" className="px-3 py-2.5 text-right tabular-nums">{transPp !== null ? `$${fmt(transPp)}` : '—'}</td>
+                      <td data-label="Parks" className="px-3 py-2.5 text-right tabular-nums">{parkPp !== null ? `$${fmt(parkPp)}` : '—'}</td>
+                      <td data-label="Cost / person" className="px-3 py-2.5 text-right tabular-nums font-semibold text-foreground">{per !== null ? `$${fmt(per)}` : '—'}</td>
+                      <td data-label="Sale / person" className="px-3 py-2.5 text-right">
+                        <input
+                          type="number" min={0} step="1"
+                          className={inputCls + ' w-24 text-right tabular-nums inline-block' + (salePp !== null ? ' border-amber-400 bg-amber-50' : '')}
+                          value={bandSalePrices[b.code] ?? ''}
+                          placeholder="per person"
+                          aria-label={`${b.label} sale price per person`}
+                          onChange={e => setBandSalePrices(prev => ({ ...prev, [b.code]: e.target.value }))}
+                        />
+                      </td>
+                      <td data-label="Margin / person" className="px-3 py-2.5 text-right tabular-nums">
+                        {margin === null ? (
+                          <span className="text-gray-300">—</span>
+                        ) : (
+                          <span className={margin >= 0 ? 'text-green-700 font-medium' : 'text-destructive font-medium'}>
+                            ${fmt(margin)}
+                            {marginPct !== null && <span className="block text-[10px] font-normal">{marginPct.toFixed(1)}%</span>}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Leave sale prices blank to use the single total above. {usesBandPricing && (
+              <span className="font-semibold text-foreground tabular-nums">Total sale: ${fmt(bandSaleTotal)}</span>
+            )}
+          </p>
         </div>
         {payingGuests > 0 && (
           <p className="px-4 py-2 text-[11px] text-muted-foreground border-t border-gray-50">

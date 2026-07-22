@@ -19,7 +19,9 @@ export interface SupplierRateRow {
   room_category: string | null
   residency: Residency | string
   pricing_unit: PricingUnit | string
-  amount: number | string
+  amount: number | string | null
+  /** When set, this rate is that % of the same card's adult/generic rate. */
+  percent_of_adult?: number | string | null
   min_group_size: number | null
   max_group_size: number | null
   sort_order: number | null
@@ -132,6 +134,36 @@ function specificity(rate: SupplierRateRow, params: ResolveRateParams): number {
   return score
 }
 
+/** A rate carries an absolute amount when `amount` is set (a blank string counts as unset). */
+function hasAmount(rate: SupplierRateRow): boolean {
+  return rate.amount !== null && rate.amount !== undefined && rate.amount !== ''
+}
+
+/**
+ * The adult/base source amount on a specific card, used to turn a
+ * `percent_of_adult` child/infant row into an absolute cost. It is the best
+ * absolute-amount adult (or generic) rate on that same card for the same room
+ * and residency. Returns null when the card has no adult rate to derive from.
+ */
+function resolveBaseAdultAmount(card: RateCardRow, params: ResolveRateParams): number | null {
+  const baseParams: ResolveRateParams = { ...params, travellerCategory: 'adult' }
+  let best: { rate: SupplierRateRow; score: number } | null = null
+  for (const rate of card.supplier_rates ?? []) {
+    if (!hasAmount(rate)) continue // a percentage row can't itself be the base
+    if (rate.traveller_category !== null && rate.traveller_category !== 'adult') continue
+    if (!rateMatches(rate, baseParams)) continue
+    const score = specificity(rate, baseParams)
+    if (
+      !best ||
+      score > best.score ||
+      (score === best.score && (rate.sort_order ?? 0) < (best.rate.sort_order ?? 0))
+    ) {
+      best = { rate, score }
+    }
+  }
+  return best ? Number(best.rate.amount) : null
+}
+
 /**
  * Resolve the applicable supplier rate for an entity on a service date.
  * Throws RateGapError when nothing matches — never returns a zero fallback.
@@ -177,7 +209,22 @@ export function resolveRate(
     )
   }
 
-  const sourceUnitCost = Number(winner.rate.amount)
+  // A `percent_of_adult` row (with no absolute amount) prices as that % of the
+  // same card's adult rate; an absolute amount always takes precedence.
+  let sourceUnitCost: number
+  if (hasAmount(winner.rate)) {
+    sourceUnitCost = Number(winner.rate.amount)
+  } else if (winner.rate.percent_of_adult != null && winner.rate.percent_of_adult !== '') {
+    const base = resolveBaseAdultAmount(winner.card, params)
+    if (base === null) {
+      throw new Error(
+        `Rate "${winner.card.name}" prices ${params.entityLabel ?? params.entityId} as a % of the adult rate, but has no adult rate to derive it from.`,
+      )
+    }
+    sourceUnitCost = round2(base * (Number(winner.rate.percent_of_adult) / 100))
+  } else {
+    sourceUnitCost = 0
+  }
   return {
     rateCardId: winner.card.id,
     supplierRateId: winner.rate.id,
