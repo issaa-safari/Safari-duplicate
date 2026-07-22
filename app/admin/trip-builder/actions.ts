@@ -814,7 +814,7 @@ export async function resyncHotelRowsFromItinerary(
 
   const { data: days } = await admin
     .from('quote_days')
-    .select('id, day_number, day_date, destination_id, meals')
+    .select('id, day_number, day_number_end, day_date, destination_id, meals')
     .eq('quote_version_id', versionId)
     .order('day_number')
   if (!days || days.length === 0) return { ok: true, rows: [] }

@@ -27,15 +27,29 @@ function mealPlanOf(meals: string[] | null): HotelRowInput['mealPlan'] {
 interface ItineraryDay {
   id: string
   day_number: number
+  day_number_end: number | null
   day_date: string | null
   destination_id: string | null
   meals: string[] | null
 }
 
+// A single itinerary stop can span several calendar nights (a "Day 4–5" stop is
+// one quote_days row with day_number_end = 5). The number of nights it covers is
+// that span; a plain single-night stop has no day_number_end (or one equal to
+// day_number).
+const nightsOf = (d: ItineraryDay) =>
+  d.day_number_end && d.day_number_end > d.day_number
+    ? d.day_number_end - d.day_number + 1
+    : 1
+const lastDayNumberOf = (d: ItineraryDay) =>
+  d.day_number_end && d.day_number_end > d.day_number ? d.day_number_end : d.day_number
+
 /**
  * Turn the itinerary's day-by-day accommodation picks into Trip Builder hotel
  * rows: consecutive nights at the same property collapse into one stay with
- * check-in on its first day and check-out the morning after its last day.
+ * check-in on its first day and check-out the morning after its last night.
+ * Multi-night stops (day_number_end > day_number) contribute their full span,
+ * so a 2-night stop seeds a 2-night hotel row rather than collapsing to one.
  */
 export function hotelRowsFromItinerary(
   days: ItineraryDay[],
@@ -57,13 +71,14 @@ export function hotelRowsFromItinerary(
     }
     if (!accom) continue
     const dayDate = dateOf(day)
+    const nights = nightsOf(day)
     if (open) {
-      open.lastDayNumber = day.day_number
-      open.row.checkOut = dayDate ? isoAddDays(dayDate, 1) : ''
+      open.lastDayNumber = lastDayNumberOf(day)
+      open.row.checkOut = dayDate ? isoAddDays(dayDate, nights) : ''
     } else {
       open = {
         entityId: accom.entityId,
-        lastDayNumber: day.day_number,
+        lastDayNumber: lastDayNumberOf(day),
         row: {
           destinationId: accom.destinationId ?? day.destination_id ?? '',
           budgetTier: '',
@@ -72,7 +87,7 @@ export function hotelRowsFromItinerary(
           mealPlan: mealPlanOf(day.meals),
           rooms: 1,
           checkIn: dayDate,
-          checkOut: dayDate ? isoAddDays(dayDate, 1) : '',
+          checkOut: dayDate ? isoAddDays(dayDate, nights) : '',
         },
       }
     }
@@ -142,7 +157,7 @@ export async function loadTripBuilderInitialState(
         : Promise.resolve({ data: null }),
       versionIds.length
         ? admin.from('quote_days')
-            .select('id, quote_version_id, day_number, day_date, destination_id, meals')
+            .select('id, quote_version_id, day_number, day_number_end, day_date, destination_id, meals')
             .in('quote_version_id', versionIds)
         : Promise.resolve({ data: null }),
     ])

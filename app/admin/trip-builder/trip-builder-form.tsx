@@ -374,7 +374,10 @@ export default function TripBuilderForm({
       if (!res.ok) { setResyncError(res.message); return }
       setHotelRows(existing => res.rows.map((seed, i) => {
         const match = existing.find(r => r.accommodationId === seed.accommodationId && r.checkIn === seed.checkIn)
-        return match ?? { ...seed, key: `resync-${Date.now()}-${i}` }
+        // Keep the matched row's manual edits (price, room, rooms) but always
+        // refresh the check-out from the itinerary, so a stop whose night count
+        // changed — or was previously mis-seeded as one night — is corrected.
+        return match ? { ...match, checkOut: seed.checkOut } : { ...seed, key: `resync-${Date.now()}-${i}` }
       }))
     } catch (err) {
       setResyncError(err instanceof Error ? err.message : 'Re-sync failed.')
