@@ -173,7 +173,7 @@ export default async function QuotePortalPage({
   const accIds = [...new Set(Object.values(accomItemByDay).map((i: any) => i.accommodation_id).filter(Boolean))] as string[]
   const accMap: Record<string, { type: string | null; cover: string | null; gallery: string[]; en: string | null; ar: string | null; mapsUrl: string | null }> = {}
   if (accIds.length > 0) {
-    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, gallery_urls, description_en, description_ar, google_maps_url, google_place_id').in('id', accIds)
+    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, gallery_urls, description_en, description_ar, google_maps_url, google_place_id, latitude, longitude').in('id', accIds)
     for (const a of accs ?? []) accMap[a.id] = {
       type: a.type, cover: a.cover_image_url,
       gallery: Array.isArray(a.gallery_urls) ? (a.gallery_urls as string[]).filter(Boolean) : [],
@@ -235,14 +235,18 @@ export default async function QuotePortalPage({
 
   const travCounts: Record<string, number> = {}
   for (const t of (quoteTravellers ?? []) as any[]) {
-    const cat = t.traveller_category === 'child' ? 'child' : 'adult'
+    const cat = t.traveller_category === 'child' ? 'child' : t.traveller_category === 'infant' ? 'infant' : 'adult'
     travCounts[cat] = (travCounts[cat] ?? 0) + 1
   }
-  const travellersLabel = Object.entries(travCounts).map(([cat, n]) =>
+  const catLabel = (cat: string, n: number) =>
     isArabic
-      ? `${n} ${cat === 'child' ? (n > 1 ? 'أطفال' : 'طفل') : (n > 1 ? 'بالغين' : 'بالغ')}`
-      : `${n} ${cat === 'child' ? (n > 1 ? 'Children' : 'Child') : (n > 1 ? 'Adults' : 'Adult')}`
-  ).join(isArabic ? ' و ' : ', ') || (isArabic ? '—' : '—')
+      ? cat === 'child' ? (n > 1 ? 'أطفال' : 'طفل') : cat === 'infant' ? (n > 1 ? 'رُضّع' : 'رضيع') : (n > 1 ? 'بالغين' : 'بالغ')
+      : cat === 'child' ? (n > 1 ? 'Children' : 'Child') : cat === 'infant' ? (n > 1 ? 'Infants' : 'Infant') : (n > 1 ? 'Adults' : 'Adult')
+  const catOrder: Record<string, number> = { adult: 0, child: 1, infant: 2 }
+  const travellersLabel = Object.entries(travCounts)
+    .sort((a, b) => (catOrder[a[0]] ?? 9) - (catOrder[b[0]] ?? 9))
+    .map(([cat, n]) => `${n} ${catLabel(cat, n)}`)
+    .join(isArabic ? ' و ' : ', ') || '—'
 
   // ── Summary rows ──
   const dayLabel = (d: any) => (d.day_number_end && d.day_number_end !== d.day_number
@@ -288,10 +292,13 @@ export default async function QuotePortalPage({
       const roadKm = d.road_distance_km != null ? Number(d.road_distance_km) : null
       const autoKm = isNewStop && coord && prevCoord ? haversineKm(prevCoord, coord) : null
       const item = accomItemByDay[d.id]
+      const routeAcc = item?.accommodation_id ? accMap[item.accommodation_id] : null
       routeRows.push({
         dayLabel: dayLabel(d),
         destination: dest?.name ?? '—',
+        destinationMapsUrl: destId ? destLinkMap[destId] ?? null : null,
         accommodation: item?.title_snapshot ?? null,
+        accommodationMapsUrl: routeAcc?.mapsUrl ?? null,
         distanceKm: override ?? roadKm ?? autoKm,
       })
       if (destId) prevDestId = destId

@@ -592,6 +592,12 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
 
     // ── Travellers (one per adult/child, band by age) ──
     const adultBand = bands.find(b => b.code === 'adult')
+    // Infants are free by default, but the operator can set a per-person sale
+    // price for them (0–3 band); when they do, those infants become paying.
+    const infantSalePriceSet = (() => {
+      const n = Number((state.bandSalePrices ?? {})['infant'])
+      return Number.isFinite(n) && n > 0
+    })()
     const travellers: Record<string, unknown>[] = []
     let tSort = 0
     for (let i = 0; i < guest.adults; i++) {
@@ -609,6 +615,7 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
     guest.childAges.forEach((age, i) => {
       const band = bandForAge(bands, age)
       const isFree = band?.default_pricing_method === 'free'
+      const isInfant = band?.code === 'infant'
       travellers.push({
         displayName: `Child ${i + 1}`,
         ageOnTravelDate: age,
@@ -616,7 +623,8 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
         ageBandSnapshot: band ? bandSnapshot(band) : {},
         travellerCategory: band?.code ?? 'child',
         roomCategory: 'sharing',
-        isPaying: !isFree,
+        // Free bands don't pay — unless the infant band was given a sale price.
+        isPaying: !isFree || (isInfant && infantSalePriceSet),
         sortOrder: tSort++,
       })
     })
@@ -689,11 +697,13 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
     }
     const adultPp = bandPriceOf('adult')
     const childPp = bandPriceOf('child')
+    const infantPp = bandPriceOf('infant')
     const adultCount = guest.adults + guest.childAges.filter(a => a >= 13).length
     const childCount = guest.childAges.filter(a => a >= 4 && a <= 12).length
-    const usesBandPricing = adultPp !== null || childPp !== null
+    const infantCount = guest.childAges.filter(a => a >= 0 && a <= 3).length
+    const usesBandPricing = adultPp !== null || childPp !== null || infantPp !== null
     const sale = usesBandPricing
-      ? round2((adultPp ?? 0) * adultCount + (childPp ?? 0) * childCount)
+      ? round2((adultPp ?? 0) * adultCount + (childPp ?? 0) * childCount + (infantPp ?? 0) * infantCount)
       : Number(state.salePrice)
     const hasSale = Number.isFinite(sale) && sale > 0
     const markupPct = hasSale && cost > 0 ? (sale / cost - 1) * 100 : 0
@@ -743,13 +753,16 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
     // breakdown prefers these over the percentage-derived split), and the
     // customised Included/Excluded lists → the version. save_trip rewrites
     // travellers each save, so these follow every save.
-    const [{ error: adultPriceErr }, { error: childPriceErr }, { error: inclErr }] = await Promise.all([
+    const [{ error: adultPriceErr }, { error: childPriceErr }, { error: infantPriceErr }, { error: inclErr }] = await Promise.all([
       admin.from('quote_travellers')
         .update({ pricing_fixed_amount_usd: adultPp })
         .eq('quote_version_id', saved.versionId).eq('traveller_category', 'adult'),
       admin.from('quote_travellers')
         .update({ pricing_fixed_amount_usd: childPp })
         .eq('quote_version_id', saved.versionId).eq('traveller_category', 'child'),
+      admin.from('quote_travellers')
+        .update({ pricing_fixed_amount_usd: infantPp })
+        .eq('quote_version_id', saved.versionId).eq('traveller_category', 'infant'),
       admin.from('quote_versions')
         .update({
           inclusions: state.inclusions && state.inclusions.length > 0 ? state.inclusions : null,
@@ -757,7 +770,7 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
         })
         .eq('id', saved.versionId),
     ])
-    const postSaveErr = adultPriceErr ?? childPriceErr ?? inclErr
+    const postSaveErr = adultPriceErr ?? childPriceErr ?? infantPriceErr ?? inclErr
     if (postSaveErr) throw new Error(`Saved, but applying prices/inclusions failed: ${postSaveErr.message}`)
 
     const { data: quoteRow } = await admin

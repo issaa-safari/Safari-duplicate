@@ -301,14 +301,17 @@ export default function TripBuilderForm({
   // total is Σ count × price and the single total input is superseded.
   const adultCount = guest.adults + guest.childAges.filter(a => a >= 13).length
   const payingChildCount = guest.childAges.filter(a => a >= 4 && a <= 12).length
+  const infantCount = guest.childAges.filter(a => a >= 0 && a <= 3).length
   const bandPriceOf = (code: string) => {
     const n = Number(bandSalePrices[code])
     return Number.isFinite(n) && n > 0 ? n : null
   }
   const adultPp = bandPriceOf('adult')
   const childPp = bandPriceOf('child')
-  const usesBandPricing = adultPp !== null || childPp !== null
-  const bandSaleTotal = (adultPp ?? 0) * adultCount + (childPp ?? 0) * payingChildCount
+  const infantPp = bandPriceOf('infant')
+  const usesBandPricing = adultPp !== null || childPp !== null || infantPp !== null
+  const bandSaleTotal =
+    (adultPp ?? 0) * adultCount + (childPp ?? 0) * payingChildCount + (infantPp ?? 0) * infantCount
 
   // Rows priced manually don't need a rate card — their gaps don't block saving.
   const manualKeys = new Set<string>()
@@ -914,6 +917,7 @@ export default function TripBuilderForm({
             {([
               { code: 'adult', label: 'Adult', count: adultCount, pp: adultPp },
               { code: 'child', label: 'Child', count: payingChildCount, pp: childPp },
+              { code: 'infant', label: 'Infant (0–3)', count: infantCount, pp: infantPp },
             ] as const).filter(b => b.count > 0).map(b => (
               <div key={b.code} className="flex items-center gap-2">
                 <span className="text-sm text-foreground w-20">{b.count} × {b.label}</span>
@@ -940,7 +944,7 @@ export default function TripBuilderForm({
         </div>
         {payingGuests > 0 && (
           <p className="px-4 py-2 text-[11px] text-muted-foreground border-t border-gray-50">
-            Per guest = total ÷ {payingGuests} paying guest{payingGuests === 1 ? '' : 's'} (infants under 4 excluded).
+            Per guest = total ÷ {payingGuests} paying guest{payingGuests === 1 ? '' : 's'} (infants under 4 excluded — give them a per-person price above to charge them).
           </p>
         )}
       </div>

@@ -226,6 +226,11 @@ html { scroll-behavior: smooth; }
   outline-offset: 1px;
 }
 
+/* Value wrapper for .proposal-stack cells. A plain block on wide screens (so
+   the table cell renders exactly as before); it becomes a centred flex child
+   once the table stacks on phones. */
+.cell-v { display: block; }
+
 /* ── Mobile stacked tables ────────────────────────────────────────────────
    Tables marked .stack-table collapse into label/value cards on phones
    instead of scrolling sideways. Each <td> carries a data-label copied
@@ -267,6 +272,24 @@ html { scroll-behavior: smooth; }
   .stack-table td:not([data-label]) { justify-content: flex-end; }
   .stack-table td:not([data-label])::before { content: none; }
   .stack-table td:empty { display: none; }
+
+  /* Proposal summary/route tables (.proposal-stack): the field label pins to
+     the left as a small caption, and the value sits centred as one block —
+     so the day, destination (+ map link), hotel (+ map link) and meals read
+     as a single centred unit instead of being flung to opposite edges by the
+     default space-between. Values are wrapped in .cell-v so the map link stays
+     beside its name rather than becoming its own flex column. */
+  .proposal-stack td {
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+  [dir='rtl'] .proposal-stack td { flex-direction: row-reverse; }
+  .proposal-stack td::before { text-align: left; }
+  .proposal-stack td > .cell-v {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: center;
+  }
   /* Form controls inside stacked cells (trip builder rows) get room to breathe */
   .stack-table td > select,
   .stack-table td > input {

@@ -233,7 +233,7 @@ export default async function QuotePrintPage({
   const accDescMapById: Record<string, { en: string | null; ar: string | null }> = {}
   const accLinkMap: Record<string, string | null> = {}
   if (accIds.length > 0) {
-    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, gallery_urls, description_en, description_ar, google_maps_url, google_place_id').in('id', accIds)
+    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, gallery_urls, description_en, description_ar, google_maps_url, google_place_id, latitude, longitude').in('id', accIds)
     for (const a of accs ?? []) {
       const gallery = Array.isArray(a.gallery_urls) ? (a.gallery_urls as string[]).filter(Boolean) : []
       accGalleryMap[a.id] = gallery.length > 0 ? gallery : a.cover_image_url ? [a.cover_image_url] : []
@@ -338,11 +338,14 @@ export default async function QuotePrintPage({
   const grandTotal = travellerGroups.reduce((s, g) => s + g.total, 0) || totalSellingDerived
 
   // Pax summary for pricing page
-  const adultPax = payingTravellers.filter((t: any) => !t.traveller_category || t.traveller_category === 'adult').length
-  const childPax = payingTravellers.filter((t: any) => t.traveller_category && t.traveller_category !== 'adult').length
+  const payingByCat = payingTravellers as { traveller_category?: string | null }[]
+  const adultPax = payingByCat.filter(t => !t.traveller_category || t.traveller_category === 'adult').length
+  const infantPax = payingByCat.filter(t => t.traveller_category === 'infant').length
+  const childPax = payingByCat.filter(t => t.traveller_category && t.traveller_category !== 'adult' && t.traveller_category !== 'infant').length
   const paxStr = [
     adultPax > 0 ? `${adultPax} Adult${adultPax !== 1 ? 's' : ''}` : '',
     childPax > 0 ? `${childPax} Child${childPax !== 1 ? 'ren' : ''}` : '',
+    infantPax > 0 ? `${infantPax} Infant${infantPax !== 1 ? 's' : ''}` : '',
   ].filter(Boolean).join(', ') || (payingTravellers.length > 0 ? `${payingTravellers.length} Pax` : '—')
 
   function dayLabel(day: any) {
