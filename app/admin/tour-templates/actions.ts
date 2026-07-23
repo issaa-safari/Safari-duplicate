@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { safeAction } from '@/lib/server/action-result'
 
 async function authGuard() {
   const supabase = await createClient()
@@ -51,3 +52,34 @@ export async function startFromTemplate(formData: FormData) {
 
   redirect(`/admin/quotes/${newQuoteId}`)
 }
+
+/**
+ * Copy a template's latest version into a new quote for a client directly —
+ * no request required. Returns the new quote's URL so the caller can navigate
+ * there to adjust pricing for the client's request. The client must already
+ * exist (created inline via /api/admin/create-client when new).
+ */
+export const createQuoteForClient = safeAction(async (formData: FormData) => {
+  const { admin } = await authGuard()
+  const templateId = (formData.get('templateId') as string)?.trim()
+  const clientId = (formData.get('clientId') as string)?.trim()
+  if (!templateId) throw new Error('Missing template id.')
+  if (!clientId) throw new Error('Please choose a client.')
+
+  // Guard both ends: the source must be a real template, the client must exist.
+  const { data: template } = await admin
+    .from('quotes').select('id, is_template').eq('id', templateId).maybeSingle()
+  if (!template?.is_template) throw new Error('That template no longer exists.')
+
+  const { data: client } = await admin
+    .from('clients').select('id').eq('id', clientId).maybeSingle()
+  if (!client) throw new Error('That client no longer exists.')
+
+  const { data: newQuoteId, error } = await admin.rpc('copy_quote_for_client', {
+    p_source_quote_id: templateId,
+    p_client_id: clientId,
+  })
+  if (error) throw new Error(error.message)
+
+  return { error: null as null, redirectTo: `/admin/quotes/${newQuoteId}` }
+})
