@@ -24,7 +24,7 @@ export default async function TourTemplatesPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-foreground">Tour Templates</h1>
+        <h1 className="text-xl font-semibold text-foreground">Quote Templates</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           Reusable quotes you can copy into any request — itinerary and pricing included.
         </p>
