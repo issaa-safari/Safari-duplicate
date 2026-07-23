@@ -29,9 +29,9 @@ export function CardHeader({
 }) {
   return (
     <div
-      className={`flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5 ${className}`}
+      className={`flex items-center justify-between gap-3 rounded-t-xl border-b border-border bg-surface-alt px-4 py-3 sm:px-5 ${className}`}
     >
-      <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+      <h2 className="font-display text-[15px] font-semibold leading-tight text-foreground">{title}</h2>
       {action}
     </div>
   )
@@ -75,8 +75,8 @@ export function StatCard({
   }[tone]
   const inner = (
     <>
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-2xl font-semibold tabular-nums tracking-tight ${toneCls}`}>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`mt-1.5 text-[26px] font-semibold tabular-nums tracking-tight ${toneCls}`}>
         {value}
       </p>
       {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}

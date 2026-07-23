@@ -30,13 +30,13 @@ export const STATUS_VARIANT: Record<string, StatusVariant> = {
 }
 
 export const VARIANT_CLASSES: Record<StatusVariant, string> = {
-  neutral: 'bg-gray-100 text-gray-600',
+  neutral: 'bg-muted text-muted-foreground',
   info:    'bg-blue-100 text-blue-700',
   active:  'bg-indigo-100 text-indigo-700',
   warning: 'bg-amber-100 text-amber-800',
-  success: 'bg-green-100 text-green-700',
+  success: 'bg-accent text-brand-ink',
   danger:  'bg-red-100 text-red-700',
-  muted:   'bg-gray-50 text-gray-400',
+  muted:   'bg-surface-alt text-muted-foreground',
 }
 
 // Saturated accent per variant, for dots/markers next to VARIANT_CLASSES chips.
