@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import { addRoom, deleteRoom } from './room-actions'
 
 interface Room {
@@ -18,7 +19,7 @@ export default function RoomsPanel({ accommodationId, rooms: initial }: { accomm
   const [rooms, setRooms] = useState(initial)
   const [showAdd, setShowAdd] = useState(false)
   const [error, setError] = useState('')
-  const [pending, startTransition] = useTransition()
+  const { pending, run } = useAction()
 
   function handleAdd(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -26,7 +27,7 @@ export default function RoomsPanel({ accommodationId, rooms: initial }: { accomm
     const form = e.currentTarget
     const fd = new FormData(form)
     fd.set('accommodationId', accommodationId)
-    startTransition(async () => {
+    run(async () => {
       try {
         await addRoom(fd)
         setRooms(r => [...r, {
@@ -49,7 +50,7 @@ export default function RoomsPanel({ accommodationId, rooms: initial }: { accomm
     const fd = new FormData()
     fd.set('id', id)
     fd.set('accommodationId', accommodationId)
-    startTransition(async () => {
+    run(async () => {
       await deleteRoom(fd)
       setRooms(r => r.filter(x => x.id !== id))
     })

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import { recordPayment } from './actions'
 import { Alert } from '@/components/ui/alert'
 
@@ -17,7 +18,7 @@ export default function PaymentForm({
   alreadyReceived: number
   onDone: () => void
 }) {
-  const [pending, startTransition] = useTransition()
+  const { pending, run } = useAction()
   const [error, setError] = useState('')
   const outstanding = Math.max(totalSelling - alreadyReceived, 0)
 
@@ -26,7 +27,7 @@ export default function PaymentForm({
     setError('')
     const fd = new FormData(e.currentTarget)
     fd.set('quoteId', quoteId)
-    startTransition(async () => {
+    run(async () => {
       try {
         await recordPayment(fd)
         onDone()

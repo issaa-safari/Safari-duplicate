@@ -10,7 +10,7 @@ const csp = [
   `script-src 'self' 'unsafe-inline'${__impeccableLiveDev}`,
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
-  `connect-src 'self' https://*.supabase.co https://*.supabase.in${__impeccableLiveDev}`,
+  `connect-src 'self' https://*.supabase.co https://*.supabase.in https://va.vercel-scripts.com${__impeccableLiveDev}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

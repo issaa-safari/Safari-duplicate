@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import { saveDates, saveLanguage, addTraveller, deleteTraveller, updateTraveller } from './actions'
 
 interface AgeBand {
@@ -300,7 +301,7 @@ export default function VersionEditorForm({
 
   const [startDate, setStartDate] = useState(defaultStartDate)
   const [endDate, setEndDate] = useState(defaultEndDate)
-  const [datesPending, startDateTransition] = useTransition()
+  const { pending: datesPending, run: runDates } = useAction()
   const [datesError, setDatesError] = useState('')
   const [datesSaved, setDatesSaved] = useState(false)
 
@@ -316,7 +317,7 @@ export default function VersionEditorForm({
     fd.set('quoteId', quoteId)
     fd.set('travelStartDate', startDate)
     fd.set('travelEndDate', endDate)
-    startDateTransition(async () => {
+    runDates(async () => {
       const result = await saveDates(fd)
       if (result.error) setDatesError(result.error)
       else {
@@ -328,7 +329,7 @@ export default function VersionEditorForm({
 
   // ── Language ────────────────────────────────────────────────────────────
   const [language, setLanguage] = useState(version.language ?? 'en')
-  const [langPending, startLangTransition] = useTransition()
+  const { pending: langPending, run: runLang } = useAction()
   const [langSaved, setLangSaved] = useState(false)
   const [langError, setLangError] = useState('')
 
@@ -341,7 +342,7 @@ export default function VersionEditorForm({
     fd.set('versionId', version.id)
     fd.set('quoteId', quoteId)
     fd.set('language', lang)
-    startLangTransition(async () => {
+    runLang(async () => {
       const result = await saveLanguage(fd)
       if (result.error) {
         setLanguage(previous)
@@ -355,17 +356,17 @@ export default function VersionEditorForm({
   // ── Add traveller ───────────────────────────────────────────────────────
   const [showAdd, setShowAdd] = useState(false)
   const [addForm, setAddForm] = useState(() => blankTravellerForm(ageBands))
-  const [addPending, startAddTransition] = useTransition()
+  const { pending: addPending, run: runAdd } = useAction()
   const [addError, setAddError] = useState('')
 
   // ── Edit traveller ──────────────────────────────────────────────────────
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState(() => blankTravellerForm(ageBands))
-  const [editPending, startEditTransition] = useTransition()
+  const { pending: editPending, run: runEdit } = useAction()
   const [editError, setEditError] = useState('')
 
   // ── Delete ──────────────────────────────────────────────────────────────
-  const [deletePending, startDeleteTransition] = useTransition()
+  const { pending: deletePending, run: runDelete } = useAction()
   const [deleteError, setDeleteError] = useState('')
 
   // ── Helpers ─────────────────────────────────────────────────────────────
@@ -387,7 +388,7 @@ export default function VersionEditorForm({
 
   function handleAdd() {
     setAddError('')
-    startAddTransition(async () => {
+    runAdd(async () => {
       const result = await addTraveller(buildAddFd(addForm))
       if (result.error !== null) {
         setAddError(result.error)
@@ -423,7 +424,7 @@ export default function VersionEditorForm({
     setEditError('')
     const fd = buildAddFd(editForm)
     fd.set('travellerId', editingId!)
-    startEditTransition(async () => {
+    runEdit(async () => {
       const result = await updateTraveller(fd)
       if (result.error !== null) {
         setEditError(result.error)
@@ -442,7 +443,7 @@ export default function VersionEditorForm({
     fd.set('travellerId', travellerId)
     fd.set('versionId', version.id)
     fd.set('quoteId', quoteId)
-    startDeleteTransition(async () => {
+    runDelete(async () => {
       const result = await deleteTraveller(fd)
       if (result.error) setDeleteError(result.error)
       else {

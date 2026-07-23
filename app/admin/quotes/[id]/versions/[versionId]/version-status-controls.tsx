@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import { setVersionStatus } from './actions'
 import StatusBadge from '@/components/admin/status-badge'
 
@@ -30,7 +31,7 @@ export default function VersionStatusControls({
   const [localStatus, setLocalStatus] = useState<{ base: string; value: string } | null>(null)
   const currentStatus = localStatus && localStatus.base === status ? localStatus.value : status
   const [error, setError] = useState('')
-  const [pending, startTransition] = useTransition()
+  const { pending, run } = useAction()
 
   const actions = TRANSITIONS[currentStatus] ?? []
 
@@ -40,7 +41,7 @@ export default function VersionStatusControls({
     fd.set('versionId', versionId)
     fd.set('quoteId', quoteId)
     fd.set('status', toStatus)
-    startTransition(async () => {
+    run(async () => {
       const result = await setVersionStatus(fd)
       if (result.error) setError(result.error)
       else setLocalStatus({ base: status, value: toStatus })

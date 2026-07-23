@@ -1,6 +1,7 @@
 'use client'
 
-import { type ReactNode, useState, useTransition } from 'react'
+import { type ReactNode, useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import { useRouter } from 'next/navigation'
 
 export interface StatusOption {
@@ -37,7 +38,7 @@ export default function BulkSelectableList<T>({
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [pending, startTransition] = useTransition()
+  const { pending, run } = useAction()
   const [error, setError] = useState('')
   const [statusChoice, setStatusChoice] = useState(statusOptions?.[0]?.value ?? '')
 
@@ -63,7 +64,7 @@ export default function BulkSelectableList<T>({
     if (ids.length === 0) return
     if (deleteConfirm && !window.confirm(deleteConfirm(ids.length))) return
     setError('')
-    startTransition(async () => {
+    run(async () => {
       const result = await onDelete(ids)
       if (result.error) setError(result.error)
       setSelected(new Set())
@@ -76,7 +77,7 @@ export default function BulkSelectableList<T>({
     const ids = [...selected]
     if (ids.length === 0) return
     setError('')
-    startTransition(async () => {
+    run(async () => {
       // Bulk status changes can partially succeed (some rows locked or
       // ineligible) — always refresh so any that did move show up, while the
       // error message (if any) explains what was skipped and why.
@@ -90,7 +91,11 @@ export default function BulkSelectableList<T>({
   return (
     <div>
       {selected.size > 0 && (
-        <div className="sticky top-0 z-10 mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-4 py-2.5 shadow-sm">
+        // Stick *below* the sticky app chrome, not at viewport top — otherwise
+        // the bar (and its Delete / Change-status buttons) hides behind the
+        // mobile top bar (h-14 + notch inset) or the desktop header (~108px),
+        // which made bulk actions unreachable on a phone.
+        <div className="sticky top-[calc(env(safe-area-inset-top)+3.75rem)] z-20 mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-4 py-2.5 shadow-sm lg:top-[7rem]">
           <span className="text-sm font-medium text-foreground">{selected.size} selected</span>
 
           {statusOptions && onSetStatus && (
