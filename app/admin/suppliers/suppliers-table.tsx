@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import Link from 'next/link'
 import { createSupplier, setSupplierActive, updateSupplier } from './actions'
 import { SUPPLIER_TYPES, type SupplierRow } from './constants'
@@ -40,11 +41,11 @@ export default function SuppliersTable({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const [pending, startTransition] = useTransition()
+  const { pending, run: runAction } = useAction()
 
   function run(action: (fd: FormData) => Promise<void>, fd: FormData, success: string) {
     setError(''); setMessage('')
-    startTransition(async () => {
+    runAction(async () => {
       try {
         await action(fd)
         setMessage(success)

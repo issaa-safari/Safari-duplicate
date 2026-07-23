@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import { addDefaultTask, toggleDefaultTask, deleteDefaultTask } from './actions'
 
 interface DefaultTask {
@@ -23,7 +24,7 @@ export default function DefaultTaskManager({ tasks: initial }: { tasks: DefaultT
   const [description, setDescription] = useState('')
   const [type, setType] = useState('other')
   const [error, setError] = useState('')
-  const [pending, startTransition] = useTransition()
+  const { pending, run } = useAction()
 
   function refresh(mutate: (t: DefaultTask[]) => DefaultTask[]) {
     setTasks(mutate)
@@ -36,7 +37,7 @@ export default function DefaultTaskManager({ tasks: initial }: { tasks: DefaultT
     const fd = new FormData()
     fd.set('description', description)
     fd.set('type', type)
-    startTransition(async () => {
+    run(async () => {
       try {
         await addDefaultTask(fd)
         setTasks(ts => [...ts, { id: crypto.randomUUID(), description, type, sort_order: (ts.at(-1)?.sort_order ?? 0) + 10, is_active: true }])
@@ -52,7 +53,7 @@ export default function DefaultTaskManager({ tasks: initial }: { tasks: DefaultT
     const fd = new FormData()
     fd.set('id', t.id)
     fd.set('isActive', String(!t.is_active))
-    startTransition(async () => {
+    run(async () => {
       await toggleDefaultTask(fd)
       refresh(ts => ts.map(x => x.id === t.id ? { ...x, is_active: !x.is_active } : x))
     })
@@ -61,7 +62,7 @@ export default function DefaultTaskManager({ tasks: initial }: { tasks: DefaultT
   function handleDelete(id: string) {
     const fd = new FormData()
     fd.set('id', id)
-    startTransition(async () => {
+    run(async () => {
       await deleteDefaultTask(fd)
       refresh(ts => ts.filter(x => x.id !== id))
     })

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import { assignStaff, unassignStaff, assignVehicle, unassignVehicle } from './assignment-actions'
 
 interface StaffAssignment { id: string; role: string | null; tour_staff: { id: string; name: string; role: string } | null }
@@ -24,7 +25,7 @@ export default function AssignmentManager({
   const [staffId, setStaffId] = useState('')
   const [vehicleId, setVehicleId] = useState('')
   const [error, setError] = useState('')
-  const [pending, startTransition] = useTransition()
+  const { pending, run } = useAction()
 
   const availableStaff = staffOptions.filter(o => !staff.some(a => a.tour_staff?.id === o.id))
   const availableVehicles = vehicleOptions.filter(o => !vehicles.some(a => a.vehicles?.id === o.id))
@@ -34,7 +35,7 @@ export default function AssignmentManager({
     setError('')
     const opt = staffOptions.find(o => o.id === staffId)
     const fd = new FormData(); fd.set('requestId', requestId); fd.set('staffId', staffId)
-    startTransition(async () => {
+    run(async () => {
       try {
         await assignStaff(fd)
         setStaff(s => [...s, { id: crypto.randomUUID(), role: null, tour_staff: opt ? { id: opt.id, name: opt.name, role: opt.role } : null }])
@@ -44,14 +45,14 @@ export default function AssignmentManager({
   }
   function removeStaff(id: string) {
     const fd = new FormData(); fd.set('id', id); fd.set('requestId', requestId)
-    startTransition(async () => { await unassignStaff(fd); setStaff(s => s.filter(a => a.id !== id)) })
+    run(async () => { await unassignStaff(fd); setStaff(s => s.filter(a => a.id !== id)) })
   }
   function addVehicle() {
     if (!vehicleId) return
     setError('')
     const opt = vehicleOptions.find(o => o.id === vehicleId)
     const fd = new FormData(); fd.set('requestId', requestId); fd.set('vehicleId', vehicleId)
-    startTransition(async () => {
+    run(async () => {
       try {
         await assignVehicle(fd)
         setVehicles(v => [...v, { id: crypto.randomUUID(), seats_used: null, vehicles: opt ? { id: opt.id, name: opt.name, type: opt.type, seats: opt.seats } : null }])
@@ -61,7 +62,7 @@ export default function AssignmentManager({
   }
   function removeVehicle(id: string) {
     const fd = new FormData(); fd.set('id', id); fd.set('requestId', requestId)
-    startTransition(async () => { await unassignVehicle(fd); setVehicles(v => v.filter(a => a.id !== id)) })
+    run(async () => { await unassignVehicle(fd); setVehicles(v => v.filter(a => a.id !== id)) })
   }
 
   return (

@@ -1,6 +1,7 @@
 'use client'
 
-import { type ReactNode, useState, useTransition } from 'react'
+import { type ReactNode, useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import { useRouter } from 'next/navigation'
 
 export interface StatusOption {
@@ -37,7 +38,7 @@ export default function BulkSelectableList<T>({
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [pending, startTransition] = useTransition()
+  const { pending, run } = useAction()
   const [error, setError] = useState('')
   const [statusChoice, setStatusChoice] = useState(statusOptions?.[0]?.value ?? '')
 
@@ -63,7 +64,7 @@ export default function BulkSelectableList<T>({
     if (ids.length === 0) return
     if (deleteConfirm && !window.confirm(deleteConfirm(ids.length))) return
     setError('')
-    startTransition(async () => {
+    run(async () => {
       const result = await onDelete(ids)
       if (result.error) setError(result.error)
       setSelected(new Set())
@@ -76,7 +77,7 @@ export default function BulkSelectableList<T>({
     const ids = [...selected]
     if (ids.length === 0) return
     setError('')
-    startTransition(async () => {
+    run(async () => {
       // Bulk status changes can partially succeed (some rows locked or
       // ineligible) — always refresh so any that did move show up, while the
       // error message (if any) explains what was skipped and why.

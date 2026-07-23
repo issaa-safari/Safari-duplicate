@@ -1,6 +1,7 @@
 'use client'
 
-import { Fragment, useEffect, useRef, useState, useTransition } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import Link from 'next/link'
 import CreateLookupDialog from '@/components/admin/create-lookup-dialog'
 import { createLookup } from '@/lib/create-lookup'
@@ -207,7 +208,7 @@ export default function TripBuilderForm({
 
   const [resolutions, setResolutions] = useState<Resolutions>({})
   const sigRef = useRef<Record<string, string>>({})
-  const [saving, startSave] = useTransition()
+  const { pending: saving, run: runSave } = useAction()
   const [saveError, setSaveError] = useState('')
   const [saveGaps, setSaveGaps] = useState<string[]>([])
   const [savedOk, setSavedOk] = useState(false)
@@ -398,7 +399,7 @@ export default function TripBuilderForm({
       guest, title, hotelRows, transportRows, parkRows, salePrice,
       bandSalePrices, inclusions, exclusions,
     }
-    startSave(async () => {
+    runSave(async () => {
       const result = await saveTrip({ quoteId, versionId, state })
       if (result.ok) {
         setQuoteId(result.quoteId)

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import { addTask, toggleTask, deleteTask } from './task-actions'
 
 interface Task {
@@ -32,7 +33,7 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
   const [title, setTitle] = useState('')
   const [type, setType] = useState('other')
   const [error, setError] = useState('')
-  const [pending, startTransition] = useTransition()
+  const { pending, run } = useAction()
 
   function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -42,7 +43,7 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
     fd.set('requestId', requestId)
     fd.set('title', title)
     fd.set('type', type)
-    startTransition(async () => {
+    run(async () => {
       try {
         const created = await addTask(fd)
         if (created) setTasks(ts => [...ts, created as Task])
@@ -65,7 +66,7 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
     fd.set('taskId', task.id)
     fd.set('requestId', requestId)
     fd.set('isDone', String(!task.is_done))
-    startTransition(async () => {
+    run(async () => {
       await toggleTask(fd)
       setTasks(ts => ts.map(t => t.id === task.id ? { ...t, is_done: !t.is_done } : t))
     })
@@ -75,7 +76,7 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
     const fd = new FormData()
     fd.set('taskId', taskId)
     fd.set('requestId', requestId)
-    startTransition(async () => {
+    run(async () => {
       await deleteTask(fd)
       setTasks(ts => ts.filter(t => t.id !== taskId))
     })

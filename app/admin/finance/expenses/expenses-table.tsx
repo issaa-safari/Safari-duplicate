@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import { addExpense, deleteExpense } from './actions'
 
 export interface ExpenseRow {
@@ -28,14 +29,14 @@ function label(v: string) {
 
 export default function ExpensesTable({ expenses }: { expenses: ExpenseRow[] }) {
   const [error, setError] = useState('')
-  const [pending, startTransition] = useTransition()
+  const { pending, run } = useAction()
 
   function submitNew(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError('')
     const form = e.currentTarget
     const fd = new FormData(form)
-    startTransition(async () => {
+    run(async () => {
       try {
         await addExpense(fd)
         form.reset()
@@ -49,7 +50,7 @@ export default function ExpensesTable({ expenses }: { expenses: ExpenseRow[] }) 
     setError('')
     const fd = new FormData()
     fd.set('expenseId', expenseId)
-    startTransition(async () => {
+    run(async () => {
       try {
         await deleteExpense(fd)
       } catch (err) {
