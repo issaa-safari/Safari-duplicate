@@ -244,6 +244,36 @@ input, textarea, select { color: #1f2937; }
 input::placeholder, textarea::placeholder { color: #9ca3af; }
 html { scroll-behavior: smooth; }
 
+/* ── Installed-app (standalone PWA) refinements ────────────────────────────
+   These only take effect when the app is launched from the home screen
+   (display-mode: standalone / minimal-ui). They make it feel native rather
+   than like a browser tab: no rubber-band page reloads, no grey tap flashes
+   on nav controls, and no accidental long-press text selection on chrome. */
+@media (display-mode: standalone), (display-mode: minimal-ui) {
+  html {
+    /* Kill the whole-document scroll chaining so a pull at the top doesn't
+       bounce the app shell (the notch/status-bar area) with it. */
+    overscroll-behavior-y: none;
+  }
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Chrome (nav bars, tab bar, sheet) shouldn't be text-selectable — it reads
+     as an accidental gesture in an app. Page content stays selectable. */
+  header, nav, [data-app-chrome] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* Safe-area helpers for the notch / status bar / home indicator. Paired with
+   `viewport-fit=cover` (set in the root viewport) so these return real insets
+   on notched devices and 0 elsewhere. */
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.h-safe-top { height: env(safe-area-inset-top); }
+.min-h-touch { min-height: 44px; } /* Apple/Material minimum tap target */
+
 /* Accent-colored, visible keyboard focus for public form fields (accent set per-instance via --focus-accent) */
 .enquiry-field:focus-visible {
   outline: 2px solid var(--focus-accent, var(--olive));
