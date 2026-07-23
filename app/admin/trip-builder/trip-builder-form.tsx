@@ -97,6 +97,24 @@ function manualPriceOf(raw: string | undefined): number | null {
   return raw !== undefined && raw.trim() !== '' && Number.isFinite(n) && n > 0 ? n : null
 }
 
+/** Section header with the redesign's olive step chip + serif title. Splits a
+ *  "N · Title" heading into the numbered chip and the title. */
+function StepHead({ heading }: { heading: string }) {
+  const idx = heading.indexOf(' · ')
+  const n = idx >= 0 ? heading.slice(0, idx) : ''
+  const title = idx >= 0 ? heading.slice(idx + 3) : heading
+  return (
+    <div className="flex items-center gap-2">
+      {n && (
+        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-md bg-primary-strong text-[11px] font-bold text-white shadow-sm">
+          {n}
+        </span>
+      )}
+      <h2 className="font-display text-[15px] font-semibold leading-tight text-foreground">{title}</h2>
+    </div>
+  )
+}
+
 export default function TripBuilderForm({
   destinations,
   accommodations,
@@ -516,7 +534,6 @@ export default function TripBuilderForm({
 
   const section = 'rounded-xl border border-border bg-surface shadow-sm'
   const sectionHead = 'px-4 py-2.5 border-b border-border/70 flex items-center justify-between'
-  const sectionTitle = 'text-sm font-semibold text-foreground'
   const addBtn = 'text-xs font-medium text-brand-text hover:text-brand-ink'
   const removeBtn = 'text-gray-300 hover:text-destructive text-sm px-1'
 
@@ -603,7 +620,7 @@ export default function TripBuilderForm({
     return (
       <div className={section} onKeyDown={sectionKeyDown(addRow)}>
         <div className={sectionHead}>
-          <h2 className={sectionTitle}>{heading}</h2>
+          <StepHead heading={heading} />
           <div className="flex items-center gap-2">
             {versionId && (
               <button type="button" onClick={() => handleResync()} disabled={resyncing}
@@ -761,7 +778,7 @@ export default function TripBuilderForm({
       {/* 1 ─ Guest details */}
       <div className={section}>
         <div className={sectionHead}>
-          <h2 className={sectionTitle}>1 · Guest details</h2>
+          <StepHead heading="1 · Guest details" />
           {quoteId && (
             <span className="text-xs text-muted-foreground">
               Editing draft {quoteNumber ? <span className="font-mono">{quoteNumber}</span> : 'quote'}
@@ -830,7 +847,7 @@ export default function TripBuilderForm({
       <div className={section}
         onKeyDown={sectionKeyDown(() => setTransportRows(rows => [...rows, blankTransportRow(guest.startDate, guest.endDate)]))}>
         <div className={sectionHead}>
-          <h2 className={sectionTitle}>3 · Transport</h2>
+          <StepHead heading="3 · Transport" />
           <button type="button" className={addBtn}
             onClick={() => setTransportRows(rows => [...rows, blankTransportRow(guest.startDate, guest.endDate)])}>
             + Add vehicle row (↵)
@@ -905,7 +922,7 @@ export default function TripBuilderForm({
       <div className={section}
         onKeyDown={sectionKeyDown(() => setParkRows(rows => [...rows, blankParkRow(guest.startDate)]))}>
         <div className={sectionHead}>
-          <h2 className={sectionTitle}>4 · Park fees</h2>
+          <StepHead heading="4 · Park fees" />
           <button type="button" className={addBtn}
             onClick={() => setParkRows(rows => [...rows, blankParkRow(guest.startDate)])}>
             + Add park row (↵)
@@ -983,7 +1000,7 @@ export default function TripBuilderForm({
       {/* 5 ─ Live summary */}
       <div className={section}>
         <div className={sectionHead}>
-          <h2 className={sectionTitle}>5 · Cost summary &amp; sale price</h2>
+          <StepHead heading="5 · Cost summary & sale price" />
           <span className="text-xs text-muted-foreground">USD · KES @ {fmt0(usdToKes)}</span>
         </div>
         <div className="overflow-x-auto">
@@ -1134,7 +1151,7 @@ export default function TripBuilderForm({
       {/* 6 ─ Included / Excluded (shown on the client proposal) */}
       <div className={section}>
         <div className={sectionHead}>
-          <h2 className={sectionTitle}>6 · Inclusions &amp; Exclusions</h2>
+          <StepHead heading="6 · Inclusions & Exclusions" />
           <span className="text-xs text-muted-foreground">shown on the client proposal</span>
         </div>
         <div className="p-4 grid gap-6 md:grid-cols-2">
