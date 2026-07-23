@@ -7,7 +7,7 @@ import ItineraryMap, { type MapStop } from './itinerary-map'
 // Presentational only — all data arrives as props so it can be rendered with
 // mock data for visual QA and fed by the quote portal for real deliveries.
 
-const LIME = '#A6CE39'
+const GOLD = '#C9A24B'
 const BUSH = '#20271A'
 const OLIVE = '#7A9A4A'
 const INK = '#232821'
@@ -93,7 +93,7 @@ function Pill({ children }: { children: ReactNode }) {
     <div className="flex items-center gap-0">
       <span
         className="relative z-10 inline-flex items-center rounded-full px-5 py-1.5 text-sm font-bold"
-        style={{ background: LIME, color: BUSH, fontFamily: 'var(--font-display, sans-serif)' }}
+        style={{ background: GOLD, color: BUSH, fontFamily: 'var(--font-display, sans-serif)' }}
       >
         {children}
       </span>
@@ -157,7 +157,7 @@ export default function ProposalView(p: ProposalViewProps) {
           <div className="px-6 pt-6 sm:px-9 sm:pt-9">
             {/* pill row */}
             <div className="mb-5 flex items-center justify-between rounded-full py-1 pl-1 pr-4" style={{ background: '#00000030', border: '1px solid #ffffff1a' }}>
-              <span className="inline-flex items-center rounded-full px-4 py-1.5 text-xs font-bold" style={{ background: LIME, color: BUSH, ...display }}>
+              <span className="inline-flex items-center rounded-full px-4 py-1.5 text-xs font-bold" style={{ background: GOLD, color: BUSH, ...display }}>
                 {T(ar, 'Proposal', 'عرض سعر')}
               </span>
               <span className="text-xs text-white/70">
@@ -381,7 +381,7 @@ export default function ProposalView(p: ProposalViewProps) {
             <section key={d.key} className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">
               {/* header: Day pill + location */}
               <div className="flex items-center justify-between gap-3 rounded-full border py-1 pl-1 pr-4" style={{ borderColor: `${OLIVE}55` }}>
-                <span className="inline-flex items-center rounded-full px-5 py-1.5 text-sm font-bold text-white" style={{ background: `linear-gradient(90deg, ${OLIVE}, ${LIME})`, ...display }}>
+                <span className="inline-flex items-center rounded-full px-5 py-1.5 text-sm font-bold text-white" style={{ background: `linear-gradient(90deg, ${OLIVE}, ${GOLD})`, ...display }}>
                   {d.label}
                 </span>
                 {d.destination && (

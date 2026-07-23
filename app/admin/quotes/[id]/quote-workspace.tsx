@@ -141,21 +141,29 @@ export default function QuoteWorkspace({
   return (
     <div>
       {/* Step tabs */}
-      <div className="flex items-center gap-1 mb-6 overflow-x-auto">
-        {STEPS.map((s, i) => (
-          <span key={s.key} className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setStep(s.key)}
-              className={'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ' +
-                (step === s.key
-                  ? 'bg-primary-strong text-white'
-                  : 'bg-muted text-muted-foreground hover:bg-gray-200')}>
-              {i + 1} · {s.label}
-            </button>
-            {i < STEPS.length - 1 && <span className="text-gray-300 text-xs">→</span>}
-          </span>
-        ))}
+      <div className="flex items-center gap-1.5 mb-6 overflow-x-auto pb-1">
+        {STEPS.map((s, i) => {
+          const active = step === s.key
+          return (
+            <span key={s.key} className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setStep(s.key)}
+                aria-current={active ? 'step' : undefined}
+                className={'group inline-flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-xs font-medium whitespace-nowrap transition-colors ' +
+                  (active
+                    ? 'bg-primary-strong text-white shadow-sm'
+                    : 'border border-border bg-surface text-muted-foreground hover:bg-surface-alt hover:text-foreground')}>
+                <span className={'grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold ' +
+                  (active ? 'bg-white/25 text-white' : 'bg-muted text-muted-foreground group-hover:bg-accent group-hover:text-brand-ink')}>
+                  {i + 1}
+                </span>
+                {s.label}
+              </button>
+              {i < STEPS.length - 1 && <span className="text-border" aria-hidden="true">→</span>}
+            </span>
+          )
+        })}
       </div>
 
       {/* All panels stay mounted (CSS-hidden when inactive) so switching tabs never drops unsaved edits. */}

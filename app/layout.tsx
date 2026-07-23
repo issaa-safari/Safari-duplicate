@@ -96,10 +96,9 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Safari Riders",
   },
-  icons: {
-    icon: "/icons/icon-192.png",
-    apple: "/icons/apple-touch-icon.png",
-  },
+  // Icons come from the app/ file conventions (favicon.ico, icon.png,
+  // apple-icon.png) and the social image from app/opengraph-image.png —
+  // all generated from public/logo-safari-riders.png.
 };
 
 export const viewport: Viewport = {

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import ActivitiesModal, { DayActivity } from '@/components/admin/activities-modal'
+import { SectionHeader, RouteIcon } from '@/components/admin/section-header'
 import CreateLookupDialog from '@/components/admin/create-lookup-dialog'
 import { createLookup } from '@/lib/create-lookup'
 import { GalleryUpload } from '@/components/admin/image-upload'
@@ -717,15 +718,15 @@ export default function QuoteItineraryBuilder({
       </div>
 
       {/* Program header + countries visited */}
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold text-foreground">Create Day by Day Program</h3>
-        <p className="text-xs text-muted-foreground">
-          Countries visited:{' '}
+      <SectionHeader
+        icon={<RouteIcon />}
+        title="Create Day by Day Program"
+        right={<>Countries visited:{' '}
           <span className="font-medium text-foreground">
             {countriesVisited.length > 0 ? countriesVisited.join(', ') : '—'}
           </span>
-        </p>
-      </div>
+        </>}
+      />
 
       <div className="overflow-x-auto">
         <div className="stack-grid-wrap rounded-xl border border-border bg-surface shadow-sm overflow-hidden"
