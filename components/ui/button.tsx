@@ -5,19 +5,19 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-text'
 type Size = 'sm' | 'md' | 'icon'
 
 const BASE_CLS =
-  'inline-flex items-center justify-center gap-1.5 rounded-md font-medium ' +
-  'transition-colors duration-150 disabled:cursor-not-allowed ' +
+  'inline-flex items-center justify-center gap-1.5 rounded-lg font-medium ' +
+  'transition-[background-color,box-shadow,color] duration-150 disabled:cursor-not-allowed ' +
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
 
 const VARIANT_CLS: Record<Variant, string> = {
   primary:
-    'bg-primary-strong text-white hover:bg-primary-strong-hover disabled:opacity-60',
+    'bg-primary-strong text-white shadow-sm hover:bg-primary-strong-hover disabled:opacity-60',
   secondary:
-    'border border-border bg-surface text-foreground hover:bg-muted disabled:opacity-50',
+    'border border-border bg-surface text-foreground shadow-sm hover:bg-surface-alt hover:border-primary-strong/40 disabled:opacity-50',
   ghost:
     'text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50',
   danger:
-    'bg-destructive text-white hover:opacity-90 disabled:opacity-60',
+    'bg-destructive text-white shadow-sm hover:opacity-90 disabled:opacity-60',
   'danger-text':
     'text-destructive hover:opacity-80 disabled:opacity-40',
 }
