@@ -1,10 +1,12 @@
 // Tour itinerary map — numbered day pins over OpenStreetMap tiles.
 //
-// Deliberately dependency-free and key-free: tiles are plain <img> elements
-// (CSP img-src already allows https:) laid out with the Web-Mercator math in
-// lib/geo.ts, with an SVG polyline + absolutely-positioned pins on top. Pure
-// server-rendered markup with inline styles, so the same component works in
-// the styled proposal and the print document, and prints correctly.
+// Deliberately dependency-free and key-free: tiles, the route line and the pins
+// are all drawn inside a single responsive <svg> using the Web-Mercator math in
+// lib/geo.ts. The SVG carries a fixed viewBox but renders at width:100%, so the
+// whole map scales down to fit narrow (mobile) containers instead of being
+// clipped — while never exceeding its natural size on desktop and in print.
+// Pure server-rendered markup, so the same component works in the styled
+// proposal and the print document.
 
 import { fitZoom, mercatorPx, type LatLng } from '@/lib/geo'
 
@@ -56,90 +58,100 @@ export default function ItineraryMap({
   const path = local.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
 
   return (
-    <div dir="ltr" style={{ maxWidth: '100%', overflow: 'hidden' }}>
-      <div
+    // dir=ltr: map coordinates are always left-to-right, even on Arabic (RTL)
+    // proposal pages. width:100% + maxWidth caps the size on desktop/print and
+    // lets the whole map shrink to fit on phones.
+    <div dir="ltr" style={{ position: 'relative', width: '100%', maxWidth: width, margin: '0 auto' }}>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        width={width}
+        height={height}
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label="Tour itinerary route map"
         style={{
-          position: 'relative',
-          width,
-          maxWidth: '100%',
-          height,
-          overflow: 'hidden',
+          display: 'block',
+          width: '100%',
+          height: 'auto',
           borderRadius: 12,
           border: `1px solid ${OLIVE}44`,
           background: '#E8ECDF',
         }}
       >
+        <defs>
+          <filter id="itineraryPinShadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="1" stdDeviation="1.4" floodColor="#000" floodOpacity="0.35" />
+          </filter>
+        </defs>
+
         {tiles.map(t => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <image
             key={t.key}
-            src={`https://tile.openstreetmap.org/${zoom}/${t.x}/${t.y}.png`}
-            alt=""
+            href={`https://tile.openstreetmap.org/${zoom}/${t.x}/${t.y}.png`}
+            x={t.left}
+            y={t.top}
             width={TILE}
             height={TILE}
-            loading="lazy"
-            style={{ position: 'absolute', left: t.left, top: t.top, width: TILE, height: TILE, maxWidth: 'none' }}
           />
         ))}
 
-        <svg
-          width={width}
-          height={height}
-          viewBox={`0 0 ${width} ${height}`}
-          style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-          aria-hidden="true"
-        >
-          <path d={path} fill="none" stroke={BUSH} strokeWidth={2.5} strokeDasharray="6 5" strokeLinejoin="round" opacity={0.75} />
-        </svg>
+        <path
+          d={path}
+          fill="none"
+          stroke={BUSH}
+          strokeWidth={2.5}
+          strokeDasharray="6 5"
+          strokeLinejoin="round"
+          opacity={0.75}
+        />
 
         {local.map((p, i) => {
           const stop = stops[i]
           const isEdge = i === 0 || i === stops.length - 1
           return (
-            <div
-              key={i}
-              title={stop.name}
-              style={{
-                position: 'absolute',
-                left: p.x,
-                top: p.y,
-                transform: 'translate(-50%, -50%)',
-                width: 26,
-                height: 26,
-                borderRadius: '50%',
-                background: isEdge ? BUSH : OLIVE,
-                color: '#fff',
-                border: '2px solid #fff',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: 'Arial, sans-serif',
-              }}
-            >
-              {stop.label}
-            </div>
+            <g key={i}>
+              <title>{stop.name}</title>
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={13}
+                fill={isEdge ? BUSH : OLIVE}
+                stroke="#fff"
+                strokeWidth={2}
+                filter="url(#itineraryPinShadow)"
+              />
+              <text
+                x={p.x}
+                y={p.y}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="#fff"
+                fontSize={12}
+                fontWeight={700}
+                fontFamily="Arial, sans-serif"
+              >
+                {stop.label}
+              </text>
+            </g>
           )
         })}
+      </svg>
 
-        <span
-          style={{
-            position: 'absolute',
-            right: 4,
-            bottom: 2,
-            fontSize: 9,
-            color: '#333',
-            background: '#ffffffcc',
-            padding: '1px 5px',
-            borderRadius: 4,
-            fontFamily: 'Arial, sans-serif',
-          }}
-        >
-          © <a href="https://www.openstreetmap.org/copyright" style={{ color: '#333' }}>OpenStreetMap</a> contributors
-        </span>
-      </div>
+      <span
+        style={{
+          position: 'absolute',
+          right: 4,
+          bottom: 2,
+          fontSize: 9,
+          color: '#333',
+          background: '#ffffffcc',
+          padding: '1px 5px',
+          borderRadius: 4,
+          fontFamily: 'Arial, sans-serif',
+        }}
+      >
+        © <a href="https://www.openstreetmap.org/copyright" style={{ color: '#333' }}>OpenStreetMap</a> contributors
+      </span>
     </div>
   )
 }
