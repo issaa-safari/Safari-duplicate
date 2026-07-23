@@ -91,7 +91,11 @@ export default function BulkSelectableList<T>({
   return (
     <div>
       {selected.size > 0 && (
-        <div className="sticky top-0 z-10 mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-4 py-2.5 shadow-sm">
+        // Stick *below* the sticky app chrome, not at viewport top — otherwise
+        // the bar (and its Delete / Change-status buttons) hides behind the
+        // mobile top bar (h-14 + notch inset) or the desktop header (~108px),
+        // which made bulk actions unreachable on a phone.
+        <div className="sticky top-[calc(env(safe-area-inset-top)+3.75rem)] z-20 mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-4 py-2.5 shadow-sm lg:top-[7rem]">
           <span className="text-sm font-medium text-foreground">{selected.size} selected</span>
 
           {statusOptions && onSetStatus && (
