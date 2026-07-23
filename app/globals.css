@@ -92,41 +92,42 @@
 }
 
 .admin-theme {
-  /* Brand green (oklch). --primary stays vivid for identity moments
-     (logo mark, avatar, active indicators); --primary-strong is the
-     interactive solid — the darkest green that keeps white button text
-     at ≥4.5:1 (verified by scripts/check-contrast.mjs). */
-  --primary: oklch(0.7 0.22 143);
+  /* Warm brand olive + sand system (matches the Trip Builder palette).
+     --primary stays the vivid brand olive for identity moments (logo mark,
+     active indicators, light tints); --primary-strong is the interactive
+     solid — a darker olive that keeps white button text at ≥4.5:1
+     (verified by scripts/check-contrast.mjs). */
+  --primary: oklch(0.66 0.1 128);          /* olive #7A9A4A */
   --primary-foreground: oklch(0.99 0 0);
-  --primary-strong: oklch(0.55 0.18 143);
-  --primary-strong-hover: oklch(0.47 0.16 143);
-  --brand-ink: oklch(0.42 0.16 143);
-  --brand-text: oklch(0.45 0.15 143); /* AA on white: 6.99:1 */
+  --primary-strong: oklch(0.53 0.09 130);  /* darker olive, AA with white text */
+  --primary-strong-hover: oklch(0.46 0.08 132);
+  --brand-ink: oklch(0.42 0.08 133);       /* olive-deep #3D5229 */
+  --brand-text: oklch(0.44 0.08 133);      /* AA on warm grounds */
 
-  /* Surfaces & neutrals */
+  /* Surfaces & warm neutrals (sand-biased, not cool grey) */
   --surface: oklch(1 0 0);
-  --surface-alt: oklch(0.985 0.003 150);
-  --muted: oklch(0.955 0.008 150);
-  --muted-foreground: oklch(0.45 0.02 150); /* AA on tinted grounds: ≥6.7:1 */
-  --accent: oklch(0.94 0.06 143);
-  --accent-foreground: oklch(0.35 0.14 143);
-  --border: oklch(0.9 0.008 150);
-  --ring: oklch(0.55 0.18 143);
-  --destructive: oklch(0.5 0.22 27); /* AA on white: 6.39:1 */
-  --warning: oklch(0.97 0.08 90);
-  --warning-foreground: oklch(0.4 0.12 70);
+  --surface-alt: oklch(0.984 0.007 92);    /* warm off-white #FBF9F3 */
+  --muted: oklch(0.955 0.012 90);          /* sand tint */
+  --muted-foreground: oklch(0.48 0.02 85); /* stone #6E6A59, AA ≥5.4:1 */
+  --accent: oklch(0.93 0.05 125);          /* olive-light tint */
+  --accent-foreground: oklch(0.4 0.08 133);
+  --border: oklch(0.9 0.014 88);           /* warm border #E3DCCB */
+  --ring: oklch(0.66 0.1 128);
+  --destructive: oklch(0.5 0.16 40);       /* murram-warm red, AA on white */
+  --warning: oklch(0.95 0.06 85);
+  --warning-foreground: oklch(0.44 0.1 70);
 
-  /* Legacy admin tokens re-pointed to the green system */
-  --admin-bg: oklch(0.97 0.005 150);
+  /* Legacy admin tokens re-pointed to the warm system */
+  --admin-bg: oklch(0.955 0.012 88);       /* warm sand ground #F4F0E7 */
   --admin-surface: oklch(1 0 0);
-  --admin-border: oklch(0.9 0.008 150);
-  --admin-text: oklch(0.18 0.02 150);
-  --admin-text-muted: oklch(0.45 0.02 150);
-  --olive: oklch(0.55 0.18 143); /* legacy bg-olive buttons: AA with white text */
-  --olive-dk: oklch(0.42 0.16 143);
-  --olive-lt: oklch(0.88 0.07 143);
-  --sand: oklch(0.955 0.008 150);
-  --bush: oklch(0.2 0.03 150);
+  --admin-border: oklch(0.9 0.014 88);
+  --admin-text: oklch(0.22 0.02 120);      /* bush ink #20271A */
+  --admin-text-muted: oklch(0.48 0.02 85);
+  --olive: oklch(0.53 0.09 130);           /* legacy bg-olive buttons: AA with white text */
+  --olive-dk: oklch(0.42 0.08 133);
+  --olive-lt: oklch(0.88 0.06 125);
+  --sand: oklch(0.955 0.012 90);
+  --bush: oklch(0.22 0.02 120);
 
   --background: var(--admin-bg);
   --foreground: var(--admin-text);
@@ -156,7 +157,7 @@
 
 .admin-theme input::placeholder,
 .admin-theme textarea::placeholder {
-  color: oklch(0.55 0.015 150); /* AA on white: 4.82:1 */
+  color: oklch(0.55 0.015 90); /* warm grey — AA on white: 4.85:1 */
 }
 
 .admin-theme input,

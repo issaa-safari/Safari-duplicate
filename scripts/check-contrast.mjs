@@ -43,22 +43,22 @@ export function ratio(fg, bg) {
 }
 
 const white = '#FFFFFF'
-const surfaceAlt = 'oklch(0.985 0.003 150)'
-const adminBg = 'oklch(0.97 0.005 150)'
+const surfaceAlt = 'oklch(0.984 0.007 92)'
+const adminBg = 'oklch(0.955 0.012 88)'
 
 /* [label, fg, bg, target] */
 const PAIRS = [
-  ['admin-text on white', 'oklch(0.18 0.02 150)', white, 4.5],
-  ['muted-foreground on white', 'oklch(0.45 0.02 150)', white, 4.5],
-  ['muted-foreground on admin-bg', 'oklch(0.45 0.02 150)', adminBg, 4.5],
-  ['muted-foreground on surface-alt', 'oklch(0.45 0.02 150)', surfaceAlt, 4.5],
-  ['brand-text on white (links/labels)', 'oklch(0.45 0.15 143)', white, 4.5],
-  ['brand-ink on white', 'oklch(0.42 0.16 143)', white, 4.5],
-  ['brand-ink on accent tint', 'oklch(0.35 0.14 143)', 'oklch(0.94 0.06 143)', 4.5],
-  ['primary-foreground on primary (lg text/buttons)', '#FFFFFF', 'oklch(0.55 0.18 143)', 4.5],
-  ['destructive on white', 'oklch(0.5 0.22 27)', white, 4.5],
-  ['warning-foreground on warning', 'oklch(0.4 0.12 70)', 'oklch(0.97 0.08 90)', 4.5],
-  ['placeholder on white', 'oklch(0.55 0.015 150)', white, 4.5],
+  ['admin-text on white', 'oklch(0.22 0.02 120)', white, 4.5],
+  ['muted-foreground on white', 'oklch(0.48 0.02 85)', white, 4.5],
+  ['muted-foreground on admin-bg', 'oklch(0.48 0.02 85)', adminBg, 4.5],
+  ['muted-foreground on surface-alt', 'oklch(0.48 0.02 85)', surfaceAlt, 4.5],
+  ['brand-text on white (links/labels)', 'oklch(0.44 0.08 133)', white, 4.5],
+  ['brand-ink on white', 'oklch(0.42 0.08 133)', white, 4.5],
+  ['brand-ink on accent tint', 'oklch(0.4 0.08 133)', 'oklch(0.93 0.05 125)', 4.5],
+  ['primary-foreground on primary-strong (lg text/buttons)', '#FFFFFF', 'oklch(0.53 0.09 130)', 4.5],
+  ['destructive on white', 'oklch(0.5 0.16 40)', white, 4.5],
+  ['warning-foreground on warning', 'oklch(0.44 0.1 70)', 'oklch(0.95 0.06 85)', 4.5],
+  ['placeholder on white', 'oklch(0.55 0.015 90)', white, 4.5],
 ]
 
 let failed = 0
