@@ -8,9 +8,15 @@ export default function manifest(): MetadataRoute.Manifest {
     id: '/',
     start_url: '/admin/dashboard',
     scope: '/',
+    lang: 'en',
+    dir: 'ltr',
+    categories: ['business', 'productivity', 'travel'],
     display: 'standalone',
+    // Prefer the most immersive shell the platform supports, degrading
+    // gracefully (window-controls-overlay → standalone → minimal-ui).
+    display_override: ['standalone', 'minimal-ui'],
     orientation: 'portrait',
-    background_color: '#ffffff',
+    background_color: '#F5F0E8',
     theme_color: '#7A9A4A',
     icons: [
       { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },

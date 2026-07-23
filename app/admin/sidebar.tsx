@@ -7,7 +7,7 @@ import { useState, useEffect, useTransition, useRef } from 'react'
 import {
   Search, MoreHorizontal, LayoutDashboard, Inbox, FileText, Route, CalendarCheck,
   Users, Wallet, Package, Boxes, MapPin, Truck, BarChart3, Clock, Settings, LogOut, X,
-  Copy,
+  Copy, ArrowLeft,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { SearchResults, SearchQuote, SearchClient, SearchRequest } from '@/lib/types'
@@ -43,6 +43,29 @@ const BOTTOM_NAV: NavItem[] = [
 const MORE_NAV: NavItem[] = [
   PRIMARY_NAV[3], PRIMARY_NAV[5], PRIMARY_NAV[6], ...OVERFLOW_NAV,
 ]
+
+// Flat list of every module root, used to decide if the current route is a
+// top-level destination (show the brand) or a nested detail/form view (show a
+// back button). Ordered longest-href-first so `/admin/content/parks` matches
+// before `/admin/content`.
+const ALL_NAV: NavItem[] = [...PRIMARY_NAV, ...OVERFLOW_NAV]
+
+// Resolve the mobile top bar's back affordance for a given path:
+// - null  → a top-level module root (or the dashboard); show the brand mark.
+// - {…}   → a nested view; show a back button labelled with its parent module.
+function resolveBack(pathname: string): { label: string; href: string } | null {
+  // Exact match on any module root (or a settings/dashboard root) = top level.
+  const roots = [...ALL_NAV.map((n) => n.href), '/admin/settings']
+  if (roots.includes(pathname)) return null
+
+  // Otherwise find the deepest module whose root prefixes the path.
+  const parent = ALL_NAV
+    .filter((n) => pathname.startsWith(n.href + '/'))
+    .sort((a, b) => b.href.length - a.href.length)[0]
+  if (parent) return { label: parent.label, href: parent.href }
+  if (pathname.startsWith('/admin/settings/')) return { label: 'Settings', href: '/admin/settings' }
+  return null
+}
 
 function SearchModal({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState('')
@@ -234,6 +257,15 @@ export default function AdminSidebar({
   }
   const overflowActive = OVERFLOW_NAV.some(item => isActive(item.href))
   const moreActive = MORE_NAV.some(item => isActive(item.href))
+  const back = resolveBack(pathname)
+
+  function goBack() {
+    // Prefer the real back stack (preserves scroll + list state); fall back to
+    // the parent module when the app was launched straight onto a deep link
+    // (no history to pop — common for an installed PWA / shared link).
+    if (typeof window !== 'undefined' && window.history.length > 1) router.back()
+    else if (back) router.push(back.href)
+  }
   const initials = fullName
     .split(/\s+/)
     .filter(Boolean)
@@ -393,28 +425,41 @@ export default function AdminSidebar({
       </header>
 
       {/* ── Mobile top app bar (below lg) ──────────────────────────────── */}
-      <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur lg:hidden">
-        <div className="flex h-14 items-center gap-3 px-4">
-          <Link href="/admin/dashboard" className="flex items-center gap-2 min-w-0">
-            <span className="font-display flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-base font-bold text-primary-foreground">
-              S
-            </span>
-            <span className="truncate text-sm font-semibold text-brand-ink">Safari Adventure Riders</span>
-          </Link>
+      {/* pt-safe fills and pads the status-bar / notch inset so the bar isn't
+          clipped when installed to the home screen (viewport-fit=cover). */}
+      <header data-app-chrome className="sticky top-0 z-30 border-b border-border bg-surface/95 pt-safe backdrop-blur lg:hidden">
+        <div className="flex h-14 items-center gap-2 px-3">
+          {back ? (
+            <button
+              onClick={goBack}
+              aria-label={`Back to ${back.label}`}
+              className="-ml-1 flex h-10 min-h-touch items-center gap-1.5 rounded-lg pl-1 pr-2 text-brand-ink transition-colors active:bg-muted"
+            >
+              <ArrowLeft size={22} strokeWidth={2.1} className="shrink-0" />
+              <span className="truncate text-sm font-semibold">{back.label}</span>
+            </button>
+          ) : (
+            <Link href="/admin/dashboard" className="flex items-center gap-2 min-w-0">
+              <span className="font-display flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-base font-bold text-primary-foreground">
+                S
+              </span>
+              <span className="truncate text-sm font-semibold text-brand-ink">Safari Adventure Riders</span>
+            </Link>
+          )}
           <div className="ml-auto flex shrink-0 items-center gap-2">
             <button
               onClick={() => setSearchOpen(true)}
               aria-label="Search"
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground"
+              className="flex h-10 w-10 min-h-touch items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground transition-colors active:bg-accent"
             >
-              <Search size={16} />
+              <Search size={17} />
             </button>
             <div ref={userRef} className="relative">
               <button
                 onClick={() => setUserOpen(v => !v)}
                 aria-label="Account menu"
                 aria-expanded={userOpen}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
+                className="flex h-10 w-10 min-h-touch items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-opacity active:opacity-80"
               >
                 {initials}
               </button>
@@ -441,6 +486,7 @@ export default function AdminSidebar({
 
       {/* ── Mobile "More" sheet ────────────────────────────────────────── */}
       <div
+        data-app-chrome
         className={`fixed inset-0 z-40 lg:hidden transition-opacity duration-200 ${
           sheetOpen ? 'visible opacity-100' : 'invisible opacity-0'
         }`}
@@ -491,17 +537,20 @@ export default function AdminSidebar({
       </div>
 
       {/* ── Mobile bottom tab bar ──────────────────────────────────────── */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 pb-[max(env(safe-area-inset-bottom),0.5rem)] backdrop-blur lg:hidden">
+      <nav data-app-chrome className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 pb-[max(env(safe-area-inset-bottom),0.5rem)] backdrop-blur lg:hidden">
         <div className="grid grid-cols-5">
           {BOTTOM_NAV.map((item) => {
             const Icon = item.icon
             const active = isActive(item.href)
             return (
-              <Link key={item.href} href={item.href}
-                className={`flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${
+              <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined}
+                className={`relative flex min-h-touch flex-col items-center gap-1 py-2 text-[10px] font-medium transition-colors active:bg-muted/60 ${
                   active ? 'text-primary-strong' : 'text-muted-foreground'
                 }`}>
-                <Icon size={21} strokeWidth={active ? 2.4 : 1.9} />
+                {active && (
+                  <span aria-hidden className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-primary" />
+                )}
+                <Icon size={22} strokeWidth={active ? 2.4 : 1.9} className="transition-transform active:scale-90" />
                 {item.label}
               </Link>
             )
@@ -510,11 +559,14 @@ export default function AdminSidebar({
             onClick={() => setSheetOpen(true)}
             aria-label="More modules"
             aria-expanded={sheetOpen}
-            className={`flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${
+            className={`relative flex min-h-touch flex-col items-center gap-1 py-2 text-[10px] font-medium transition-colors active:bg-muted/60 ${
               moreActive || sheetOpen ? 'text-primary-strong' : 'text-muted-foreground'
             }`}
           >
-            <MoreHorizontal size={21} strokeWidth={moreActive || sheetOpen ? 2.4 : 1.9} />
+            {moreActive && (
+              <span aria-hidden className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-primary" />
+            )}
+            <MoreHorizontal size={22} strokeWidth={moreActive || sheetOpen ? 2.4 : 1.9} className="transition-transform active:scale-90" />
             More
           </button>
         </div>
