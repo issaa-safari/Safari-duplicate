@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import Link from 'next/link'
 import { updateDeparture, toggleDeparturePublished } from './actions'
 import { Button, ButtonLink } from '@/components/ui/button'
@@ -31,7 +32,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [isActive, setIsActive] = useState(departure.is_active)
-  const [publishLoading, startPublishTransition] = useTransition()
+  const { pending: publishLoading, run: runPublish } = useAction()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -203,7 +204,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
           <button
             type="button"
             disabled={publishLoading}
-            onClick={() => startPublishTransition(async () => {
+            onClick={() => runPublish(async () => {
               try {
                 await toggleDeparturePublished(departureId)
                 setIsActive(!isActive)

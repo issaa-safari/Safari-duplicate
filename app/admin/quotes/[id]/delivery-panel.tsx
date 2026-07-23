@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import { createShareLink, revokeDelivery, emailQuote } from './delivery-actions'
 
 interface Delivery {
@@ -59,7 +60,10 @@ export default function DeliveryPanel({
   const [copiedToken, setCopiedToken] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-  const [pending, startTransition] = useTransition()
+  const { pending, run } = useAction()
+  // Which control is busy, so only the clicked button shows its progress label
+  // (Generate and Email previously shared one flag and both flipped at once).
+  const [busy, setBusy] = useState<'create' | 'email' | 'revoke' | null>(null)
 
   // Must match the statuses the server actions accept (see delivery-actions.ts);
   // offering 'accepted' here only produced a guaranteed throw on send.
@@ -81,26 +85,31 @@ export default function DeliveryPanel({
     const fd = new FormData()
     fd.set('quoteId', quoteId)
     fd.set('versionId', selectedVersionId)
-    startTransition(async () => {
-      const result = await createShareLink(fd)
-      if (result.error !== null) {
-        setError(result.error)
-        return
+    setBusy('create')
+    run(async () => {
+      try {
+        const result = await createShareLink(fd)
+        if (result.error !== null) {
+          setError(result.error)
+          return
+        }
+        const newDelivery: Delivery = {
+          id: result.id,
+          quote_version_id: selectedVersionId,
+          channel: 'share_link',
+          access_token: result.token,
+          expires_at: ninetyDaysOut(),
+          sent_at: new Date().toISOString(),
+          first_viewed_at: null,
+          last_viewed_at: null,
+          view_count: 0,
+          revoked_at: null,
+          created_at: new Date().toISOString(),
+        }
+        setDeliveries(d => [newDelivery, ...d])
+      } finally {
+        setBusy(null)
       }
-      const newDelivery: Delivery = {
-        id: result.id,
-        quote_version_id: selectedVersionId,
-        channel: 'share_link',
-        access_token: result.token,
-        expires_at: ninetyDaysOut(),
-        sent_at: new Date().toISOString(),
-        first_viewed_at: null,
-        last_viewed_at: null,
-        view_count: 0,
-        revoked_at: null,
-        created_at: new Date().toISOString(),
-      }
-      setDeliveries(d => [newDelivery, ...d])
     })
   }
 
@@ -111,31 +120,36 @@ export default function DeliveryPanel({
     const fd = new FormData()
     fd.set('quoteId', quoteId)
     fd.set('versionId', selectedVersionId)
-    startTransition(async () => {
-      const result = await emailQuote(fd)
-      if (result.error !== null) {
-        setError(result.error)
-        return
+    setBusy('email')
+    run(async () => {
+      try {
+        const result = await emailQuote(fd)
+        if (result.error !== null) {
+          setError(result.error)
+          return
+        }
+        const newDelivery: Delivery = {
+          id: result.id,
+          quote_version_id: selectedVersionId,
+          channel: 'email',
+          access_token: result.token,
+          expires_at: ninetyDaysOut(),
+          sent_at: new Date().toISOString(),
+          first_viewed_at: null,
+          last_viewed_at: null,
+          view_count: 0,
+          revoked_at: null,
+          created_at: new Date().toISOString(),
+        }
+        setDeliveries(d => [newDelivery, ...d])
+        setNotice(
+          result.emailed
+            ? `Emailed to ${result.recipient}.`
+            : `Link created for ${result.recipient}, but email isn't configured on this environment — copy the link below to send it manually.`
+        )
+      } finally {
+        setBusy(null)
       }
-      const newDelivery: Delivery = {
-        id: result.id,
-        quote_version_id: selectedVersionId,
-        channel: 'email',
-        access_token: result.token,
-        expires_at: ninetyDaysOut(),
-        sent_at: new Date().toISOString(),
-        first_viewed_at: null,
-        last_viewed_at: null,
-        view_count: 0,
-        revoked_at: null,
-        created_at: new Date().toISOString(),
-      }
-      setDeliveries(d => [newDelivery, ...d])
-      setNotice(
-        result.emailed
-          ? `Emailed to ${result.recipient}.`
-          : `Link created for ${result.recipient}, but email isn't configured on this environment — copy the link below to send it manually.`
-      )
     })
   }
 
@@ -144,16 +158,21 @@ export default function DeliveryPanel({
     const fd = new FormData()
     fd.set('deliveryId', deliveryId)
     fd.set('quoteId', quoteId)
-    startTransition(async () => {
-      const result = await revokeDelivery(fd)
-      if (result.error !== null) {
-        setError(result.error)
-        return
+    setBusy('revoke')
+    run(async () => {
+      try {
+        const result = await revokeDelivery(fd)
+        if (result.error !== null) {
+          setError(result.error)
+          return
+        }
+        setDeliveries(ds => ds.map(d => d.id === deliveryId
+          ? { ...d, revoked_at: new Date().toISOString() }
+          : d
+        ))
+      } finally {
+        setBusy(null)
       }
-      setDeliveries(ds => ds.map(d => d.id === deliveryId
-        ? { ...d, revoked_at: new Date().toISOString() }
-        : d
-      ))
     })
   }
 
@@ -201,7 +220,7 @@ export default function DeliveryPanel({
               disabled={pending || !selectedVersionId}
               className="rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-50 shrink-0 bg-olive hover:bg-olive-dk"
             >
-              {pending ? 'Creating…' : 'Generate Link'}
+              {busy === 'create' ? 'Creating…' : 'Generate Link'}
             </button>
             <button
               type="button"
@@ -210,7 +229,7 @@ export default function DeliveryPanel({
               title={clientEmail ? `Email the proposal to ${clientEmail}` : 'Add a client email to enable sending'}
               className="rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50 shrink-0 border border-border hover:border-primary-strong text-foreground"
             >
-              {pending ? 'Sending…' : 'Email to client'}
+              {busy === 'email' ? 'Sending…' : 'Email to client'}
             </button>
           </div>
           {selectedHasNoDays && (

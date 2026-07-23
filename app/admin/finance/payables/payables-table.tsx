@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import Link from 'next/link'
 import { recordSupplierPayment } from './actions'
 import type { SupplierPayable } from '@/lib/server/finance'
@@ -16,14 +17,14 @@ const METHODS = ['bank_transfer', 'card', 'cash', 'mpesa', 'cheque', 'other']
 
 function PaymentForm({ supplier, onDone }: { supplier: SupplierPayable; onDone: () => void }) {
   const [error, setError] = useState('')
-  const [pending, startTransition] = useTransition()
+  const { pending, run } = useAction()
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError('')
     const fd = new FormData(e.currentTarget)
     fd.set('supplierId', supplier.supplierId)
-    startTransition(async () => {
+    run(async () => {
       try {
         await recordSupplierPayment(fd)
         onDone()

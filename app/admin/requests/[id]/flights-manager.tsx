@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAction } from '@/lib/hooks/use-action'
 import { addFlight, deleteFlight } from './flight-actions'
 
 interface Flight {
@@ -20,14 +21,14 @@ export default function FlightsManager({ requestId, flights: initial }: { reques
   const [flights, setFlights] = useState(initial)
   const [showAdd, setShowAdd] = useState(false)
   const [error, setError] = useState('')
-  const [pending, startTransition] = useTransition()
+  const { pending, run } = useAction()
 
   function handleAdd(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError('')
     const fd = new FormData(e.currentTarget)
     fd.set('requestId', requestId)
-    startTransition(async () => {
+    run(async () => {
       try {
         await addFlight(fd)
         setShowAdd(false)
@@ -52,7 +53,7 @@ export default function FlightsManager({ requestId, flights: initial }: { reques
     const fd = new FormData()
     fd.set('id', id)
     fd.set('requestId', requestId)
-    startTransition(async () => {
+    run(async () => {
       await deleteFlight(fd)
       setFlights(fs => fs.filter(f => f.id !== id))
     })
