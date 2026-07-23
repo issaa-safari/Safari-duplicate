@@ -102,6 +102,72 @@ describe('computePerPersonCost — accommodation', () => {
     expect(by).toEqual({ a1: 200, a2: 0 })
   })
 
+  it('bills two same-stay rooms of different age mixes to the right bands', () => {
+    // One night, one hotel, split into two rooms:
+    //   Room A: 2 adults          — $400
+    //   Room B: 2 adults + child  — $400 (child weight 0.6 of adult)
+    // Adults-only Room A must not subsidise the child, and vice versa.
+    const result = computePerPersonCost({
+      travellers: [
+        { id: 'a1', category: 'adult' }, { id: 'a2', category: 'adult' },
+        { id: 'a3', category: 'adult' }, { id: 'a4', category: 'adult' },
+        { id: 'c1', category: 'child', age: 8 },
+      ],
+      accommodations: [
+        { label: 'Room A', mode: 'per_room', totalUsd: 400, travellerIds: ['a1', 'a2'] },
+        { label: 'Room B', mode: 'per_room', totalUsd: 400, bandWeights: { adult: 1, child: 0.6 }, travellerIds: ['a3', 'a4', 'c1'] },
+      ],
+      sharedLines: [],
+      parkFees: [],
+    })
+    const by = Object.fromEntries(result.perPerson.map(p => [p.travellerId, p.accommodationUsd]))
+    expect(by.a1).toBe(200)                    // Room A adult — full half of $400
+    expect(by.a2).toBe(200)
+    expect(by.a3 + by.a4).toBeCloseTo(307.69, 2) // Room B adults (400 × 2/2.6)
+    expect(by.c1).toBe(92.31)                  // Room B child (400 × 0.6/2.6)
+    // Grand total preserved across both rooms.
+    expect(result.totalUsd).toBe(800)
+    // Child cost comes only from Room B, never from adults-only Room A.
+    expect(result.byBand.find(b => b.category === 'child')!.totalUsd).toBe(92.31)
+  })
+
+  it('itemized: bills each typed occupant line to distinct travellers of its band', () => {
+    // Operator typed: 2 adults @ $380, 1 child @ $228 (60% of adult), 1 infant free.
+    const result = computePerPersonCost(input({
+      travellers: [A1, A2, C1, I1],
+      accommodations: [{
+        label: 'Sarova Mara',
+        mode: 'itemized',
+        items: [
+          { category: 'adult', count: 2, perPersonUsd: 380 },
+          { category: 'child', count: 1, perPersonUsd: 228 },
+          { category: 'infant', count: 1, perPersonUsd: 0 },
+        ],
+      }],
+    }))
+    const by = Object.fromEntries(result.perPerson.map(p => [p.travellerId, p.accommodationUsd]))
+    expect(by).toEqual({ a1: 380, a2: 380, c1: 228, i1: 0 })
+    // Room total is exactly the typed lines — nothing derived, nothing lost.
+    expect(result.totalUsd).toBe(988)
+  })
+
+  it('itemized: supports multiple same-band lines at different prices (two rooms)', () => {
+    const result = computePerPersonCost(input({
+      travellers: [A1, A2, { id: 'a3', category: 'adult' }],
+      accommodations: [{
+        label: 'Mixed rooms',
+        mode: 'itemized',
+        items: [
+          { category: 'adult', count: 1, perPersonUsd: 300 }, // single supplement
+          { category: 'adult', count: 2, perPersonUsd: 190 }, // twin
+        ],
+      }],
+    }))
+    const amounts = result.perPerson.map(p => p.accommodationUsd).sort((a, b) => a - b)
+    expect(amounts).toEqual([190, 190, 300])
+    expect(result.totalUsd).toBe(680)
+  })
+
   it('sums multiple stays per person', () => {
     const result = computePerPersonCost(input({
       travellers: [A1],

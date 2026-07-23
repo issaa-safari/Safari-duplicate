@@ -33,6 +33,7 @@ import {
 } from '@/lib/per-person-cost'
 import type {
   HotelRowInput,
+  OccupantLine,
   ParkRowInput,
   ResolveRowRequest,
   ResolveRowResult,
@@ -274,6 +275,27 @@ function segmentsTotal(segments: PricedSegment[]): number {
 }
 
 /**
+ * Price a hotel row's typed occupant lines over the stay. Amount lines are the
+ * per-person nightly cost; percent lines are that % of the row's adult amount.
+ * Returns per-band items (whole-stay per person) and the room total.
+ */
+function occupantPricing(occupants: OccupantLine[], nights: number) {
+  const adultBase = occupants.find(o => o.band === 'adult' && o.mode === 'amount')?.amountUsd ?? 0
+  const items = occupants
+    .filter(o => o.count > 0)
+    .map(o => {
+      const nightly = o.mode === 'amount' ? o.amountUsd : adultBase * (o.percentOfAdult / 100)
+      return {
+        category: o.band as BandCode,
+        count: Math.max(0, Math.floor(o.count)),
+        perPersonUsd: round2(Math.max(0, nightly) * nights),
+      }
+    })
+  const totalUsd = round2(items.reduce((s, it) => s + it.perPersonUsd * it.count, 0))
+  return { items, totalUsd }
+}
+
+/**
  * Resolve a quote's costs and roll them down to a per-person breakdown for the
  * Pricing tab. Every rate is re-resolved server-side by its service date — the
  * client never sends prices. Rows that can't be priced (a rate gap with no
@@ -308,6 +330,24 @@ export async function resolvePerPersonCost(
     }
     const presentBands = [...new Set(travellers.map(t => t.category))]
 
+    // Roster ids grouped by band, so a hotel row's occupancy counts can pick
+    // out specific travellers (which ones is immaterial to the per-band view).
+    const rosterByBand: Record<BandCode, string[]> = { adult: [], child: [], infant: [] }
+    for (const t of travellers) rosterByBand[t.category].push(t.id)
+    // Occupant ids for a hotel row, or undefined (= the whole roster) when the
+    // row carries no occupancy. A zero-guest row also falls back to the roster
+    // so its cost is never dropped from the breakdown.
+    const occupantsOf = (row: typeof state.hotelRows[number]): string[] | undefined => {
+      const occ = row.occupancy
+      if (!occ) return undefined
+      const ids = [
+        ...rosterByBand.adult.slice(0, Math.max(0, occ.adults)),
+        ...rosterByBand.child.slice(0, Math.max(0, occ.children)),
+        ...rosterByBand.infant.slice(0, Math.max(0, occ.infants)),
+      ]
+      return ids.length > 0 ? ids : undefined
+    }
+
     // ── Accommodation: room total per hotel, split by per-band weights ──
     const accommodations: AccommodationCost[] = []
     for (const row of state.hotelRows) {
@@ -316,12 +356,21 @@ export async function resolvePerPersonCost(
       const rooms = Math.max(1, row.rooms)
       const manual = manualPriceOf(row.manualUnitCostUsd)
       const roomCategory = row.roomCategory || undefined
+      const travellerIds = occupantsOf(row)
+
+      // Typed per-guest pricing takes over the row entirely.
+      if (row.occupants && row.occupants.length > 0) {
+        const { items } = occupantPricing(row.occupants, nights)
+        accommodations.push({ label: row.accommodationId, mode: 'itemized', items })
+        continue
+      }
 
       if (manual !== null) {
         accommodations.push({
           label: row.accommodationId,
           mode: 'per_room',
           totalUsd: round2(manual * nights * rooms),
+          travellerIds,
         })
         continue
       }
@@ -344,7 +393,7 @@ export async function resolvePerPersonCost(
             cards, fx,
           )))
         }
-        accommodations.push({ label: row.accommodationId, mode: 'per_room', totalUsd: round2(roomTotal), bandWeights })
+        accommodations.push({ label: row.accommodationId, mode: 'per_room', totalUsd: round2(roomTotal), bandWeights, travellerIds })
       } catch (err) {
         if (err instanceof RateGapError) continue
         throw err
@@ -667,6 +716,43 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
       assertWithinTrip(row.checkOut, state, 'A hotel check-out')
       const label = await entityName(admin, 'accommodations', row.accommodationId)
       const manual = manualPriceOf(row.manualUnitCostUsd)
+      const nights = nightsBetween(row.checkIn, row.checkOut)
+      const mealLabel = row.mealPlan ? `, ${MEAL_LABELS[row.mealPlan] ?? row.mealPlan}` : ''
+
+      // Typed per-guest pricing: the occupant lines price the row directly
+      // (a detailed manual price), so no rate card is needed.
+      if (row.occupants && row.occupants.length > 0) {
+        const { items, totalUsd } = occupantPricing(row.occupants, nights)
+        const paxLabel = items.map(it => `${it.count}×${it.category}`).join(', ')
+        hotelLines.push({
+          dayNumber: isoDiffDays(guest.startDate, row.checkIn) + 1,
+          costCategory: 'accommodation',
+          description: `${label} — ${nights} night${nights === 1 ? '' : 's'} ${row.roomCategory || 'sharing'}${mealLabel} (per guest: ${paxLabel})`,
+          rateCardId: null,
+          supplierRateId: null,
+          pricingUnit: 'trip',
+          travellerCategory: null,
+          roomCategory: row.roomCategory || null,
+          quantity: 1,
+          sourceCurrency: 'USD',
+          sourceUnitCost: totalUsd,
+          exchangeRateToUsd: 1,
+          unitCostUsd: totalUsd,
+          originalUnitCostUsd: null,
+          isManualOverride: true,
+          sortOrder: hotelSort++,
+        })
+        hotelItems.push({
+          dayNumber: isoDiffDays(guest.startDate, row.checkIn) + 1,
+          itemType: 'accommodation',
+          entityId: row.accommodationId,
+          titleSnapshot: `${label} (${nights} night${nights === 1 ? '' : 's'}${mealLabel})`,
+          roomCategory: row.roomCategory || null,
+          sortOrder: hotelItems.length,
+        })
+        continue
+      }
+
       const cards = filterByMealPlan(
         await fetchCards(admin, 'accommodation', row.accommodationId, row.checkIn, row.checkOut),
         row.mealPlan,
@@ -687,8 +773,6 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
           if (manual === null) { gaps.push(err.message); continue }
         } else throw err
       }
-      const nights = nightsBetween(row.checkIn, row.checkOut)
-      const mealLabel = row.mealPlan ? `, ${MEAL_LABELS[row.mealPlan] ?? row.mealPlan}` : ''
       if (manual !== null) {
         const units = nights * Math.max(1, row.rooms)
         hotelLines.push({

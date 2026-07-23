@@ -19,6 +19,30 @@ export interface GuestDetails {
   endDate: string
 }
 
+/** How many guests of each band occupy a hotel row's room(s). */
+export interface RoomOccupancy {
+  adults: number
+  children: number
+  infants: number
+}
+
+export type OccupantBand = 'adult' | 'child' | 'infant'
+
+/**
+ * One typed occupant line for a hotel row priced per guest: a band, how many,
+ * and either an absolute per-person nightly amount or a % of the row's adult
+ * amount. When a hotel row carries these, they price the room directly (a
+ * detailed manual price) — both the cost breakdown and the saved quote total.
+ */
+export interface OccupantLine {
+  band: OccupantBand
+  count: number
+  /** 'amount' = absolute per-person nightly USD; 'percent' = % of the adult amount. */
+  mode: 'amount' | 'percent'
+  amountUsd: number
+  percentOfAdult: number
+}
+
 export interface HotelRowInput {
   /** Client-side row key */
   key: string
@@ -32,6 +56,18 @@ export interface HotelRowInput {
   checkOut: string
   /** Manual per-night USD price; when set it replaces the rate-card price. */
   manualUnitCostUsd?: string
+  /**
+   * Guests occupying this row's room(s), used only for the per-person cost
+   * breakdown. Omitted = the whole traveller roster (backward compatible).
+   * Lets multiple rooms on the same stay carry different age mixes.
+   */
+  occupancy?: RoomOccupancy
+  /**
+   * Per-guest pricing lines. When present, this row is priced from them
+   * directly (a detailed manual price) instead of the rate card / room price —
+   * used for both the saved cost and the per-person breakdown.
+   */
+  occupants?: OccupantLine[]
 }
 
 export interface TransportRowInput {
