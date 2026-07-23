@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Readex_Pro, IBM_Plex_Sans, IBM_Plex_Sans_Arabic, Cairo, Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import PwaRegister from "@/components/pwa-register";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -121,6 +122,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-body, 'IBM Plex Sans', sans-serif)" }}>
         {children}
         <PwaRegister />
+        <Analytics />
       </body>
     </html>
   );
