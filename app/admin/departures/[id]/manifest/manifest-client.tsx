@@ -498,7 +498,10 @@ function RosterRow({
                       <input name="airline" placeholder="Airline" className={inputCls} />
                       <input name="flightNumber" placeholder="Flight no." className={inputCls} />
                       <input name="airport" placeholder="Airport" className={inputCls} />
-                      <input name="scheduledAt" type="datetime-local" className={`${inputCls} col-span-2`} />
+                      <div className="col-span-2">
+                        <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Arrival date &amp; time</label>
+                        <input name="scheduledAt" type="datetime-local" className={inputCls} />
+                      </div>
                     </div>
                     <input name="notes" placeholder="Notes (optional)" className={inputCls} />
                     <div className="flex gap-2">
