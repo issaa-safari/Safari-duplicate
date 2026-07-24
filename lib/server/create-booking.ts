@@ -25,9 +25,11 @@ export interface IncomingTraveller {
   passport_number?: string
 }
 
+// Note: the booking total is deliberately NOT part of this input. Both callers
+// are public, unauthenticated endpoints, so the price is computed here from
+// departures.price_usd rather than taken from the request body.
 export interface CreateBookingInput {
   travellers: IncomingTraveller[]
-  totalPrice: number
   currency?: string
   userId?: string | null
   source?: string
@@ -42,16 +44,17 @@ export async function createDepartureBooking(
   departureId: string,
   input: CreateBookingInput,
 ): Promise<CreateBookingResult> {
-  const { travellers, totalPrice, userId, source } = input
+  const { travellers, userId, source } = input
 
   if (!departureId || !travellers || travellers.length === 0) {
     return { ok: false, status: 400, error: 'Missing required fields' }
   }
 
-  // 1. Resolve the departure — fetch tour_id up front (required for request attribution)
+  // 1. Resolve the departure — fetch tour_id up front (required for request
+  // attribution) and price_usd, which is the authoritative per-person price.
   const { data: departure, error: fetchError } = await admin
     .from('departures')
-    .select('id, tour_id, max_seats, booked_seats')
+    .select('id, tour_id, max_seats, booked_seats, price_usd')
     .eq('id', departureId)
     .single()
 
@@ -61,6 +64,15 @@ export async function createDepartureBooking(
 
   const groupSize = travellers.length
   const availableSpots = departure.max_seats - departure.booked_seats
+
+  // Price the booking server-side. The browser shows the same arithmetic, but
+  // its figure is never trusted — these endpoints are public.
+  const pricePerPerson = Number(departure.price_usd)
+  if (!Number.isFinite(pricePerPerson) || pricePerPerson < 0) {
+    console.error('[book] departure has an unusable price_usd', { departureId, price: departure.price_usd })
+    return { ok: false, status: 409, error: 'This departure is not currently bookable online.' }
+  }
+  const totalPrice = pricePerPerson * groupSize
 
   if (groupSize > availableSpots) {
     return { ok: false, status: 400, error: 'Not enough available spots for this group size' }

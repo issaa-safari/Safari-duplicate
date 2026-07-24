@@ -21,7 +21,6 @@ interface Traveller {
 
 async function submitBooking(departureId: string, formData: {
   travellers: Traveller[]
-  totalPrice: number
   currency: string
 }) {
   const response = await fetch(`/api/departures/${departureId}/book`, {
@@ -133,9 +132,10 @@ function BookingFormContent() {
     setError('')
     startTransition(async () => {
       try {
+        // The server prices the booking from the departure itself; the total
+        // shown above is display-only and is not sent.
         await submitBooking(departureId, {
           travellers,
-          totalPrice,
           currency: 'USD'
         })
         setSubmitted(true)

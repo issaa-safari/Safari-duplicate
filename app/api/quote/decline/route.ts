@@ -18,13 +18,23 @@ export async function POST(req: NextRequest) {
     // Validate delivery is still active
     const { data: delivery } = await admin
       .from('quote_deliveries')
-      .select('id, revoked_at, expires_at')
+      .select('id, quote_version_id, revoked_at, expires_at')
       .eq('id', deliveryId)
       .eq('quote_id', quoteId)
       .single()
 
     if (!delivery) return NextResponse.json({ error: 'Invalid link.' }, { status: 404 })
     if (delivery.revoked_at) return NextResponse.json({ error: 'This link has been revoked.' }, { status: 410 })
+    if (delivery.expires_at && new Date(delivery.expires_at) < new Date()) {
+      return NextResponse.json({ error: 'This link has expired.' }, { status: 410 })
+    }
+
+    // Same one-link-one-version rule as /api/quote/accept: declining reaches
+    // through to the parent quote, so it must not be driveable from a link
+    // issued for a different version.
+    if (delivery.quote_version_id !== versionId) {
+      return NextResponse.json({ error: 'This link does not cover that quote version.' }, { status: 403 })
+    }
 
     // Check version can still be declined
     const { data: version } = await admin

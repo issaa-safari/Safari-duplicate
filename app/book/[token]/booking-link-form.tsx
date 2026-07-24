@@ -103,7 +103,9 @@ export default function BookingLinkForm({
         const res = await fetch(`/api/book/${token}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ travellers, totalPrice, currency: 'USD' }),
+          // The server prices the booking from the departure itself; the total
+          // shown above is display-only and is not sent.
+          body: JSON.stringify({ travellers, currency: 'USD' }),
         })
         const data = await res.json().catch(() => ({}))
         if (!res.ok) throw new Error(data?.error || 'Failed to complete booking. Please try again.')

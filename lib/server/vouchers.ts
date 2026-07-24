@@ -11,7 +11,9 @@
 //   * buildVouchersForDeparture — group vouchers for a fixed departure; guests
 //     are every confirmed traveller across all of the departure's bookings.
 //   * buildVouchersForBooking    — vouchers scoped to a single booking; guests
-//     are just that booking's travellers.
+//     are just that booking's travellers. The itinerary comes from the
+//     booking's departure, or from its accepted quote when the booking has no
+//     departure (bookings promoted from a custom quote).
 //   * buildVouchersForQuote      — vouchers from an accepted quote's itinerary
 //     (quote_days → accommodation items); guests are the quote's travellers.
 //
@@ -147,6 +149,92 @@ async function staysForTour(admin: SupabaseClient, tourId: string): Promise<Stay
   return groupStays(nights)
 }
 
+// The version whose itinerary a quote's vouchers follow: the accepted one,
+// falling back to any version still marked accepted.
+async function acceptedVersionId(admin: SupabaseClient, quoteId: string): Promise<string | null> {
+  const { data: quote } = await admin
+    .from('quotes')
+    .select('id, accepted_version_id')
+    .eq('id', quoteId)
+    .single()
+  if (!quote) throw new Error('Quote not found.')
+
+  const direct = quote.accepted_version_id as string | null
+  if (direct) return direct
+
+  const { data: acceptedVersion } = await admin
+    .from('quote_versions')
+    .select('id')
+    .eq('quote_id', quoteId)
+    .eq('status', 'accepted')
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return acceptedVersion?.id ?? null
+}
+
+// Walk a quote version's itinerary (quote_days → accommodation items) into
+// resolved hotel stays, plus the trip start date the offsets are relative to.
+async function staysForQuoteVersion(
+  admin: SupabaseClient,
+  versionId: string,
+): Promise<{ stays: Stay[]; startDate: string }> {
+  const { data: version } = await admin
+    .from('quote_versions')
+    .select('id, travel_start_date')
+    .eq('id', versionId)
+    .single()
+  if (!version?.travel_start_date) {
+    throw new Error('The accepted quote has no travel start date — set it on the quote first.')
+  }
+
+  const { data: days } = await admin
+    .from('quote_days')
+    .select('id, day_number')
+    .eq('quote_version_id', versionId)
+    .order('day_number', { ascending: true })
+  const dayIds = (days ?? []).map(d => d.id)
+  if (dayIds.length === 0) return { stays: [], startDate: version.travel_start_date }
+
+  const { data: items } = await admin
+    .from('quote_day_items')
+    .select('quote_day_id, accommodation_id, title_snapshot, sort_order')
+    .eq('item_type', 'accommodation')
+    .in('quote_day_id', dayIds)
+    .order('sort_order', { ascending: true })
+
+  // First accommodation item per day (by sort order) = that night's hotel.
+  const hotelByDay = new Map<string, { accommodationId: string | null; hotelName: string }>()
+  for (const it of (items ?? []) as Array<{ quote_day_id: string; accommodation_id: string | null; title_snapshot: string | null }>) {
+    if (hotelByDay.has(it.quote_day_id)) continue
+    hotelByDay.set(it.quote_day_id, {
+      accommodationId: it.accommodation_id ?? null,
+      hotelName: it.title_snapshot?.trim() || 'Hotel',
+    })
+  }
+
+  // Prefer the library name when the item links to an accommodation record.
+  const accIds = [...new Set(
+    [...hotelByDay.values()].map(h => h.accommodationId).filter((v): v is string => !!v),
+  )]
+  if (accIds.length > 0) {
+    const { data: accs } = await admin.from('accommodations').select('id, name').in('id', accIds)
+    const accName = new Map(((accs ?? []) as Array<{ id: string; name: string }>).map(a => [a.id, a.name]))
+    for (const h of hotelByDay.values()) {
+      if (h.accommodationId && accName.has(h.accommodationId)) h.hotelName = accName.get(h.accommodationId)!
+    }
+  }
+
+  const nights: Array<{ offset: number; accommodationId: string | null; hotelName: string }> = []
+  for (const day of days ?? []) {
+    const hotel = hotelByDay.get(day.id)
+    if (!hotel) continue // day with no accommodation (e.g. departure day)
+    nights.push({ offset: day.day_number - 1, accommodationId: hotel.accommodationId, hotelName: hotel.hotelName })
+  }
+
+  return { stays: groupStays(nights), startDate: version.travel_start_date }
+}
+
 // Turn a plain traveller list (first/last name + room hints) into guest names
 // plus room/room-type estimates.
 function summariseTravellers(
@@ -205,30 +293,51 @@ export async function buildVouchersForBooking(
 ): Promise<VoucherGenerationResult> {
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, departure_id, status, booking_travellers ( first_name, last_name, room_label, room_type )')
+    .select('id, departure_id, quote_id, status, booking_travellers ( first_name, last_name, room_label, room_type )')
     .eq('id', bookingId)
     .single()
   if (!booking) throw new Error('Booking not found.')
   if (booking.status === 'cancelled') throw new Error('This booking is cancelled.')
 
-  const { data: departure } = await admin
-    .from('departures')
-    .select('id, tour_id, start_date')
-    .eq('id', booking.departure_id)
-    .single()
-  if (!departure || !departure.start_date) {
-    throw new Error('The booking’s departure has no start date.')
-  }
-
-  const stays = await staysForTour(admin, departure.tour_id)
   const travellers = (booking.booking_travellers ?? []) as Array<{
     first_name: string | null; last_name: string | null; room_label: string | null; room_type: string | null
   }>
 
+  // A booking has an itinerary from one of two places. Fixed-departure
+  // bookings follow the tour's days; bookings promoted from an accepted custom
+  // quote have no departure at all (group_27 made departure_id nullable) and
+  // follow that quote's itinerary instead. Guests are this booking's
+  // travellers either way, and the voucher stays anchored to the booking.
+  let stays: Stay[]
+  let startDate: string
+
+  if (booking.departure_id) {
+    const { data: departure } = await admin
+      .from('departures')
+      .select('id, tour_id, start_date')
+      .eq('id', booking.departure_id)
+      .single()
+    if (!departure || !departure.start_date) {
+      throw new Error('The booking’s departure has no start date.')
+    }
+    stays = await staysForTour(admin, departure.tour_id)
+    startDate = departure.start_date
+  } else if (booking.quote_id) {
+    const versionId = await acceptedVersionId(admin, booking.quote_id)
+    if (!versionId) {
+      throw new Error('Accept a quote version before generating vouchers for this booking.')
+    }
+    const fromQuote = await staysForQuoteVersion(admin, versionId)
+    stays = fromQuote.stays
+    startDate = fromQuote.startDate
+  } else {
+    throw new Error('This booking has no departure or quote to build an itinerary from.')
+  }
+
   return insertVouchers(admin, {
     stays,
-    startDate: departure.start_date,
-    anchor: { departure_id: booking.departure_id, booking_id: bookingId, quote_id: null },
+    startDate,
+    anchor: { departure_id: booking.departure_id, booking_id: bookingId, quote_id: booking.quote_id ?? null },
     guests: summariseTravellers(travellers),
   })
 }
@@ -237,81 +346,11 @@ export async function buildVouchersForQuote(
   admin: SupabaseClient,
   quoteId: string,
 ): Promise<VoucherGenerationResult> {
-  const { data: quote } = await admin
-    .from('quotes')
-    .select('id, accepted_version_id')
-    .eq('id', quoteId)
-    .single()
-  if (!quote) throw new Error('Quote not found.')
-
-  // Prefer the accepted version; fall back to any version marked accepted.
-  let versionId = quote.accepted_version_id as string | null
-  if (!versionId) {
-    const { data: acceptedVersion } = await admin
-      .from('quote_versions')
-      .select('id')
-      .eq('quote_id', quoteId)
-      .eq('status', 'accepted')
-      .order('version_number', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    versionId = acceptedVersion?.id ?? null
-  }
+  const versionId = await acceptedVersionId(admin, quoteId)
   if (!versionId) throw new Error('Accept a quote version before generating vouchers.')
 
-  const { data: version } = await admin
-    .from('quote_versions')
-    .select('id, travel_start_date')
-    .eq('id', versionId)
-    .single()
-  if (!version?.travel_start_date) {
-    throw new Error('The accepted quote has no travel start date — set it on the quote first.')
-  }
-
-  const { data: days } = await admin
-    .from('quote_days')
-    .select('id, day_number')
-    .eq('quote_version_id', versionId)
-    .order('day_number', { ascending: true })
-  const dayIds = (days ?? []).map(d => d.id)
-  if (dayIds.length === 0) return { created: 0, skipped: 0, stays: 0 }
-
-  const { data: items } = await admin
-    .from('quote_day_items')
-    .select('quote_day_id, accommodation_id, title_snapshot, sort_order')
-    .eq('item_type', 'accommodation')
-    .in('quote_day_id', dayIds)
-    .order('sort_order', { ascending: true })
-
-  // First accommodation item per day (by sort order) = that night's hotel.
-  const hotelByDay = new Map<string, { accommodationId: string | null; hotelName: string }>()
-  for (const it of (items ?? []) as Array<{ quote_day_id: string; accommodation_id: string | null; title_snapshot: string | null }>) {
-    if (hotelByDay.has(it.quote_day_id)) continue
-    hotelByDay.set(it.quote_day_id, {
-      accommodationId: it.accommodation_id ?? null,
-      hotelName: it.title_snapshot?.trim() || 'Hotel',
-    })
-  }
-
-  // Prefer the library name when the item links to an accommodation record.
-  const accIds = [...new Set(
-    [...hotelByDay.values()].map(h => h.accommodationId).filter((v): v is string => !!v),
-  )]
-  if (accIds.length > 0) {
-    const { data: accs } = await admin.from('accommodations').select('id, name').in('id', accIds)
-    const accName = new Map(((accs ?? []) as Array<{ id: string; name: string }>).map(a => [a.id, a.name]))
-    for (const h of hotelByDay.values()) {
-      if (h.accommodationId && accName.has(h.accommodationId)) h.hotelName = accName.get(h.accommodationId)!
-    }
-  }
-
-  const nights: Array<{ offset: number; accommodationId: string | null; hotelName: string }> = []
-  for (const day of days ?? []) {
-    const hotel = hotelByDay.get(day.id)
-    if (!hotel) continue // day with no accommodation (e.g. departure day)
-    nights.push({ offset: day.day_number - 1, accommodationId: hotel.accommodationId, hotelName: hotel.hotelName })
-  }
-  const stays = groupStays(nights)
+  const { stays, startDate } = await staysForQuoteVersion(admin, versionId)
+  if (stays.length === 0) return { created: 0, skipped: 0, stays: 0 }
 
   const { data: travellers } = await admin
     .from('quote_travellers')
@@ -328,7 +367,7 @@ export async function buildVouchersForQuote(
 
   return insertVouchers(admin, {
     stays,
-    startDate: version.travel_start_date,
+    startDate,
     anchor: { departure_id: null, booking_id: null, quote_id: quoteId },
     guests: { guestNames: names, numGuests, numRooms, roomType: null },
   })

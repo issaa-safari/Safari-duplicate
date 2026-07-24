@@ -32,6 +32,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'This link has expired.' }, { status: 410 })
     }
 
+    // The link authorises exactly one version. Without this, a recipient
+    // holding any live delivery for the quote could accept a different
+    // version of it — including an older, cheaper one whose own link was
+    // revoked, since revocation is recorded on the delivery, not the version.
+    if (delivery.quote_version_id !== versionId) {
+      return NextResponse.json({ error: 'This link does not cover that quote version.' }, { status: 403 })
+    }
+
     // Check the version isn't already accepted/declined/expired
     const { data: version } = await admin
       .from('quote_versions')

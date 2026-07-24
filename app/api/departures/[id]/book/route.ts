@@ -13,7 +13,9 @@ export async function POST(
 
   try {
     const { id } = await params
-    const { travellers, totalPrice, currency } = await request.json()
+    // The total is computed server-side from the departure's own price; any
+    // amount in the request body is ignored.
+    const { travellers, currency } = await request.json()
 
     const admin = createAdminClient()
 
@@ -27,7 +29,6 @@ export async function POST(
 
     const result = await createDepartureBooking(admin, id, {
       travellers,
-      totalPrice,
       currency,
       userId,
       source: 'website',

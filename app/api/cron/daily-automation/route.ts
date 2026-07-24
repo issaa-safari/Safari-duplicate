@@ -12,12 +12,16 @@ export const dynamic = 'force-dynamic'
 // when CRON_SECRET is set in the project env. All writes use the service-role
 // client. Safe to run repeatedly — every step is idempotent.
 export async function GET(req: NextRequest) {
+  // Fail closed. This route archives and hard-deletes requests, so a missing
+  // CRON_SECRET is a misconfiguration to refuse on — never a reason to run
+  // unauthenticated.
   const secret = process.env.CRON_SECRET
-  if (secret) {
-    const auth = req.headers.get('authorization')
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+  if (!secret) {
+    console.error('[cron] CRON_SECRET is not set — refusing to run.')
+    return NextResponse.json({ error: 'Cron is not configured.' }, { status: 503 })
+  }
+  if (req.headers.get('authorization') !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const admin = createAdminClient()
