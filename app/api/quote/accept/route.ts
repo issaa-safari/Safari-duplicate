@@ -1,85 +1,9 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { refreshClientTotals } from '@/lib/server/clients'
+import { createBookingFromAcceptedQuote } from '@/lib/server/quote-booking'
 import { notifyAdmin, emailShell, detailRows } from '@/lib/email'
 import { site } from '@/lib/site'
 import { enforceRateLimit } from '@/lib/rate-limit'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-
-// Turn an accepted quote into a confirmed booking so it shows up in Bookings
-// and Finance. Idempotent (one booking per quote). Requires migration group_27.
-async function createBookingFromAcceptedQuote(
-  admin: SupabaseClient,
-  quoteId: string,
-  versionId: string,
-) {
-  // Idempotency — one booking per quote
-  const { data: existing } = await admin
-    .from('bookings').select('id').eq('quote_id', quoteId).limit(1).maybeSingle()
-  if (existing?.id) return
-
-  const { data: quote } = await admin
-    .from('quotes').select('client_id, departure_id').eq('id', quoteId).single()
-
-  // Mandatory link: booking must have a client. Guard explicitly so the
-  // failure is named (not conflated with a transient DB error) and visible.
-  // Once group_28 Tier 2 sets quotes.client_id NOT NULL this branch is unreachable.
-  if (!quote?.client_id) {
-    console.error(
-      '[quote/accept] booking skipped — quote has no client_id',
-      { quoteId, versionId },
-    )
-    return
-  }
-
-  const { data: version } = await admin
-    .from('quote_versions').select('total_selling_usd').eq('id', versionId).single()
-  const { count } = await admin
-    .from('quote_travellers').select('id', { count: 'exact', head: true }).eq('quote_version_id', versionId)
-
-  const numTravellers = Math.max(1, count ?? 0)
-  const total = Number(version?.total_selling_usd ?? 0)
-
-  const { data: booking } = await admin
-    .from('bookings')
-    .insert({
-      quote_id: quoteId,
-      client_id: quote.client_id,
-      departure_id: quote.departure_id ?? null,
-      number_of_travellers: numTravellers,
-      total_price_usd: total,
-      status: 'confirmed',
-    })
-    .select('id')
-    .single()
-  if (!booking) return
-
-  // Best-effort: finance stub
-  try {
-    await admin.from('booking_payments').insert({
-      booking_id: booking.id, amount_usd: total, status: 'pending', notes: 'Accepted quote',
-    })
-  } catch { /* finance record is non-critical */ }
-
-  // Best-effort: seat reservation
-  if (quote.departure_id) {
-    try {
-      const { data: dep } = await admin
-        .from('departures').select('booked_seats').eq('id', quote.departure_id).single()
-      if (dep) {
-        await admin.from('departures')
-          .update({ booked_seats: (dep.booked_seats ?? 0) + numTravellers })
-          .eq('id', quote.departure_id)
-          .eq('booked_seats', dep.booked_seats)
-      }
-    } catch { /* seat reservation is non-critical */ }
-  }
-
-  // Best-effort: refresh client totals
-  try {
-    await refreshClientTotals(admin, quote.client_id)
-  } catch { /* totals are a convenience cache */ }
-}
 
 export async function POST(req: NextRequest) {
   const limited = enforceRateLimit(req, 'quote-accept', 10, 60_000)
