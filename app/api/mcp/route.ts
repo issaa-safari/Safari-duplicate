@@ -14,10 +14,11 @@ import { createSafariDraft, type IntakePayload } from '@/lib/server/ai-intake'
 const APP_BASE_URL = (process.env.APP_BASE_URL ?? '').replace(/\/$/, '')
 
 const dayShape = z.object({
-  destination: z.string().describe('Destination name for the day, e.g. "Masai Mara".'),
+  destination: z.string().describe('Destination name for the stop, e.g. "Masai Mara".'),
   accommodation: z.string().optional().describe('Lodge/camp/hotel name for the night, if any.'),
-  activities: z.array(z.string()).optional().describe('Activity names for the day, e.g. ["Game drive"].'),
+  activities: z.array(z.string()).optional().describe('Activity names, e.g. ["Game drive"].'),
   meals: z.array(z.string()).optional().describe('Meal codes included: any of "B","L","D".'),
+  nights: z.number().int().optional().describe('Nights at this stop (default 1); >1 becomes a multi-night day span.'),
   notes: z.string().optional().describe('Free-text notes for this day.'),
 })
 
@@ -38,16 +39,24 @@ const handler = createMcpHandler(
             name: z.string().describe('Lead guest full name.'),
             email: z.string().optional(),
             phone: z.string().optional(),
+            whatsapp: z.string().optional(),
             country: z.string().optional(),
-            language: z.string().optional().describe('"en" or "ar".'),
+            language: z.string().optional().describe('"English"/"en" or "Arabic"/"ar".'),
+            notes: z.string().optional().describe('Notes about the client.'),
           }),
           adults: z.number().int().min(1),
           childAges: z.array(z.number().int()).optional().describe('One age per child (0–17).'),
           startDate: z.string().optional().describe('Trip start, YYYY-MM-DD.'),
-          endDate: z.string().optional().describe('Trip end, YYYY-MM-DD.'),
+          endDate: z.string().optional().describe('Trip end, YYYY-MM-DD (else derived from nights).'),
+          nights: z.number().int().optional().describe('Whole-trip nights, if stated.'),
           title: z.string().optional().describe('Short quote title.'),
-          budgetNote: z.string().optional().describe('Budget/preferences noted for the operator.'),
-          days: z.array(dayShape).min(1).describe('One entry per itinerary day, in order.'),
+          tripType: z.string().optional().describe('Wildlife safari / Honeymoon / Family / Beach / Bike tour / Private.'),
+          roomType: z.string().optional().describe('Sharing/Twin, Single, Triple, Extra bed, No bed.'),
+          residency: z.string().optional().describe('Non-resident (default GCC) / Resident / Citizen.'),
+          heardAboutUs: z.string().optional().describe('Instagram / WhatsApp referral / Returning client / Travel agent / Website / Other.'),
+          priority: z.string().optional().describe('Normal / High.'),
+          budgetNote: z.string().optional().describe('Budget/style/special requests noted for the operator.'),
+          days: z.array(dayShape).min(1).describe('One entry per stop, in order.'),
         },
       },
       async (args) => {

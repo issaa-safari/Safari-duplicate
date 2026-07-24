@@ -115,21 +115,16 @@ into the Project's instructions.
 
 ---
 
-## Two things to do for this to work well
+## Status
 
-**A. Clean the content library** (so dropdowns and matching are reliable). Current issues:
-- Duplicate/typo **destinations**: Amboseli vs Amboseli National Park; Masai Mara vs Masai Mara
-  National Reserve; Mombasa vs "Mombsa"; Nakuru vs Lake Nakuru National Park; "Ol Pegeta";
-  "Norumoro".
-- Duplicate/junk **lodges**: many exist twice (one linked to a destination, one orphaned) — e.g.
-  Sarova Stanley (×2), Sarova Panafric (×2), "Furished Apartment"/"Furnished apartment",
-  "Hills Gate"/"Hillsgate Experience"; plus junk "P".
-- Inconsistent **budget tiers**: `midrange` vs `mid_range`, `ultra_luxury` (app expects `ultra`).
-- **Test** activities: "TEST — …" rows, and overlapping "Game Drive"/"Guided Game Drive".
+**B. Extend the tool — ✅ DONE.** `create_safari_draft` now saves every field above, including
+WhatsApp, language, client notes, trip type, room type, nights, how-heard, priority, residency
+(as a note), and multi-night day spans. All the ➕ fields are now stored once deployed.
 
-**B. Extend the tool** to save the ➕ fields (WhatsApp, language, notes, trip type, room type,
-nights, residency, how-heard, priority, multi-night spans). Small change to `create_safari_draft`
-in `lib/server/ai-intake.ts` + the schema in `app/api/mcp/route.ts` + the interview questions above.
-
-The ✅ fields already save today — you can run the interview now; the ➕ fields just won't be
-stored until the tool is extended.
+**A. Clean the content library — ⏳ run once (SQL provided).** For clean dropdowns + reliable
+matching, run the cleanup SQL (in `docs/ai-intake/library-cleanup.sql`) in Supabase → SQL Editor.
+It normalizes budget tiers (`mid_range`→`midrange`, `ultra_luxury`→`ultra`), fixes typos
+(`Norumoro`→`Naro Moru`, `Ol Pegeta`→`Ol Pejeta`, `Furished`→`Furnished`), removes duplicate/junk
+lodges and empty duplicate destinations (all verified zero-reference), and deletes the TEST
+activities. It intentionally leaves ambiguous pairs (e.g. `Hills Gate` / `Hillsgate Experience`,
+`Game Drive` / `Guided Game Drive`) for you to judge. Regenerate `library.md` afterwards.
