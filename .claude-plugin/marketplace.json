@@ -1,0 +1,13 @@
+{
+  "name": "safari-adventure",
+  "owner": {
+    "name": "Safari Adventure Riders"
+  },
+  "plugins": [
+    {
+      "name": "safari-intake",
+      "source": "./plugins/safari-intake",
+      "description": "Guided safari enquiry intake — interview a client enquiry step by step, then create a draft quote + request in the Safari admin."
+    }
+  ]
+}
