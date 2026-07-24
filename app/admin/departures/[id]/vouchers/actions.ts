@@ -10,6 +10,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildVouchersForDeparture } from '@/lib/server/vouchers'
 import { buildVoucherEmail } from '@/lib/voucher-email'
 import { sendEmail } from '@/lib/email'
+import { site } from '@/lib/site'
 import type { HotelVoucher } from '@/lib/types'
 
 async function requestBaseUrl() {
@@ -121,7 +122,10 @@ export async function sendVoucher(formData: FormData) {
     viewUrl: `${baseUrl}/voucher/${voucher.token}`,
   })
 
-  const sent = await sendEmail({ to: voucher.hotel_email.trim(), subject, html })
+  // Reply-to the operator inbox so the hotel's confirmation reply reaches a
+  // real mailbox, not the no-reply sender address.
+  const replyTo = process.env.ADMIN_NOTIFICATION_EMAIL || site.email
+  const sent = await sendEmail({ to: voucher.hotel_email.trim(), subject, html, replyTo })
   if (!sent) throw new Error('Email could not be sent (check email configuration).')
 
   await admin
