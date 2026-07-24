@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import type { VoucherWithContext } from './page'
 import {
-  generateDepartureVouchers, generateBookingVouchers,
+  generateDepartureVouchers, generateBookingVouchers, generateQuoteVouchers,
   updateVoucher, sendVoucher, markVoucherConfirmed, deleteVoucher,
 } from './actions'
 
@@ -15,11 +15,12 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-700',
 }
 
-type Scope = { kind: 'departure' | 'booking'; id: string } | null
+type Scope = { kind: 'departure' | 'booking' | 'quote'; id: string } | null
 
 export default function VouchersClient({
   vouchers,
   departureOptions,
+  quoteOptions,
   statusFilters,
   activeStatus,
   scope,
@@ -27,6 +28,7 @@ export default function VouchersClient({
 }: {
   vouchers: VoucherWithContext[]
   departureOptions: Array<{ id: string; label: string }>
+  quoteOptions: Array<{ id: string; label: string }>
   statusFilters: Array<{ value: string; label: string }>
   activeStatus: string
   scope: Scope
@@ -34,19 +36,18 @@ export default function VouchersClient({
 }) {
   const [openId, setOpenId] = useState<string | null>(null)
 
-  // Preserve the current scope (departure/booking) when switching status filter.
+  // Preserve the current scope (departure/booking/quote) when switching status.
   function statusHref(value: string) {
     const params = new URLSearchParams()
     if (value !== 'all') params.set('status', value)
-    if (scope?.kind === 'departure') params.set('departure', scope.id)
-    if (scope?.kind === 'booking') params.set('booking', scope.id)
+    if (scope) params.set(scope.kind, scope.id)
     const qs = params.toString()
     return qs ? `/admin/vouchers?${qs}` : '/admin/vouchers'
   }
 
   return (
     <div className="space-y-5">
-      {/* Generator — scoped to one trip, or a departure picker for the global view. */}
+      {/* Generator — scoped to one trip, or source pickers for the global view. */}
       <div className="rounded-xl border border-border bg-card p-4">
         {scope?.kind === 'booking' ? (
           <form action={generateBookingVouchers} className="flex flex-wrap items-center gap-3">
@@ -59,6 +60,19 @@ export default function VouchersClient({
             </button>
             <span className="text-xs text-muted-foreground">
               One voucher per hotel stay, with this booking’s travellers as guests. Re-running only fills gaps.
+            </span>
+          </form>
+        ) : scope?.kind === 'quote' ? (
+          <form action={generateQuoteVouchers} className="flex flex-wrap items-center gap-3">
+            <input type="hidden" name="quoteId" value={scope.id} />
+            <button
+              type="submit"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            >
+              Generate vouchers from this quote
+            </button>
+            <span className="text-xs text-muted-foreground">
+              Built from the accepted quote’s itinerary and travellers. Re-running only fills gaps.
             </span>
           </form>
         ) : scope?.kind === 'departure' ? (
@@ -75,28 +89,56 @@ export default function VouchersClient({
             </span>
           </form>
         ) : (
-          <form action={generateDepartureVouchers} className="flex flex-wrap items-end gap-3">
-            <label className="text-sm">
-              <span className="mb-1 block font-medium text-foreground">Generate from a departure</span>
-              <select
-                name="departureId"
-                required
-                defaultValue=""
-                className="w-full min-w-64 rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          <div className="grid gap-4 sm:grid-cols-2">
+            <form action={generateDepartureVouchers} className="flex flex-col gap-2">
+              <label className="text-sm">
+                <span className="mb-1 block font-medium text-foreground">Generate from a departure</span>
+                <select
+                  name="departureId"
+                  required
+                  defaultValue=""
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="" disabled>Choose a departure…</option>
+                  {departureOptions.map(d => (
+                    <option key={d.id} value={d.id}>{d.label}</option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="submit"
+                className="self-start rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
               >
-                <option value="" disabled>Choose a departure…</option>
-                {departureOptions.map(d => (
-                  <option key={d.id} value={d.id}>{d.label}</option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="submit"
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-            >
-              Generate
-            </button>
-          </form>
+                Generate
+              </button>
+            </form>
+            <form action={generateQuoteVouchers} className="flex flex-col gap-2">
+              <label className="text-sm">
+                <span className="mb-1 block font-medium text-foreground">Generate from an accepted quote</span>
+                <select
+                  name="quoteId"
+                  required
+                  defaultValue=""
+                  disabled={quoteOptions.length === 0}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm disabled:opacity-60"
+                >
+                  <option value="" disabled>
+                    {quoteOptions.length === 0 ? 'No accepted quotes yet' : 'Choose a quote…'}
+                  </option>
+                  {quoteOptions.map(q => (
+                    <option key={q.id} value={q.id}>{q.label}</option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="submit"
+                disabled={quoteOptions.length === 0}
+                className="self-start rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              >
+                Generate
+              </button>
+            </form>
+          </div>
         )}
       </div>
 
@@ -129,6 +171,7 @@ export default function VouchersClient({
           {vouchers.map(v => {
             const isOpen = openId === v.id
             const tourTitle = v.departures?.tours?.title_en ?? null
+            const quoteNumber = v.quotes?.quote_number ?? null
             return (
               <li key={v.id} className="rounded-xl border border-border bg-card">
                 <div className="flex flex-wrap items-center gap-3 p-4">
@@ -144,6 +187,11 @@ export default function VouchersClient({
                           Per booking
                         </span>
                       )}
+                      {v.quote_id && !v.departure_id && (
+                        <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium text-brand-ink">
+                          From quote
+                        </span>
+                      )}
                     </div>
                     <div className="mt-1 text-sm text-muted-foreground">
                       {v.check_in} → {v.check_out} · {v.nights} night{v.nights === 1 ? '' : 's'} ·{' '}
@@ -153,6 +201,7 @@ export default function VouchersClient({
                     <div className="mt-0.5 text-xs text-muted-foreground">
                       {v.voucher_number}
                       {tourTitle ? ` · ${tourTitle}` : ''}
+                      {!tourTitle && quoteNumber ? ` · ${quoteNumber}` : ''}
                       {v.hotel_email ? ` · ${v.hotel_email}` : ' · no hotel email set'}
                       {v.hotel_confirmation_ref ? ` · ref ${v.hotel_confirmation_ref}` : ''}
                     </div>
@@ -165,6 +214,11 @@ export default function VouchersClient({
                       {v.booking_id && (
                         <Link href={`/admin/bookings/${v.booking_id}`} className="text-primary hover:underline">
                           Open booking →
+                        </Link>
+                      )}
+                      {v.quote_id && (
+                        <Link href={`/admin/quotes/${v.quote_id}`} className="text-primary hover:underline">
+                          Open quote →
                         </Link>
                       )}
                     </div>

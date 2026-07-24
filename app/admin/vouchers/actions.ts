@@ -6,7 +6,7 @@ import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
-import { buildVouchersForDeparture, buildVouchersForBooking } from '@/lib/server/vouchers'
+import { buildVouchersForDeparture, buildVouchersForBooking, buildVouchersForQuote } from '@/lib/server/vouchers'
 import { buildVoucherEmail } from '@/lib/voucher-email'
 import { sendEmail } from '@/lib/email'
 import type { HotelVoucher } from '@/lib/types'
@@ -28,10 +28,11 @@ async function authGuard() {
 
 // Refresh the central list plus whichever trip pages surface this voucher, so a
 // change made in one place is reflected everywhere it appears.
-function revalidateFor(voucher: { departure_id: string | null; booking_id: string | null }) {
+function revalidateFor(voucher: { departure_id: string | null; booking_id: string | null; quote_id: string | null }) {
   revalidatePath('/admin/vouchers')
   if (voucher.departure_id) revalidatePath(`/admin/departures/${voucher.departure_id}`)
   if (voucher.booking_id) revalidatePath(`/admin/bookings/${voucher.booking_id}`)
+  if (voucher.quote_id) revalidatePath(`/admin/quotes/${voucher.quote_id}`)
 }
 
 async function loadVoucher(admin: Awaited<ReturnType<typeof authGuard>>['admin'], id: string) {
@@ -56,6 +57,15 @@ export async function generateBookingVouchers(formData: FormData) {
   await buildVouchersForBooking(admin, bookingId)
   revalidatePath('/admin/vouchers')
   revalidatePath(`/admin/bookings/${bookingId}`)
+}
+
+export async function generateQuoteVouchers(formData: FormData) {
+  const { admin } = await authGuard()
+  const quoteId = (formData.get('quoteId') as string)?.trim()
+  if (!quoteId) throw new Error('Choose a quote to generate from.')
+  await buildVouchersForQuote(admin, quoteId)
+  revalidatePath('/admin/vouchers')
+  revalidatePath(`/admin/quotes/${quoteId}`)
 }
 
 export async function updateVoucher(formData: FormData) {

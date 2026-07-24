@@ -196,6 +196,14 @@ export default async function QuoteDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {quote.status === 'accepted' && !quote.is_template && (
+            <Link
+              href={`/admin/vouchers?quote=${id}`}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              Hotel vouchers →
+            </Link>
+          )}
           {!quote.is_template && <AcceptOnBehalfButton quoteId={id} status={quote.status} />}
           <TemplateToggleButton quoteId={id} isTemplate={!!quote.is_template} />
         </div>
