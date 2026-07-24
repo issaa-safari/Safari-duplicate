@@ -110,7 +110,10 @@ export default function FlightsManager({ requestId, flights: initial }: { reques
             <input name="airline" placeholder="Airline" className={inputCls} />
             <input name="flightNumber" placeholder="Flight no." className={inputCls} />
             <input name="airport" placeholder="Airport" className={inputCls} />
-            <input name="scheduledAt" type="datetime-local" className={inputCls} />
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Arrival/departure date &amp; time</label>
+              <input name="scheduledAt" type="datetime-local" className={inputCls} />
+            </div>
           </div>
           <input name="notes" placeholder="Notes (optional)" className={inputCls} />
           {error && <p className="text-xs text-destructive">{error}</p>}
