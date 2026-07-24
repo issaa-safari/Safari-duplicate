@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
-import TripBuilderForm from './trip-builder-form'
+import TripBuilderWithIntake from './trip-builder-with-intake'
 import { loadBuilderLookups } from './load-lookups'
 
 export default async function TripBuilderPage() {
@@ -20,7 +20,7 @@ export default async function TripBuilderPage() {
           Build a quote on one screen — rates resolve by travel date, one Save writes everything.
         </p>
       </div>
-      <TripBuilderForm {...lookups} />
+      <TripBuilderWithIntake {...lookups} />
     </div>
   )
 }
