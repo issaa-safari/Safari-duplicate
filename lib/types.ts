@@ -91,6 +91,9 @@ export interface BookingTraveller {
   dietary_requirements?: string | null
   allergies?: string | null
   emergency_contact?: string | null
+  // group_67 — rooming list
+  room_label?: string | null
+  room_type?: string | null
 }
 
 // --- Fixed-departure group management (migrations/group_66_*) ---
@@ -153,6 +156,10 @@ export interface TravellerAgreement {
   signed_at: string | null
   ip_address: string | null
   user_agent: string | null
+  // group_67 — language snapshot + email-reminder tracking
+  language_snapshot?: string | null
+  last_emailed_at?: string | null
+  reminder_count?: number
   created_at: string
   updated_at: string
 }

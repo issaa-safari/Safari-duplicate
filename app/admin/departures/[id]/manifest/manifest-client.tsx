@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import type { Motorbike } from '@/lib/types'
 import {
   addTravellerFlight, deleteTravellerFlight, assignMotorbike,
-  updateTravellerExtras, generateAgreement, generateAllAgreements,
+  updateTravellerExtras, generateAgreement, generateAllAgreements, sendAgreementLink,
 } from './actions'
 
 export interface RosterFlight {
@@ -33,6 +33,8 @@ export interface RosterTraveller {
   dietary: string | null
   allergies: string | null
   emergency: string | null
+  roomLabel: string | null
+  roomType: string | null
   motorbikeId: string | null
   motorbikeName: string | null
   flights: RosterFlight[]
@@ -118,6 +120,20 @@ export default function ManifestClient({
     return { runs, noArrival }
   }, [roster, windowMin])
 
+  // Rooming list: travellers sharing a room_label are in the same room.
+  const rooming = useMemo(() => {
+    const byRoom: Record<string, { type: string | null; travellers: RosterTraveller[] }> = {}
+    const unassigned: RosterTraveller[] = []
+    for (const t of roster) {
+      const label = t.roomLabel?.trim()
+      if (!label) { unassigned.push(t); continue }
+      if (!byRoom[label]) byRoom[label] = { type: t.roomType ?? null, travellers: [] }
+      byRoom[label].travellers.push(t)
+      if (!byRoom[label].type && t.roomType) byRoom[label].type = t.roomType
+    }
+    return { rooms: Object.entries(byRoom).sort((a, b) => a[0].localeCompare(b[0])), unassigned }
+  }, [roster])
+
   function copyLink(token: string) {
     const url = agreementBaseUrl + token
     navigator.clipboard?.writeText(url).then(() => {
@@ -126,13 +142,15 @@ export default function ManifestClient({
   }
 
   function exportCsv() {
-    const head = ['Name', 'Party', 'Role', 'Motorbike', 'Arrival flight', 'Arrival time', 'Arrival airport',
-      'Departure flight', 'Passport', 'Nationality', 'Phone', 'Dietary', 'Allergies', 'Emergency', 'Agreement']
+    const head = ['Name', 'Party', 'Role', 'Motorbike', 'Room', 'Room type', 'Arrival flight', 'Arrival time',
+      'Arrival airport', 'Departure flight', 'Passport', 'Nationality', 'Phone', 'Dietary', 'Allergies',
+      'Emergency', 'Agreement']
     const rows = roster.map(t => {
       const arr = t.flights.find(f => f.direction === 'arrival')
       const dep = t.flights.find(f => f.direction === 'departure')
       return [
         fullName(t), t.partyName, t.isRider ? 'Rider' : 'Passenger', t.motorbikeName ?? '',
+        t.roomLabel ?? '', t.roomType ?? '',
         [arr?.airline, arr?.flightNumber].filter(Boolean).join(' '), arr?.scheduledAt ? fmtTime(arr.scheduledAt) : '',
         arr?.airport ?? '', [dep?.airline, dep?.flightNumber].filter(Boolean).join(' '),
         t.passportNumber ?? '', t.nationality ?? '', t.phone ?? '',
@@ -237,6 +255,36 @@ export default function ManifestClient({
               </p>
             )}
           </div>
+        )}
+      </div>
+
+      {/* Rooming list */}
+      <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">Rooming list</h2>
+        {rooming.rooms.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            No rooms assigned yet — set a room name in a traveller&rsquo;s details (travellers sharing a room name share a room).
+          </p>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {rooming.rooms.map(([label, room]) => (
+              <div key={label} className="rounded-lg border border-border/70 bg-muted/30 p-3">
+                <p className="text-xs font-semibold text-brand-text">
+                  {label}
+                  {room.type && <span className="ml-1 font-normal text-muted-foreground">· {room.type}</span>}
+                  <span className="ml-1 font-normal text-muted-foreground">({room.travellers.length})</span>
+                </p>
+                <ul className="mt-1 text-xs text-foreground">
+                  {room.travellers.map(t => <li key={t.id}>{fullName(t)}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+        {rooming.unassigned.length > 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            No room: {rooming.unassigned.map(fullName).join(', ')}
+          </p>
         )}
       </div>
 
@@ -377,12 +425,28 @@ function RosterRow({
         <td data-label="Agreement" className="px-4 py-3">
           <AgreementCell t={t} copied={copied} onCopy={onCopy} />
           {hasTemplate && t.agreement?.status !== 'signed' && (
-            <button
-              onClick={() => { const fd = new FormData(); fd.set('departureId', departureId); fd.set('travellerId', t.id); act(() => generateAgreement(fd)) }}
-              disabled={pending}
+            <div className="mt-0.5 flex flex-wrap gap-2">
+              <button
+                onClick={() => { const fd = new FormData(); fd.set('departureId', departureId); fd.set('travellerId', t.id); act(() => generateAgreement(fd)) }}
+                disabled={pending}
+                className="text-xs text-brand-text hover:underline">
+                {t.agreement ? 'Re-issue' : 'Generate'}
+              </button>
+              {t.agreement && t.email && (
+                <button
+                  onClick={() => { const fd = new FormData(); fd.set('departureId', departureId); fd.set('travellerId', t.id); act(() => sendAgreementLink(fd)) }}
+                  disabled={pending}
+                  className="text-xs text-brand-text hover:underline">
+                  Email link
+                </button>
+              )}
+            </div>
+          )}
+          {t.agreement?.status === 'signed' && t.agreement.token && (
+            <a href={`/agreement/${t.agreement.token}/print`} target="_blank" rel="noopener noreferrer"
               className="block text-xs text-brand-text hover:underline mt-0.5">
-              {t.agreement ? 'Re-issue' : 'Generate'}
-            </button>
+              PDF
+            </a>
           )}
         </td>
         <td className="px-4 py-3 text-right">
@@ -450,6 +514,10 @@ function RosterRow({
                   Rides a motorbike (uncheck for pillion passenger)
                 </label>
                 <div className="grid gap-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input name="roomLabel" defaultValue={t.roomLabel ?? ''} placeholder="Room name (e.g. Room 1)" className={inputCls} />
+                    <input name="roomType" defaultValue={t.roomType ?? ''} placeholder="Room type (e.g. Twin)" className={inputCls} />
+                  </div>
                   <input name="dietary" defaultValue={t.dietary ?? ''} placeholder="Dietary requirements" className={inputCls} />
                   <input name="allergies" defaultValue={t.allergies ?? ''} placeholder="Allergies" className={inputCls} />
                   <input name="emergency" defaultValue={t.emergency ?? ''} placeholder="Emergency contact" className={inputCls} />

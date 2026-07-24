@@ -6,6 +6,9 @@ import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { site } from '@/lib/site'
+import { sendEmail } from '@/lib/email'
+import { buildAgreementEmail } from '@/lib/agreement-email'
 
 async function authGuard() {
   const supabase = await createClient()
@@ -120,14 +123,54 @@ export async function updateTravellerExtras(formData: FormData) {
     dietary_requirements: str('dietary'),
     allergies: str('allergies'),
     emergency_contact: str('emergency'),
+    room_label: str('roomLabel'),
+    room_type: str('roomType'),
   }).eq('id', travellerId)
   if (error) throw new Error(error.message)
   revalidate(departureId)
 }
 
+// Email a pending agreement's signing link to the traveller (best-effort).
+// Returns true when an email was actually sent so callers can bump counters.
+async function emailAgreement(
+  admin: SupabaseClient,
+  agreementId: string,
+  isReminder: boolean,
+): Promise<boolean> {
+  const { data: ag } = await admin
+    .from('traveller_agreements')
+    .select(`
+      access_token, language_snapshot, status,
+      booking_travellers ( first_name, last_name, email ),
+      departures ( tours ( title_en ) )
+    `)
+    .eq('id', agreementId)
+    .maybeSingle()
+  if (!ag || ag.status !== 'pending' || !ag.access_token) return false
+
+  const traveller = (ag as any).booking_travellers
+  const email = traveller?.email?.trim()
+  if (!email) return false
+
+  const { subject, html } = buildAgreementEmail({
+    travellerName: `${traveller.first_name ?? ''} ${traveller.last_name ?? ''}`.trim() || 'traveller',
+    tourTitle: (ag as any).departures?.tours?.title_en ?? null,
+    url: `${site.url}/agreement/${ag.access_token}`,
+    language: (ag as any).language_snapshot,
+    isReminder,
+  })
+  const sent = await sendEmail({ to: email, subject, html })
+  if (sent) {
+    await admin.from('traveller_agreements')
+      .update({ last_emailed_at: new Date().toISOString() })
+      .eq('id', agreementId)
+  }
+  return sent
+}
+
 // Create (or refresh a still-pending) signable agreement for a traveller,
 // snapshotting the active template so later template edits don't rewrite an
-// already-issued document.
+// already-issued document. Emails the signing link to the traveller.
 export async function generateAgreement(formData: FormData) {
   const { admin } = await authGuard()
   const departureId = (formData.get('departureId') as string)?.trim()
@@ -137,12 +180,20 @@ export async function generateAgreement(formData: FormData) {
 
   const { data: template } = await admin
     .from('agreement_templates')
-    .select('id, title, body')
+    .select('id, title, body, language')
     .eq('is_active', true)
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle()
   if (!template) throw new Error('No active agreement template. Create one under Agreements first.')
+
+  const snapshot = {
+    departure_id: departureId,
+    agreement_template_id: template.id,
+    title_snapshot: template.title,
+    body_snapshot: template.body,
+    language_snapshot: template.language,
+  }
 
   const { data: existing } = await admin
     .from('traveller_agreements')
@@ -150,25 +201,45 @@ export async function generateAgreement(formData: FormData) {
     .eq('booking_traveller_id', travellerId)
     .maybeSingle()
 
+  let agreementId: string | null = null
   if (existing) {
     if (existing.status === 'signed') return // never overwrite a signed agreement
-    const { error } = await admin.from('traveller_agreements').update({
-      departure_id: departureId,
-      agreement_template_id: template.id,
-      title_snapshot: template.title,
-      body_snapshot: template.body,
-    }).eq('id', existing.id)
+    const { error } = await admin.from('traveller_agreements').update(snapshot).eq('id', existing.id)
     if (error) throw new Error(error.message)
+    agreementId = existing.id
   } else {
-    const { error } = await admin.from('traveller_agreements').insert({
-      booking_traveller_id: travellerId,
-      departure_id: departureId,
-      agreement_template_id: template.id,
-      title_snapshot: template.title,
-      body_snapshot: template.body,
-    })
+    const { data, error } = await admin.from('traveller_agreements')
+      .insert({ booking_traveller_id: travellerId, ...snapshot })
+      .select('id').single()
     if (error) throw new Error(error.message)
+    agreementId = data.id
   }
+
+  if (agreementId) {
+    try { await emailAgreement(admin, agreementId, false) } catch { /* email is best-effort */ }
+  }
+  revalidate(departureId)
+}
+
+// Manually (re)send the signing link to one traveller.
+export async function sendAgreementLink(formData: FormData) {
+  const { admin } = await authGuard()
+  const departureId = (formData.get('departureId') as string)?.trim()
+  const travellerId = (formData.get('travellerId') as string)?.trim()
+  if (!departureId || !travellerId) throw new Error('Missing traveller.')
+  await assertTravellerOnDeparture(admin, travellerId, departureId)
+
+  const { data: ag } = await admin
+    .from('traveller_agreements')
+    .select('id, status, booking_travellers ( email )')
+    .eq('booking_traveller_id', travellerId)
+    .maybeSingle()
+  if (!ag) throw new Error('Generate the agreement first.')
+  if (ag.status === 'signed') throw new Error('This agreement is already signed.')
+  if (!((ag as any).booking_travellers?.email?.trim())) throw new Error('Traveller has no email on file.')
+
+  const sent = await emailAgreement(admin, ag.id, false)
+  if (!sent) throw new Error('Email could not be sent (check email configuration).')
   revalidate(departureId)
 }
 
@@ -180,7 +251,7 @@ export async function generateAllAgreements(formData: FormData) {
 
   const { data: template } = await admin
     .from('agreement_templates')
-    .select('id, title, body')
+    .select('id, title, body, language')
     .eq('is_active', true)
     .order('updated_at', { ascending: false })
     .limit(1)
@@ -207,10 +278,16 @@ export async function generateAllAgreements(formData: FormData) {
     agreement_template_id: template.id,
     title_snapshot: template.title,
     body_snapshot: template.body,
+    language_snapshot: template.language,
   }))
   if (toCreate.length > 0) {
-    const { error } = await admin.from('traveller_agreements').insert(toCreate)
+    const { data: created, error } = await admin
+      .from('traveller_agreements').insert(toCreate).select('id')
     if (error) throw new Error(error.message)
+    // Email each new agreement's link (best-effort, sequential).
+    for (const row of created ?? []) {
+      try { await emailAgreement(admin, row.id, false) } catch { /* best-effort */ }
+    }
   }
   revalidate(departureId)
 }

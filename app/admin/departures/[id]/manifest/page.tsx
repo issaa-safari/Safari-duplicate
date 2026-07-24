@@ -30,7 +30,7 @@ export default async function DepartureManifestPage({ params }: { params: Promis
         clients ( first_name, last_name ),
         booking_travellers (
           id, first_name, last_name, email, phone, nationality, passport_number, date_of_birth,
-          motorbike_id, is_rider, dietary_requirements, allergies, emergency_contact,
+          motorbike_id, is_rider, dietary_requirements, allergies, emergency_contact, room_label, room_type,
           motorbikes ( id, name, plate_number ),
           booking_traveller_flights ( id, direction, flight_number, airline, scheduled_at, airport, notes, sort_order ),
           traveller_agreements ( id, status, access_token, signed_name, signed_at )
@@ -71,6 +71,8 @@ export default async function DepartureManifestPage({ params }: { params: Promis
         dietary: t.dietary_requirements,
         allergies: t.allergies,
         emergency: t.emergency_contact,
+        roomLabel: t.room_label,
+        roomType: t.room_type,
         motorbikeId: t.motorbike_id ?? null,
         motorbikeName: t.motorbikes?.name ?? null,
         flights: (t.booking_traveller_flights ?? [])
