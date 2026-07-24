@@ -8,7 +8,7 @@
 //
 // Reuses existing RPCs so it stays consistent with the hand-built flow:
 //   • create_quote_with_version (group_17) — client-linked draft quote + version 1
-//   • save_quote_itinerary       (group_61) — quote_days + items
+//   • save_quote_itinerary       (group_61) — quote_days + items (with day spans)
 //   • findOrCreateClientByEmail  (lib/server/clients.ts)
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -21,16 +21,35 @@ export interface IntakeDay {
   /** Meal codes: 'B' | 'L' | 'D'. */
   meals?: string[]
   notes?: string
+  /** Nights at this stop (default 1). >1 becomes a multi-night day span. */
+  nights?: number
 }
 
 export interface IntakePayload {
-  guest: { name: string; email?: string; phone?: string; country?: string; language?: string }
+  guest: {
+    name: string
+    email?: string
+    phone?: string
+    whatsapp?: string
+    country?: string
+    /** 'en' | 'ar' | 'fr' | 'de' | 'es' | 'zh' or a plain language name. */
+    language?: string
+    notes?: string
+  }
   adults: number
   childAges: number[]
   startDate?: string
   endDate?: string
   title?: string
+  /** Free-text budget/style note kept for the operator. */
   budgetNote?: string
+  tripType?: string
+  roomType?: string
+  /** Whole-trip nights (falls back to the sum of per-stop nights). */
+  nights?: number
+  heardAboutUs?: string
+  priority?: string
+  residency?: string
   days: IntakeDay[]
 }
 
@@ -61,10 +80,35 @@ interface AccRow { id: string; name: string; destination_id: string | null }
 interface ActRow { id: string; name: string }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+const DAY_MS = 86_400_000
 const norm = (s: string) => s.trim().toLowerCase()
 
 function isoOrNull(s: string | undefined): string | null {
   return s && ISO_DATE.test(s) ? s : null
+}
+
+function isoAddDays(iso: string, days: number): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d) + days * DAY_MS).toISOString().slice(0, 10)
+}
+
+const LANG_MAP: Record<string, string> = {
+  english: 'en', en: 'en', arabic: 'ar', ar: 'ar', french: 'fr', fr: 'fr',
+  german: 'de', de: 'de', spanish: 'es', es: 'es', chinese: 'zh', zh: 'zh',
+}
+function normLang(s?: string): string | null {
+  if (!s) return null
+  return LANG_MAP[s.trim().toLowerCase()] ?? null
+}
+
+const ROOM_TYPE_MAP: Record<string, string> = {
+  sharing: 'sharing', twin: 'sharing', 'sharing/twin': 'sharing', 'twin/sharing': 'sharing',
+  single: 'single', triple: 'triple', 'extra bed': 'extra_bed', extra_bed: 'extra_bed',
+  'no bed': 'no_bed', no_bed: 'no_bed',
+}
+function normRoomType(s?: string): string | null {
+  if (!s?.trim()) return null
+  return ROOM_TYPE_MAP[s.trim().toLowerCase()] ?? s.trim()
 }
 
 function bandForAge(bands: BandRow[], age: number): BandRow | null {
@@ -79,6 +123,11 @@ function bandSnapshot(band: BandRow) {
     default_percentage: band.default_pricing_method === 'percentage' ? band.default_percentage : null,
     default_fixed_amount_usd: band.default_pricing_method === 'fixed' ? band.default_fixed_amount_usd : null,
   }
+}
+
+function nightsOf(d: IntakeDay): number {
+  const n = Math.floor(Number(d.nights))
+  return Number.isFinite(n) && n >= 1 ? n : 1
 }
 
 /**
@@ -100,7 +149,18 @@ export async function createSafariDraft(
       .map(a => Math.floor(Number(a)))
       .filter(a => Number.isFinite(a) && a >= 0 && a <= 17)
     const startDate = isoOrNull(payload.startDate)
+    const lang = normLang(payload.guest.language)
+    const whatsapp = payload.guest.whatsapp?.trim() || null
+    const country = payload.guest.country?.trim() || null
+    const clientNotes = payload.guest.notes?.trim() || null
+
+    // Total nights from the stops; derive an end date if none was given.
+    const totalNights = payload.days.reduce((s, d) => s + nightsOf(d), 0)
+    const tripNights = Number.isFinite(Number(payload.nights)) && Number(payload.nights) > 0
+      ? Math.floor(Number(payload.nights))
+      : totalNights
     const endDate = isoOrNull(payload.endDate)
+      ?? (startDate && totalNights > 0 ? isoAddDays(startDate, totalNights) : null)
 
     // ── Client (find-or-create by email; otherwise a name-only record) ──
     const nameParts = name.split(/\s+/)
@@ -114,6 +174,21 @@ export async function createSafariDraft(
         last_name: lastName,
         phone: payload.guest.phone || null,
       })
+      // Fill any blank profile fields the interview supplied (don't clobber).
+      const { data: existing } = await admin
+        .from('clients')
+        .select('whatsapp, country, preferred_language, notes')
+        .eq('id', clientId).maybeSingle()
+      const cur = (existing ?? {}) as Record<string, unknown>
+      const patch: Record<string, unknown> = {}
+      if (!cur.whatsapp && whatsapp) patch.whatsapp = whatsapp
+      if (!cur.country && country) patch.country = country
+      if (!cur.notes && clientNotes) patch.notes = clientNotes
+      if (lang && (!cur.preferred_language || cur.preferred_language === 'en')) {
+        patch.preferred_language = lang
+        patch.language = lang
+      }
+      if (Object.keys(patch).length > 0) await admin.from('clients').update(patch).eq('id', clientId)
     } else {
       const { data: created, error } = await admin
         .from('clients')
@@ -121,8 +196,11 @@ export async function createSafariDraft(
           first_name: firstName,
           last_name: lastName,
           phone: payload.guest.phone || null,
-          country: payload.guest.country || null,
+          whatsapp,
+          country,
+          notes: clientNotes,
           source: 'ai_intake',
+          ...(lang ? { preferred_language: lang, language: lang } : {}),
         })
         .select('id')
         .single()
@@ -131,8 +209,12 @@ export async function createSafariDraft(
     }
 
     // ── Request (records the enquiry in the CRM) ──
-    const clientQuestion = [payload.budgetNote?.trim(), payload.days.map(d => d.notes?.trim()).filter(Boolean).join(' | ')]
-      .filter(Boolean).join(' — ') || null
+    const clientQuestion = [
+      payload.budgetNote?.trim(),
+      payload.residency?.trim() ? `Residency: ${payload.residency.trim()}` : '',
+      payload.days.map(d => d.notes?.trim()).filter(Boolean).join(' | '),
+    ].filter(Boolean).join(' — ') || null
+
     const { data: request } = await admin
       .from('requests')
       .insert({
@@ -144,6 +226,11 @@ export async function createSafariDraft(
         travelers_children_younger: childAges.filter(a => a < 4).length,
         group_size: adults + childAges.length,
         preferred_start_date: startDate,
+        trip_length_nights: tripNights > 0 ? tripNights : null,
+        requested_tour_type: payload.tripType?.trim() || null,
+        preferred_room_type: normRoomType(payload.roomType),
+        heard_about_us: payload.heardAboutUs?.trim() || null,
+        priority: payload.priority?.trim() || null,
         client_question: clientQuestion,
       })
       .select('id, reference')
@@ -172,7 +259,7 @@ export async function createSafariDraft(
     if (!versionId) return { ok: false, message: 'Quote version was not created.' }
 
     await admin.from('quote_versions')
-      .update({ title, travel_start_date: startDate, travel_end_date: endDate })
+      .update({ title, travel_start_date: startDate, travel_end_date: endDate, language: lang ?? 'en' })
       .eq('id', versionId)
 
     // ── Travellers (roster for the pricing step + proposal) ──
@@ -183,6 +270,7 @@ export async function createSafariDraft(
       .order('sort_order')
     const bands = (bandsData ?? []) as BandRow[]
     const adultBand = bands.find(b => b.code === 'adult')
+    const roomCat = normRoomType(payload.roomType) ?? 'sharing'
     const travellers: Record<string, unknown>[] = []
     let sort = 0
     for (let i = 0; i < adults; i++) {
@@ -192,7 +280,7 @@ export async function createSafariDraft(
         age_band_id: adultBand?.id ?? null,
         age_band_snapshot: adultBand ? bandSnapshot(adultBand) : {},
         traveller_category: 'adult',
-        room_category: 'sharing',
+        room_category: roomCat,
         is_paying: true,
         sort_order: sort++,
       })
@@ -207,7 +295,7 @@ export async function createSafariDraft(
         age_band_id: band?.id ?? null,
         age_band_snapshot: band ? bandSnapshot(band) : {},
         traveller_category: band?.code ?? 'child',
-        room_category: 'sharing',
+        room_category: roomCat,
         is_paying: !isFree,
         sort_order: sort++,
       })
@@ -230,9 +318,15 @@ export async function createSafariDraft(
     const actByName = new Map<string, ActRow>()
     for (const a of (actsData ?? []) as ActRow[]) actByName.set(norm(a.name), a)
 
-    // ── Build the itinerary day payload; collect unmatched names ──
+    // ── Build the itinerary day payload; multi-night stops become day spans ──
     const unmatched: string[] = []
-    const days = payload.days.map((d, i) => {
+    let dayNumber = 1
+    const days = payload.days.map((d) => {
+      const nights = nightsOf(d)
+      const startDay = dayNumber
+      const endDay = nights > 1 ? dayNumber + nights - 1 : null
+      dayNumber += nights
+
       const dest = d.destination ? destByName.get(norm(d.destination)) : undefined
       if (d.destination && !dest) unmatched.push(`destination "${d.destination}"`)
 
@@ -262,7 +356,8 @@ export async function createSafariDraft(
       }
 
       return {
-        dayNumber: i + 1,
+        dayNumber: startDay,
+        dayNumberEnd: endDay,
         destinationId: dest?.id ?? '',
         destinationSnapshot: dest ? { id: dest.id, name: dest.name } : { name: d.destination ?? '' },
         meals: (d.meals ?? []).map(m => String(m).toUpperCase()).filter(m => m === 'B' || m === 'L' || m === 'D'),
