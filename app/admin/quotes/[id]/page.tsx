@@ -196,6 +196,14 @@ export default async function QuoteDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {quote.status === 'accepted' && !quote.is_template && (
+            <Link
+              href={`/admin/vouchers?quote=${id}`}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              Hotel vouchers →
+            </Link>
+          )}
           {!quote.is_template && <AcceptOnBehalfButton quoteId={id} status={quote.status} />}
           <TemplateToggleButton quoteId={id} isTemplate={!!quote.is_template} />
         </div>
@@ -255,7 +263,7 @@ export default async function QuoteDetailPage({
 
           {tourRow && (
             <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Tour Template</h2>
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Base Itinerary</h2>
               <p className="text-sm text-foreground">{(tourRow as any).title_en}</p>
             </div>
           )}

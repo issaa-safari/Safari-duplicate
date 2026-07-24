@@ -225,8 +225,8 @@ export default async function AdminDashboardPage() {
       />
 
       <div className="space-y-6">
-      {/* Workflow KPIs — the numbers a consultant acts on today */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      {/* Needs attention today — the numbers a consultant acts on first */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <StatCard
           label="New Enquiries"
           value={String(newEnquiriesCount ?? 0)}
@@ -247,42 +247,6 @@ export default async function AdminDashboardPage() {
           value={String(activeQuoteCount ?? 0)}
           sub="sent or viewed"
           href="/admin/quotes"
-        />
-        <StatCard
-          label="Accepted Revenue"
-          value={formatUSD(revenueThisMonth)}
-          sub={`${formatKES(revenueThisMonth, usdToKes)} · this month`}
-          tone="positive"
-        />
-      </div>
-
-      {/* Finance KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <StatCard
-          label="Receivable (AR)"
-          value={formatUSD(receivables.outstandingUsd)}
-          sub={`invoiced ${formatUSD(receivables.invoicedUsd)} · received ${formatUSD(receivables.receivedUsd)}`}
-          tone={receivables.outstandingUsd > 0 ? 'negative' : 'default'}
-          href="/admin/finance/receipts"
-        />
-        <StatCard
-          label="Payable (AP)"
-          value={payables ? formatUSD(Math.max(payables.totalBalanceUsd, 0)) : '—'}
-          sub={payables
-            ? `owed ${formatUSD(payables.totalOwedUsd)} · paid ${formatUSD(payables.totalPaidUsd)}`
-            : 'apply migration group_33'}
-          tone={payables && payables.totalBalanceUsd > 0 ? 'negative' : 'default'}
-          href="/admin/finance/payables"
-        />
-        <StatCard
-          label="Gross Margin"
-          value={`${marginThisMonth.toFixed(1)}%`}
-          sub={`${formatUSD(revenueThisMonth - costThisMonth)} on accepted quotes`}
-        />
-        <StatCard
-          label="Issued vs Accepted"
-          value={`${issuedThisMonth ?? 0} / ${acceptedThisMonth}`}
-          sub="sent vs accepted this month"
         />
       </div>
 
@@ -335,44 +299,8 @@ export default async function AdminDashboardPage() {
         </CardBody>
       </Card>
 
-      {/* Chart + Departures */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader title="Accepted Quote Value — Last 6 Months" />
-          <CardBody>
-            {hasChartData ? (
-              <div className="mt-1 flex h-36 items-end gap-2">
-                {months.map((m, i) => (
-                  <div key={m.key} className="flex flex-1 flex-col items-center gap-1">
-                    {m.total > 0 && (
-                      <p className="text-[10px] font-medium leading-none text-muted-foreground">
-                        ${(m.total / 1000).toFixed(0)}k
-                      </p>
-                    )}
-                    <div className="flex w-full items-end" style={{ height: '96px' }}>
-                      <div
-                        className="w-full rounded-t transition-[height] duration-200"
-                        style={{
-                          height: m.total > 0 ? `${Math.max((m.total / chartMax) * 96, 4)}px` : '2px',
-                          backgroundColor: i === 5 ? 'var(--primary-strong)' : 'var(--olive-lt)',
-                        }}
-                      />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground">{m.label}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                compact
-                icon={TrendingUp}
-                title="No accepted quotes in the last 6 months"
-                body="When a client accepts a quote, its value lands here so you can watch revenue build month over month."
-              />
-            )}
-          </CardBody>
-        </Card>
-
+      {/* Operational — what's happening on the ground, right after arrivals */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card>
           <CardHeader
             title="Upcoming Departures"
@@ -417,10 +345,7 @@ export default async function AdminDashboardPage() {
             )}
           </CardBody>
         </Card>
-      </div>
 
-      {/* Pipeline + Alerts + Activity */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card>
           <CardHeader
             title="Requests Pipeline"
@@ -477,6 +402,84 @@ export default async function AdminDashboardPage() {
                 icon={Inbox}
                 title="Nothing needs attention"
                 body="Quotes about to expire and other time-critical items surface here."
+              />
+            )}
+          </CardBody>
+        </Card>
+      </div>
+
+      {/* This month — the finance snapshot sits below the day-to-day work */}
+      <div className="space-y-3 pt-2">
+        <h2 className="text-sm font-semibold text-foreground">This month</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+          <StatCard
+            label="Accepted Revenue"
+            value={formatUSD(revenueThisMonth)}
+            sub={`${formatKES(revenueThisMonth, usdToKes)} · this month`}
+            tone="positive"
+          />
+          <StatCard
+            label="Receivable (AR)"
+            value={formatUSD(receivables.outstandingUsd)}
+            sub={`invoiced ${formatUSD(receivables.invoicedUsd)} · received ${formatUSD(receivables.receivedUsd)}`}
+            tone={receivables.outstandingUsd > 0 ? 'negative' : 'default'}
+            href="/admin/finance/receipts"
+          />
+          <StatCard
+            label="Payable (AP)"
+            value={payables ? formatUSD(Math.max(payables.totalBalanceUsd, 0)) : '—'}
+            sub={payables
+              ? `owed ${formatUSD(payables.totalOwedUsd)} · paid ${formatUSD(payables.totalPaidUsd)}`
+              : 'apply migration group_33'}
+            tone={payables && payables.totalBalanceUsd > 0 ? 'negative' : 'default'}
+            href="/admin/finance/payables"
+          />
+          <StatCard
+            label="Gross Margin"
+            value={`${marginThisMonth.toFixed(1)}%`}
+            sub={`${formatUSD(revenueThisMonth - costThisMonth)} on accepted quotes`}
+          />
+          <StatCard
+            label="Issued vs Accepted"
+            value={`${issuedThisMonth ?? 0} / ${acceptedThisMonth}`}
+            sub="sent vs accepted this month"
+          />
+        </div>
+      </div>
+
+      {/* Revenue trend + recent activity */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader title="Accepted Quote Value — Last 6 Months" />
+          <CardBody>
+            {hasChartData ? (
+              <div className="mt-1 flex h-36 items-end gap-2">
+                {months.map((m, i) => (
+                  <div key={m.key} className="flex flex-1 flex-col items-center gap-1">
+                    {m.total > 0 && (
+                      <p className="text-[10px] font-medium leading-none text-muted-foreground">
+                        ${(m.total / 1000).toFixed(0)}k
+                      </p>
+                    )}
+                    <div className="flex w-full items-end" style={{ height: '96px' }}>
+                      <div
+                        className="w-full rounded-t transition-[height] duration-200"
+                        style={{
+                          height: m.total > 0 ? `${Math.max((m.total / chartMax) * 96, 4)}px` : '2px',
+                          backgroundColor: i === 5 ? 'var(--primary-strong)' : 'var(--olive-lt)',
+                        }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{m.label}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                compact
+                icon={TrendingUp}
+                title="No accepted quotes in the last 6 months"
+                body="When a client accepts a quote, its value lands here so you can watch revenue build month over month."
               />
             )}
           </CardBody>

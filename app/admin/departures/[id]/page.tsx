@@ -68,7 +68,7 @@ export default async function DepartureEditPage({ params }: { params: Promise<{ 
             Group manifest &amp; agreements →
           </Link>
           <Link
-            href={`/admin/departures/${id}/vouchers`}
+            href={`/admin/vouchers?departure=${id}`}
             className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
           >
             Hotel vouchers →

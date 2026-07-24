@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import {
-  Map, Tent, Compass, Mountain, Car, Users, Settings, LibraryBig,
+  Map, Tent, Compass, Mountain, Car, Bike, Users, Settings, LibraryBig,
 } from 'lucide-react'
 
 const MAIN_CONTENT = [
@@ -12,6 +12,7 @@ const MAIN_CONTENT = [
 
 const COMPANY_CONTENT = [
   { key: 'vehicles', href: '/admin/content/vehicles', label: 'Vehicles', icon: Car },
+  { key: 'motorbikes', href: '/admin/content/motorbikes', label: 'Motorbikes', icon: Bike },
   { key: 'staff', href: '/admin/content/staff', label: 'Tour Staff', icon: Users },
 ]
 

@@ -38,7 +38,7 @@ export async function createMotorbike(formData: FormData) {
   if (!data.name) throw new Error('Bike name is required.')
   const { error } = await admin.from('motorbikes').insert(data)
   if (error) throw new Error(error.message)
-  revalidatePath('/admin/motorbikes')
+  revalidatePath('/admin/content/motorbikes')
 }
 
 export async function updateMotorbike(id: string, formData: FormData) {
@@ -47,7 +47,7 @@ export async function updateMotorbike(id: string, formData: FormData) {
   if (!data.name) throw new Error('Bike name is required.')
   const { error } = await admin.from('motorbikes').update(data).eq('id', id)
   if (error) throw new Error(error.message)
-  revalidatePath('/admin/motorbikes')
+  revalidatePath('/admin/content/motorbikes')
 }
 
 export async function archiveMotorbike(id: string) {
@@ -58,7 +58,7 @@ export async function archiveMotorbike(id: string) {
     .update({ is_active: false, status: 'retired' })
     .eq('id', id)
   if (error) throw new Error(error.message)
-  revalidatePath('/admin/motorbikes')
+  revalidatePath('/admin/content/motorbikes')
 }
 
 export async function restoreMotorbike(id: string) {
@@ -68,5 +68,5 @@ export async function restoreMotorbike(id: string) {
     .update({ is_active: true, status: 'available' })
     .eq('id', id)
   if (error) throw new Error(error.message)
-  revalidatePath('/admin/motorbikes')
+  revalidatePath('/admin/content/motorbikes')
 }

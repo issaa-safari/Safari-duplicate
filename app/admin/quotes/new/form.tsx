@@ -184,11 +184,11 @@ export default function NewQuoteForm({
           </div>
         )}
 
-        {/* Custom — optionally pin to a tour template */}
+        {/* Custom — optionally pin to an itinerary from the library */}
         {mode === 'custom' && (
           <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-foreground">Tour Template <span className="text-muted-foreground font-normal text-xs">(optional)</span></h2>
-            <p className="text-xs text-muted-foreground -mt-2">Link to a tour to copy its itinerary as a starting point.</p>
+            <h2 className="text-sm font-semibold text-foreground">Base Itinerary <span className="text-muted-foreground font-normal text-xs">(optional)</span></h2>
+            <p className="text-xs text-muted-foreground -mt-2">Link to an itinerary from the library to copy its days as a starting point.</p>
             <div>
               <label htmlFor="tourId" className={labelCls}>Tour</label>
               <select id="tourId" name="tourId" defaultValue="" className={inputCls}>
