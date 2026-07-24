@@ -263,7 +263,7 @@ export default async function QuoteDetailPage({
 
           {tourRow && (
             <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Tour Template</h2>
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Base Itinerary</h2>
               <p className="text-sm text-foreground">{(tourRow as any).title_en}</p>
             </div>
           )}

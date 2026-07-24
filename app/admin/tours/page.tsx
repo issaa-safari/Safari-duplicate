@@ -19,16 +19,16 @@ export default async function ToursPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-foreground">Tour Templates</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Manage your bilingual tour templates and itineraries</p>
+          <h1 className="text-xl font-semibold text-foreground">Itinerary Library</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Reusable bilingual tours and day-by-day itineraries — the catalog you build departures and quotes from</p>
         </div>
-        <ButtonLink href="/admin/tours/new" size="sm">Create Your Template</ButtonLink>
+        <ButtonLink href="/admin/tours/new" size="sm">New Itinerary</ButtonLink>
       </div>
 
       {!tours || tours.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-muted-foreground text-sm">No tours yet.</p>
-          <ButtonLink href="/admin/tours/new" size="sm" className="mt-4">Create First Template</ButtonLink>
+          <p className="text-muted-foreground text-sm">No itineraries yet.</p>
+          <ButtonLink href="/admin/tours/new" size="sm" className="mt-4">Create your first itinerary</ButtonLink>
         </div>
       ) : (
         <ToursListClient

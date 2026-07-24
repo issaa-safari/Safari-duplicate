@@ -38,9 +38,9 @@ const NAV_GROUPS: NavGroup[] = [
     { label: 'Suppliers', href: '/admin/suppliers', icon: Truck },
   ] },
   { label: 'Catalog', items: [
-    { label: 'Content',         href: '/admin/content',        icon: Boxes },
-    { label: 'Tour Templates',  href: '/admin/tours',          icon: Package },
-    { label: 'Quote Templates', href: '/admin/tour-templates', icon: Copy },
+    { label: 'Content',           href: '/admin/content',        icon: Boxes },
+    { label: 'Itinerary Library', href: '/admin/tours',          icon: Package },
+    { label: 'Saved Quotes',      href: '/admin/tour-templates', icon: Copy },
   ] },
   { label: 'Insights', items: [
     { label: 'Finance',   href: '/admin/finance',   icon: Wallet },
