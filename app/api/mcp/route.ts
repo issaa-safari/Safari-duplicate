@@ -74,10 +74,24 @@ const handler = createMcpHandler(
   { basePath: '/api', maxDuration: 60 },
 )
 
-// Bearer-token gate: the plugin's .mcp.json sends Authorization: Bearer <MCP_INTAKE_TOKEN>.
+// Token gate. Two ways to present the token, so both surfaces work:
+//   • Cowork plugin — Authorization: Bearer <MCP_INTAKE_TOKEN> header (.mcp.json).
+//   • Claude app custom connector — the connector UI can't set a header, so the
+//     token rides in the URL as ?token=<MCP_INTAKE_TOKEN>. Give the operator a
+//     connector URL of the form  https://<app>/api/mcp?token=<MCP_INTAKE_TOKEN>.
+function extractToken(req: Request): string {
+  const header = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
+  if (header) return header
+  try {
+    return new URL(req.url).searchParams.get('token')?.trim() ?? ''
+  } catch {
+    return ''
+  }
+}
+
 async function authed(req: Request): Promise<Response> {
   const expected = process.env.MCP_INTAKE_TOKEN
-  const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
+  const token = extractToken(req)
   if (!expected || token !== expected) {
     return new Response('Unauthorized', { status: 401 })
   }
