@@ -173,8 +173,12 @@ export default function ManifestClient({
       <div className="rounded-xl border border-border bg-surface p-10 text-center">
         <p className="text-sm text-muted-foreground">No travellers booked on this departure yet.</p>
         <p className="text-xs text-muted-foreground mt-1">
-          Travellers appear here once bookings are confirmed against this departure.
+          Add a booking manually, or travellers appear here once bookings are confirmed against this departure.
         </p>
+        <a href={`/admin/bookings/new?departure=${departureId}`}
+          className="mt-4 inline-flex items-center rounded-lg bg-primary-strong px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-strong-hover">
+          + Add booking to this departure
+        </a>
       </div>
     )
   }
