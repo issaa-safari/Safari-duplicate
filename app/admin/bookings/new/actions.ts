@@ -14,6 +14,8 @@ type TravellerInput = {
   nationality?: string
   passportNumber?: string
   dateOfBirth?: string
+  isRider?: boolean
+  emergencyContact?: string
 }
 
 // Manually create a booking against a departure from the admin back office —
@@ -29,6 +31,10 @@ export async function createManualBooking(formData: FormData) {
   const departureId = (formData.get('departureId') as string)?.trim()
   const status = (formData.get('status') as string) === 'pending' ? 'pending' : 'confirmed'
   const totalPrice = parseFloat((formData.get('totalPrice') as string) ?? '')
+  const depositRaw = parseFloat((formData.get('deposit') as string) ?? '')
+  const deposit = !isNaN(depositRaw) && depositRaw > 0 ? depositRaw : 0
+  const depositMethod = (formData.get('depositMethod') as string)?.trim() || null
+  const depositReference = (formData.get('depositReference') as string)?.trim() || null
 
   let travellers: TravellerInput[] = []
   try {
@@ -41,6 +47,7 @@ export async function createManualBooking(formData: FormData) {
   if (!departureId) throw new Error('Please choose a departure.')
   if (travellers.length === 0) throw new Error('Add at least one traveller.')
   if (isNaN(totalPrice) || totalPrice < 0) throw new Error('Enter a valid total price.')
+  if (deposit > totalPrice) throw new Error('Deposit cannot exceed the total price.')
 
   const lead = travellers[0]
   if (!lead.email?.trim()) throw new Error('The lead traveller needs an email (used to create/link the client record).')
@@ -118,6 +125,8 @@ export async function createManualBooking(formData: FormData) {
     nationality: t.nationality?.trim() || null,
     passport_number: t.passportNumber?.trim() || null,
     date_of_birth: t.dateOfBirth?.trim() || null,
+    is_rider: t.isRider !== false,
+    emergency_contact: t.emergencyContact?.trim() || null,
   }))
   const { error: travellerError } = await admin.from('booking_travellers').insert(rows)
   if (travellerError) {
@@ -126,11 +135,26 @@ export async function createManualBooking(formData: FormData) {
     throw new Error('Failed to save traveller details.')
   }
 
-  // Best-effort: finance stub + client totals.
+  // Best-effort: finance records. Record a paid deposit (if any) plus the
+  // outstanding balance as pending, so Finance reflects reality from the start.
   try {
-    await admin.from('booking_payments').insert({
-      booking_id: booking.id, amount_usd: totalPrice, status: 'pending', notes: 'Manual booking (admin)',
-    })
+    const payments: Record<string, unknown>[] = []
+    if (deposit > 0) {
+      payments.push({
+        booking_id: booking.id, amount_usd: deposit, status: 'paid',
+        method: depositMethod, reference: depositReference, notes: 'Deposit at booking (admin)',
+      })
+    }
+    const balance = totalPrice - deposit
+    if (balance > 0) {
+      payments.push({
+        booking_id: booking.id, amount_usd: balance, status: 'pending', notes: 'Balance (manual booking)',
+      })
+    }
+    if (payments.length === 0) {
+      payments.push({ booking_id: booking.id, amount_usd: 0, status: 'pending', notes: 'Manual booking (admin)' })
+    }
+    await admin.from('booking_payments').insert(payments)
   } catch { /* finance record is non-critical */ }
   try { await refreshClientTotals(admin, clientId) } catch { /* totals are a cache */ }
 

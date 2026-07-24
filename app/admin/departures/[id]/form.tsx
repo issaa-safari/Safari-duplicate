@@ -56,12 +56,20 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
           ← Back to Departures
         </Link>
         <h1 className="text-xl font-semibold text-foreground">Edit Departure</h1>
-        <Link
-          href={`/admin/departures/${departureId}/manifest`}
-          className="ml-auto inline-flex items-center rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-brand-text shadow-sm hover:bg-surface-alt"
-        >
-          Group Manifest →
-        </Link>
+        <div className="ml-auto flex items-center gap-2">
+          <Link
+            href={`/admin/bookings/new?departure=${departureId}`}
+            className="inline-flex items-center rounded-lg bg-primary-strong px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-primary-strong-hover"
+          >
+            + Add Booking
+          </Link>
+          <Link
+            href={`/admin/departures/${departureId}/manifest`}
+            className="inline-flex items-center rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-brand-text shadow-sm hover:bg-surface-alt"
+          >
+            Group Manifest →
+          </Link>
+        </div>
       </div>
 
       {departure.tours && (
