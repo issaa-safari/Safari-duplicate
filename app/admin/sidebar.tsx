@@ -7,7 +7,7 @@ import { useState, useEffect, useTransition, useRef } from 'react'
 import {
   Search, MoreHorizontal, LayoutDashboard, Inbox, FileText, Route, CalendarCheck,
   Users, Wallet, Package, Boxes, MapPin, Truck, BarChart3, Clock, Settings, LogOut, X,
-  Copy, ArrowLeft,
+  Copy, ArrowLeft, Bike, FileSignature,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { SearchResults, SearchQuote, SearchClient, SearchRequest } from '@/lib/types'
@@ -29,6 +29,8 @@ const OVERFLOW_NAV: NavItem[] = [
   { label: 'Quote Templates', href: '/admin/tour-templates', icon: Copy },
   { label: 'Content',         href: '/admin/content',        icon: Boxes },
   { label: 'Departures',     href: '/admin/departures',  icon: MapPin },
+  { label: 'Motorbikes',     href: '/admin/motorbikes',  icon: Bike },
+  { label: 'Agreements',     href: '/admin/agreements',  icon: FileSignature },
   { label: 'Suppliers',      href: '/admin/suppliers',   icon: Truck },
   { label: 'Analytics',      href: '/admin/analytics',   icon: BarChart3 },
   { label: 'Activity',       href: '/admin/activity',    icon: Clock },

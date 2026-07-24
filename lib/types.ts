@@ -85,6 +85,76 @@ export interface BookingTraveller {
   date_of_birth: string | null
   nationality: string | null
   passport_number: string | null
+  // group_66 — motorbike assignment, rider flag, group-management details
+  motorbike_id?: string | null
+  is_rider?: boolean
+  dietary_requirements?: string | null
+  allergies?: string | null
+  emergency_contact?: string | null
+}
+
+// --- Fixed-departure group management (migrations/group_66_*) ---
+
+export type MotorbikeStatus = 'available' | 'maintenance' | 'retired'
+
+export interface Motorbike {
+  id: string
+  name: string
+  make: string | null
+  model: string | null
+  plate_number: string | null
+  engine_cc: number | null
+  color: string | null
+  status: MotorbikeStatus | string
+  notes: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type FlightDirection = 'arrival' | 'departure'
+
+export interface BookingTravellerFlight {
+  id: string
+  booking_traveller_id: string
+  direction: FlightDirection | string
+  flight_number: string | null
+  airline: string | null
+  scheduled_at: string | null
+  airport: string | null
+  notes: string | null
+  sort_order: number
+}
+
+export interface AgreementTemplate {
+  id: string
+  title: string
+  body: string
+  version_label: string | null
+  language: 'en' | 'ar' | string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type AgreementStatus = 'pending' | 'signed' | 'declined'
+
+export interface TravellerAgreement {
+  id: string
+  booking_traveller_id: string
+  departure_id: string | null
+  agreement_template_id: string | null
+  access_token: string | null
+  title_snapshot: string | null
+  body_snapshot: string | null
+  status: AgreementStatus | string
+  signed_name: string | null
+  terms_accepted: boolean
+  signed_at: string | null
+  ip_address: string | null
+  user_agent: string | null
+  created_at: string
+  updated_at: string
 }
 
 // --- Multi-location activities (migrations/group_57_activity_locations.sql) ---
