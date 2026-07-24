@@ -6,8 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useTransition, useRef } from 'react'
 import {
   Search, MoreHorizontal, LayoutDashboard, Inbox, FileText, Route, CalendarCheck,
-  Users, Wallet, Package, Boxes, MapPin, Truck, BarChart3, Clock, Settings, LogOut, X,
-  Copy, ArrowLeft, Bike, FileSignature, BedDouble,
+  Users, Wallet, Package, Boxes, MapPin, Truck, BarChart3, Settings, LogOut, X,
+  Copy, ArrowLeft, FileSignature, BedDouble,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { SearchResults, SearchQuote, SearchClient, SearchRequest } from '@/lib/types'
@@ -31,7 +31,6 @@ const NAV_GROUPS: NavGroup[] = [
     { label: 'Departures', href: '/admin/departures', icon: MapPin },
     { label: 'Vouchers',   href: '/admin/vouchers',   icon: BedDouble },
     { label: 'Agreements', href: '/admin/agreements', icon: FileSignature },
-    { label: 'Motorbikes', href: '/admin/motorbikes', icon: Bike },
   ] },
   { label: 'People', items: [
     { label: 'Clients',   href: '/admin/clients',   icon: Users },
@@ -42,10 +41,9 @@ const NAV_GROUPS: NavGroup[] = [
     { label: 'Itinerary Library', href: '/admin/tours',          icon: Package },
     { label: 'Saved Quotes',      href: '/admin/tour-templates', icon: Copy },
   ] },
-  { label: 'Insights', items: [
-    { label: 'Finance',   href: '/admin/finance',   icon: Wallet },
-    { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
-    { label: 'Activity',  href: '/admin/activity',  icon: Clock },
+  { label: 'Business', items: [
+    { label: 'Finance',  href: '/admin/finance',  icon: Wallet },
+    { label: 'Insights', href: '/admin/insights', icon: BarChart3 },
   ] },
 ]
 
