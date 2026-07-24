@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { CalendarDays, Inbox, TrendingUp } from 'lucide-react'
+import { CalendarDays, Inbox, TrendingUp, Plane } from 'lucide-react'
 import { ButtonLink } from '@/components/ui/button'
 import { PageShell, PageHeader } from '@/components/admin/ui/page'
 import { Card, CardHeader, CardBody } from '@/components/admin/ui/card'
@@ -99,6 +99,55 @@ export default async function AdminDashboardPage() {
       .select('id', { count: 'exact', head: true })
       .gte('sent_at', startOfMonth),
   ])
+
+  // Next arrivals — merge fixed-departure travellers and private (request)
+  // clients so the operator sees everyone landing soon, with date + time.
+  const nowIso = now.toISOString()
+  const [{ data: bookingArrivals }, { data: requestArrivals }] = await Promise.all([
+    admin.from('booking_traveller_flights')
+      .select('id, scheduled_at, airline, flight_number, airport, booking_travellers ( first_name, last_name, bookings ( departure_id, departures ( tours ( title_en ) ) ) )')
+      .eq('direction', 'arrival')
+      .gte('scheduled_at', nowIso)
+      .order('scheduled_at', { ascending: true })
+      .limit(12),
+    admin.from('request_flights')
+      .select('id, scheduled_at, airline, flight_number, airport, traveller_name, requests ( id, reference, clients ( first_name, last_name ) )')
+      .eq('direction', 'arrival')
+      .gte('scheduled_at', nowIso)
+      .order('scheduled_at', { ascending: true })
+      .limit(12),
+  ])
+
+  type ArrivalRow = { key: string; name: string; when: string; flight: string; airport: string | null; href: string; context: string }
+  const arrivals: ArrivalRow[] = [
+    ...((bookingArrivals ?? []) as any[]).map((f) => {
+      const t = f.booking_travellers
+      const dep = t?.bookings?.departure_id
+      return {
+        key: `b-${f.id}`,
+        name: `${t?.first_name ?? ''} ${t?.last_name ?? ''}`.trim() || 'Traveller',
+        when: f.scheduled_at as string,
+        flight: [f.airline, f.flight_number].filter(Boolean).join(' '),
+        airport: f.airport ?? null,
+        href: dep ? `/admin/departures/${dep}/manifest` : '/admin/bookings',
+        context: t?.bookings?.departures?.tours?.title_en ?? 'Booking',
+      }
+    }),
+    ...((requestArrivals ?? []) as any[]).map((f) => {
+      const c = f.requests?.clients
+      return {
+        key: `r-${f.id}`,
+        name: f.traveller_name || `${c?.first_name ?? ''} ${c?.last_name ?? ''}`.trim() || (f.requests?.reference ?? 'Client'),
+        when: f.scheduled_at as string,
+        flight: [f.airline, f.flight_number].filter(Boolean).join(' '),
+        airport: f.airport ?? null,
+        href: f.requests?.id ? `/admin/requests/${f.requests.id}` : '/admin/requests',
+        context: f.requests?.reference ?? 'Private trip',
+      }
+    }),
+  ]
+    .sort((a, b) => a.when.localeCompare(b.when))
+    .slice(0, 8)
 
   const revenueThisMonth = (acceptancesThisMonth ?? []).reduce((sum: number, a: any) => {
     return sum + Number(a.quote_versions?.total_selling_usd ?? 0)
@@ -206,6 +255,55 @@ export default async function AdminDashboardPage() {
           sub="sent vs accepted this month"
         />
       </div>
+
+      {/* Next arrivals — who's landing soon (departures + private clients) */}
+      <Card>
+        <CardHeader
+          title="Next Arrivals"
+          action={
+            <Link href="/admin/departures" className="text-xs font-medium text-brand-text hover:underline">
+              Departures
+            </Link>
+          }
+        />
+        <CardBody className="py-2">
+          {arrivals.length > 0 ? (
+            <ul className="divide-y divide-border">
+              {arrivals.map((a) => {
+                const d = new Date(a.when)
+                return (
+                  <li key={a.key}>
+                    <Link href={a.href}
+                      className="-mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-2.5 transition-colors duration-150 hover:bg-muted">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-foreground">{a.name}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {a.context}{a.flight ? ` · ${a.flight}` : ''}{a.airport ? ` · ${a.airport}` : ''}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-sm font-semibold tabular-nums text-brand-text">
+                          {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                        </p>
+                      </div>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          ) : (
+            <EmptyState
+              compact
+              icon={Plane}
+              title="No upcoming arrivals"
+              body="Add each traveller's arrival flight (date & time) on a departure manifest or a request — the next arrivals show here."
+            />
+          )}
+        </CardBody>
+      </Card>
 
       {/* Chart + Departures */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

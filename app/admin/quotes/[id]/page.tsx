@@ -6,6 +6,7 @@ import { headers } from 'next/headers'
 import StatusBadge from '@/components/admin/status-badge'
 import CloneVersionButton from './clone-version-button'
 import TemplateToggleButton from './template-toggle-button'
+import AcceptOnBehalfButton from './accept-on-behalf-button'
 import QuoteWorkspace from './quote-workspace'
 import { loadBuilderLookups } from '../../trip-builder/load-lookups'
 import { loadTripBuilderInitialState } from '../../trip-builder/load-initial-state'
@@ -194,7 +195,10 @@ export default async function QuoteDetailPage({
             </span>
           </div>
         </div>
-        <TemplateToggleButton quoteId={id} isTemplate={!!quote.is_template} />
+        <div className="flex items-center gap-2">
+          {!quote.is_template && <AcceptOnBehalfButton quoteId={id} status={quote.status} />}
+          <TemplateToggleButton quoteId={id} isTemplate={!!quote.is_template} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
