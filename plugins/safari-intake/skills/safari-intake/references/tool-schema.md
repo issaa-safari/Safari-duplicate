@@ -32,6 +32,24 @@ text — the server matches them to the content library and reports anything it 
 
 ## Result
 
-On success the tool returns the quote number, a **review link** to open in the admin, and a list
-of any names that didn't match the content library (kept as typed for the operator to fix). Relay
-all three to the operator. The draft is unpriced and unsent by design.
+On success the tool returns the quote number and its **review link**, the CRM **request link**, and
+a list of any names that didn't match the content library (kept as typed for the operator to fix).
+Relay them to the operator. The draft is unpriced and unsent by design.
+
+---
+
+# `add_content_item` — add a missing library entry
+
+Call this **only after the operator confirms**, when a destination / lodge / activity from the
+enquiry isn't in the library yet. Idempotent — an existing name is returned, never duplicated. After
+adding, re-run `create_safari_draft` so the name matches.
+
+```jsonc
+{
+  "kind": "accommodation",        // "destination" | "accommodation" | "activity"
+  "name": "Angama Mara",          // required — exact name to store
+  "destination": "Masai Mara",    // optional — for an accommodation/activity
+  "tier": "ultra",                // optional — for an accommodation: budget | midrange | luxury | ultra
+  "country": "Kenya"              // optional — for a destination (defaults to Kenya)
+}
+```
