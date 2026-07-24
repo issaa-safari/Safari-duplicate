@@ -8,6 +8,8 @@ import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { findOrCreateClientByEmail } from '@/lib/server/clients'
 import { calculateLineTotals } from '@/lib/pricing'
 import { syncQuoteStatus } from '@/lib/server/quote-status'
+import { aiConfigured, aiJson } from '@/lib/ai'
+import { loadBuilderLookups } from './load-lookups'
 import { hotelRowsFromItinerary } from './load-initial-state'
 import {
   buildFxToUsd,
@@ -1080,4 +1082,248 @@ export async function resyncHotelRowsFromItinerary(
 
   const rows = hotelRowsFromItinerary(days as any, accomByDay, version.travel_start_date ?? '')
   return { ok: true, rows }
+}
+
+// ── draftTripFromEnquiry ───────────────────────────────────────────────────────
+//
+// AI-assisted intake: turn a free-text enquiry into a DRAFT TripBuilderState the
+// operator lands in the Trip Builder pre-filled, then prices as normal. The model
+// only maps the enquiry onto the existing content library (it is given the real
+// IDs and told to use nothing else); every ID it returns is validated against the
+// library server-side, and anything unrecognised is dropped. The model never
+// produces a price — hotel/vehicle/park rows resolve from rate cards exactly as a
+// hand-built quote does.
+
+export type DraftTripResult =
+  | { ok: true; state: TripBuilderState; notes: string }
+  | { ok: false; reason: 'not_configured' | 'error'; message: string }
+
+interface DraftShape {
+  guest: {
+    name: string; email: string; phone: string
+    adults: number; childAges: number[]
+    startDate: string; endDate: string
+  }
+  title: string
+  hotelRows: Array<{
+    accommodationId: string; checkIn: string; checkOut: string
+    rooms: number; mealPlan: string; roomCategory: string
+  }>
+  transportRows: Array<{ vehicleId: string; startDate: string; endDate: string; vehicleCount: number }>
+  parkRows: Array<{ parkId: string; entryDate: string; travellerCategory: string; residency: string; tickets: number }>
+  notes: string
+}
+
+const DRAFT_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['guest', 'title', 'hotelRows', 'transportRows', 'parkRows', 'notes'],
+  properties: {
+    guest: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['name', 'email', 'phone', 'adults', 'childAges', 'startDate', 'endDate'],
+      properties: {
+        name: { type: 'string' },
+        email: { type: 'string' },
+        phone: { type: 'string' },
+        adults: { type: 'integer' },
+        childAges: { type: 'array', items: { type: 'integer' } },
+        startDate: { type: 'string', description: 'ISO date YYYY-MM-DD, or empty string if unknown' },
+        endDate: { type: 'string', description: 'ISO date YYYY-MM-DD, or empty string if unknown' },
+      },
+    },
+    title: { type: 'string' },
+    hotelRows: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['accommodationId', 'checkIn', 'checkOut', 'rooms', 'mealPlan', 'roomCategory'],
+        properties: {
+          accommodationId: { type: 'string', description: 'Must be an id from the accommodations list' },
+          checkIn: { type: 'string', description: 'ISO date YYYY-MM-DD' },
+          checkOut: { type: 'string', description: 'ISO date YYYY-MM-DD' },
+          rooms: { type: 'integer' },
+          mealPlan: { type: 'string', enum: ['', 'BB', 'HB', 'FB', 'AI'] },
+          roomCategory: { type: 'string', enum: ['', 'sharing', 'single', 'triple', 'extra_bed'] },
+        },
+      },
+    },
+    transportRows: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['vehicleId', 'startDate', 'endDate', 'vehicleCount'],
+        properties: {
+          vehicleId: { type: 'string', description: 'Must be an id from the vehicles list' },
+          startDate: { type: 'string', description: 'ISO date YYYY-MM-DD' },
+          endDate: { type: 'string', description: 'ISO date YYYY-MM-DD' },
+          vehicleCount: { type: 'integer' },
+        },
+      },
+    },
+    parkRows: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['parkId', 'entryDate', 'travellerCategory', 'residency', 'tickets'],
+        properties: {
+          parkId: { type: 'string', description: 'Must be an id from the parks list' },
+          entryDate: { type: 'string', description: 'ISO date YYYY-MM-DD' },
+          travellerCategory: { type: 'string', enum: ['adult', 'child'] },
+          residency: { type: 'string', enum: ['all', 'resident', 'non_resident', 'citizen'] },
+          tickets: { type: 'integer' },
+        },
+      },
+    },
+    notes: { type: 'string', description: 'Anything from the enquiry you could not map to the library, for the operator.' },
+  },
+}
+
+let draftKeySeq = 0
+function draftKey(): string {
+  draftKeySeq += 1
+  return `ai-${Date.now()}-${draftKeySeq}`
+}
+
+const MEAL_PLAN_SET = new Set(['BB', 'HB', 'FB', 'AI'])
+const ROOM_CATEGORY_SET = new Set(['sharing', 'single', 'triple', 'extra_bed'])
+const RESIDENCY_SET = new Set(['all', 'resident', 'non_resident', 'citizen'])
+
+function posInt(n: unknown, fallback: number): number {
+  const v = Math.floor(Number(n))
+  return Number.isFinite(v) && v > 0 ? v : fallback
+}
+
+export async function draftTripFromEnquiry(enquiryText: string): Promise<DraftTripResult> {
+  const { admin } = await authGuard()
+
+  if (!aiConfigured()) {
+    return {
+      ok: false,
+      reason: 'not_configured',
+      message: 'AI drafting is not set up. Add an ANTHROPIC_API_KEY to enable it — the rest of the Trip Builder works without it.',
+    }
+  }
+  const text = enquiryText.trim()
+  if (text.length < 3) {
+    return { ok: false, reason: 'error', message: 'Enter the enquiry details to draft from.' }
+  }
+
+  const lookups = await loadBuilderLookups(admin)
+  const accById = new Map(lookups.accommodations.map(a => [a.id, a]))
+  const vehById = new Map(lookups.vehicles.map(v => [v.id, v]))
+  const parkById = new Map(lookups.parks.map(p => [p.id, p]))
+
+  const library = {
+    destinations: lookups.destinations.map(d => ({ id: d.id, name: d.name })),
+    accommodations: lookups.accommodations.map(a => ({
+      id: a.id, name: a.name, destinationId: a.destination_id, budgetTier: a.budget_tier,
+    })),
+    vehicles: lookups.vehicles.map(v => ({ id: v.id, name: v.name })),
+    parks: lookups.parks.map(p => ({ id: p.id, name: p.name })),
+  }
+
+  const system = [
+    'You are an intake assistant for a Kenya safari operator selling to GCC (Gulf) clients.',
+    'Turn the enquiry into a DRAFT trip skeleton the operator will review and price.',
+    'STRICT RULES:',
+    '- Only use IDs that appear in the provided library. Never invent an ID, a hotel, a vehicle, or a park.',
+    '- If the enquiry names something not in the library, leave it out of the rows and mention it in "notes".',
+    '- Never produce or estimate any price, cost, or total. Pricing is done separately in code.',
+    '- Use ISO dates (YYYY-MM-DD). If the enquiry gives a month or vague timing, pick concrete dates and note the assumption in "notes". If no dates at all, leave startDate/endDate empty.',
+    '- Keep every hotel/vehicle/park date within the trip start and end dates.',
+    '- Choose accommodations whose budgetTier matches the enquiry (budget / midrange / luxury / ultra); prefer ones in the destinations the client wants to visit.',
+    '- GCC clients are non-residents: use residency "non_resident" for park fees unless the enquiry says otherwise.',
+    '- adults is at least 1. childAges lists one age per child (a 3-year-old is age 3).',
+    '- Only add rows you are reasonably confident about; a smaller correct skeleton beats a padded guess. It is fine to return empty row arrays and explain in "notes".',
+  ].join('\n')
+
+  const user = [
+    'CONTENT LIBRARY (the only IDs you may use):',
+    JSON.stringify(library),
+    '',
+    'ENQUIRY:',
+    text,
+  ].join('\n')
+
+  const result = await aiJson({ system, user, schema: DRAFT_SCHEMA })
+  if (!result.ok) return result
+
+  const draft = result.data as DraftShape
+
+  // ── Validate every ID against the real library; drop what the model invented ──
+  const dropped: string[] = []
+
+  const hotelRows: HotelRowInput[] = []
+  for (const r of draft.hotelRows ?? []) {
+    const acc = accById.get(r.accommodationId)
+    if (!acc) { dropped.push('an unknown hotel'); continue }
+    hotelRows.push({
+      key: draftKey(),
+      destinationId: acc.destination_id ?? '',
+      budgetTier: acc.budget_tier ?? '',
+      accommodationId: acc.id,
+      roomCategory: ROOM_CATEGORY_SET.has(r.roomCategory) ? (r.roomCategory as HotelRowInput['roomCategory']) : 'sharing',
+      mealPlan: MEAL_PLAN_SET.has(r.mealPlan) ? (r.mealPlan as HotelRowInput['mealPlan']) : '',
+      rooms: posInt(r.rooms, 1),
+      checkIn: r.checkIn ?? '',
+      checkOut: r.checkOut ?? '',
+    })
+  }
+
+  const transportRows: TransportRowInput[] = []
+  for (const r of draft.transportRows ?? []) {
+    if (!vehById.has(r.vehicleId)) { dropped.push('an unknown vehicle'); continue }
+    transportRows.push({
+      key: draftKey(),
+      vehicleId: r.vehicleId,
+      startDate: r.startDate ?? '',
+      endDate: r.endDate ?? '',
+      vehicleCount: posInt(r.vehicleCount, 1),
+    })
+  }
+
+  const parkRows: ParkRowInput[] = []
+  for (const r of draft.parkRows ?? []) {
+    if (!parkById.has(r.parkId)) { dropped.push('an unknown park'); continue }
+    parkRows.push({
+      key: draftKey(),
+      parkId: r.parkId,
+      travellerCategory: r.travellerCategory === 'child' ? 'child' : 'adult',
+      residency: (RESIDENCY_SET.has(r.residency) ? r.residency : 'non_resident') as ParkRowInput['residency'],
+      entryDate: r.entryDate ?? '',
+      tickets: posInt(r.tickets, 1),
+    })
+  }
+
+  const childAges = Array.isArray(draft.guest?.childAges)
+    ? draft.guest.childAges.map(a => Math.floor(Number(a))).filter(a => Number.isFinite(a) && a >= 0 && a <= 17)
+    : []
+
+  const state: TripBuilderState = {
+    guest: {
+      name: (draft.guest?.name ?? '').trim(),
+      email: (draft.guest?.email ?? '').trim(),
+      phone: (draft.guest?.phone ?? '').trim(),
+      adults: posInt(draft.guest?.adults, 1),
+      childAges,
+      startDate: draft.guest?.startDate ?? '',
+      endDate: draft.guest?.endDate ?? '',
+    },
+    title: (draft.title ?? '').trim(),
+    hotelRows,
+    transportRows,
+    parkRows,
+    salePrice: '',
+  }
+
+  const notes = [draft.notes?.trim(), dropped.length ? `Dropped ${dropped.length} row(s) referring to items not in the library.` : '']
+    .filter(Boolean)
+    .join(' ')
+
+  return { ok: true, state, notes }
 }

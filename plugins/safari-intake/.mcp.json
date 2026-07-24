@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "safari-intake": {
+      "type": "http",
+      "url": "${SAFARI_APP_URL}/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${MCP_INTAKE_TOKEN}"
+      }
+    }
+  }
+}
