@@ -40,9 +40,15 @@ export default async function BookingsPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-foreground">Bookings</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Manage all departure bookings</p>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold text-foreground">Bookings</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage all departure bookings</p>
+        </div>
+        <Link href="/admin/bookings/new"
+          className="inline-flex items-center rounded-lg bg-primary-strong px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-strong-hover">
+          + New Booking
+        </Link>
       </div>
 
       <div className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden">

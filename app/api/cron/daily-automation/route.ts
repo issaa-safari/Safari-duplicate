@@ -1,5 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { shouldComplete, shouldArchive, shouldDelete, type AutomationSettings } from '@/lib/automation'
+import { sendEmail } from '@/lib/email'
+import { buildAgreementEmail } from '@/lib/agreement-email'
+import { site } from '@/lib/site'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -29,7 +32,7 @@ export async function GET(req: NextRequest) {
   if (!settings) return NextResponse.json({ error: 'No company settings' }, { status: 500 })
   const s = settings as AutomationSettings
 
-  const result = { completed: 0, archived: 0, deleted: 0 }
+  const result = { completed: 0, archived: 0, deleted: 0, agreementReminders: 0 }
 
   async function logSystem(requestId: string, summary: string) {
     try {
@@ -90,6 +93,50 @@ export async function GET(req: NextRequest) {
       if (shouldDelete(row.archived_at, s, now)) {
         await admin.from('requests').delete().eq('id', row.id)
         result.deleted++
+      }
+    }
+  }
+
+  // 4) Chase unsigned traveller agreements for upcoming departures.
+  // Re-send the signing link if it hasn't been emailed in the last 3 days,
+  // up to 3 reminders per agreement. Best-effort — never fails the cron.
+  {
+    const REMINDER_GAP_DAYS = 3
+    const MAX_REMINDERS = 3
+    const todayIso = now.toISOString().slice(0, 10)
+    const { data: pending } = await admin
+      .from('traveller_agreements')
+      .select(`
+        id, access_token, language_snapshot, last_emailed_at, reminder_count,
+        booking_travellers ( first_name, last_name, email ),
+        departures!inner ( start_date, tours ( title_en ) )
+      `)
+      .eq('status', 'pending')
+      .gte('departures.start_date', todayIso)
+
+    for (const a of pending ?? []) {
+      const row = a as any
+      const email = row.booking_travellers?.email?.trim()
+      const token = row.access_token
+      if (!email || !token) continue
+      if ((row.reminder_count ?? 0) >= MAX_REMINDERS) continue
+      if (row.last_emailed_at) {
+        const ageMs = now.getTime() - new Date(row.last_emailed_at).getTime()
+        if (ageMs < REMINDER_GAP_DAYS * 86_400_000) continue
+      }
+      const { subject, html } = buildAgreementEmail({
+        travellerName: `${row.booking_travellers.first_name ?? ''} ${row.booking_travellers.last_name ?? ''}`.trim() || 'traveller',
+        tourTitle: row.departures?.tours?.title_en ?? null,
+        url: `${site.url}/agreement/${token}`,
+        language: row.language_snapshot,
+        isReminder: true,
+      })
+      const sent = await sendEmail({ to: email, subject, html })
+      if (sent) {
+        await admin.from('traveller_agreements')
+          .update({ last_emailed_at: now.toISOString(), reminder_count: (row.reminder_count ?? 0) + 1 })
+          .eq('id', row.id)
+        result.agreementReminders++
       }
     }
   }
