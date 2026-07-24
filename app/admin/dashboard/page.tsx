@@ -119,8 +119,38 @@ export default async function AdminDashboardPage() {
   ])
 
   type ArrivalRow = { key: string; name: string; when: string; flight: string; airport: string | null; href: string; context: string }
+  // Shapes of the nested selects above — Supabase types embedded relations
+  // loosely, so name what these two queries actually return.
+  type BookingArrival = {
+    id: string
+    scheduled_at: string
+    airline: string | null
+    flight_number: string | null
+    airport: string | null
+    booking_travellers: {
+      first_name: string | null
+      last_name: string | null
+      bookings: {
+        departure_id: string | null
+        departures: { tours: { title_en: string | null } | null } | null
+      } | null
+    } | null
+  }
+  type RequestArrival = {
+    id: string
+    scheduled_at: string
+    airline: string | null
+    flight_number: string | null
+    airport: string | null
+    traveller_name: string | null
+    requests: {
+      id: string
+      reference: string | null
+      clients: { first_name: string | null; last_name: string | null } | null
+    } | null
+  }
   const arrivals: ArrivalRow[] = [
-    ...((bookingArrivals ?? []) as any[]).map((f) => {
+    ...((bookingArrivals ?? []) as unknown as BookingArrival[]).map((f) => {
       const t = f.booking_travellers
       const dep = t?.bookings?.departure_id
       return {
@@ -133,7 +163,7 @@ export default async function AdminDashboardPage() {
         context: t?.bookings?.departures?.tours?.title_en ?? 'Booking',
       }
     }),
-    ...((requestArrivals ?? []) as any[]).map((f) => {
+    ...((requestArrivals ?? []) as unknown as RequestArrival[]).map((f) => {
       const c = f.requests?.clients
       return {
         key: `r-${f.id}`,

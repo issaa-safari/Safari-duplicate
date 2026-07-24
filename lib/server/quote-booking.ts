@@ -1,6 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { refreshClientTotals } from '@/lib/server/clients'
 
+// The subset of quote_travellers a booking row is seeded from.
+type QuoteTravellerRow = {
+  display_name: string | null
+  room_category: string | null
+  dietary_requirements: string | null
+  allergies: string | null
+}
+
 function splitName(display: string | null | undefined): { first: string | null; last: string | null } {
   const s = (display ?? '').trim()
   if (!s) return { first: null, last: null }
@@ -62,8 +70,9 @@ export async function createBookingFromAcceptedQuote(
   // Per-traveller rows. Only the lead carries the client's contact details;
   // the rest start with what the quote knows (name/room/dietary) and are
   // completed later on the manifest. Columns are nullable since group_68.
-  const source = travellers.length > 0 ? travellers : [null]
-  const rows = source.map((qt: any, i: number) => {
+  const source: (QuoteTravellerRow | null)[] =
+    travellers.length > 0 ? (travellers as QuoteTravellerRow[]) : [null]
+  const rows = source.map((qt, i) => {
     const nm = splitName(qt?.display_name)
     const isLead = i === 0
     return {
