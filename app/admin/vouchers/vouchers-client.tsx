@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import type { HotelVoucher } from '@/lib/types'
+import Link from 'next/link'
+import type { VoucherWithContext } from './page'
 import {
-  generateVouchers, updateVoucher, sendVoucher, markVoucherConfirmed, deleteVoucher,
+  generateDepartureVouchers, generateBookingVouchers,
+  updateVoucher, sendVoucher, markVoucherConfirmed, deleteVoucher,
 } from './actions'
 
 const STATUS_STYLES: Record<string, string> = {
@@ -13,50 +15,135 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-700',
 }
 
+type Scope = { kind: 'departure' | 'booking'; id: string } | null
+
 export default function VouchersClient({
-  departureId,
   vouchers,
+  departureOptions,
+  statusFilters,
+  activeStatus,
+  scope,
   baseUrl,
 }: {
-  departureId: string
-  vouchers: HotelVoucher[]
+  vouchers: VoucherWithContext[]
+  departureOptions: Array<{ id: string; label: string }>
+  statusFilters: Array<{ value: string; label: string }>
+  activeStatus: string
+  scope: Scope
   baseUrl: string
 }) {
   const [openId, setOpenId] = useState<string | null>(null)
 
+  // Preserve the current scope (departure/booking) when switching status filter.
+  function statusHref(value: string) {
+    const params = new URLSearchParams()
+    if (value !== 'all') params.set('status', value)
+    if (scope?.kind === 'departure') params.set('departure', scope.id)
+    if (scope?.kind === 'booking') params.set('booking', scope.id)
+    const qs = params.toString()
+    return qs ? `/admin/vouchers?${qs}` : '/admin/vouchers'
+  }
+
   return (
-    <div className="space-y-4">
-      <form action={generateVouchers}>
-        <input type="hidden" name="departureId" value={departureId} />
-        <button
-          type="submit"
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-        >
-          Generate vouchers from itinerary
-        </button>
-        <span className="ml-3 text-xs text-muted-foreground">
-          Re-running only adds vouchers for hotels that don&rsquo;t have one yet.
-        </span>
-      </form>
+    <div className="space-y-5">
+      {/* Generator — scoped to one trip, or a departure picker for the global view. */}
+      <div className="rounded-xl border border-border bg-card p-4">
+        {scope?.kind === 'booking' ? (
+          <form action={generateBookingVouchers} className="flex flex-wrap items-center gap-3">
+            <input type="hidden" name="bookingId" value={scope.id} />
+            <button
+              type="submit"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            >
+              Generate vouchers for this booking
+            </button>
+            <span className="text-xs text-muted-foreground">
+              One voucher per hotel stay, with this booking’s travellers as guests. Re-running only fills gaps.
+            </span>
+          </form>
+        ) : scope?.kind === 'departure' ? (
+          <form action={generateDepartureVouchers} className="flex flex-wrap items-center gap-3">
+            <input type="hidden" name="departureId" value={scope.id} />
+            <button
+              type="submit"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            >
+              Generate vouchers from itinerary
+            </button>
+            <span className="text-xs text-muted-foreground">
+              One voucher per hotel stay for the whole group. Re-running only fills gaps.
+            </span>
+          </form>
+        ) : (
+          <form action={generateDepartureVouchers} className="flex flex-wrap items-end gap-3">
+            <label className="text-sm">
+              <span className="mb-1 block font-medium text-foreground">Generate from a departure</span>
+              <select
+                name="departureId"
+                required
+                defaultValue=""
+                className="w-full min-w-64 rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              >
+                <option value="" disabled>Choose a departure…</option>
+                {departureOptions.map(d => (
+                  <option key={d.id} value={d.id}>{d.label}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="submit"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            >
+              Generate
+            </button>
+          </form>
+        )}
+      </div>
+
+      {/* Status filter */}
+      <div className="flex flex-wrap gap-2">
+        {statusFilters.map(f => {
+          const active = f.value === activeStatus
+          return (
+            <Link
+              key={f.value}
+              href={statusHref(f.value)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                active
+                  ? 'bg-primary text-primary-foreground'
+                  : 'border border-border text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              {f.label}
+            </Link>
+          )
+        })}
+      </div>
 
       {vouchers.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          No vouchers yet. Generate them from the itinerary above.
+          No vouchers here yet. Generate them from a trip’s itinerary above.
         </p>
       ) : (
         <ul className="space-y-3">
           {vouchers.map(v => {
             const isOpen = openId === v.id
+            const tourTitle = v.departures?.tours?.title_en ?? null
             return (
               <li key={v.id} className="rounded-xl border border-border bg-card">
                 <div className="flex flex-wrap items-center gap-3 p-4">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-semibold text-foreground">{v.hotel_name}</span>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[v.status] ?? 'bg-muted'}`}>
                         {v.status}
                       </span>
                       <span className="text-xs font-medium uppercase text-muted-foreground">{v.language}</span>
+                      {v.booking_id && (
+                        <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium text-brand-ink">
+                          Per booking
+                        </span>
+                      )}
                     </div>
                     <div className="mt-1 text-sm text-muted-foreground">
                       {v.check_in} → {v.check_out} · {v.nights} night{v.nights === 1 ? '' : 's'} ·{' '}
@@ -65,8 +152,21 @@ export default function VouchersClient({
                     </div>
                     <div className="mt-0.5 text-xs text-muted-foreground">
                       {v.voucher_number}
+                      {tourTitle ? ` · ${tourTitle}` : ''}
                       {v.hotel_email ? ` · ${v.hotel_email}` : ' · no hotel email set'}
                       {v.hotel_confirmation_ref ? ` · ref ${v.hotel_confirmation_ref}` : ''}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-3 text-xs">
+                      {v.departure_id && (
+                        <Link href={`/admin/departures/${v.departure_id}`} className="text-primary hover:underline">
+                          Open departure →
+                        </Link>
+                      )}
+                      {v.booking_id && (
+                        <Link href={`/admin/bookings/${v.booking_id}`} className="text-primary hover:underline">
+                          Open booking →
+                        </Link>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -86,7 +186,6 @@ export default function VouchersClient({
                       {isOpen ? 'Close' : 'Edit'}
                     </button>
                     <form action={sendVoucher}>
-                      <input type="hidden" name="departureId" value={departureId} />
                       <input type="hidden" name="id" value={v.id} />
                       <button
                         type="submit"
@@ -101,7 +200,6 @@ export default function VouchersClient({
                 {isOpen && (
                   <div className="border-t border-border p-4">
                     <form action={updateVoucher} className="grid gap-3 sm:grid-cols-2">
-                      <input type="hidden" name="departureId" value={departureId} />
                       <input type="hidden" name="id" value={v.id} />
                       <TextField name="hotelName" label="Hotel name" defaultValue={v.hotel_name} />
                       <TextField name="hotelEmail" label="Hotel email" type="email" defaultValue={v.hotel_email ?? ''} />
@@ -161,7 +259,6 @@ export default function VouchersClient({
 
                     <div className="mt-4 flex flex-wrap items-end gap-3 border-t border-border pt-4">
                       <form action={markVoucherConfirmed} className="flex items-end gap-2">
-                        <input type="hidden" name="departureId" value={departureId} />
                         <input type="hidden" name="id" value={v.id} />
                         <label className="text-sm">
                           <span className="mb-1 block font-medium text-foreground">Hotel confirmation ref</span>
@@ -176,7 +273,6 @@ export default function VouchersClient({
                         </button>
                       </form>
                       <form action={deleteVoucher}>
-                        <input type="hidden" name="departureId" value={departureId} />
                         <input type="hidden" name="id" value={v.id} />
                         <button type="submit" className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-red-600 hover:bg-muted">
                           Delete voucher

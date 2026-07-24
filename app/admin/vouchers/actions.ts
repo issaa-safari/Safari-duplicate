@@ -6,8 +6,7 @@ import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { buildVouchersForDeparture } from '@/lib/server/vouchers'
+import { buildVouchersForDeparture, buildVouchersForBooking } from '@/lib/server/vouchers'
 import { buildVoucherEmail } from '@/lib/voucher-email'
 import { sendEmail } from '@/lib/email'
 import type { HotelVoucher } from '@/lib/types'
@@ -27,34 +26,43 @@ async function authGuard() {
   return { admin }
 }
 
-function revalidate(departureId: string) {
-  revalidatePath(`/admin/departures/${departureId}/vouchers`)
+// Refresh the central list plus whichever trip pages surface this voucher, so a
+// change made in one place is reflected everywhere it appears.
+function revalidateFor(voucher: { departure_id: string | null; booking_id: string | null }) {
+  revalidatePath('/admin/vouchers')
+  if (voucher.departure_id) revalidatePath(`/admin/departures/${voucher.departure_id}`)
+  if (voucher.booking_id) revalidatePath(`/admin/bookings/${voucher.booking_id}`)
 }
 
-// Confirm a voucher actually belongs to this departure before mutating it.
-async function assertVoucherOnDeparture(admin: SupabaseClient, voucherId: string, departureId: string) {
-  const { data } = await admin
-    .from('hotel_vouchers')
-    .select('id, departure_id')
-    .eq('id', voucherId)
-    .single()
-  if (!data || data.departure_id !== departureId) throw new Error('Voucher not found on this departure.')
+async function loadVoucher(admin: Awaited<ReturnType<typeof authGuard>>['admin'], id: string) {
+  const { data } = await admin.from('hotel_vouchers').select('*').eq('id', id).single()
+  if (!data) throw new Error('Voucher not found.')
+  return data as HotelVoucher
 }
 
-export async function generateVouchers(formData: FormData) {
+export async function generateDepartureVouchers(formData: FormData) {
   const { admin } = await authGuard()
   const departureId = (formData.get('departureId') as string)?.trim()
-  if (!departureId) throw new Error('Missing departure.')
+  if (!departureId) throw new Error('Choose a departure to generate from.')
   await buildVouchersForDeparture(admin, departureId)
-  revalidate(departureId)
+  revalidatePath('/admin/vouchers')
+  revalidatePath(`/admin/departures/${departureId}`)
+}
+
+export async function generateBookingVouchers(formData: FormData) {
+  const { admin } = await authGuard()
+  const bookingId = (formData.get('bookingId') as string)?.trim()
+  if (!bookingId) throw new Error('Choose a booking to generate from.')
+  await buildVouchersForBooking(admin, bookingId)
+  revalidatePath('/admin/vouchers')
+  revalidatePath(`/admin/bookings/${bookingId}`)
 }
 
 export async function updateVoucher(formData: FormData) {
   const { admin } = await authGuard()
-  const departureId = (formData.get('departureId') as string)?.trim()
   const id = (formData.get('id') as string)?.trim()
-  if (!departureId || !id) throw new Error('Missing voucher.')
-  await assertVoucherOnDeparture(admin, id, departureId)
+  if (!id) throw new Error('Missing voucher.')
+  const voucher = await loadVoucher(admin, id)
 
   const str = (n: string) => {
     const v = (formData.get(n) as string)?.trim()
@@ -94,30 +102,21 @@ export async function updateVoucher(formData: FormData) {
       language,
     })
     .eq('id', id)
-    .eq('departure_id', departureId)
   if (error) throw new Error(error.message)
-  revalidate(departureId)
+  revalidateFor(voucher)
 }
 
 export async function sendVoucher(formData: FormData) {
   const { admin } = await authGuard()
-  const departureId = (formData.get('departureId') as string)?.trim()
   const id = (formData.get('id') as string)?.trim()
-  if (!departureId || !id) throw new Error('Missing voucher.')
-  await assertVoucherOnDeparture(admin, id, departureId)
-
-  const { data: voucher } = await admin
-    .from('hotel_vouchers')
-    .select('*')
-    .eq('id', id)
-    .single()
-  if (!voucher) throw new Error('Voucher not found.')
+  if (!id) throw new Error('Missing voucher.')
+  const voucher = await loadVoucher(admin, id)
   if (!voucher.hotel_email?.trim()) {
     throw new Error('Add the hotel email before sending.')
   }
 
   const baseUrl = await requestBaseUrl()
-  const { subject, html } = buildVoucherEmail(voucher as HotelVoucher, {
+  const { subject, html } = buildVoucherEmail(voucher, {
     viewUrl: `${baseUrl}/voucher/${voucher.token}`,
   })
 
@@ -128,38 +127,31 @@ export async function sendVoucher(formData: FormData) {
     .from('hotel_vouchers')
     .update({ status: 'sent', sent_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('departure_id', departureId)
-  revalidate(departureId)
+  revalidateFor(voucher)
 }
 
 export async function markVoucherConfirmed(formData: FormData) {
   const { admin } = await authGuard()
-  const departureId = (formData.get('departureId') as string)?.trim()
   const id = (formData.get('id') as string)?.trim()
   const ref = (formData.get('confirmationRef') as string)?.trim() || null
-  if (!departureId || !id) throw new Error('Missing voucher.')
-  await assertVoucherOnDeparture(admin, id, departureId)
+  if (!id) throw new Error('Missing voucher.')
+  const voucher = await loadVoucher(admin, id)
 
   const { error } = await admin
     .from('hotel_vouchers')
     .update({ status: 'confirmed', confirmed_at: new Date().toISOString(), hotel_confirmation_ref: ref })
     .eq('id', id)
-    .eq('departure_id', departureId)
   if (error) throw new Error(error.message)
-  revalidate(departureId)
+  revalidateFor(voucher)
 }
 
 export async function deleteVoucher(formData: FormData) {
   const { admin } = await authGuard()
-  const departureId = (formData.get('departureId') as string)?.trim()
   const id = (formData.get('id') as string)?.trim()
-  if (!departureId || !id) throw new Error('Missing voucher.')
+  if (!id) throw new Error('Missing voucher.')
+  const voucher = await loadVoucher(admin, id)
 
-  const { error } = await admin
-    .from('hotel_vouchers')
-    .delete()
-    .eq('id', id)
-    .eq('departure_id', departureId)
+  const { error } = await admin.from('hotel_vouchers').delete().eq('id', id)
   if (error) throw new Error(error.message)
-  revalidate(departureId)
+  revalidateFor(voucher)
 }

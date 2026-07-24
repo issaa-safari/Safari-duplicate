@@ -7,50 +7,92 @@ import { useState, useEffect, useTransition, useRef } from 'react'
 import {
   Search, MoreHorizontal, LayoutDashboard, Inbox, FileText, Route, CalendarCheck,
   Users, Wallet, Package, Boxes, MapPin, Truck, BarChart3, Clock, Settings, LogOut, X,
-  Copy, ArrowLeft, Bike, FileSignature,
+  Copy, ArrowLeft, Bike, FileSignature, BedDouble,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { SearchResults, SearchQuote, SearchClient, SearchRequest } from '@/lib/types'
 
 type NavItem = { label: string; href: string; icon: LucideIcon }
+type NavGroup = { label: string; items: NavItem[] }
 
+const DASHBOARD: NavItem = { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard }
+
+// Single source of truth for every module, organised into functional clusters.
+// The desktop "More" dropdown and the mobile "More" sheet are both derived from
+// this — filtered so a module never appears twice (once in a bar, once here).
+const NAV_GROUPS: NavGroup[] = [
+  { label: 'Sales', items: [
+    { label: 'Requests',     href: '/admin/requests',     icon: Inbox },
+    { label: 'Quotes',       href: '/admin/quotes',       icon: FileText },
+    { label: 'Trip Builder', href: '/admin/trip-builder', icon: Route },
+    { label: 'Bookings',     href: '/admin/bookings',     icon: CalendarCheck },
+  ] },
+  { label: 'Operations', items: [
+    { label: 'Departures', href: '/admin/departures', icon: MapPin },
+    { label: 'Vouchers',   href: '/admin/vouchers',   icon: BedDouble },
+    { label: 'Agreements', href: '/admin/agreements', icon: FileSignature },
+    { label: 'Motorbikes', href: '/admin/motorbikes', icon: Bike },
+  ] },
+  { label: 'People', items: [
+    { label: 'Clients',   href: '/admin/clients',   icon: Users },
+    { label: 'Suppliers', href: '/admin/suppliers', icon: Truck },
+  ] },
+  { label: 'Catalog', items: [
+    { label: 'Content',         href: '/admin/content',        icon: Boxes },
+    { label: 'Tour Templates',  href: '/admin/tours',          icon: Package },
+    { label: 'Quote Templates', href: '/admin/tour-templates', icon: Copy },
+  ] },
+  { label: 'Insights', items: [
+    { label: 'Finance',   href: '/admin/finance',   icon: Wallet },
+    { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+    { label: 'Activity',  href: '/admin/activity',  icon: Clock },
+  ] },
+]
+
+const GROUP_ITEMS: NavItem[] = NAV_GROUPS.flatMap(g => g.items)
+const byHref = (href: string) => GROUP_ITEMS.find(i => i.href === href)!
+
+// The desktop top bar's primary tabs; everything else lives in the "More"
+// dropdown, grouped.
 const PRIMARY_NAV: NavItem[] = [
-  { label: 'Dashboard',    href: '/admin/dashboard',    icon: LayoutDashboard },
-  { label: 'Requests',     href: '/admin/requests',     icon: Inbox },
-  { label: 'Quotes',       href: '/admin/quotes',       icon: FileText },
-  { label: 'Trip Builder', href: '/admin/trip-builder', icon: Route },
-  { label: 'Bookings',     href: '/admin/bookings',     icon: CalendarCheck },
-  { label: 'Clients',      href: '/admin/clients',      icon: Users },
-  { label: 'Finance',      href: '/admin/finance',      icon: Wallet },
+  DASHBOARD,
+  byHref('/admin/requests'),
+  byHref('/admin/quotes'),
+  byHref('/admin/trip-builder'),
+  byHref('/admin/bookings'),
+  byHref('/admin/clients'),
+  byHref('/admin/finance'),
 ]
 
-const OVERFLOW_NAV: NavItem[] = [
-  { label: 'Tour Templates',  href: '/admin/tours',          icon: Package },
-  { label: 'Quote Templates', href: '/admin/tour-templates', icon: Copy },
-  { label: 'Content',         href: '/admin/content',        icon: Boxes },
-  { label: 'Departures',     href: '/admin/departures',  icon: MapPin },
-  { label: 'Motorbikes',     href: '/admin/motorbikes',  icon: Bike },
-  { label: 'Agreements',     href: '/admin/agreements',  icon: FileSignature },
-  { label: 'Suppliers',      href: '/admin/suppliers',   icon: Truck },
-  { label: 'Analytics',      href: '/admin/analytics',   icon: BarChart3 },
-  { label: 'Activity',       href: '/admin/activity',    icon: Clock },
-]
-
-// The four primary destinations promoted to the mobile bottom tab bar; every
-// other module lives behind the "More" tab so the bar stays app-clean.
+// The four destinations promoted to the mobile bottom tab bar; every other
+// module lives behind the "More" tab so the bar stays app-clean.
 const BOTTOM_NAV: NavItem[] = [
-  PRIMARY_NAV[0], PRIMARY_NAV[1], PRIMARY_NAV[2], PRIMARY_NAV[4],
+  DASHBOARD,
+  byHref('/admin/requests'),
+  byHref('/admin/quotes'),
+  byHref('/admin/bookings'),
 ]
-// Everything reachable from the "More" sheet (bottom-bar items excluded).
-const MORE_NAV: NavItem[] = [
-  PRIMARY_NAV[3], PRIMARY_NAV[5], PRIMARY_NAV[6], ...OVERFLOW_NAV,
-]
+
+const PRIMARY_HREFS = new Set(PRIMARY_NAV.map(n => n.href))
+const BOTTOM_HREFS = new Set(BOTTOM_NAV.map(n => n.href))
+
+// Grouped views of the "More" menus, each excluding whatever the adjacent bar
+// already shows (empty groups dropped).
+const OVERFLOW_GROUPS: NavGroup[] = NAV_GROUPS
+  .map(g => ({ label: g.label, items: g.items.filter(i => !PRIMARY_HREFS.has(i.href)) }))
+  .filter(g => g.items.length > 0)
+const SHEET_GROUPS: NavGroup[] = NAV_GROUPS
+  .map(g => ({ label: g.label, items: g.items.filter(i => !BOTTOM_HREFS.has(i.href)) }))
+  .filter(g => g.items.length > 0)
+
+const OVERFLOW_ITEMS: NavItem[] = OVERFLOW_GROUPS.flatMap(g => g.items)
+const SHEET_ITEMS: NavItem[] = SHEET_GROUPS.flatMap(g => g.items)
 
 // Flat list of every module root, used to decide if the current route is a
 // top-level destination (show the brand) or a nested detail/form view (show a
 // back button). Ordered longest-href-first so `/admin/content/parks` matches
 // before `/admin/content`.
-const ALL_NAV: NavItem[] = [...PRIMARY_NAV, ...OVERFLOW_NAV]
+const ALL_NAV: NavItem[] = [DASHBOARD, ...GROUP_ITEMS]
 
 // Resolve the mobile top bar's back affordance for a given path:
 // - null  → a top-level module root (or the dashboard); show the brand mark.
@@ -257,8 +299,8 @@ export default function AdminSidebar({
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(href + '/')
   }
-  const overflowActive = OVERFLOW_NAV.some(item => isActive(item.href))
-  const moreActive = MORE_NAV.some(item => isActive(item.href))
+  const overflowActive = OVERFLOW_ITEMS.some(item => isActive(item.href))
+  const moreActive = SHEET_ITEMS.some(item => isActive(item.href))
   const back = resolveBack(pathname)
 
   function goBack() {
@@ -351,20 +393,27 @@ export default function AdminSidebar({
                   )}
                 </button>
                 {moreOpen && (
-                  <div className="absolute left-0 top-full z-40 mt-1 w-48 rounded-lg border border-border bg-surface py-1 shadow-lg">
-                    {OVERFLOW_NAV.map((item) => (
-                      <Link
-                        key={item.label}
-                        href={item.href}
-                        onClick={() => setMoreOpen(false)}
-                        className={`block px-3 py-2 text-sm transition-colors hover:bg-muted ${
-                          isActive(item.href)
-                            ? 'font-medium text-brand-ink'
-                            : 'text-muted-foreground hover:text-brand-ink'
-                        }`}
-                      >
-                        {item.label}
-                      </Link>
+                  <div className="absolute left-0 top-full z-40 mt-1 w-56 rounded-lg border border-border bg-surface py-1.5 shadow-lg">
+                    {OVERFLOW_GROUPS.map((group, gi) => (
+                      <div key={group.label} className={gi > 0 ? 'mt-1 border-t border-border pt-1' : ''}>
+                        <p className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                          {group.label}
+                        </p>
+                        {group.items.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setMoreOpen(false)}
+                            className={`block px-3 py-2 text-sm transition-colors hover:bg-muted ${
+                              isActive(item.href)
+                                ? 'font-medium text-brand-ink'
+                                : 'text-muted-foreground hover:text-brand-ink'
+                            }`}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -510,20 +559,29 @@ export default function AdminSidebar({
               <X size={18} />
             </button>
           </div>
-          <div className="grid grid-cols-3 gap-1 px-3 pb-2">
-            {MORE_NAV.map((item) => {
-              const Icon = item.icon
-              const active = isActive(item.href)
-              return (
-                <Link key={item.href} href={item.href} onClick={() => setSheetOpen(false)}
-                  className={`flex flex-col items-center gap-1.5 rounded-xl px-2 py-3 text-center transition-colors ${
-                    active ? 'bg-accent text-brand-ink' : 'text-muted-foreground hover:bg-muted'
-                  }`}>
-                  <Icon size={20} className={active ? 'text-primary-strong' : ''} />
-                  <span className="text-[11px] font-medium leading-tight">{item.label}</span>
-                </Link>
-              )
-            })}
+          <div className="max-h-[60vh] overflow-y-auto px-3 pb-2">
+            {SHEET_GROUPS.map((group) => (
+              <div key={group.label} className="mb-1">
+                <p className="px-1 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  {group.label}
+                </p>
+                <div className="grid grid-cols-3 gap-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon
+                    const active = isActive(item.href)
+                    return (
+                      <Link key={item.href} href={item.href} onClick={() => setSheetOpen(false)}
+                        className={`flex flex-col items-center gap-1.5 rounded-xl px-2 py-3 text-center transition-colors ${
+                          active ? 'bg-accent text-brand-ink' : 'text-muted-foreground hover:bg-muted'
+                        }`}>
+                        <Icon size={20} className={active ? 'text-primary-strong' : ''} />
+                        <span className="text-[11px] font-medium leading-tight">{item.label}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
           <div className="mt-1 border-t border-border px-3 py-2">
             <Link href="/admin/settings" onClick={() => setSheetOpen(false)}
