@@ -1,7 +1,7 @@
 import { createMcpHandler } from 'mcp-handler'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createSafariDraft, type IntakePayload } from '@/lib/server/ai-intake'
+import { createSafariDraft, addContentItem, type IntakePayload } from '@/lib/server/ai-intake'
 
 // Remote MCP endpoint for the Cowork "safari-intake" plugin. Claude conducts the
 // enquiry interview, then calls create_safari_draft with the assembled trip. This
@@ -67,15 +67,44 @@ const handler = createMcpHandler(
           return { content: [{ type: 'text' as const, text: `Could not create the draft: ${result.message}` }], isError: true }
         }
 
-        const link = APP_BASE_URL ? `${APP_BASE_URL}${result.url}` : result.url
+        const abs = (path: string) => (APP_BASE_URL ? `${APP_BASE_URL}${path}` : path)
         const lines = [
           `Draft created — quote ${result.quoteNumber ?? '(number pending)'}${result.requestRef ? `, request ${result.requestRef}` : ''}.`,
-          `Open to review and price: ${link}`,
+          `Open to review and price: ${abs(result.url)}`,
+          result.requestUrl ? `View the CRM request: ${abs(result.requestUrl)}` : null,
           result.unmatched.length > 0
             ? `Not matched to the library (kept as typed — fix in the app): ${result.unmatched.join(', ')}.`
             : 'All destinations, lodges and activities matched the content library.',
         ]
-        return { content: [{ type: 'text' as const, text: lines.join('\n') }] }
+        return { content: [{ type: 'text' as const, text: lines.filter(Boolean).join('\n') }] }
+      },
+    )
+
+    server.registerTool(
+      'add_content_item',
+      {
+        title: 'Add a content-library item',
+        description:
+          'Create a destination, accommodation (lodge/camp/hotel), or activity in the content ' +
+          'library when a name from an enquiry does not exist yet. Idempotent — if a matching ' +
+          'name already exists it is returned instead of duplicated. Only call after the operator ' +
+          'confirms they want the item added; then re-running create_safari_draft will match it.',
+        inputSchema: {
+          kind: z.enum(['destination', 'accommodation', 'activity']),
+          name: z.string().describe('The item name, exactly as it should appear in the library.'),
+          destination: z.string().optional().describe('For an accommodation or activity: the destination it belongs to.'),
+          tier: z.string().optional().describe('For an accommodation: budget | midrange | luxury | ultra.'),
+          country: z.string().optional().describe('For a destination: country (defaults to Kenya).'),
+        },
+      },
+      async (args) => {
+        const admin = createAdminClient()
+        const result = await addContentItem(admin, args as unknown as Parameters<typeof addContentItem>[1])
+        if (!result.ok) {
+          return { content: [{ type: 'text' as const, text: `Could not add the item: ${result.message}` }], isError: true }
+        }
+        const verb = result.created ? 'Added' : 'Already in the library'
+        return { content: [{ type: 'text' as const, text: `${verb}: "${result.name}". Re-run the draft to match it.` }] }
       },
     )
   },

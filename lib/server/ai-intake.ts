@@ -60,6 +60,7 @@ export type CreateDraftResult =
       quoteNumber: string | null
       url: string
       requestRef: string | null
+      requestUrl: string | null
       unmatched: string[]
     }
   | { ok: false; message: string }
@@ -113,6 +114,29 @@ function normRoomType(s?: string): string | null {
 
 function bandForAge(bands: BandRow[], age: number): BandRow | null {
   return bands.find(b => age >= b.min_age && (b.max_age === null || age <= b.max_age)) ?? null
+}
+
+/**
+ * Best-effort reuse of an existing client matched by an exact phone or WhatsApp
+ * number, for enquiries that arrive without an email (find-or-create by email
+ * already covers the email case). Returns a client id only when the match is
+ * unambiguous — exactly one distinct client across all matched numbers — so we
+ * never silently merge two different people.
+ */
+async function findClientByContact(
+  admin: SupabaseClient,
+  contacts: (string | null | undefined)[],
+): Promise<string | null> {
+  const values = [...new Set(contacts.map(c => (c ?? '').trim()).filter(v => v.length >= 7))]
+  if (values.length === 0) return null
+  const ids = new Set<string>()
+  for (const v of values) {
+    for (const col of ['phone', 'whatsapp'] as const) {
+      const { data } = await admin.from('clients').select('id').eq(col, v).limit(2)
+      for (const row of (data ?? []) as { id: string }[]) ids.add(row.id)
+    }
+  }
+  return ids.size === 1 ? [...ids][0] : null
 }
 
 function bandSnapshot(band: BandRow) {
@@ -190,22 +214,43 @@ export async function createSafariDraft(
       }
       if (Object.keys(patch).length > 0) await admin.from('clients').update(patch).eq('id', clientId)
     } else {
-      const { data: created, error } = await admin
-        .from('clients')
-        .insert({
-          first_name: firstName,
-          last_name: lastName,
-          phone: payload.guest.phone || null,
-          whatsapp,
-          country,
-          notes: clientNotes,
-          source: 'ai_intake',
-          ...(lang ? { preferred_language: lang, language: lang } : {}),
-        })
-        .select('id')
-        .single()
-      if (error || !created) return { ok: false, message: `Client creation failed: ${error?.message ?? 'no row'}` }
-      clientId = created.id
+      // No email — reuse an existing client matched unambiguously by phone or
+      // WhatsApp, otherwise create a name-only record.
+      const matchedId = await findClientByContact(admin, [payload.guest.phone, whatsapp])
+      if (matchedId) {
+        clientId = matchedId
+        const { data: existing } = await admin
+          .from('clients')
+          .select('whatsapp, country, preferred_language, notes')
+          .eq('id', clientId).maybeSingle()
+        const cur = (existing ?? {}) as Record<string, unknown>
+        const patch: Record<string, unknown> = {}
+        if (!cur.whatsapp && whatsapp) patch.whatsapp = whatsapp
+        if (!cur.country && country) patch.country = country
+        if (!cur.notes && clientNotes) patch.notes = clientNotes
+        if (lang && (!cur.preferred_language || cur.preferred_language === 'en')) {
+          patch.preferred_language = lang
+          patch.language = lang
+        }
+        if (Object.keys(patch).length > 0) await admin.from('clients').update(patch).eq('id', clientId)
+      } else {
+        const { data: created, error } = await admin
+          .from('clients')
+          .insert({
+            first_name: firstName,
+            last_name: lastName,
+            phone: payload.guest.phone || null,
+            whatsapp,
+            country,
+            notes: clientNotes,
+            source: 'ai_intake',
+            ...(lang ? { preferred_language: lang, language: lang } : {}),
+          })
+          .select('id')
+          .single()
+        if (error || !created) return { ok: false, message: `Client creation failed: ${error?.message ?? 'no row'}` }
+        clientId = created.id
+      }
     }
 
     // ── Request (records the enquiry in the CRM) ──
@@ -375,9 +420,63 @@ export async function createSafariDraft(
       quoteNumber: (quote as { quote_number?: string } | null)?.quote_number ?? null,
       url: `/admin/quotes/${quoteId}?step=itinerary`,
       requestRef,
+      requestUrl: requestId ? `/admin/requests/${requestId}` : null,
       unmatched: [...new Set(unmatched)],
     }
   } catch (err) {
     return { ok: false, message: err instanceof Error ? err.message : 'Draft creation failed.' }
   }
+}
+
+export type AddContentResult =
+  | { ok: true; table: string; id: string; name: string; created: boolean }
+  | { ok: false; message: string }
+
+const CONTENT_TABLE: Record<string, 'destinations' | 'accommodations' | 'activities'> = {
+  destination: 'destinations',
+  accommodation: 'accommodations',
+  lodge: 'accommodations',
+  activity: 'activities',
+}
+
+/**
+ * Create a content-library item (destination / accommodation / activity) when a
+ * name from an enquiry isn't in the library yet. Idempotent by name: if an
+ * active row already matches (case-insensitively) it is returned rather than
+ * duplicated, so the intake chat can safely offer "add this" without recreating
+ * duplicates.
+ */
+export async function addContentItem(
+  admin: SupabaseClient,
+  input: { kind: string; name: string; destination?: string; tier?: string; country?: string },
+): Promise<AddContentResult> {
+  const name = (input.name ?? '').trim()
+  if (!name) return { ok: false, message: 'A name is required.' }
+  const table = CONTENT_TABLE[(input.kind ?? '').trim().toLowerCase()]
+  if (!table) {
+    return { ok: false, message: `Unknown kind "${input.kind}". Use destination, accommodation, or activity.` }
+  }
+
+  // Dedup — reuse an existing active row with the same name (case-insensitive,
+  // confirmed with an exact normalized compare to avoid LIKE wildcard surprises).
+  const { data: matches } = await admin.from(table).select('id, name').ilike('name', name).limit(5)
+  const existing = (matches ?? []).find(r => norm((r as { name: string }).name) === norm(name)) as
+    | { id: string; name: string }
+    | undefined
+  if (existing) return { ok: true, table, id: existing.id, name: existing.name, created: false }
+
+  const row: Record<string, unknown> = { name, is_active: true }
+  if (table === 'destinations' && input.country?.trim()) row.country = input.country.trim()
+  if (table === 'accommodations' && input.tier?.trim()) row.budget_tier = input.tier.trim()
+  if (table !== 'destinations' && input.destination?.trim()) {
+    const { data: destMatches } = await admin.from('destinations').select('id, name').ilike('name', input.destination.trim()).limit(5)
+    const dest = (destMatches ?? []).find(r => norm((r as { name: string }).name) === norm(input.destination!.trim())) as
+      | { id: string }
+      | undefined
+    if (dest) row.destination_id = dest.id
+  }
+
+  const { data: created, error } = await admin.from(table).insert(row).select('id, name').single()
+  if (error || !created) return { ok: false, message: `Could not create ${input.kind}: ${error?.message ?? 'no row'}` }
+  return { ok: true, table, id: (created as { id: string }).id, name: (created as { name: string }).name, created: true }
 }

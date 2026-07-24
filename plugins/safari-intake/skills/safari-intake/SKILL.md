@@ -47,9 +47,11 @@ Work in this order:
 5. **Create.** Call `create_safari_draft` with the assembled trip (see the schema in
    `references/tool-schema.md`). Map children's ages into `childAges`; map meals to the codes
    `B`/`L`/`D`; put the budget/style note in `budgetNote`.
-6. **Report.** Give the operator the returned **review link**, the quote number, and — if any —
-   the list of names that didn't match their library (they'll fix those in the app). Do not
-   attempt to price or send.
+6. **Report.** Give the operator the returned **review link** and quote number, the **request link**,
+   and — if any — the list of names that didn't match their library. For each unmatched name, **offer
+   to add it**: on a yes, call `add_content_item` (kind + name, plus destination/tier for a lodge),
+   then re-run `create_safari_draft` so it matches. Never add content without a yes. Do not attempt
+   to price or send.
 
 ## Rules
 
