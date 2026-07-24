@@ -39,6 +39,10 @@ export default async function SettingsPage() {
           className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-text hover:text-brand-ink">
           Manage Team →
         </Link>
+        <Link href="/admin/settings/proposal"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-text hover:text-brand-ink">
+          Proposal Template →
+        </Link>
       </div>
       <SettingsForm settings={settings} />
     </div>

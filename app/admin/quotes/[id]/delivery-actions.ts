@@ -10,6 +10,9 @@ import { syncQuoteStatus } from '@/lib/server/quote-status'
 import { sendEmail, emailShell, escapeHtml } from '@/lib/email'
 import { logActivity } from '@/lib/server/audit'
 import { safeAction } from '@/lib/server/action-result'
+import {
+  getActiveProposalTemplate, pickLocalised, applyProposalPlaceholders,
+} from '@/lib/proposal-template'
 
 // Same-origin base URL derived server-side from the request headers, so the
 // customer-facing link can never be pointed at an attacker host via a forged
@@ -129,17 +132,40 @@ export const emailQuote = safeAction(async (formData: FormData) => {
 
   const link = `${baseUrl}/quote/${delivery.access_token}`
   const clientName = client ? `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim() : ''
+
+  // Pull the editable proposal template (bilingual) and substitute placeholders.
+  const template = await getActiveProposalTemplate(admin)
+  const locale: 'en' | 'ar' = 'en'
+  const vars = {
+    clientName,
+    tourTitle: version.title,
+    quoteNumber: quote?.quote_number,
+  }
+  const defaultSubject = `Your safari proposal${quote?.quote_number ? ` (${quote.quote_number})` : ''}`
+  const defaultMessage = `${clientName ? `Hello ${clientName},\n\n` : 'Hello,\n\n'}Your proposal${quote?.quote_number ? ` (${quote.quote_number})` : ''} is ready to view. Click below to open your personalised itinerary and pricing.`
+
+  const subject = applyProposalPlaceholders(
+    pickLocalised(template, 'email_subject', locale, defaultSubject), vars,
+  )
+  const messageHtml = escapeHtml(
+    applyProposalPlaceholders(pickLocalised(template, 'email_message', locale, defaultMessage), vars),
+  ).replace(/\n/g, '<br>')
+  const signatureRaw = applyProposalPlaceholders(
+    pickLocalised(template, 'email_signature', locale, ''), vars,
+  ).trim()
+  const signatureHtml = signatureRaw ? escapeHtml(signatureRaw).replace(/\n/g, '<br>') : ''
+
   const heading = version.title ? version.title : 'Your safari proposal is ready'
   const html = emailShell(heading, `
-    <p style="font-size:14px;margin:0 0 12px">${clientName ? `Hello ${escapeHtml(clientName)},` : 'Hello,'}</p>
-    <p style="font-size:14px;margin:0 0 20px">Your proposal${quote?.quote_number ? ` (${escapeHtml(quote.quote_number)})` : ''} is ready to view. Click below to open your personalised itinerary and pricing.</p>
+    <p style="font-size:14px;margin:0 0 20px;line-height:1.7">${messageHtml}</p>
     <p style="margin:0 0 20px"><a href="${escapeHtml(link)}" style="background:#7A9A4A;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-size:14px;display:inline-block">View your proposal</a></p>
-    <p style="font-size:12px;color:#6E6A59;margin:0">Or paste this link into your browser:<br>${escapeHtml(link)}</p>
+    <p style="font-size:12px;color:#6E6A59;margin:0 0 20px">Or paste this link into your browser:<br>${escapeHtml(link)}</p>
+    ${signatureHtml ? `<p style="font-size:14px;color:#20271A;margin:0;line-height:1.7">${signatureHtml}</p>` : ''}
   `)
 
   const emailed = await sendEmail({
     to: recipient,
-    subject: `Your safari proposal${quote?.quote_number ? ` (${quote.quote_number})` : ''}`,
+    subject,
     html,
   })
 

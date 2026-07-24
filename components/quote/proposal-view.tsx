@@ -52,6 +52,8 @@ export type ProposalViewProps = {
   refNumber: string
   clientName: string
   clientFirstName: string
+  /** Editable cover letter (from the proposal template). Falls back to the built-in text when null. */
+  coverLetter?: string | null
   title: string
   days: number
   nights: number
@@ -188,19 +190,31 @@ export default function ProposalView(p: ProposalViewProps) {
 
             {/* cover letter */}
             <div className="mb-7 rounded-2xl p-5 sm:p-6" style={{ background: '#00000038', border: '1px solid #ffffff14' }}>
-              <p className="mb-3 font-semibold text-white" style={display}>
-                {T(ar, `Dear ${p.clientFirstName},`, `عزيزي/عزيزتي ${p.clientFirstName}،`)}
-              </p>
-              <div className="space-y-2.5 text-sm leading-relaxed text-white/80">
-                <p>{T(ar, 'Thank you for your inquiry.', 'شكراً لاستفساركم.')}</p>
-                <p>{T(ar,
-                  `It is our pleasure to send you this custom-made quote for our ${p.title} as per your request.`,
-                  `يسعدنا أن نرسل لكم هذا العرض المخصص لرحلة "${p.title}" بناءً على طلبكم.`)}</p>
-                <p>{T(ar,
-                  'Please do not hesitate to contact us if you have any questions. We look forward to helping you plan your safari trip of a lifetime.',
-                  'لا تترددوا في التواصل معنا لأي استفسار. نتطلع لمساعدتكم في تخطيط رحلة العمر.')}</p>
-                <p className="text-white/60">{T(ar, 'Best regards', 'مع خالص التحية')}</p>
-              </div>
+              {p.coverLetter?.trim() ? (
+                <div className="space-y-2.5 whitespace-pre-line text-sm leading-relaxed text-white/80">
+                  {p.coverLetter.trim().split(/\n{2,}/).map((para, i) => (
+                    <p key={i} className={i === 0 ? 'font-semibold text-white' : undefined} style={i === 0 ? display : undefined}>
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <p className="mb-3 font-semibold text-white" style={display}>
+                    {T(ar, `Dear ${p.clientFirstName},`, `عزيزي/عزيزتي ${p.clientFirstName}،`)}
+                  </p>
+                  <div className="space-y-2.5 text-sm leading-relaxed text-white/80">
+                    <p>{T(ar, 'Thank you for your inquiry.', 'شكراً لاستفساركم.')}</p>
+                    <p>{T(ar,
+                      `It is our pleasure to send you this custom-made quote for our ${p.title} as per your request.`,
+                      `يسعدنا أن نرسل لكم هذا العرض المخصص لرحلة "${p.title}" بناءً على طلبكم.`)}</p>
+                    <p>{T(ar,
+                      'Please do not hesitate to contact us if you have any questions. We look forward to helping you plan your safari trip of a lifetime.',
+                      'لا تترددوا في التواصل معنا لأي استفسار. نتطلع لمساعدتكم في تخطيط رحلة العمر.')}</p>
+                    <p className="text-white/60">{T(ar, 'Best regards', 'مع خالص التحية')}</p>
+                  </div>
+                </>
+              )}
               {/* signature */}
               <div className="mt-4 flex flex-wrap items-center gap-4 border-t pt-4" style={{ borderColor: '#ffffff1a' }}>
                 <div className="flex items-center gap-3">
