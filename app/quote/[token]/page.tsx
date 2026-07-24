@@ -6,6 +6,7 @@ import ProposalView, { type ProposalDay, type SummaryRow, type TravellerGroup, t
 import type { MapStop } from '@/components/quote/itinerary-map'
 import { googleMapsLinkFor, haversineKm, type LatLng } from '@/lib/geo'
 import { site } from '@/lib/site'
+import { getActiveProposalTemplate, pickLocalised, applyProposalPlaceholders } from '@/lib/proposal-template'
 
 import {
   INCLUDED_DEFAULT_EN, INCLUDED_DEFAULT_AR,
@@ -395,12 +396,31 @@ export default async function QuotePortalPage({
     </div>
   ) : null
 
+  // Editable cover letter from the proposal template (bilingual + placeholders).
+  // Falls back to ProposalView's built-in text when no template text is set.
+  const proposalTemplate = await getActiveProposalTemplate(admin)
+  const coverStartDestination = (quoteDays ?? [])[0]
+    ? ((quoteDays as any)[0].destination_snapshot as any)?.name ?? null
+    : null
+  const coverIntroRaw = pickLocalised(proposalTemplate, 'cover_intro', isArabic ? 'ar' : 'en', '')
+  const coverLetter = coverIntroRaw
+    ? applyProposalPlaceholders(coverIntroRaw, {
+        clientName,
+        tourTitle: version.title,
+        startDate: fmtDate(version.travel_start_date),
+        startDestination: coverStartDestination,
+        numberOfDays: days,
+        quoteNumber: quote.quote_number,
+      })
+    : null
+
   return (
     <ProposalView
       isArabic={isArabic}
       refNumber={quote.quote_number}
       clientName={clientName}
       clientFirstName={clientFirstName}
+      coverLetter={coverLetter}
       title={version.title || (isArabic ? 'عرض سعر رحلتك' : 'Your Safari Quote')}
       days={days}
       nights={nights}

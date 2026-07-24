@@ -190,3 +190,69 @@ export interface ActivityLog {
   metadata: Record<string, unknown>
   created_at: string
 }
+
+// --- Booking links (migrations/group_69_*) ---
+// A token-linked, shareable self-service booking form for one departure.
+export interface BookingLink {
+  id: string
+  departure_id: string
+  token: string
+  label: string | null
+  language: 'en' | 'ar' | string
+  max_bookings: number | null
+  use_count: number
+  expires_at: string | null
+  is_active: boolean
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+// --- Hotel vouchers (migrations/group_69_*) ---
+export type VoucherStatus = 'draft' | 'sent' | 'confirmed' | 'cancelled'
+
+export interface HotelVoucher {
+  id: string
+  voucher_number: string
+  token: string
+  departure_id: string | null
+  booking_id: string | null
+  quote_id: string | null
+  accommodation_id: string | null
+  hotel_name: string
+  hotel_email: string | null
+  check_in: string
+  check_out: string
+  nights: number
+  num_rooms: number
+  room_type: string | null
+  num_guests: number
+  guest_names: string[]
+  meal_plan: string | null
+  special_requests: string | null
+  internal_notes: string | null
+  status: VoucherStatus | string
+  language: 'en' | 'ar' | string
+  hotel_confirmation_ref: string | null
+  sent_at: string | null
+  confirmed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+// --- Editable proposal template (migrations/group_69_*) ---
+export interface ProposalTemplate {
+  id: string
+  title: string
+  cover_intro_en: string | null
+  cover_intro_ar: string | null
+  email_subject_en: string | null
+  email_subject_ar: string | null
+  email_message_en: string | null
+  email_message_ar: string | null
+  email_signature_en: string | null
+  email_signature_ar: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
