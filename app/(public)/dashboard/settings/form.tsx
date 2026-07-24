@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { User, SupabaseClient } from '@supabase/supabase-js'
+import { deriveName } from '@/lib/user-name'
 
 const G = '#7A9A4A'
 
@@ -12,9 +13,10 @@ export default function SettingsForm({ user }: { user: User }) {
   useEffect(() => {
     setSupabase(createClient())
   }, [])
+  const derived = deriveName(user.user_metadata)
   const [formData, setFormData] = useState({
-    firstName: user.user_metadata?.first_name || '',
-    lastName: user.user_metadata?.last_name || '',
+    firstName: derived.firstName,
+    lastName: derived.lastName,
     email: user.email || '',
     phone: user.user_metadata?.phone || '',
   })

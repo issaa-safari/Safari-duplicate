@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { findOrCreateClientByEmail } from '@/lib/server/clients'
+import { deriveName } from '@/lib/user-name'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
@@ -17,14 +18,11 @@ export async function GET(request: NextRequest) {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (user?.email) {
-        const meta = (user.user_metadata ?? {}) as Record<string, unknown>
-        const fullName = typeof meta.full_name === 'string' ? meta.full_name
-          : typeof meta.name === 'string' ? meta.name : ''
-        const [metaFirst, ...metaRest] = fullName.trim().split(/\s+/)
+        const { firstName, lastName } = deriveName(user.user_metadata)
         await findOrCreateClientByEmail(createAdminClient(), {
           email: user.email,
-          first_name: (typeof meta.first_name === 'string' ? meta.first_name : metaFirst) || null,
-          last_name: (typeof meta.last_name === 'string' ? meta.last_name : metaRest.join(' ')) || null,
+          first_name: firstName || null,
+          last_name: lastName || null,
         })
       }
     } catch (err) {
