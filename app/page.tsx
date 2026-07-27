@@ -60,16 +60,14 @@ export default async function HomePage({
 
   const t = isAr ? {
     credibility1: 'مقرنا نيروبي، كينيا',
-    credibility2: 'تأسسنا عام 2009',
-    credibility3: 'نتحدث الإنجليزية والعربية والسواحيلية',
+    credibility2: 'نتحدث الإنجليزية والعربية والسواحيلية',
     ctaHeading: 'هل أنت مستعد لتخطيط رحلتك؟',
     ctaSub: 'تواصل معنا لتحصل على عرض مخصص، أو ابدأ محادثة على واتساب.',
     ctaQuote: 'طلب عرض سعر',
     ctaWhatsapp: 'تحدث معنا على واتساب',
   } : {
     credibility1: 'Based in Nairobi, Kenya',
-    credibility2: 'Operating since 2009',
-    credibility3: 'English · Arabic · Swahili',
+    credibility2: 'English · Arabic · Swahili',
     ctaHeading: 'Ready to plan your trip?',
     ctaSub: 'Get in touch for a personalised quote, or start a conversation on WhatsApp.',
     ctaQuote: 'Request a Quote',
@@ -118,7 +116,7 @@ export default async function HomePage({
               justifyContent: 'center',
               gap: '8px 40px',
             }}>
-              {[t.credibility1, t.credibility2, t.credibility3].map((fact, i) => (
+              {[t.credibility1, t.credibility2].map((fact, i) => (
                 <span key={i} style={{
                   color: 'rgba(234,227,210,0.8)',
                   fontFamily: 'var(--font-body, sans-serif)',
