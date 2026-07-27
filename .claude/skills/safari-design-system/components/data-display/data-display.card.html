@@ -1,0 +1,59 @@
+<!-- @dsCard group="Components" viewport="700x430" name="Data display" subtitle="Card, FeatureCard, Avatar, StaffPill, ProgressBar, Tooltip" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; font-family: var(--font-body); background: #fff; padding: 24px 28px; }
+  .row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .section { margin-bottom: 20px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card, FeatureCard, Avatar, StaffPill, ProgressBar, Tooltip } = window.SafariAdventureRidersDesignSystem_473602;
+
+function Demo() {
+  return (
+    <div>
+      <div className="section row">
+        <div style={{width:220}}>
+          <Card hoverable>
+            <h3 style={{fontFamily:'var(--font-display)',fontSize:16,margin:'0 0 8px',color:'var(--text-heading)'}}>No agency markup</h3>
+            <p style={{fontSize:13,color:'var(--text-body)',margin:0,lineHeight:1.6}}>You're quoting directly with the operator.</p>
+          </Card>
+        </div>
+        <div style={{width:220}}>
+          <FeatureCard
+            imageUrl="https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=600&q=60"
+            accent="#B0492B" badge="Group Bike Tours" heading="Ride the Bush"
+            body="Expert-led group rides from Nairobi to the coast."
+            cta="Explore" href="#"
+          />
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:12}}>
+          <Avatar name="James Otieno" />
+          <StaffPill name="James Otieno" role="Lead Guide" />
+        </div>
+      </div>
+      <div className="section" style={{width:240}}>
+        <ProgressBar percent={65} />
+        <div style={{height:8}} />
+        <ProgressBar percent={92} />
+      </div>
+      <div className="section">
+        <Tooltip label="Edit this departure"><span style={{fontSize:13,color:'var(--olive-dk)',cursor:'default'}}>Hover me →</span></Tooltip>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

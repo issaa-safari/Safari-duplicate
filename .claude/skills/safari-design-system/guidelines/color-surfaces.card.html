@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Landscape surfaces" subtitle="Bush dark band · Sand parchment · Stone text" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-body); background: #fff; }
+  .row { display: flex; gap: 14px; padding: 20px; }
+  .sw { flex: 1; border-radius: var(--radius-lg); border: var(--border-card); overflow: hidden; }
+  .chip { height: 78px; }
+  .meta { padding: 8px 12px; }
+  .name { font-size: 13px; font-weight: 700; color: var(--text-heading); }
+  .hex { font-family: var(--font-mono); font-size: 12px; color: var(--text-body); text-transform: uppercase; }
+  .role { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--bush)"></div><div class="meta"><div class="name">Bush</div><div class="hex">#20271A</div><div class="role">Dark surface</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--sand)"></div><div class="meta"><div class="name">Sand</div><div class="hex">#EAE3D2</div><div class="role">Parchment fill</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--stone)"></div><div class="meta"><div class="name">Stone</div><div class="hex">#6E6A59</div><div class="role">Body text</div></div></div>
+    <div class="sw"><div class="chip" style="background:#fff;border-bottom:var(--border-card)"></div><div class="meta"><div class="name">White</div><div class="hex">#FFFFFF</div><div class="role">Card surface</div></div></div>
+  </div>
+</body>
+</html>

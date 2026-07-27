@@ -1,0 +1,22 @@
+<!-- @dsCard group="Colors" viewport="700x120" name="Status tints" subtitle="Departure & booking status chips" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-body); background: #fff; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; padding: 24px; align-items: center; }
+  .chip { padding: 4px 14px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <span class="chip" style="background:var(--status-success-bg);color:var(--status-success-fg)">Guaranteed</span>
+    <span class="chip" style="background:var(--status-success-bg);color:var(--status-success-fg)">8 available</span>
+    <span class="chip" style="background:var(--status-warn-bg);color:var(--status-warn-fg)">3 seats left</span>
+    <span class="chip" style="background:var(--status-neutral-bg);color:var(--status-neutral-fg)">Fully Booked</span>
+    <span class="chip" style="background:var(--status-danger-bg);color:var(--status-danger-fg)">Cancelled</span>
+  </div>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!-- @dsCard group="Brand" viewport="700x170" name="Shadows" subtitle="Soft, forest-tinted — never neutral black" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-body); background: var(--sand); padding: 30px 28px; }
+  .row { display: flex; gap: 28px; }
+  .card { width: 160px; height: 90px; background: #fff; border-radius: var(--radius-lg); display: flex; align-items: flex-end; padding: 10px; }
+  .l { font-size: 11px; color: var(--text-body); font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="card" style="box-shadow:var(--shadow-sm)"><span class="l">shadow-sm</span></div>
+    <div class="card" style="box-shadow:var(--shadow-card)"><span class="l">shadow-card (hover)</span></div>
+    <div class="card" style="box-shadow:var(--shadow-float);border-radius:50%;width:90px;align-items:center;justify-content:center"><span class="l">float</span></div>
+  </div>
+</body>
+</html>

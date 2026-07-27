@@ -1,0 +1,25 @@
+<!-- @dsCard group="Colors" viewport="700x140" name="Warm neutrals" subtitle="Borders & app chrome — warm, never cold grey" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-body); background: #fff; }
+  .row { display: flex; gap: 12px; padding: 20px; }
+  .sw { flex: 1; }
+  .chip { height: 56px; border-radius: var(--radius-md); border: 1px solid var(--hairline); }
+  .name { font-size: 12px; font-weight: 600; color: var(--text-heading); margin-top: 8px; }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--text-body); text-transform: uppercase; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--admin-bg)"></div><div class="name">App BG</div><div class="hex">#F5F0E8</div></div>
+    <div class="sw"><div class="chip" style="background:var(--admin-surface)"></div><div class="name">App surface</div><div class="hex">#FFFCF7</div></div>
+    <div class="sw"><div class="chip" style="background:var(--border-warm)"></div><div class="name">Card border</div><div class="hex">#E5E0D8</div></div>
+    <div class="sw"><div class="chip" style="background:var(--admin-border)"></div><div class="name">App border</div><div class="hex">#E0D4C3</div></div>
+    <div class="sw"><div class="chip" style="background:var(--admin-text)"></div><div class="name">App text</div><div class="hex">#2C1A0E</div></div>
+  </div>
+</body>
+</html>

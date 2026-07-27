@@ -1,0 +1,65 @@
+/* ============================================================
+   Safari Adventure Riders — Color tokens
+   Ground truth: app/globals.css "Kenyan landscape palette"
+   ============================================================ */
+
+:root {
+  /* ── Base palette (Kenyan landscape) ───────────────────── */
+  --olive:      #7A9A4A;   /* primary brand / CTA / active     */
+  --olive-dk:   #3D5229;   /* hover, pressed, dark-on-tint     */
+  --olive-lt:   #C5D9B0;   /* light olive borders / tints      */
+  --bush:       #20271A;   /* deep forest — dark surfaces      */
+  --sand:       #EAE3D2;   /* parchment cream — section fills  */
+  --gold:       #C9A24B;   /* ochre — private-safari accent    */
+  --murram:     #B0492B;   /* red earth — bike-tour accent     */
+  --stone:      #6E6A59;   /* warm grey — body / secondary     */
+  --white:      #FFFFFF;
+
+  /* ── Warm neutrals (public site cards & borders) ───────── */
+  --border-warm: #E5E0D8;  /* default card border              */
+  --border-sand: #DDD8CC;  /* border on sand surfaces          */
+  --hairline:    #EDEAE4;  /* faint dividers / disabled rows   */
+
+  /* ── App / admin neutrals ──────────────────────────────── */
+  --admin-bg:         #F5F0E8;   /* app page background        */
+  --admin-surface:    #FFFCF7;   /* card / modal surface       */
+  --admin-border:     #E0D4C3;   /* app borders                */
+  --admin-text:       #2C1A0E;   /* primary body text          */
+  --admin-text-muted: #7A6652;   /* secondary / muted text     */
+
+  /* ── Brand green ramp (derived, for tints & fills) ─────── */
+  --olive-tint:  #EEF3E5;  /* faint olive wash                 */
+  --bush-800:    #2F3B22;  /* gradient stop (image fallback)   */
+  --bush-600:    #4C5E2A;  /* gradient stop                    */
+
+  /* ── Third-party brand ─────────────────────────────────── */
+  --whatsapp:    #25D366;  /* WhatsApp green — never restyle   */
+  --star:        #FBBF24;  /* review stars (amber-400)         */
+
+  /* ── Status (departures & badges) ──────────────────────── */
+  --status-success-bg: #DCFCE7; --status-success-fg: #166534;
+  --status-warn-bg:    #FEF3C7; --status-warn-fg:    #92400E;
+  --status-danger-bg:  #FEE2E2; --status-danger-fg:  #B91C1C;
+  --status-neutral-bg: #F3F4F6; --status-neutral-fg: #6B7280;
+
+  /* ── Semantic aliases (use these in components) ────────── */
+  --brand-primary:        var(--olive);
+  --brand-primary-hover:  var(--olive-dk);
+  --accent-bike:          var(--murram);   /* group bike tours */
+  --accent-private:       var(--gold);     /* private safari   */
+
+  --surface-page:  var(--white);
+  --surface-card:  var(--white);
+  --surface-sand:  var(--sand);
+  --surface-dark:  var(--bush);
+  --surface-app:   var(--admin-bg);
+
+  --text-heading:  var(--bush);
+  --text-body:     var(--stone);
+  --text-muted:    var(--admin-text-muted);
+  --text-on-dark:      rgba(234, 227, 210, 0.85); /* sand @ 85% */
+  --text-on-dark-soft: rgba(234, 227, 210, 0.70);
+
+  --border-default: var(--border-warm);
+  --focus-ring:     var(--olive);
+}

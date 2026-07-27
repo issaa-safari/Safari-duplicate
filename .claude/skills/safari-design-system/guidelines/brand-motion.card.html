@@ -1,0 +1,27 @@
+<!-- @dsCard group="Brand" viewport="700x160" name="Motion" subtitle="ease-out-expo · fade + slide-up entrances" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-body); background: #fff; padding: 24px 28px; }
+  .eq { font-family: var(--font-mono); font-size: 13px; color: var(--text-heading); background: var(--sand); padding: 10px 14px; border-radius: var(--radius-md); display: inline-block; }
+  .chips { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .chip { font-size: 11px; color: var(--text-body); border: var(--border-card); padding: 5px 12px; border-radius: var(--radius-pill); }
+  .demo { margin-top: 16px; width: 40px; height: 40px; background: var(--olive); border-radius: var(--radius-md); animation: rise 2.4s var(--ease-out-expo) infinite; }
+  @keyframes rise { 0%{ transform: translateY(16px); opacity:0 } 30%{ transform: translateY(0); opacity:1 } 70%{ transform: translateY(0); opacity:1 } 100%{ transform: translateY(16px); opacity:0 } }
+</style>
+</head>
+<body>
+  <div class="eq">cubic-bezier(0.22, 1, 0.36, 1)</div>
+  <div class="chips">
+    <span class="chip">entrance 0.4–0.7s</span>
+    <span class="chip">stagger ~0.08s</span>
+    <span class="chip">hero scale-in 1.2s</span>
+    <span class="chip">card lift −6px</span>
+    <span class="chip">respects reduced-motion</span>
+  </div>
+  <div class="demo"></div>
+</body>
+</html>

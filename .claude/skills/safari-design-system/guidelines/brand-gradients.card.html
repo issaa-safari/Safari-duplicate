@@ -1,0 +1,22 @@
+<!-- @dsCard group="Brand" viewport="700x220" name="Signature gradients" subtitle="Hero protection wash · image-missing fallback" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-body); background: #fff; padding: 20px 24px; }
+  .row { display: flex; gap: 20px; }
+  .swatch { flex: 1; height: 160px; border-radius: var(--radius-lg); position: relative; overflow: hidden; }
+  .base { position: absolute; inset: 0; background: #4C5E2A; }
+  .grad { position: absolute; inset: 0; }
+  .lbl { position: absolute; bottom: 10px; left: 12px; color: #fff; font-size: 12px; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="swatch"><div class="base"></div><div class="grad" style="background:var(--grad-hero)"></div><div class="lbl">--grad-hero (photo overlay)</div></div>
+    <div class="swatch"><div class="grad" style="background:var(--grad-safari);inset:0;position:absolute"></div><div class="lbl">--grad-safari (image fallback)</div></div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,49 @@
+/* ============================================================
+   Safari Adventure Riders — Effects: radii, shadows, borders,
+   gradients, motion. Values lifted verbatim from the codebase.
+   ============================================================ */
+
+:root {
+  /* ── Corner radii ──────────────────────────────────────── */
+  --radius-sm:   7px;    /* small buttons / inline pills        */
+  --radius-md:   8px;    /* CTA buttons                         */
+  --radius-lg:   12px;   /* standard card                       */
+  --radius-xl:   16px;   /* feature / trail card                */
+  --radius-pill: 99px;   /* badges, status chips, avatars-row   */
+  --radius-full: 50%;    /* avatars, floating action button     */
+
+  /* ── Shadows (soft, forest-tinted — never harsh) ───────── */
+  --shadow-sm:    0 1px 2px rgba(32, 39, 26, 0.06);
+  --shadow-card:  0 8px 32px rgba(32, 39, 26, 0.12);   /* card hover */
+  --shadow-float: 0 10px 30px rgba(32, 39, 26, 0.18);  /* FAB / modal */
+
+  /* ── Borders ───────────────────────────────────────────── */
+  --border-hair:  1px solid var(--hairline);
+  --border-card:  1px solid var(--border-warm);
+  --border-onsand: 1px solid var(--border-sand);
+  --border-cta:   1.5px solid var(--olive);   /* outline button */
+
+  /* ── Signature gradients ───────────────────────────────── */
+  /* Hero protection gradient - content legibility over photos */
+  --grad-hero: linear-gradient(
+      to top,
+      rgba(20, 25, 15, 0.95) 0%,
+      rgba(20, 25, 15, 0.60) 40%,
+      rgba(20, 25, 15, 0.15) 100%); /* @kind other */
+  /* Image-missing fallback — green safari wash                 */
+  --grad-safari: linear-gradient(135deg, #2F3B22 0%, #4C5E2A 55%, #7A9A4A 100%); /* @kind other */
+
+  /* ── Motion ────────────────────────────────────────────── */
+  /* the house curve */
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);  /* @kind other */
+  --dur-fast:   0.25s;  /* @kind other */
+  --dur-base:   0.4s;   /* @kind other */
+  --dur-slow:   0.7s;   /* @kind other */
+  --dur-hero:   1.2s;   /* @kind other */
+  --lift-card:  -6px;   /* @kind other */
+  --lift-row:   -2px;   /* @kind other */
+
+  --transition-colors: color var(--dur-base) var(--ease-out-expo),
+                       background-color var(--dur-base) var(--ease-out-expo),
+                       border-color var(--dur-base) var(--ease-out-expo); /* @kind other */
+}

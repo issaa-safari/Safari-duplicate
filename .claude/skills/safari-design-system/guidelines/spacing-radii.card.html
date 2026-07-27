@@ -1,0 +1,26 @@
+<!-- @dsCard group="Spacing" viewport="700x160" name="Corner radii" subtitle="7 · 8 · 12 · 16 · pill · circle" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-body); background: #fff; padding: 24px 28px; }
+  .row { display: flex; gap: 20px; align-items: center; }
+  .u { text-align: center; }
+  .box { width: 72px; height: 72px; background: var(--sand); border: var(--border-card); }
+  .l { font-family: var(--font-mono); font-size: 11px; color: var(--text-body); margin-top: 8px; }
+  .n { font-size: 11px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="u"><div class="box" style="border-radius:var(--radius-sm)"></div><div class="l">7px</div><div class="n">inline pill</div></div>
+    <div class="u"><div class="box" style="border-radius:var(--radius-md)"></div><div class="l">8px</div><div class="n">button</div></div>
+    <div class="u"><div class="box" style="border-radius:var(--radius-lg)"></div><div class="l">12px</div><div class="n">card</div></div>
+    <div class="u"><div class="box" style="border-radius:var(--radius-xl)"></div><div class="l">16px</div><div class="n">feature</div></div>
+    <div class="u"><div class="box" style="border-radius:var(--radius-pill);width:110px"></div><div class="l">99px</div><div class="n">badge</div></div>
+    <div class="u"><div class="box" style="border-radius:50%"></div><div class="l">50%</div><div class="n">avatar</div></div>
+  </div>
+</body>
+</html>

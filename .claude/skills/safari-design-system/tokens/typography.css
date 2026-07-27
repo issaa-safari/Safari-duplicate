@@ -1,0 +1,50 @@
+/* ============================================================
+   Safari Adventure Riders — Typography tokens
+   Display: Readex Pro (headings) · Body: IBM Plex Sans
+   Arabic body: IBM Plex Sans Arabic · Mono: Geist Mono
+   ============================================================ */
+
+:root {
+  /* ── Families ──────────────────────────────────────────── */
+  --font-display: 'Readex Pro', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-body:    'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-body-ar: 'IBM Plex Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:    'Geist Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* ── Weights ─────────────────────────────── @kind font ── */
+  --fw-light:    300;  /* @kind font */
+  --fw-regular:  400;  /* @kind font */
+  --fw-medium:   500;  /* @kind font */
+  --fw-semibold: 600;  /* @kind font */
+  --fw-bold:     700;  /* @kind font */
+
+  /* ── Fluid display scale (clamp — matches site heroes) ─── */
+  --fs-hero:      clamp(2.4rem, 7vw, 5rem);      /* @kind font */
+  --fs-display:   clamp(1.6rem, 4vw, 2.4rem);    /* @kind font */
+  --fs-h2:        clamp(1.4rem, 3vw, 2rem);      /* @kind font */
+  --fs-h3:        clamp(1.6rem, 3vw, 2.1rem);    /* @kind font */
+
+  /* ── Static type scale ─────────────────────────────────── */
+  /* badge / eyebrow, meta / captions, card body, default body, lead, price / stat */
+  --fs-xs:    0.72rem;   /* @kind font */
+  --fs-sm:    0.82rem;   /* @kind font */
+  --fs-body:  0.92rem;   /* @kind font */
+  --fs-base:  1rem;      /* @kind font */
+  --fs-lg:    1.2rem;    /* @kind font */
+  --fs-xl:    1.35rem;   /* @kind font */
+
+  /* ── Line heights ──────────────────────────────────────── */
+  /* hero/display, card headings, card body copy, lead/hero sub */
+  --lh-tight:   1.1;    /* @kind font */
+  --lh-heading: 1.15;   /* @kind font */
+  --lh-snug:    1.4;    /* @kind font */
+  --lh-body:    1.65;   /* @kind font */
+  --lh-relaxed: 1.7;    /* @kind font */
+
+  /* ── Letter-spacing ────────────────────────────────────── */
+  /* large display, default, credibility bar, uppercase eyebrow */
+  --ls-tight:  -0.01em;  /* @kind font */
+  --ls-normal: 0;        /* @kind font */
+  --ls-wide:   0.04em;   /* @kind font */
+  --ls-eyebrow: 0.1em;   /* @kind font */
+}

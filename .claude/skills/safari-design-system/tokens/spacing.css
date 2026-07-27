@@ -1,0 +1,31 @@
+/* ============================================================
+   Safari Adventure Riders — Spacing & layout tokens
+   ============================================================ */
+
+:root {
+  /* ── Spacing scale ─────────────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;   /* default gutter / card padding-x       */
+  --space-7:  28px;   /* card padding                          */
+  --space-8:  32px;   /* card padding-x (feature)              */
+  --space-10: 40px;
+  --space-12: 48px;   /* heading → grid gap                    */
+  --space-14: 56px;
+  --space-16: 64px;   /* section top padding                   */
+  --space-20: 80px;   /* full section padding (y)              */
+
+  /* ── Section rhythm ────────────────────────────────────── */
+  --section-pad-y:  80px;   /* generous, premium spacing       */
+  --section-pad-x:  24px;
+  --section-pad-y-sm: 36px;  /* credibility bar                */
+
+  /* ── Container widths ──────────────────────────────────── */
+  --container-xs:  640px;   /* centered CTA / prose            */
+  --container-sm:  900px;   /* hero content                    */
+  --container-md:  1120px;  /* main content grid               */
+  --container-lg:  1280px;  /* header / footer (max-w-7xl)     */
+}
