@@ -256,3 +256,22 @@ export interface ProposalTemplate {
   created_at: string
   updated_at: string
 }
+
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'converted' | 'archived'
+
+export interface Lead {
+  id: string
+  created_at: string
+  updated_at: string
+  phone_number: string | null
+  full_name: string | null
+  email: string | null
+  preferred_language: 'en' | 'ar'
+  tour_type: string | null
+  travel_dates: string | null
+  group_size: string | null
+  budget_range: string | null
+  special_requests: string | null
+  status: LeadStatus
+  source: string
+}

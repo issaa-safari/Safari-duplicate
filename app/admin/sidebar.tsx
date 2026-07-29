@@ -7,7 +7,7 @@ import { useState, useEffect, useTransition, useRef } from 'react'
 import {
   Search, MoreHorizontal, LayoutDashboard, Inbox, FileText, Route, CalendarCheck,
   Users, Wallet, Package, Boxes, MapPin, Truck, BarChart3, Settings, LogOut, X,
-  Copy, ArrowLeft, FileSignature, BedDouble,
+  Copy, ArrowLeft, FileSignature, BedDouble, UserPlus,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { SearchResults, SearchQuote, SearchClient, SearchRequest } from '@/lib/types'
@@ -22,6 +22,7 @@ const DASHBOARD: NavItem = { label: 'Dashboard', href: '/admin/dashboard', icon:
 // this — filtered so a module never appears twice (once in a bar, once here).
 const NAV_GROUPS: NavGroup[] = [
   { label: 'Sales', items: [
+    { label: 'Leads',        href: '/admin/leads',        icon: UserPlus },
     { label: 'Requests',     href: '/admin/requests',     icon: Inbox },
     { label: 'Quotes',       href: '/admin/quotes',       icon: FileText },
     { label: 'Trip Builder', href: '/admin/trip-builder', icon: Route },
