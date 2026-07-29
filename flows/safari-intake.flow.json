@@ -1,0 +1,185 @@
+{
+  "version": "7.0",
+  "data_api_version": "3.0",
+  "routing_model": {
+    "CLIENT_DETAILS": ["REQUEST_DETAILS"],
+    "REQUEST_DETAILS": ["SUCCESS"],
+    "SUCCESS": []
+  },
+  "screens": [
+    {
+      "id": "CLIENT_DETAILS",
+      "title": "Your details",
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextBody",
+            "text": "Tell us who you are and we'll start planning your safari adventure."
+          },
+          {
+            "type": "Form",
+            "name": "client_form",
+            "children": [
+              {
+                "type": "TextInput",
+                "name": "full_name",
+                "label": "Full name",
+                "input-type": "text",
+                "required": true
+              },
+              {
+                "type": "TextInput",
+                "name": "email",
+                "label": "Email address",
+                "input-type": "email",
+                "required": false
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "name": "preferred_language",
+                "label": "Preferred language",
+                "required": true,
+                "data-source": [
+                  { "id": "en", "title": "English" },
+                  { "id": "ar", "title": "العربية" }
+                ]
+              },
+              {
+                "type": "Footer",
+                "label": "Continue",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "full_name": "${form.full_name}",
+                    "email": "${form.email}",
+                    "preferred_language": "${form.preferred_language}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "REQUEST_DETAILS",
+      "title": "Your trip",
+      "data": {
+        "full_name": { "type": "string", "__example__": "Jane Doe" },
+        "email": { "type": "string", "__example__": "jane@example.com" },
+        "preferred_language": { "type": "string", "__example__": "en" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "request_form",
+            "children": [
+              {
+                "type": "Dropdown",
+                "name": "tour_type",
+                "label": "What kind of trip?",
+                "required": true,
+                "data-source": [
+                  { "id": "safari", "title": "Wildlife safari" },
+                  { "id": "motorbike", "title": "Motorbike tour" },
+                  { "id": "safari_motorbike", "title": "Safari + motorbike" },
+                  { "id": "beach_safari", "title": "Safari + beach" },
+                  { "id": "custom", "title": "Something custom" }
+                ]
+              },
+              {
+                "type": "TextInput",
+                "name": "travel_dates",
+                "label": "Travel dates",
+                "helper-text": "e.g. July 2026, around 10 days",
+                "input-type": "text",
+                "required": true
+              },
+              {
+                "type": "Dropdown",
+                "name": "group_size",
+                "label": "Group size",
+                "required": true,
+                "data-source": [
+                  { "id": "1", "title": "Just me" },
+                  { "id": "2", "title": "2 travellers" },
+                  { "id": "3-4", "title": "3-4 travellers" },
+                  { "id": "5-6", "title": "5-6 travellers" },
+                  { "id": "7+", "title": "7 or more" }
+                ]
+              },
+              {
+                "type": "Dropdown",
+                "name": "budget_range",
+                "label": "Budget per person (USD)",
+                "required": false,
+                "data-source": [
+                  { "id": "under_2k", "title": "Under $2,000" },
+                  { "id": "2k_4k", "title": "$2,000 - $4,000" },
+                  { "id": "4k_6k", "title": "$4,000 - $6,000" },
+                  { "id": "over_6k", "title": "Over $6,000" },
+                  { "id": "unsure", "title": "Not sure yet" }
+                ]
+              },
+              {
+                "type": "TextArea",
+                "name": "special_requests",
+                "label": "Anything else?",
+                "required": false,
+                "helper-text": "Dietary needs, must-see parks, mobility, celebrations..."
+              },
+              {
+                "type": "Footer",
+                "label": "Submit enquiry",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "full_name": "${data.full_name}",
+                    "email": "${data.email}",
+                    "preferred_language": "${data.preferred_language}",
+                    "tour_type": "${form.tour_type}",
+                    "travel_dates": "${form.travel_dates}",
+                    "group_size": "${form.group_size}",
+                    "budget_range": "${form.budget_range}",
+                    "special_requests": "${form.special_requests}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "SUCCESS",
+      "title": "Thank you",
+      "terminal": true,
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "Enquiry received"
+          },
+          {
+            "type": "TextBody",
+            "text": "Thank you! Our safari team will be in touch within 24 hours to start planning your trip."
+          },
+          {
+            "type": "Footer",
+            "label": "Done",
+            "on-click-action": {
+              "name": "complete",
+              "payload": {}
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -131,17 +131,26 @@ function requestDetailsScreen(clientData: Record<string, unknown>): FlowResponse
   }
 }
 
-function successScreen(flowToken: string | undefined): FlowResponse {
+function successScreen(request: FlowRequest, data: Record<string, unknown>): FlowResponse {
+  const pick = (k: string) => (typeof data[k] === 'string' ? (data[k] as string) : '')
+  // `params` becomes the completion message's response_json, which the WhatsApp
+  // webhook parses into a `leads` row — so every field we want captured must be
+  // here, not just the flow_token.
   return {
-    version: '3.0',
+    version: request.version,
     screen: 'SUCCESS',
     data: {
       extension_message_response: {
         params: {
-          flow_token: flowToken ?? '',
-          // A short confirmation the client sees on the terminal screen.
-          confirmation:
-            "Thank you! We've received your safari enquiry and our team will be in touch within 24 hours.",
+          flow_token: request.flow_token ?? '',
+          full_name: pick('full_name'),
+          email: pick('email'),
+          preferred_language: pick('preferred_language') || 'en',
+          tour_type: pick('tour_type'),
+          travel_dates: pick('travel_dates'),
+          group_size: pick('group_size'),
+          budget_range: pick('budget_range'),
+          special_requests: pick('special_requests'),
         },
       },
     },
@@ -199,7 +208,7 @@ function routeAction(request: FlowRequest): FlowResponse {
             },
           }
         }
-        return successScreen(request.flow_token)
+        return successScreen(request, data)
       }
     }
   }
