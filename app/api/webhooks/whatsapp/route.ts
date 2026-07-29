@@ -71,6 +71,45 @@ export async function POST(request: NextRequest) {
         for (const message of messages) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const msg = message as any
+
+          // WhatsApp Flow completion — the client's submitted intake form comes
+          // back as an interactive `nfm_reply`. Parse its response_json and
+          // capture the lead. (See app/api/flows/data-exchange/route.ts.)
+          if (msg?.type === 'interactive' && msg?.interactive?.type === 'nfm_reply') {
+            const waId: string = msg?.from ?? ''
+            const responseJson: string = msg?.interactive?.nfm_reply?.response_json ?? ''
+            if (!waId || !responseJson) continue
+
+            let flow: Record<string, unknown>
+            try {
+              flow = JSON.parse(responseJson)
+            } catch {
+              continue
+            }
+
+            const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null)
+            const lang = flow.preferred_language === 'ar' ? 'ar' : 'en'
+
+            await admin.from('leads').insert({
+              phone_number: waId,
+              full_name: str(flow.full_name),
+              email: str(flow.email)?.toLowerCase() ?? null,
+              preferred_language: lang,
+              tour_type: str(flow.tour_type),
+              travel_dates: str(flow.travel_dates),
+              group_size: str(flow.group_size),
+              budget_range: str(flow.budget_range),
+              special_requests: str(flow.special_requests),
+              source: 'whatsapp_flow',
+            })
+
+            await sendWhatsAppMessage(
+              waId,
+              "Thank you! 🦁 We've received your safari enquiry and our team will get back to you within 24 hours."
+            )
+            continue
+          }
+
           if (msg?.type !== 'text') continue
 
           const waId: string = msg?.from ?? ''
