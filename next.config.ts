@@ -4,10 +4,14 @@ import type { NextConfig } from "next";
 const __impeccableLiveDev =
   process.env.NODE_ENV === "development" ? " http://localhost:8400" : "";
 
+// React's development tooling uses eval() for cross-environment call stacks.
+const __reactDevEval =
+  process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "";
+
 const csp = [
   "default-src 'self'",
   "img-src 'self' https: data:",
-  `script-src 'self' 'unsafe-inline'${__impeccableLiveDev}`,
+  `script-src 'self' 'unsafe-inline'${__reactDevEval}${__impeccableLiveDev}`,
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   `connect-src 'self' https://*.supabase.co https://*.supabase.in https://va.vercel-scripts.com${__impeccableLiveDev}`,
