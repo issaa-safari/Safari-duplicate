@@ -73,6 +73,25 @@ export function splitLocalePath(pathname: string): { locale: Locale; path: strin
   return { locale: DEFAULT_LOCALE, path: pathname }
 }
 
+/**
+ * Whether a request is a top-level document load, as opposed to one of the RSC
+ * payload fetches Next fires for every visible link.
+ *
+ * Language negotiation must only ever act on the former. Next prefetches links
+ * eagerly, so negotiating a prefetch of the English URL from an Arabic page
+ * redirects it — and the router caches that redirect, which made the language
+ * toggle reload the page it was on.
+ *
+ * Next strips the RSC request header before middleware runs, so the tells are
+ * the `_rsc` query parameter Next appends and Sec-Fetch-Dest. A client too old
+ * to send Sec-Fetch-Dest is still treated as a document: absent is not the same
+ * as "not a document".
+ */
+export function isDocumentNavigation(secFetchDest: string | null, hasRscParam: boolean): boolean {
+  if (hasRscParam) return false
+  return secFetchDest === null || secFetchDest === 'document'
+}
+
 /** Countries where a visitor is far more likely to want Arabic than English. */
 const ARABIC_COUNTRIES = new Set([
   'AE', 'BH', 'DJ', 'DZ', 'EG', 'IQ', 'JO', 'KM', 'KW', 'LB', 'LY', 'MA',

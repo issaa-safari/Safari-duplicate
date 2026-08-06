@@ -22,7 +22,13 @@ function LangToggle({
   return (
     <div className={`flex items-center rounded-full bg-white/10 p-0.5 ${full ? 'w-full' : ''}`}>
       {(['en', 'ar'] as const).map((l) => (
-        <Link
+        // A plain anchor, deliberately, where every other link is a <Link>.
+        // /ar/tours is *rewritten* onto /tours, so both languages share one
+        // router cache key: a client-side hop from the Arabic page to the
+        // English one changed the address bar and re-served the cached Arabic
+        // payload, under an <html> still marked lang="ar" dir="rtl". Language
+        // is a property of the document, so switching it reloads the document.
+        <a
           key={l}
           href={hrefFor(l)}
           onClick={() => {
@@ -37,7 +43,7 @@ function LangToggle({
           }`}
         >
           {l === 'en' ? 'EN' : 'العربية'}
-        </Link>
+        </a>
       ))}
     </div>
   )
