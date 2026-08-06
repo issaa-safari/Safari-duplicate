@@ -3,16 +3,55 @@ import { localePath, type Locale } from '@/lib/locale'
 import { site } from '@/lib/site'
 
 /**
+ * Is there enough Arabic on this record to justify an indexed Arabic page?
+ *
+ * Every public field falls back to English when its Arabic twin is blank, so an
+ * untranslated tour still *renders* at /ar/... — it just renders in English.
+ * Advertising that as the Arabic translation would be a false hreflang claim:
+ * two URLs, one body of text, and an Arabic searcher landing on English prose
+ * in an RTL page. Title and overview are the bar; the day-by-day itinerary is
+ * not required, since the page is coherent without it.
+ */
+export function hasArabicContent(record: {
+  title_ar?: string | null
+  overview_ar?: string | null
+}): boolean {
+  const filled = (v?: string | null) => typeof v === 'string' && v.trim() !== ''
+  return filled(record.title_ar) && filled(record.overview_ar)
+}
+
+/**
  * hreflang set for a route, so Google serves the Arabic page to Arabic
  * searchers instead of treating the two languages as competing duplicates.
  * x-default points at English, which is what an unmatched locale should get.
+ *
+ * Pass `translated: false` for a page with no real Arabic — the ar entry is
+ * dropped rather than pointing at an English page wearing lang="ar".
  */
-export function languageAlternates(path: string): Record<string, string> {
-  return {
+export function languageAlternates(
+  path: string,
+  translated = true,
+): Record<string, string> {
+  const alternates: Record<string, string> = {
     en: localePath(path, 'en'),
-    ar: localePath(path, 'ar'),
     'x-default': localePath(path, 'en'),
   }
+  if (translated) alternates.ar = localePath(path, 'ar')
+  return alternates
+}
+
+/**
+ * Keep an untranslated Arabic URL out of the index while leaving it reachable —
+ * a visitor who follows the language switcher still gets a working page, but
+ * Google is not asked to rank a duplicate of the English one.
+ */
+export function noindexIfUntranslated(
+  locale: Locale,
+  translated: boolean,
+): Pick<Metadata, 'robots'> {
+  return locale === 'ar' && !translated
+    ? { robots: { index: false, follow: true } }
+    : {}
 }
 
 // Copy that exists in both site languages. Public pages pick their language

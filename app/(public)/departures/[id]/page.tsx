@@ -16,7 +16,7 @@ import StickyEnquiryBar from '@/components/public/sticky-enquiry-bar'
 import { getServerLocale } from '@/lib/i18n'
 import { site, whatsappLink } from '@/lib/site'
 import StructuredData, { touristTripJsonLd } from '@/components/public/structured-data'
-import { languageAlternates } from '@/lib/seo'
+import { hasArabicContent, languageAlternates, noindexIfUntranslated } from '@/lib/seo'
 import { localePath } from '@/lib/locale'
 
 export const dynamic = 'force-dynamic'
@@ -108,24 +108,27 @@ export async function generateMetadata({
   const supabase = await createClient()
   const { data: dep } = await supabase
     .from('departures')
-    .select('start_date, end_date, tours(title_en, title_ar, hero_image_url)')
+    .select('start_date, end_date, tours(title_en, title_ar, overview_ar, hero_image_url)')
     .eq('id', id)
     .maybeSingle()
   if (!dep) return {}
   const tour = dep.tours as any
   const title = locale === 'ar' ? (tour?.title_ar || tour?.title_en) : tour?.title_en
   if (!title) return { alternates: { canonical: localePath(`/departures/${id}`, locale) } }
+  // A departure is a date on a tour, so it is only as translated as its tour.
+  const translated = hasArabicContent(tour ?? {})
   const heading = `${title} — ${formatDate(dep.start_date, locale)}`
   const description =
     locale === 'ar'
       ? `رحلة ${title} تنطلق في ${formatDate(dep.start_date, locale)}. اطّلع على المقاعد المتاحة والسعر للفرد واحجز مباشرة.`
       : `${title} departing ${formatDate(dep.start_date, locale)}. Check remaining seats, per-person pricing, and book direct with the operator.`
   return {
+    ...noindexIfUntranslated(locale, translated),
     title: heading,
     description,
     alternates: {
       canonical: localePath(`/departures/${id}`, locale),
-      languages: languageAlternates(`/departures/${id}`),
+      languages: languageAlternates(`/departures/${id}`, translated),
     },
     openGraph: {
       title: heading,

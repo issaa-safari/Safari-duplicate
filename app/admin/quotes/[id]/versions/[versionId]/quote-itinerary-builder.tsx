@@ -296,14 +296,22 @@ export default function QuoteItineraryBuilder({
     setDirty(true)
   }, [days])
   useEffect(() => { onDirtyChange?.(dirty) }, [dirty, onDirtyChange])
+  // Which language this quote will be sent in — decides which fields lead.
+  const isArabicQuote = language === 'ar'
+  // The toggle now holds the *secondary* language, so it starts open only where
+  // that language already has something in it — not, as before, on every day of
+  // an Arabic quote, which is exactly the duplicate typing this removes.
   const [arOpenIndices, setArOpenIndices] = useState<Set<number>>(
-    () => language === 'ar'
-      ? new Set(initialQuoteDays.map((_: any, i: number) => i))
-      : new Set(
-          initialQuoteDays
-            .map((d: any, i: number) => (d.title_ar || d.description_ar || d.client_notes_ar ? i : -1))
-            .filter((i: number) => i >= 0)
-        )
+    () => new Set(
+      initialQuoteDays
+        .map((d: any, i: number) => {
+          const secondaryFilled = language === 'ar'
+            ? Boolean(d.title)
+            : Boolean(d.title_ar || d.description_ar || d.client_notes_ar)
+          return secondaryFilled ? i : -1
+        })
+        .filter((i: number) => i >= 0)
+    )
   )
   const [genCount, setGenCount] = useState<string>('')
   // Which stop + sub-day (day_offset) the activities modal is editing.
@@ -396,16 +404,12 @@ export default function QuoteItineraryBuilder({
 
   function addBlankDay() {
     if (isLocked) return
-    const newIdx = days.length
     setDays(p => renumberDays([...p, {
       _key: uid(), id: null, dayNumber: p.length + 1, nights: 1, dayNumberEnd: null, dayDate: '', title: '',
       descriptionEn: '', clientNotes: '',
       titleAr: '', descriptionAr: '', clientNotesAr: '',
       destinationId: null, destinationSnapshot: {}, meals: [], photos: [], distanceKm: '', items: [],
     }]))
-    if (language === 'ar') {
-      setArOpenIndices(prev => new Set([...prev, newIdx]))
-    }
     setSaved(false)
   }
 
@@ -419,9 +423,6 @@ export default function QuoteItineraryBuilder({
       titleAr: '', descriptionAr: '', clientNotesAr: '',
       destinationId: null, destinationSnapshot: {}, meals: [], photos: [], distanceKm: '', items: [],
     }))))
-    if (language === 'ar') {
-      setArOpenIndices(new Set(Array.from({ length: count }, (_, i) => i)))
-    }
     setSaved(false)
   }
 
@@ -869,10 +870,21 @@ export default function QuoteItineraryBuilder({
                   )
                 })}
 
-                <input type="text" value={day.title}
-                  onChange={e => update(i, { title: e.target.value })}
-                  placeholder="Day title (English)"
-                  className={inputCls} disabled={isLocked} />
+                {/* The proposal renders exactly one language — quote_versions.language
+                    — so the field the client will actually read comes first. The
+                    other language sits behind the toggle as a fallback: it shows
+                    only when this one is left blank. */}
+                {isArabicQuote ? (
+                  <input type="text" value={day.titleAr}
+                    onChange={e => update(i, { titleAr: e.target.value })}
+                    placeholder="عنوان اليوم" dir="rtl"
+                    className={inputCls + ' text-right'} disabled={isLocked} />
+                ) : (
+                  <input type="text" value={day.title}
+                    onChange={e => update(i, { title: e.target.value })}
+                    placeholder="Day title (English)"
+                    className={inputCls} disabled={isLocked} />
+                )}
                 <p className="text-[10px] text-muted-foreground leading-snug">
                   Day description is pulled from the destination in the Content library (EN/AR by client language).
                 </p>
@@ -883,17 +895,23 @@ export default function QuoteItineraryBuilder({
                     const next = new Set(prev); next.has(i) ? next.delete(i) : next.add(i); return next
                   })}
                   className="text-[11px] font-medium text-muted-foreground transition-colors duration-150 hover:text-brand-ink">
-                  {arOpenIndices.has(i) ? 'Hide Arabic' : '+ Arabic'}
+                  {arOpenIndices.has(i)
+                    ? (isArabicQuote ? 'Hide English' : 'Hide Arabic')
+                    : (isArabicQuote ? '+ English (fallback)' : '+ Arabic')}
                 </button>
                 {arOpenIndices.has(i) && (
-                  <div className="mt-1 space-y-1.5 border-t border-border/70 pt-1" dir="rtl">
-                    <input type="text" value={day.titleAr}
-                      onChange={e => update(i, { titleAr: e.target.value })}
-                      placeholder="عنوان اليوم" className={inputCls + ' text-right'} disabled={isLocked} />
-                    <textarea value={day.clientNotesAr}
-                      onChange={e => update(i, { clientNotesAr: e.target.value })}
-                      placeholder="ملاحظات (اختياري)" rows={2}
-                      className={inputCls + ' resize-none text-right'} disabled={isLocked} />
+                  <div className="mt-1 space-y-1.5 border-t border-border/70 pt-1"
+                       dir={isArabicQuote ? 'ltr' : 'rtl'}>
+                    {isArabicQuote ? (
+                      <input type="text" value={day.title}
+                        onChange={e => update(i, { title: e.target.value })}
+                        placeholder="Day title (English) — used only if Arabic is blank"
+                        className={inputCls} disabled={isLocked} />
+                    ) : (
+                      <input type="text" value={day.titleAr}
+                        onChange={e => update(i, { titleAr: e.target.value })}
+                        placeholder="عنوان اليوم" className={inputCls + ' text-right'} disabled={isLocked} />
+                    )}
                   </div>
                 )}
 
@@ -977,10 +995,17 @@ export default function QuoteItineraryBuilder({
                   {notesOpenIndices.has(i) ? 'Hide drinks / options' : '+ Add drinks / options'}
                 </button>
                 {notesOpenIndices.has(i) && (
-                  <textarea value={day.clientNotes}
-                    onChange={e => update(i, { clientNotes: e.target.value })}
-                    placeholder="Drinks, options & notes shown to the client" rows={3}
-                    className={inputCls + ' resize-none'} disabled={isLocked} />
+                  isArabicQuote ? (
+                    <textarea value={day.clientNotesAr}
+                      onChange={e => update(i, { clientNotesAr: e.target.value })}
+                      placeholder="المشروبات والخيارات وملاحظات تظهر للعميل" rows={3} dir="rtl"
+                      className={inputCls + ' resize-none text-right'} disabled={isLocked} />
+                  ) : (
+                    <textarea value={day.clientNotes}
+                      onChange={e => update(i, { clientNotes: e.target.value })}
+                      placeholder="Drinks, options & notes shown to the client" rows={3}
+                      className={inputCls + ' resize-none'} disabled={isLocked} />
+                  )
                 )}
               </div>
 

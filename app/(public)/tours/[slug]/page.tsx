@@ -21,7 +21,7 @@ import StickyEnquiryBar from '@/components/public/sticky-enquiry-bar'
 import { getServerLocale } from '@/lib/i18n'
 import { site, whatsappLink } from '@/lib/site'
 import StructuredData, { touristTripJsonLd } from '@/components/public/structured-data'
-import { faqPageJsonLd, languageAlternates } from '@/lib/seo'
+import { faqPageJsonLd, hasArabicContent, languageAlternates, noindexIfUntranslated } from '@/lib/seo'
 import { localePath } from '@/lib/locale'
 import { isUuid } from '@/lib/slug'
 
@@ -80,16 +80,20 @@ export async function generateMetadata({
   // Always advertise the slug URL, even when reached by UUID, so the two forms
   // never compete for the same content in the index.
   const path = `/tours/${tour.slug ?? tour.id}`
+  // An untranslated tour still renders at /ar/... in English; it just must not
+  // be advertised or indexed as the Arabic edition.
+  const translated = hasArabicContent(tour)
   const isAr = locale === 'ar'
   const title = isAr ? (tour.title_ar || tour.title_en) : tour.title_en
   // Fall back to English so a tour with no Arabic overview still gets a snippet.
   const overview = isAr ? (tour.overview_ar || tour.overview_en) : tour.overview_en
   return {
+    ...noindexIfUntranslated(locale, translated),
     title: title ?? undefined,
     description: overview?.slice(0, 160) ?? undefined,
     alternates: {
       canonical: localePath(path, locale),
-      languages: languageAlternates(path),
+      languages: languageAlternates(path, translated),
     },
     openGraph: {
       title: title ?? undefined,
