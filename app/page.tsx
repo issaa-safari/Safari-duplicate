@@ -12,11 +12,36 @@ import HomeWhyDirect from '@/components/public/home-why-direct'
 import SectionReveal from '@/components/public/section-reveal'
 import { getServerLocale } from '@/lib/i18n'
 import { whatsappLink } from '@/lib/site'
+import type { Metadata } from 'next'
+import StructuredData from '@/components/public/structured-data'
+import { pageMetadata, travelAgencyJsonLd } from '@/lib/seo'
+import { localePath } from '@/lib/locale'
 
 const BUSH = '#20271A'
 const OLIVE = '#7A9A4A'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>
+}): Promise<Metadata> {
+  const locale = await getServerLocale(await searchParams)
+  return pageMetadata({
+    path: '/',
+    locale,
+    absoluteTitle: true,
+    title: {
+      en: 'Safari Adventure Riders — Kenya & Tanzania Safari and Motorbike Tours',
+      ar: 'سفاري أدفنتشر رايدرز — رحلات سفاري ودراجات نارية في كينيا وتنزانيا',
+    },
+    description: {
+      en: 'Expert-led safaris and motorbike tours across Kenya and Tanzania. Custom itineraries, Masai Mara and Serengeti departures, booked direct with the operator.',
+      ar: 'رحلات سفاري وجولات دراجات نارية في كينيا وتنزانيا بإشراف خبراء. برامج مخصصة، ورحلات إلى ماساي مارا وسيرينجيتي، وحجز مباشر مع المشغّل.',
+    },
+  })
+}
 
 export default async function HomePage({
   searchParams,
@@ -76,6 +101,7 @@ export default async function HomePage({
 
   return (
     <div dir={dir}>
+      <StructuredData data={travelAgencyJsonLd()} />
       <Suspense>
         <PublicHeader initialLang={locale} />
       </Suspense>
@@ -167,7 +193,7 @@ export default async function HomePage({
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, justifyContent: 'center' }}>
                 <Link
-                  href={`/quote-request?lang=${locale}`}
+                  href={localePath('/quote-request', locale)}
                   style={{
                     background: OLIVE,
                     color: '#fff',

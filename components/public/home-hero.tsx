@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import Link from 'next/link'
 import SafariImage from '@/components/public/safari-image'
+import { localePath, type Locale } from '@/lib/locale'
 
 const BUSH = '#20271A'
 const EASE = [0.22, 1, 0.36, 1] as const
@@ -11,7 +12,7 @@ interface HomeHeroProps {
   heroImageUrl: string | null
   heroTourId: string | null
   isAr: boolean
-  locale: string
+  locale: Locale
 }
 
 export default function HomeHero({ heroImageUrl, heroTourId, isAr, locale }: HomeHeroProps) {
@@ -129,7 +130,7 @@ export default function HomeHero({ heroImageUrl, heroTourId, isAr, locale }: Hom
             {t.cta}
           </a>
           <Link
-            href={`/quote-request?lang=${locale}`}
+            href={localePath('/quote-request', locale)}
             style={{
               border: '2px solid rgba(255,255,255,0.5)',
               color: '#fff',

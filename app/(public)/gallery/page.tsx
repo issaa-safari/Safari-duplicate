@@ -6,10 +6,30 @@ import SafariImage from '@/components/public/safari-image'
 import WhatsAppButton from '@/components/public/whatsapp-button'
 import { getServerLocale } from '@/lib/i18n'
 import { STOCK_HERO_IMAGE, STOCK_SAFARI_IMAGES } from '@/lib/stock-images'
+import type { Metadata } from 'next'
+import { pageMetadata } from '@/lib/seo'
+import { localePath } from '@/lib/locale'
 
 const G = '#7A9A4A'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>
+}): Promise<Metadata> {
+  const locale = await getServerLocale(await searchParams)
+  return pageMetadata({
+    path: '/gallery',
+    locale,
+    title: { en: 'Safari Photo Gallery', ar: 'معرض صور السفاري' },
+    description: {
+      en: 'Photos from our safaris and motorbike tours across Kenya and Tanzania — wildlife, landscapes, camps, and the road in between.',
+      ar: 'صور من رحلات السفاري وجولات الدراجات النارية في كينيا وتنزانيا — الحياة البرية والمناظر الطبيعية والمخيمات والطريق بينها.',
+    },
+  })
+}
 
 export default async function GalleryPage({
   searchParams,
@@ -100,7 +120,7 @@ export default async function GalleryPage({
 
             <div className="mt-12 text-center">
               <Link
-                href={`/quote-request?lang=${locale}`}
+                href={localePath('/quote-request', locale)}
                 className="px-8 py-3 rounded-lg font-semibold text-white transition inline-block"
                 style={{ backgroundColor: G }}
               >

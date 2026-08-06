@@ -16,6 +16,8 @@ import StickyEnquiryBar from '@/components/public/sticky-enquiry-bar'
 import { getServerLocale } from '@/lib/i18n'
 import { site, whatsappLink } from '@/lib/site'
 import StructuredData, { touristTripJsonLd } from '@/components/public/structured-data'
+import { hasArabicContent, languageAlternates, noindexIfUntranslated } from '@/lib/seo'
+import { localePath } from '@/lib/locale'
 
 export const dynamic = 'force-dynamic'
 
@@ -106,15 +108,35 @@ export async function generateMetadata({
   const supabase = await createClient()
   const { data: dep } = await supabase
     .from('departures')
-    .select('start_date, end_date, tours(title_en, title_ar, hero_image_url)')
+    .select('start_date, end_date, tours(title_en, title_ar, overview_ar, hero_image_url)')
     .eq('id', id)
     .maybeSingle()
   if (!dep) return {}
   const tour = dep.tours as any
   const title = locale === 'ar' ? (tour?.title_ar || tour?.title_en) : tour?.title_en
+  if (!title) return { alternates: { canonical: localePath(`/departures/${id}`, locale) } }
+  // A departure is a date on a tour, so it is only as translated as its tour.
+  const translated = hasArabicContent(tour ?? {})
+  const heading = `${title} — ${formatDate(dep.start_date, locale)}`
+  const description =
+    locale === 'ar'
+      ? `رحلة ${title} تنطلق في ${formatDate(dep.start_date, locale)}. اطّلع على المقاعد المتاحة والسعر للفرد واحجز مباشرة.`
+      : `${title} departing ${formatDate(dep.start_date, locale)}. Check remaining seats, per-person pricing, and book direct with the operator.`
   return {
-    title: title ? `${title} — ${formatDate(dep.start_date, locale)}` : undefined,
-    openGraph: { images: tour?.hero_image_url ? [tour.hero_image_url] : [] },
+    ...noindexIfUntranslated(locale, translated),
+    title: heading,
+    description,
+    alternates: {
+      canonical: localePath(`/departures/${id}`, locale),
+      languages: languageAlternates(`/departures/${id}`, translated),
+    },
+    openGraph: {
+      title: heading,
+      description,
+      url: localePath(`/departures/${id}`, locale),
+      locale,
+      images: tour?.hero_image_url ? [tour.hero_image_url] : [],
+    },
   }
 }
 
@@ -140,7 +162,7 @@ export default async function DepartureDetailPage({
       id, tour_id, start_date, end_date,
       max_seats, booked_seats, price_usd, status, is_active,
       tours (
-        id, title_en, title_ar, subtitle_en, subtitle_ar,
+        id, slug, title_en, title_ar, subtitle_en, subtitle_ar,
         overview_en, overview_ar, type,
         countries_visited, start_destination, end_destination,
         hero_image_url, gallery_urls, route_map_url,
@@ -157,6 +179,9 @@ export default async function DepartureDetailPage({
   if (!departure) notFound()
 
   const tour = departure.tours as any
+  // Link back to the tour by its slug; falls back to the id for a tour whose
+  // title has no latin characters to slugify.
+  const tourSlug: string | null = tour?.slug ?? null
   const accent = accentFor(tour?.type ?? null)
   const daysCount = getDaysCount(departure.start_date, departure.end_date)
   const availableSpots = departure.max_seats - departure.booked_seats
@@ -238,7 +263,7 @@ export default async function DepartureDetailPage({
     }
   })
 
-  const bookHref = `/departures/${id}/book?lang=${locale}&price=${departure.price_usd}&tour=${encodeURIComponent(title ?? '')}`
+  const bookHref = `${localePath(`/departures/${id}/book`, locale)}?price=${departure.price_usd}&tour=${encodeURIComponent(title ?? '')}`
   const waHref = whatsappLink(`Hi, I'm interested in the ${title} departure on ${formatDate(departure.start_date, 'en')}`)
 
   const t = isAr ? {
@@ -338,7 +363,7 @@ export default async function DepartureDetailPage({
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
         <DepartureHero
           tourTitle={title ?? ''}
-          backToTourHref={`/tours/${departure.tour_id}?lang=${locale}`}
+          backToTourHref={localePath(`/tours/${tourSlug ?? departure.tour_id}`, locale)}
           backToTourLabel={t.backToTour}
           departureLabel={t.departure}
           dateRangeText={`${formatDate(departure.start_date, locale)} ${isAr ? '←' : '→'} ${formatDate(departure.end_date, locale)}`}

@@ -6,10 +6,34 @@ import SafariImage from '@/components/public/safari-image'
 import WhatsAppButton from '@/components/public/whatsapp-button'
 import { getServerLocale } from '@/lib/i18n'
 import { STOCK_HERO_IMAGE } from '@/lib/stock-images'
+import type { Metadata } from 'next'
+import { pageMetadata } from '@/lib/seo'
+import { localePath } from '@/lib/locale'
+import { tourSegment } from '@/lib/slug'
 
 const G = '#7A9A4A'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string; type?: string }>
+}): Promise<Metadata> {
+  const locale = await getServerLocale(await searchParams)
+  return pageMetadata({
+    path: '/tours',
+    locale,
+    title: {
+      en: 'Safari & Motorbike Tour Itineraries',
+      ar: 'برامج رحلات السفاري والدراجات النارية',
+    },
+    description: {
+      en: 'Browse our Kenya and Tanzania safari itineraries and motorbike tours — day-by-day routes, what each trip includes, and pricing.',
+      ar: 'تصفح برامج السفاري في كينيا وتنزانيا وجولات الدراجات النارية — المسار يوماً بيوم، وما تشمله كل رحلة، والأسعار.',
+    },
+  })
+}
 
 export default async function ToursPage({
   searchParams,
@@ -27,7 +51,7 @@ export default async function ToursPage({
   // and carry duration_days / countries_visited (not country/min_days/max_days).
   let query = admin
     .from('tours')
-    .select('id, title_en, title_ar, subtitle_en, overview_en, type, duration_days, duration_nights, countries_visited, status, hero_image_url, gallery_urls')
+    .select('id, slug, title_en, title_ar, subtitle_en, overview_en, type, duration_days, duration_nights, countries_visited, status, hero_image_url, gallery_urls')
     .eq('status', 'active')
   if (typeFilter) query = query.eq('type', typeFilter)
   const { data: tours } = await query.order('title_en')
@@ -90,7 +114,7 @@ export default async function ToursPage({
                   {typeFilter === 'bike' ? t.filterBike : t.filterPrivate}
                 </span>
                 <Link
-                  href={`/tours?lang=${locale}`}
+                  href={localePath('/tours', locale)}
                   className="text-sm font-semibold underline underline-offset-2"
                   style={{ color: G }}
                 >
@@ -123,7 +147,7 @@ export default async function ToursPage({
                         )}
                         {desc && <p className="text-sm text-gray-600 mb-6 line-clamp-3">{desc}</p>}
                         <Link
-                          href={`/tours/${tour.id}?lang=${locale}`}
+                          href={localePath(`/tours/${tourSegment(tour)}`, locale)}
                           className="block text-center px-4 py-2 rounded-lg font-semibold text-white transition"
                           style={{ backgroundColor: G }}
                         >
@@ -139,7 +163,7 @@ export default async function ToursPage({
                 <p className="text-gray-600 text-lg">{typeFilter ? t.noneFiltered : t.none}</p>
                 {typeFilter && (
                   <Link
-                    href={`/tours?lang=${locale}`}
+                    href={localePath('/tours', locale)}
                     className="mt-4 inline-block text-sm font-semibold underline underline-offset-2"
                     style={{ color: G }}
                   >
@@ -157,7 +181,7 @@ export default async function ToursPage({
             <h2 className="text-3xl font-bold text-gray-900 mb-6">{t.ctaTitle}</h2>
             <p className="text-lg text-gray-600 mb-8">{t.ctaText}</p>
             <Link
-              href={`/quote-request?lang=${locale}`}
+              href={localePath('/quote-request', locale)}
               className="px-8 py-3 rounded-lg font-semibold text-white transition inline-block"
               style={{ backgroundColor: G }}
             >

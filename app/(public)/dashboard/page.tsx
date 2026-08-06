@@ -7,6 +7,7 @@ import { Calendar, Check, Hourglass, Settings, Lock } from 'lucide-react'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import { getServerLocale } from '@/lib/i18n'
+import { localePath } from '@/lib/locale'
 
 const G = '#7A9A4A'
 const DISPLAY = 'var(--font-display, "Readex Pro", sans-serif)'
@@ -117,13 +118,13 @@ export default async function DashboardPage({
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link
-                  href={`/dashboard/settings?lang=${locale}`}
+                  href={`/dashboard/settings`}
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[#20271A] border border-[#E5E0D8] rounded-lg hover:bg-[#FBF8F1]"
                 >
                   <Settings size={16} strokeWidth={1.5} aria-hidden="true" /> {t.settings}
                 </Link>
                 <Link
-                  href={`/dashboard/security?lang=${locale}`}
+                  href={`/dashboard/security`}
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[#20271A] border border-[#E5E0D8] rounded-lg hover:bg-[#FBF8F1]"
                 >
                   <Lock size={16} strokeWidth={1.5} aria-hidden="true" /> {t.security}
@@ -226,7 +227,7 @@ export default async function DashboardPage({
                           </td>
                           <td className="px-6 py-4 text-right">
                             <Link
-                              href={`/dashboard/bookings/${booking.id}?lang=${locale}`}
+                              href={`/dashboard/bookings/${booking.id}`}
                               className="text-sm font-medium hover:underline"
                               style={{ color: G }}
                             >
@@ -255,7 +256,7 @@ export default async function DashboardPage({
               <h2 className="text-2xl font-semibold text-[#20271A] mb-2" style={{ fontFamily: DISPLAY }}>{t.noBookings}</h2>
               <p className="text-[#6E6A59] mb-6">{t.readyNext}</p>
               <Link
-                href={`/departures?lang=${locale}`}
+                href={localePath('/departures', locale)}
                 className="inline-block px-6 py-3 rounded-lg font-medium text-white"
                 style={{ backgroundColor: G }}
               >
@@ -305,7 +306,7 @@ export default async function DashboardPage({
                           </td>
                           <td className="px-6 py-4 text-right">
                             <Link
-                              href={`/dashboard/bookings/${booking.id}?lang=${locale}`}
+                              href={`/dashboard/bookings/${booking.id}`}
                               className="text-sm font-medium hover:underline"
                               style={{ color: G }}
                             >

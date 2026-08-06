@@ -7,6 +7,7 @@ import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import WhatsAppButton from '@/components/public/whatsapp-button'
 import { useLocale } from '@/lib/use-locale'
+import { localePath } from '@/lib/locale'
 
 const G = '#7A9A4A'
 
@@ -130,7 +131,7 @@ function QuoteRequestFormContent() {
               <h2 className="text-2xl font-bold text-green-900 mb-3">{t.submitted}</h2>
               <p className="text-green-700 mb-6">{t.thanks}</p>
               <Link
-                href={`/?lang=${locale}`}
+                href={localePath('/', locale)}
                 className="px-8 py-3 rounded-lg font-semibold text-white transition inline-block"
                 style={{ backgroundColor: G }}
               >
@@ -296,7 +297,7 @@ function QuoteRequestFormContent() {
                   {isPending ? t.sending : t.requestQuote}
                 </button>
                 <Link
-                  href={`/tours?lang=${locale}`}
+                  href={localePath('/tours', locale)}
                   className="px-6 py-3 rounded-lg font-semibold border-2 border-gray-300 text-gray-900 hover:bg-gray-100 transition"
                 >
                   {t.cancel}

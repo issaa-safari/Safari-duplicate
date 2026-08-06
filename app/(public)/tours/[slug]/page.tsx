@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
@@ -21,6 +21,9 @@ import StickyEnquiryBar from '@/components/public/sticky-enquiry-bar'
 import { getServerLocale } from '@/lib/i18n'
 import { site, whatsappLink } from '@/lib/site'
 import StructuredData, { touristTripJsonLd } from '@/components/public/structured-data'
+import { faqPageJsonLd, hasArabicContent, languageAlternates, noindexIfUntranslated } from '@/lib/seo'
+import { localePath } from '@/lib/locale'
+import { isUuid } from '@/lib/slug'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,25 +63,45 @@ export async function generateMetadata({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ slug: string }>
   searchParams: Promise<{ lang?: string }>
 }): Promise<Metadata> {
-  const { id } = await params
+  const { slug } = await params
   const sp = await searchParams
   const locale = await getServerLocale(sp)
   const supabase = await createClient()
   const { data: tour } = await supabase
     .from('tours')
-    .select('title_en, title_ar, overview_en, hero_image_url')
-    .eq('id', id)
+    .select('id, slug, title_en, title_ar, overview_en, overview_ar, hero_image_url')
+    .eq(isUuid(slug) ? 'id' : 'slug', slug)
     .eq('status', 'active')
     .maybeSingle()
   if (!tour) return {}
-  const title = locale === 'ar' ? (tour.title_ar || tour.title_en) : tour.title_en
+  // Always advertise the slug URL, even when reached by UUID, so the two forms
+  // never compete for the same content in the index.
+  const path = `/tours/${tour.slug ?? tour.id}`
+  // An untranslated tour still renders at /ar/... in English; it just must not
+  // be advertised or indexed as the Arabic edition.
+  const translated = hasArabicContent(tour)
+  const isAr = locale === 'ar'
+  const title = isAr ? (tour.title_ar || tour.title_en) : tour.title_en
+  // Fall back to English so a tour with no Arabic overview still gets a snippet.
+  const overview = isAr ? (tour.overview_ar || tour.overview_en) : tour.overview_en
   return {
+    ...noindexIfUntranslated(locale, translated),
     title: title ?? undefined,
-    description: tour.overview_en?.slice(0, 160) ?? undefined,
-    openGraph: { images: tour.hero_image_url ? [tour.hero_image_url] : [] },
+    description: overview?.slice(0, 160) ?? undefined,
+    alternates: {
+      canonical: localePath(path, locale),
+      languages: languageAlternates(path, translated),
+    },
+    openGraph: {
+      title: title ?? undefined,
+      description: overview?.slice(0, 160) ?? undefined,
+      url: localePath(path, locale),
+      locale,
+      images: tour.hero_image_url ? [tour.hero_image_url] : [],
+    },
   }
 }
 
@@ -86,10 +109,10 @@ export default async function TourDetailPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ slug: string }>
   searchParams: Promise<{ lang?: string }>
 }) {
-  const { id } = await params
+  const { slug } = await params
   const sp = await searchParams
   const locale = await getServerLocale(sp)
   const isAr = locale === 'ar'
@@ -99,7 +122,7 @@ export default async function TourDetailPage({
   const { data: tour } = await supabase
     .from('tours')
     .select(`
-      id, title_en, title_ar, subtitle_en, subtitle_ar,
+      id, slug, title_en, title_ar, subtitle_en, subtitle_ar,
       overview_en, overview_ar, type,
       duration_days, duration_nights, countries_visited,
       start_destination, end_destination,
@@ -110,11 +133,18 @@ export default async function TourDetailPage({
       total_distance_km, difficulty_rating, max_group_size,
       faqs, status
     `)
-    .eq('id', id)
+    .eq(isUuid(slug) ? 'id' : 'slug', slug)
     .eq('status', 'active')
     .maybeSingle()
 
   if (!tour) notFound()
+
+  // Reached by the old UUID URL: send it to the slug, permanently, so links
+  // already out in the world consolidate onto one address.
+  if (tour.slug && slug !== tour.slug) {
+    permanentRedirect(localePath(`/tours/${tour.slug}`, locale))
+  }
+  const id = tour.id
 
   const accent = accentFor(tour.type)
   const title = isAr ? (tour.title_ar || tour.title_en) : tour.title_en
@@ -131,6 +161,15 @@ export default async function TourDetailPage({
     : ((tour.excluded_en as string[] | null)?.filter(Boolean) ?? [])
   const gallery: string[] = Array.isArray(tour.gallery_urls) ? (tour.gallery_urls as string[]).filter(Boolean) : []
   const faqs: { q_en?: string; q_ar?: string; a_en?: string; a_ar?: string }[] = Array.isArray(tour.faqs) ? tour.faqs as { q_en?: string; q_ar?: string; a_en?: string; a_ar?: string }[] : []
+  // Feed the FAQ rich-result markup only the pairs that render with both a
+  // question and an answer — Google requires the schema to match what a
+  // visitor can actually read on the page.
+  const faqEntries = faqs
+    .map((f) => ({
+      question: (isAr ? f.q_ar || f.q_en : f.q_en || f.q_ar) ?? '',
+      answer: (isAr ? f.a_ar || f.a_en : f.a_en || f.a_ar) ?? '',
+    }))
+    .filter((f) => f.question && f.answer)
 
   // Route text e.g. "Nairobi → Masai Mara → Nairobi" (arrow mirrors for RTL)
   const routeArrow = isAr ? ' ← ' : ' → '
@@ -240,9 +279,9 @@ export default async function TourDetailPage({
 
   const staff: StaffMember[] = (rawStaff ?? []).map(s => ({ id: s.id, name: s.name, role: s.role }))
 
-  const enquireHref = `/quote-request?tour=${id}&lang=${locale}`
+  const enquireHref = `${localePath('/quote-request', locale)}?tour=${id}`
   const bookHref = departures[0]
-    ? `/departures/${departures[0].id}/book?lang=${locale}&price=${departures[0].priceUsd}&tour=${encodeURIComponent(title ?? '')}`
+    ? `${localePath(`/departures/${departures[0].id}/book`, locale)}?price=${departures[0].priceUsd}&tour=${encodeURIComponent(title ?? '')}`
     : enquireHref
   const waHref = whatsappLink(isAr ? `مرحباً، أريد الاستفسار عن جولة: ${title}` : `Hi, I'd like to enquire about: ${title}`)
 
@@ -266,7 +305,7 @@ export default async function TourDetailPage({
     <div dir={isAr ? 'rtl' : 'ltr'} style={{ background: '#fff' }}>
       <StructuredData
         data={touristTripJsonLd({
-          url: `${site.url}/tours/${id}`,
+          url: `${site.url}${localePath(`/tours/${tour.slug ?? id}`, locale)}`,
           name: title ?? '',
           description: overview,
           image: tour.hero_image_url,
@@ -277,6 +316,7 @@ export default async function TourDetailPage({
           providerUrl: site.url,
         })}
       />
+      {faqEntries.length > 0 && <StructuredData data={faqPageJsonLd(faqEntries)} />}
       <Suspense><PublicHeader initialLang={locale} /></Suspense>
 
       {/* 1. Hero */}

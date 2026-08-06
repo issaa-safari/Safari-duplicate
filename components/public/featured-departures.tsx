@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import SafariImage from '@/components/public/safari-image'
+import { localePath, type Locale } from '@/lib/locale'
 
 const G = '#7A9A4A'
 
@@ -19,7 +20,7 @@ function daysCount(start: string, end: string) {
   return Math.ceil((new Date(end).getTime() - new Date(start).getTime()) / 86400000) + 1
 }
 
-export default function FeaturedDepartures({ lang }: { lang: string }) {
+export default function FeaturedDepartures({ lang }: { lang: Locale }) {
   const [departures, setDepartures] = useState<any[] | null>(null)
 
   useEffect(() => {
@@ -69,7 +70,7 @@ export default function FeaturedDepartures({ lang }: { lang: string }) {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900">{t.heading}</h2>
             <p className="text-gray-600 mt-2">{t.subheading}</p>
           </div>
-          <Link href={`/departures?lang=${lang}`} className="hidden md:inline text-sm font-semibold hover:underline" style={{ color: G }}>
+          <Link href={localePath('/departures', lang)} className="hidden md:inline text-sm font-semibold hover:underline" style={{ color: G }}>
             {t.viewAll} →
           </Link>
         </div>
@@ -83,7 +84,7 @@ export default function FeaturedDepartures({ lang }: { lang: string }) {
             return (
               <Link
                 key={dep.id}
-                href={`/departures/${dep.id}?lang=${lang}`}
+                href={localePath(`/departures/${dep.id}`, lang)}
                 className="block bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition"
               >
                 <SafariImage
@@ -114,7 +115,7 @@ export default function FeaturedDepartures({ lang }: { lang: string }) {
         </div>
 
         <div className="mt-8 text-center md:hidden">
-          <Link href={`/departures?lang=${lang}`} className="text-sm font-semibold hover:underline" style={{ color: G }}>
+          <Link href={localePath('/departures', lang)} className="text-sm font-semibold hover:underline" style={{ color: G }}>
             {t.viewAll} →
           </Link>
         </div>

@@ -8,6 +8,7 @@ import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { useLocale } from '@/lib/use-locale'
+import { localePath } from '@/lib/locale'
 
 const G = '#7A9A4A'
 
@@ -24,7 +25,7 @@ function ClientLoginInner() {
   const locale = useLocale()
   const isAr = locale === 'ar'
   const redirectParam = useSearchParams().get('redirect')
-  const destination = redirectParam || `/dashboard?lang=${locale}`
+  const destination = redirectParam || `/dashboard`
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null)
 
   useEffect(() => {
@@ -148,14 +149,14 @@ function ClientLoginInner() {
             {!verificationSent && (
               <div className="mt-6 text-center text-sm text-gray-600">
                 {t.noAccount}{' '}
-                <Link href={`/register?lang=${locale}`} className="font-medium hover:underline" style={{ color: G }}>{t.createOne}</Link>
+                <Link href={localePath('/register', locale)} className="font-medium hover:underline" style={{ color: G }}>{t.createOne}</Link>
               </div>
             )}
           </div>
 
           <p className="text-center text-xs text-gray-500 mt-6">
             {t.needHelp}{' '}
-            <Link href={`/contact?lang=${locale}`} className="hover:underline">{t.contactUs}</Link>
+            <Link href={localePath('/contact', locale)} className="hover:underline">{t.contactUs}</Link>
           </p>
         </div>
       </main>

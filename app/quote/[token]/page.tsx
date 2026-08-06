@@ -350,7 +350,13 @@ export default async function QuotePortalPage({
       destination: dest?.name ?? null,
       destinationMapsUrl: dest?.id ? destLinkMap[dest.id] ?? null : null,
       title: (isArabic && d.title_ar ? d.title_ar : d.title) || dayLabel(d),
-      description: dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : (isArabic ? d.description_ar : d.description_en),
+      // Every other bilingual field here falls back to English when its Arabic
+      // twin is blank; this one did not, so an Arabic proposal with an
+      // untranslated day rendered that day with no description at all — which
+      // is what made filling both languages feel compulsory.
+      description: dd
+        ? (isArabic ? (dd.ar || dd.en) : dd.en)
+        : (isArabic ? (d.description_ar || d.description_en) : d.description_en),
       heroPhoto: photos[0] ?? acc?.cover ?? null,
       activities: acts.map(mapAct),
       activityGroups,

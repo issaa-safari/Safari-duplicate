@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from 'next/navigation'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import { createClient } from '@/lib/supabase/client'
+import { localePath } from '@/lib/locale'
 
 const G = '#7A9A4A'
 
@@ -72,7 +73,7 @@ function BookingFormContent() {
     })
   }, [])
 
-  const bookingPath = `/departures/${departureId}/book?lang=${locale}&price=${pricePerPerson}&tour=${encodeURIComponent(tourTitle)}`
+  const bookingPath = `${localePath(`/departures/${departureId}/book`, locale)}?price=${pricePerPerson}&tour=${encodeURIComponent(tourTitle)}`
 
   const t = locale === 'ar' ? {
     bookNow: 'احجز الآن',
@@ -168,7 +169,7 @@ function BookingFormContent() {
                   : 'Have an account? Sign in to book faster and auto-fill your details.'}
               </span>
               <Link
-                href={`/login?lang=${locale}&redirect=${encodeURIComponent(bookingPath)}`}
+                href={`${localePath('/login', locale)}?redirect=${encodeURIComponent(bookingPath)}`}
                 className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold text-white text-center"
                 style={{ backgroundColor: G }}
               >
@@ -192,14 +193,14 @@ function BookingFormContent() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
-                  href={`/departures?lang=${locale}`}
+                  href={localePath('/departures', locale)}
                   className="px-8 py-3 rounded-lg font-semibold text-white transition inline-block"
                   style={{ backgroundColor: G }}
                 >
                   {t.backToDepartures}
                 </Link>
                 <Link
-                  href={`/?lang=${locale}`}
+                  href={localePath('/', locale)}
                   className="px-8 py-3 rounded-lg font-semibold border-2 border-gray-300 text-gray-900 hover:bg-gray-100 transition inline-block"
                 >
                   {t.backToHome}
@@ -356,7 +357,7 @@ function BookingFormContent() {
                   {isPending ? (locale === 'ar' ? 'جاري المعالجة...' : 'Processing...') : t.confirmBooking}
                 </button>
                 <Link
-                  href={`/departures?lang=${locale}`}
+                  href={localePath('/departures', locale)}
                   className="px-6 py-3 rounded-lg font-semibold border-2 border-gray-300 text-gray-900 hover:bg-gray-100 transition"
                 >
                   {t.cancel}

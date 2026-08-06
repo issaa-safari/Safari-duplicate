@@ -3,9 +3,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
-import { useSearchParams, usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { whatsappLink } from '@/lib/site'
+import { localePath, splitLocalePath } from '@/lib/locale'
 
 function LangToggle({
   currentLang, hrefFor, onSelect, full = false,
@@ -37,12 +38,15 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const searchParams = useSearchParams()
   const pathname = usePathname()
   const router = useRouter()
-  // Seed from the server-resolved locale so the header can render on the
-  // server pass in the right language instead of popping in after hydration.
-  const [currentLang, setCurrentLang] = useState(initialLang === 'ar' ? 'ar' : 'en')
+  // The URL carries the language, so it is known on the server pass and on the
+  // first client render alike — no state, no post-hydration flip. initialLang
+  // stays in the signature as a fallback for the brief render before the
+  // pathname is available.
+  const { locale: pathLocale, path: basePath } = splitLocalePath(pathname ?? '/')
+  const locale: 'en' | 'ar' = pathLocale === 'ar' || initialLang === 'ar' ? 'ar' : 'en'
+  const currentLang = locale
   const [signedIn, setSignedIn] = useState(false)
   const ar = currentLang === 'ar'
 
@@ -82,31 +86,22 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
     await supabase.auth.signOut()
     setSignedIn(false)
     setMobileMenuOpen(false)
-    router.push(`/?lang=${currentLang}`)
+    router.push(localePath('/', locale))
     router.refresh()
   }
 
+  // The path is the language now, so there is nothing to resolve after mount —
+  // keep the flag only for the one-time redirect below.
   useEffect(() => {
     setMounted(true)
-    const urlLang = searchParams.get('lang')
+  }, [])
 
-    // 1. Explicit ?lang= in the URL always wins (manual language switch).
-    if (urlLang === 'ar' || urlLang === 'en') {
-      setCurrentLang(urlLang)
-      return
-    }
-
-    // 2. The locale cookie is the source of truth for a returning visitor.
-    const cookieLang = document.cookie
-      .split('; ')
-      .find((c) => c.startsWith('locale='))
-      ?.split('=')[1]
-    if (cookieLang === 'ar' || cookieLang === 'en') {
-      setCurrentLang(cookieLang)
-      return
-    }
-
-    // 3. First visit with no preference yet: auto-detect from browser/timezone.
+  // First visit with no stored preference: send Arabic speakers to the Arabic
+  // URL once, then remember the choice. This has to be a navigation rather than
+  // a state flip, because the language is the address.
+  useEffect(() => {
+    if (!mounted) return
+    if (document.cookie.includes('locale=')) return
     let detected: 'en' | 'ar' = navigator.language.split('-')[0] === 'ar' ? 'ar' : 'en'
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''
@@ -114,30 +109,20 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
     } catch {
       // ignore — keep browser-language detection
     }
-    setCurrentLang(detected)
-  }, [searchParams])
-
-  // Persist the resolved language so server-rendered pages render in the same
-  // language and direction.
-  useEffect(() => {
-    if (mounted) {
-      document.cookie = `locale=${currentLang};path=/;max-age=31536000;samesite=lax`
+    document.cookie = `locale=${detected};path=/;max-age=31536000;samesite=lax`
+    if (detected === 'ar' && locale !== 'ar') {
+      router.replace(localePath(basePath, 'ar'))
     }
-  }, [currentLang, mounted])
+  }, [mounted, locale, basePath, router])
 
-  const getLangUrl = (lang: 'en' | 'ar') => {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('lang', lang)
-    return `${pathname}?${params.toString()}`
-  }
+  // Same page, other language — the switcher swaps the prefix, it does not
+  // append a parameter.
+  const getLangUrl = (lang: 'en' | 'ar') => localePath(basePath, lang)
 
-  const getNavLink = (href: string) => {
-    const params = new URLSearchParams(searchParams.toString())
-    const lang = params.get('lang') || 'en'
-    return `${href}?lang=${lang}`
-  }
+  const getNavLink = (href: string) => localePath(href, locale)
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
+  // Compare against the locale-stripped path so /ar/tours highlights Tours.
+  const isActive = (href: string) => basePath === href || basePath.startsWith(href + '/')
 
   const nav = [
     { href: '/tours', label: ar ? 'الجولات' : 'Tours' },
@@ -165,7 +150,7 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
         {/* Logo */}
         <Link
-          href={`/?lang=${currentLang}`}
+          href={localePath('/', locale)}
           className="flex min-w-0 items-center gap-2.5"
           onClick={() => setMobileMenuOpen(false)}
         >
@@ -198,7 +183,7 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
           <LangToggle currentLang={currentLang} hrefFor={getLangUrl} onSelect={() => setMobileMenuOpen(false)} />
           {signedIn ? (
             <>
-              <Link href={getNavLink('/dashboard')} className="text-sm font-medium text-white/80 hover:text-white">
+              <Link href={'/dashboard'} className="text-sm font-medium text-white/80 hover:text-white">
                 {ar ? 'حسابي' : 'Dashboard'}
               </Link>
               <button onClick={handleSignOut} className="text-sm font-medium text-white/80 hover:text-white">
@@ -283,7 +268,7 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
             ))}
             {signedIn ? (
               <>
-                <Link href={getNavLink('/dashboard')} onClick={() => setMobileMenuOpen(false)}
+                <Link href={'/dashboard'} onClick={() => setMobileMenuOpen(false)}
                   className="border-b border-white/10 py-4 text-2xl font-semibold text-white/75 hover:text-white" style={display}>
                   {ar ? 'حسابي' : 'Dashboard'}
                 </Link>
