@@ -1,7 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { LOCALE_HEADER } from '@/lib/i18n'
-import { LOCALE_COOKIE, isUnlocalised, localePath, preferredLocale, splitLocalePath } from '@/lib/locale'
+import {
+  LOCALE_COOKIE,
+  isDocumentNavigation,
+  isUnlocalised,
+  localePath,
+  preferredLocale,
+  splitLocalePath,
+} from '@/lib/locale'
 
 // A year. The visitor has told us what they read; there is no reason to ask again.
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
@@ -69,7 +76,18 @@ export async function proxy(request: NextRequest) {
   // Deciding here rather than after hydration matters: the old client-side
   // redirect painted the English page first, and a crawler, which never runs
   // it, saw only English at every address.
-  if (locale === 'en' && !isUnlocalised(path) && !request.cookies.has(LOCALE_COOKIE)) {
+  //
+  // Only ever on a real document request. Next prefetches every visible link,
+  // so on an Arabic page the toggle's own /tours prefetch would be negotiated
+  // back to /ar/tours, and the router would cache that redirect — clicking EN
+  // then reloaded the Arabic page and the toggle looked dead. Any client-side
+  // navigation reaching here already had its document request negotiated, so
+  // the cookie is set and there is nothing left to decide.
+  const isDocument = isDocumentNavigation(
+    request.headers.get('sec-fetch-dest'),
+    searchParams.has('_rsc')
+  )
+  if (locale === 'en' && isDocument && !isUnlocalised(path) && !request.cookies.has(LOCALE_COOKIE)) {
     const detected = preferredLocale(
       request.headers.get('accept-language'),
       request.headers.get('x-vercel-ip-country')

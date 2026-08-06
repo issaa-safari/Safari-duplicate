@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { isUnlocalised, localePath, preferredLocale, splitLocalePath } from './locale'
+import {
+  isDocumentNavigation,
+  isUnlocalised,
+  localePath,
+  preferredLocale,
+  splitLocalePath,
+} from './locale'
 
 describe('localePath', () => {
   it('leaves English paths unprefixed so existing URLs keep their equity', () => {
@@ -74,6 +80,33 @@ describe('isUnlocalised', () => {
     // It has a full Arabic dictionary; excluding it was what pinned it to
     // English once the language moved into the URL.
     expect(isUnlocalised('/dashboard')).toBe(false)
+  })
+})
+
+describe('isDocumentNavigation', () => {
+  it('accepts a real page load', () => {
+    expect(isDocumentNavigation('document', false)).toBe(true)
+  })
+
+  it('rejects the RSC fetches Next fires for every visible link', () => {
+    // Redirecting one of these poisons the router cache: the language toggle
+    // prefetches the other language, gets negotiated back, and then reloads the
+    // page it was already on.
+    expect(isDocumentNavigation('empty', true)).toBe(false)
+    expect(isDocumentNavigation('empty', false)).toBe(false)
+    // The _rsc parameter alone is enough, whatever the fetch destination says.
+    expect(isDocumentNavigation('document', true)).toBe(false)
+  })
+
+  it('treats a client that sends no Sec-Fetch-Dest as a document', () => {
+    // Absent is not "not a document" — an old browser still deserves its
+    // language negotiated.
+    expect(isDocumentNavigation(null, false)).toBe(true)
+  })
+
+  it('rejects embedded requests', () => {
+    expect(isDocumentNavigation('iframe', false)).toBe(false)
+    expect(isDocumentNavigation('image', false)).toBe(false)
   })
 })
 
