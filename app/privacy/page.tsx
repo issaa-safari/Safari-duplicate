@@ -5,7 +5,7 @@ export const metadata: Metadata = {
 }
 
 export default function PrivacyPolicyPage() {
-  const updated = 'June 26, 2026'
+  const updated = 'August 6, 2026'
 
   return (
     <main className="min-h-screen bg-white px-6 py-16 text-gray-800">
@@ -76,7 +76,37 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-semibold text-gray-900">4. Data Storage & Security</h2>
+          <h2 className="text-xl font-semibold text-gray-900">4. Analytics & Cookies</h2>
+          <p className="mt-4 text-gray-700">
+            We use Google Analytics to understand how visitors find and use this website — which
+            pages are viewed, from which countries, and on which devices. Google Analytics sets
+            cookies on your device and receives your IP address and browsing activity on this site.
+            We do not use it to identify you personally, and we do not combine it with the enquiry
+            details you send us. You can opt out across all websites with{' '}
+            <a
+              href="https://tools.google.com/dlpage/gaoptout"
+              className="underline text-gray-900 hover:text-gray-600"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Google&apos;s opt-out browser add-on
+            </a>
+            , or by blocking cookies in your browser settings. Google&apos;s handling of this data is
+            covered by its{' '}
+            <a
+              href="https://policies.google.com/privacy"
+              className="underline text-gray-900 hover:text-gray-600"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy
+            </a>
+            .
+          </p>
+        </section>
+
+        <section className="mt-10">
+          <h2 className="text-xl font-semibold text-gray-900">5. Data Storage & Security</h2>
           <p className="mt-4 text-gray-700">
             Your data is stored securely using Supabase (PostgreSQL) with access restricted to
             authorised team members only. We use industry-standard encryption in transit (HTTPS/TLS)
@@ -85,7 +115,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-semibold text-gray-900">5. Data Retention</h2>
+          <h2 className="text-xl font-semibold text-gray-900">6. Data Retention</h2>
           <p className="mt-4 text-gray-700">
             We retain your personal information for as long as necessary to fulfil the purposes
             described in this policy, or as required by law. You may request deletion of your data
@@ -94,7 +124,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-semibold text-gray-900">6. Your Rights</h2>
+          <h2 className="text-xl font-semibold text-gray-900">7. Your Rights</h2>
           <p className="mt-4 text-gray-700">
             You have the right to access, correct, or delete the personal information we hold about
             you. To exercise any of these rights, please contact us using the details below.
@@ -102,7 +132,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-semibold text-gray-900">7. Contact Us</h2>
+          <h2 className="text-xl font-semibold text-gray-900">8. Contact Us</h2>
           <p className="mt-4 text-gray-700">
             If you have questions about this Privacy Policy or how your data is handled, please
             contact us at:
