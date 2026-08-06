@@ -22,11 +22,11 @@
 -- See scripts/dev-backend.md. Regenerate whenever a new group_NN lands, so the
 -- baseline and the group files stay two descriptions of one schema.
 --
--- KNOWN DRIFT FROM PRODUCTION (as at 2026-08-06) — see docs/current/schema-drift.md
---   * group_45 and group_57 appear never to have been applied to production.
---   * Production carries two functions no migration defines.
--- This baseline reflects the migrations, not production, until those are
--- reconciled.
+-- VERIFIED AGAINST PRODUCTION (2026-08-06)
+-- After applying group_44/45/57 to production and capturing its
+-- hand-applied objects as group_72, a replay of migrations/ matches the live
+-- database exactly on tables, columns, indexes, constraints, policies,
+-- functions and triggers. See docs/current/schema-drift.md.
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -68,6 +68,36 @@ begin
   if v_status not in ('draft', 'ready') then
     raise exception 'This quote version is locked and cannot be changed.';
   end if;
+end;
+$$;
+
+
+--
+-- Name: auto_advance_request_stage(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.auto_advance_request_stage() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare
+  v_request uuid;
+  v_stage   text;
+begin
+  select q.request_id into v_request from quotes q where q.id = new.quote_id;
+  if v_request is null then
+    return new;
+  end if;
+
+  select stage into v_stage from requests where id = v_request;
+
+  if new.status in ('sent', 'viewed') and v_stage in ('new', 'working_on') then
+    update requests set stage = 'open' where id = v_request and stage in ('new', 'working_on');
+  elsif v_stage = 'new' then
+    update requests set stage = 'working_on' where id = v_request and stage = 'new';
+  end if;
+
+  return new;
 end;
 $$;
 
@@ -559,6 +589,24 @@ CREATE FUNCTION public.is_admin_user() RETURNS boolean
     where a.email = (auth.jwt() ->> 'email')
       and a.is_active
   );
+$$;
+
+
+--
+-- Name: log_request_stage_change(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.log_request_stage_change() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+begin
+  if new.stage is distinct from old.stage then
+    insert into communication_logs (request_id, type, summary)
+    values (new.id, 'note', format('Status changed: %s → %s', coalesce(old.stage, '—'), new.stage));
+  end if;
+  return new;
+end;
 $$;
 
 
@@ -1503,6 +1551,7 @@ CREATE TABLE public.company_settings (
     auto_delete_enabled boolean DEFAULT false NOT NULL,
     auto_delete_days integer DEFAULT 90 NOT NULL,
     usd_to_kes_rate numeric(10,4) DEFAULT 129 NOT NULL,
+    prebooked_enabled boolean DEFAULT false NOT NULL,
     CONSTRAINT company_settings_auto_archive_days_check CHECK ((auto_archive_days >= 0)),
     CONSTRAINT company_settings_auto_delete_days_check CHECK ((auto_delete_days >= 0)),
     CONSTRAINT company_settings_usd_to_kes_rate_check CHECK ((usd_to_kes_rate > (0)::numeric))
@@ -1855,7 +1904,10 @@ CREATE TABLE public.quote_day_items (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     room_id uuid,
-    CONSTRAINT quote_day_items_item_type_check CHECK ((item_type = ANY (ARRAY['accommodation'::text, 'activity'::text, 'vehicle'::text, 'staff'::text, 'meal'::text, 'flight'::text, 'transfer'::text, 'note'::text, 'other'::text])))
+    is_alternative boolean DEFAULT false NOT NULL,
+    nights integer DEFAULT 1,
+    CONSTRAINT quote_day_items_item_type_check CHECK ((item_type = ANY (ARRAY['accommodation'::text, 'activity'::text, 'vehicle'::text, 'staff'::text, 'meal'::text, 'flight'::text, 'transfer'::text, 'note'::text, 'other'::text]))),
+    CONSTRAINT quote_day_items_nights_check CHECK (((nights IS NULL) OR (nights > 0)))
 );
 
 
@@ -1886,6 +1938,7 @@ CREATE TABLE public.quote_days (
     day_number_end integer,
     distance_km numeric,
     road_distance_km numeric,
+    day_end integer,
     CONSTRAINT quote_days_day_number_check CHECK ((day_number > 0)),
     CONSTRAINT quote_days_distance_km_check CHECK (((distance_km IS NULL) OR (distance_km >= (0)::numeric))),
     CONSTRAINT quote_days_road_distance_km_check CHECK (((road_distance_km IS NULL) OR (road_distance_km >= (0)::numeric)))
@@ -1912,6 +1965,9 @@ CREATE TABLE public.quote_deliveries (
     provider_message_id text,
     created_by uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    message text,
+    sender_email text,
+    subject text,
     CONSTRAINT quote_deliveries_channel_check CHECK ((channel = ANY (ARRAY['email'::text, 'pdf'::text, 'share_link'::text])))
 );
 
@@ -2079,6 +2135,10 @@ CREATE TABLE public.quote_versions (
     track_label text,
     compare_group uuid,
     builder_state jsonb,
+    arrival_notes text,
+    departure_notes text,
+    preview_layout jsonb DEFAULT '[]'::jsonb NOT NULL,
+    preview_theme text,
     CONSTRAINT quote_versions_check CHECK (((travel_end_date IS NULL) OR (travel_start_date IS NULL) OR (travel_end_date >= travel_start_date))),
     CONSTRAINT quote_versions_check1 CHECK (((discount_type <> 'percentage'::text) OR (discount_value <= (100)::numeric))),
     CONSTRAINT quote_versions_cost_base_usd_check CHECK (((cost_base_usd IS NULL) OR (cost_base_usd >= (0)::numeric))),
@@ -2219,7 +2279,8 @@ CREATE TABLE public.requests (
     total_booking_value numeric(14,2),
     date_received date DEFAULT CURRENT_DATE NOT NULL,
     trip_length_nights smallint,
-    preferred_room_type text
+    preferred_room_type text,
+    handled_by uuid
 );
 
 
@@ -3971,10 +4032,24 @@ CREATE TRIGGER traveller_age_bands_updated_at BEFORE UPDATE ON public.traveller_
 
 
 --
+-- Name: quote_versions trg_auto_advance_request; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_auto_advance_request AFTER INSERT OR UPDATE OF status ON public.quote_versions FOR EACH ROW EXECUTE FUNCTION public.auto_advance_request_stage();
+
+
+--
 -- Name: requests trg_generate_booking_tasks; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER trg_generate_booking_tasks AFTER UPDATE OF stage ON public.requests FOR EACH ROW EXECUTE FUNCTION public.generate_booking_tasks();
+
+
+--
+-- Name: requests trg_log_request_stage_change; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_log_request_stage_change AFTER UPDATE OF stage ON public.requests FOR EACH ROW EXECUTE FUNCTION public.log_request_stage_change();
 
 
 --
@@ -4475,6 +4550,14 @@ ALTER TABLE ONLY public.request_vehicle_assignments
 
 ALTER TABLE ONLY public.requests
     ADD CONSTRAINT requests_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.clients(id) ON DELETE SET NULL;
+
+
+--
+-- Name: requests requests_handled_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.requests
+    ADD CONSTRAINT requests_handled_by_fkey FOREIGN KEY (handled_by) REFERENCES public.admin_users(id) ON DELETE SET NULL;
 
 
 --

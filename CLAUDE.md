@@ -20,9 +20,10 @@ and admin back office (`app/admin/`) in one Next.js app. Bilingual EN/AR (RTL).
      creates. They all succeed on a second pass. To build a database, use
      `migrations/baseline/` (prerequisites + consolidated schema), not the group files;
      see `scripts/dev-backend.md`. Regenerate the baseline whenever a group_NN lands.
-   - `migrations/` and production have drifted: three migrations were never applied, and
-     production carries 12 columns and 2 functions no migration defines. Until that is
-     reconciled, treat this as a near-truth — see `docs/current/schema-drift.md`.
+   - A replay of the groups was verified against the live database on 2026-08-06 and
+     matches it exactly. It drifted once because SQL was applied through the Supabase
+     SQL editor and never written back — put schema changes in a group_NN *first*.
+     See `docs/current/schema-drift.md` for the record and the re-check query.
 2. `DESIGN.md` — design system: olive `#7A9A4A` palette, Readex Pro + IBM Plex Sans (public),
    Inter + Playfair scoped under `.admin-theme` (admin).
 3. `PRODUCT.md` — brand/product positioning.

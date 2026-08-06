@@ -1,62 +1,49 @@
 # Schema drift: migrations vs production
 
-Recorded 2026-08-06 by diffing the live Supabase project (`oejlkzcoynijqtokbizz`)
-against a Postgres 16 database built by replaying every `migrations/group_*.sql`.
+**Status: resolved 2026-08-06.** A replay of `migrations/group_*.sql` now
+reconstructs the live Supabase project (`oejlkzcoynijqtokbizz`) exactly. This
+document is kept as the record of what was wrong and how it was closed — the
+same failure mode can recur the moment SQL is applied by hand again.
 
-The diff is **complete**: tables, per-table column-name sets, indexes, policies
-and functions were all compared by name, not just by count.
+## Verification
 
-## Summary
+Both sides fingerprinted after the fixes below:
 
-|           | production | replay of `group_*.sql` |
-|-----------|-----------:|------------------------:|
-| tables    |         65 |                      65 |
-| columns   |        764 |                     758 |
-| indexes   |        151 |                     155 |
-| policies  |         15 |                      15 |
-| functions |         15 |                      15 † |
+| kind        | production | replay of `group_*.sql` | match |
+|-------------|-----------:|------------------------:|:-----:|
+| tables      |         65 |                      65 |  yes  |
+| columns     |        770 |                     770 |  yes  |
+| indexes     |        155 |                     155 |  yes  |
+| constraints |        yes |                     yes |  yes  |
+| policies    |         15 |                      15 |  yes  |
+| functions   |         15 |                      15 |  yes  |
+| triggers    |         44 |                      44 |  yes  |
 
-† Excluding `pgcrypto` (which lives in `extensions` on Supabase, `public`
-locally) and the three added by `group_71`, which production has not received.
+Identical md5 over the sorted object names in every category, not just equal
+counts. Functions and triggers exclude the three objects added by `group_71`,
+which production has not yet received (its PR is unmerged).
 
-Policies matched **exactly** — same count, same fingerprint. Everything below is
-the full set of differences.
+## What was wrong
 
----
+Found by loading every `group_*.sql` into a clean Postgres 16 and diffing
+against the live database.
 
-## A. Three migrations were never applied to production
+### A. Three migrations had never been applied — *fixed*
 
-### `group_44_client_data_quality.sql` — labelled a P0 fix
+| migration | what was missing from production |
+|---|---|
+| `group_44_client_data_quality` | `clients_email_unique_idx` — the partial unique index stopping two clients sharing an email. Its own header calls this a P0 fix. |
+| `group_45_drop_duplicate_booking_travelers` | `booking_travelers` (American spelling, empty stub) was still present |
+| `group_57_activity_locations` | `activity_locations` and its 4 indexes did not exist |
 
-Creates `clients_email_unique_idx`, a partial case-insensitive unique index that
-stops two clients sharing one email. **The index does not exist in production.**
-Its own header calls this a "P0 bug fix"; the bug it fixes is still live.
+All three applied to production on 2026-08-06 after re-checking preconditions
+immediately beforehand: 0 duplicate client emails, 0 rows and 0 inbound foreign
+keys on `booking_travelers`. `booking_travellers` (the real table, 20 rows) was
+untouched.
 
-Safe to apply: `clients` holds 14 rows, 12 with an email, and **0 duplicate
-email groups** — the index will build without conflict.
+### B. Twelve columns existed only in production — *captured*
 
-### `group_45_drop_duplicate_booking_travelers.sql`
-
-Drops `booking_travelers` (American spelling — an empty stub from `group_00`,
-superseded by `booking_travellers`). Production still has it: 2 columns, 0 rows,
-plus `booking_travelers_pkey`. The real table holds 20 rows.
-
-Harmless today, but it is exactly the latent bug group_45 was written to remove.
-
-### `group_57_activity_locations.sql`
-
-Creates `activity_locations` (8 columns) and 4 indexes. `to_regclass` returns
-NULL in production — none of it is there. `lib/types.ts:167` documents types for
-this table, so the repo believes it exists. Nothing queries it yet, which is why
-nothing has broken.
-
----
-
-## B. Twelve columns in production that no migration creates
-
-Confirmed by comparing the column-name set of all 65 tables:
-
-| table | columns only in production |
+| table | columns |
 |---|---|
 | `company_settings`  | `prebooked_enabled` |
 | `quote_day_items`   | `is_alternative`, `nights` |
@@ -65,41 +52,53 @@ Confirmed by comparing the column-name set of all 65 tables:
 | `quote_versions`    | `arrival_notes`, `departure_notes`, `preview_layout`, `preview_theme` |
 | `requests`          | `handled_by` |
 
-No other table differs. These are almost certainly hand-applied through the
-Supabase SQL editor and never written back to a migration.
+Plus two constraints that came with them: `quote_day_items_nights_check` and
+`requests_handled_by_fkey`.
 
-**This is the dangerous category.** A database rebuilt from `migrations/` would
-be missing all twelve. If application code reads any of them, that rebuild is
-broken in a way nothing in the repo would reveal.
+### C. Two trigger functions existed only in production — *captured*
 
-## C. Two functions in production that no migration defines
+`auto_advance_request_stage` (moves a request along its pipeline when a quote
+version is sent or viewed) and `log_request_stage_change` (writes a note to the
+communication log on every stage change), along with the triggers that fire
+them.
 
-- `auto_advance_request_stage`
-- `log_request_stage_change`
+B and C are now `group_72_capture_undocumented_production_objects.sql`,
+transcribed from production via `pg_get_functiondef` / `pg_get_triggerdef` /
+`pg_attribute`. It is idempotent, so applying it to production is a no-op — its
+purpose is to make a *rebuilt* database match.
 
-Both names point at the request-stage automation. Same cause as B.
+**This was the dangerous category.** A database rebuilt from `migrations/` was
+missing all fourteen objects, silently, because nothing in the repo recorded
+that they should exist.
 
----
+## The separate problem: ordering
 
-## Reconciling
+`migrations/` also could not be replayed in a single pass — 21 of the groups
+reference tables a *later* group creates (`group_12` uses `departures`, added in
+`group_21`). Every one succeeds on a second pass, so nothing was missing, but
+"run these in order and get the schema" did not hold.
 
-1. **Apply the three missing migrations** to production — `group_44`, `group_45`,
-   `group_57`. All three are marked idempotent and `group_44` has been checked
-   against live data.
-2. **Capture B and C as a new `group_NN`.** Dump the twelve column definitions
-   and the two function bodies from production and commit them, so a rebuilt
-   database matches.
-3. **Regenerate the baseline** (see `scripts/dev-backend.md`).
+That is what `migrations/baseline/` exists for: prerequisites plus a
+consolidated schema that loads in one pass. See `scripts/dev-backend.md` for
+loading and regenerating it.
 
-After that, `migrations/` and production finally describe the same schema, and
-the baseline can be verified against a production dump rather than against a
-replay of itself.
+Two groups are also not re-runnable: `group_30` and `group_31` use bare
+`create policy`, which errors if the policy already exists.
 
-## Why this matters
+## Keeping it this way
 
-`CLAUDE.md` calls `migrations/` the schema source of truth. Today it is a *near*
-truth: it rebuilds 65/65 tables and all 15 policies, but a database built from
-it differs from production by 12 columns, 2 functions, 1 table, and 5 indexes.
+The drift happened because SQL was applied through the Supabase SQL editor and
+never written back. To avoid a repeat:
 
-The baseline in `migrations/baseline/` reflects **the migrations**, not
-production, until the above is reconciled.
+- Schema changes go in a new `group_NN` **first**, then get applied.
+- Regenerate `migrations/baseline/` whenever a group lands.
+- To re-check at any time, fingerprint both sides and compare:
+
+```sql
+select kind, count(*), md5(string_agg(name, ',' order by name)) from (
+  select 'table' kind, tablename::text name from pg_tables where schemaname='public'
+  union all select 'index', indexname::text from pg_indexes where schemaname='public'
+  union all select 'policy', (tablename||'.'||policyname)::text from pg_policies where schemaname='public'
+  union all select 'column', (table_name||'.'||column_name)::text from information_schema.columns where table_schema='public'
+) f group by kind order by kind;
+```
