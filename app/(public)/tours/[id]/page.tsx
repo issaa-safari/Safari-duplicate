@@ -21,6 +21,7 @@ import StickyEnquiryBar from '@/components/public/sticky-enquiry-bar'
 import { getServerLocale } from '@/lib/i18n'
 import { site, whatsappLink } from '@/lib/site'
 import StructuredData, { touristTripJsonLd } from '@/components/public/structured-data'
+import { faqPageJsonLd } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -69,16 +70,25 @@ export async function generateMetadata({
   const supabase = await createClient()
   const { data: tour } = await supabase
     .from('tours')
-    .select('title_en, title_ar, overview_en, hero_image_url')
+    .select('title_en, title_ar, overview_en, overview_ar, hero_image_url')
     .eq('id', id)
     .eq('status', 'active')
     .maybeSingle()
   if (!tour) return {}
-  const title = locale === 'ar' ? (tour.title_ar || tour.title_en) : tour.title_en
+  const isAr = locale === 'ar'
+  const title = isAr ? (tour.title_ar || tour.title_en) : tour.title_en
+  // Fall back to English so a tour with no Arabic overview still gets a snippet.
+  const overview = isAr ? (tour.overview_ar || tour.overview_en) : tour.overview_en
   return {
     title: title ?? undefined,
-    description: tour.overview_en?.slice(0, 160) ?? undefined,
-    openGraph: { images: tour.hero_image_url ? [tour.hero_image_url] : [] },
+    description: overview?.slice(0, 160) ?? undefined,
+    alternates: { canonical: `/tours/${id}` },
+    openGraph: {
+      title: title ?? undefined,
+      description: overview?.slice(0, 160) ?? undefined,
+      url: `/tours/${id}`,
+      images: tour.hero_image_url ? [tour.hero_image_url] : [],
+    },
   }
 }
 
@@ -131,6 +141,15 @@ export default async function TourDetailPage({
     : ((tour.excluded_en as string[] | null)?.filter(Boolean) ?? [])
   const gallery: string[] = Array.isArray(tour.gallery_urls) ? (tour.gallery_urls as string[]).filter(Boolean) : []
   const faqs: { q_en?: string; q_ar?: string; a_en?: string; a_ar?: string }[] = Array.isArray(tour.faqs) ? tour.faqs as { q_en?: string; q_ar?: string; a_en?: string; a_ar?: string }[] : []
+  // Feed the FAQ rich-result markup only the pairs that render with both a
+  // question and an answer — Google requires the schema to match what a
+  // visitor can actually read on the page.
+  const faqEntries = faqs
+    .map((f) => ({
+      question: (isAr ? f.q_ar || f.q_en : f.q_en || f.q_ar) ?? '',
+      answer: (isAr ? f.a_ar || f.a_en : f.a_en || f.a_ar) ?? '',
+    }))
+    .filter((f) => f.question && f.answer)
 
   // Route text e.g. "Nairobi → Masai Mara → Nairobi" (arrow mirrors for RTL)
   const routeArrow = isAr ? ' ← ' : ' → '
@@ -277,6 +296,7 @@ export default async function TourDetailPage({
           providerUrl: site.url,
         })}
       />
+      {faqEntries.length > 0 && <StructuredData data={faqPageJsonLd(faqEntries)} />}
       <Suspense><PublicHeader initialLang={locale} /></Suspense>
 
       {/* 1. Hero */}

@@ -4,6 +4,7 @@ import "./globals.css";
 import PwaRegister from "@/components/pwa-register";
 import GoogleAnalytics from "@/components/google-analytics";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { site } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -60,7 +61,7 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://safariadventureriders.com"),
+  metadataBase: new URL(site.url),
   title: {
     default: "Safari Adventure Riders — Expert East Africa Safaris",
     template: "%s | Safari Adventure Riders",
@@ -83,7 +84,7 @@ export const metadata: Metadata = {
     title: "Safari Adventure Riders — Expert East Africa Safaris",
     description:
       "Expert-led safaris in Kenya, Tanzania & East Africa. Custom itineraries, luxury lodges, and 15+ years of experience.",
-    url: "https://safariadventureriders.com",
+    url: site.url,
     locale: "en",
   },
   twitter: {

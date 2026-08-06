@@ -112,9 +112,22 @@ export async function generateMetadata({
   if (!dep) return {}
   const tour = dep.tours as any
   const title = locale === 'ar' ? (tour?.title_ar || tour?.title_en) : tour?.title_en
+  if (!title) return { alternates: { canonical: `/departures/${id}` } }
+  const heading = `${title} — ${formatDate(dep.start_date, locale)}`
+  const description =
+    locale === 'ar'
+      ? `رحلة ${title} تنطلق في ${formatDate(dep.start_date, locale)}. اطّلع على المقاعد المتاحة والسعر للفرد واحجز مباشرة.`
+      : `${title} departing ${formatDate(dep.start_date, locale)}. Check remaining seats, per-person pricing, and book direct with the operator.`
   return {
-    title: title ? `${title} — ${formatDate(dep.start_date, locale)}` : undefined,
-    openGraph: { images: tour?.hero_image_url ? [tour.hero_image_url] : [] },
+    title: heading,
+    description,
+    alternates: { canonical: `/departures/${id}` },
+    openGraph: {
+      title: heading,
+      description,
+      url: `/departures/${id}`,
+      images: tour?.hero_image_url ? [tour.hero_image_url] : [],
+    },
   }
 }
 

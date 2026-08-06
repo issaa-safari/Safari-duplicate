@@ -5,11 +5,34 @@ import PublicFooter from '@/components/public/footer'
 import SafariImage from '@/components/public/safari-image'
 import WhatsAppButton from '@/components/public/whatsapp-button'
 import { STOCK_HERO_IMAGE } from '@/lib/stock-images'
+import type { Metadata } from 'next'
+import { getServerLocale } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/seo'
 
 const G = '#7A9A4A'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 60 // Revalidate every 60 seconds for fresh data
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>
+}): Promise<Metadata> {
+  const locale = await getServerLocale(await searchParams)
+  return pageMetadata({
+    path: '/departures',
+    locale,
+    title: {
+      en: 'Fixed Departure Dates & Availability',
+      ar: 'مواعيد الرحلات المؤكدة والمقاعد المتاحة',
+    },
+    description: {
+      en: 'Upcoming safari departures with confirmed dates, remaining seats, and per-person pricing. Join a small group across Kenya and Tanzania.',
+      ar: 'رحلات السفاري القادمة بمواعيد مؤكدة، مع المقاعد المتبقية والسعر للفرد. انضم إلى مجموعة صغيرة في كينيا وتنزانيا.',
+    },
+  })
+}
 
 interface Departure {
   id: string

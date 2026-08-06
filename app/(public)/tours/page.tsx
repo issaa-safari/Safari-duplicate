@@ -6,10 +6,32 @@ import SafariImage from '@/components/public/safari-image'
 import WhatsAppButton from '@/components/public/whatsapp-button'
 import { getServerLocale } from '@/lib/i18n'
 import { STOCK_HERO_IMAGE } from '@/lib/stock-images'
+import type { Metadata } from 'next'
+import { pageMetadata } from '@/lib/seo'
 
 const G = '#7A9A4A'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string; type?: string }>
+}): Promise<Metadata> {
+  const locale = await getServerLocale(await searchParams)
+  return pageMetadata({
+    path: '/tours',
+    locale,
+    title: {
+      en: 'Safari & Motorbike Tour Itineraries',
+      ar: 'برامج رحلات السفاري والدراجات النارية',
+    },
+    description: {
+      en: 'Browse our Kenya and Tanzania safari itineraries and motorbike tours — day-by-day routes, what each trip includes, and pricing.',
+      ar: 'تصفح برامج السفاري في كينيا وتنزانيا وجولات الدراجات النارية — المسار يوماً بيوم، وما تشمله كل رحلة، والأسعار.',
+    },
+  })
+}
 
 export default async function ToursPage({
   searchParams,

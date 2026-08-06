@@ -31,8 +31,14 @@ const cairo = Cairo({
   display: 'swap',
 })
 
+// A plain string here would replace the root layout's title *object*, dropping
+// its template for every page in this group — which is why these pages used to
+// render without the brand suffix. Restate the template so page titles keep it.
 export const metadata: Metadata = {
-  title: 'Safari Adventure Riders - East African Safari Tours',
+  title: {
+    default: 'Safari Adventure Riders - East African Safari Tours',
+    template: '%s | Safari Adventure Riders',
+  },
   description: 'Experience the ultimate East African safari. Custom wildlife tours, expert guides, and unforgettable adventures.',
 }
 

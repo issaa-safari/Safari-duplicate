@@ -5,7 +5,10 @@
 export const site = {
   name: 'Safari Adventure Riders',
   domain: 'safariadventureriders.com',
-  url: 'https://safariadventureriders.com',
+  // The apex 308-redirects to www, so www is the canonical host. Everything
+  // derived from this (sitemap entries, canonical tags, OG urls, emailed
+  // links) must use it or every URL we publish costs an extra redirect.
+  url: 'https://www.safariadventureriders.com',
   email: 'info@safariadventureriders.com',
   // Display + dial/normalised forms of the same number.
   phoneDisplay: '+254 710 789 789',
