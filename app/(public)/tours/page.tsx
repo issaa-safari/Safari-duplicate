@@ -9,6 +9,7 @@ import { STOCK_HERO_IMAGE } from '@/lib/stock-images'
 import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/seo'
 import { localePath } from '@/lib/locale'
+import { tourSegment } from '@/lib/slug'
 
 const G = '#7A9A4A'
 
@@ -50,7 +51,7 @@ export default async function ToursPage({
   // and carry duration_days / countries_visited (not country/min_days/max_days).
   let query = admin
     .from('tours')
-    .select('id, title_en, title_ar, subtitle_en, overview_en, type, duration_days, duration_nights, countries_visited, status, hero_image_url, gallery_urls')
+    .select('id, slug, title_en, title_ar, subtitle_en, overview_en, type, duration_days, duration_nights, countries_visited, status, hero_image_url, gallery_urls')
     .eq('status', 'active')
   if (typeFilter) query = query.eq('type', typeFilter)
   const { data: tours } = await query.order('title_en')
@@ -146,7 +147,7 @@ export default async function ToursPage({
                         )}
                         {desc && <p className="text-sm text-gray-600 mb-6 line-clamp-3">{desc}</p>}
                         <Link
-                          href={localePath(`/tours/${tour.id}`, locale)}
+                          href={localePath(`/tours/${tourSegment(tour)}`, locale)}
                           className="block text-center px-4 py-2 rounded-lg font-semibold text-white transition"
                           style={{ backgroundColor: G }}
                         >

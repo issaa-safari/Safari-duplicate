@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
@@ -23,6 +23,7 @@ import { site, whatsappLink } from '@/lib/site'
 import StructuredData, { touristTripJsonLd } from '@/components/public/structured-data'
 import { faqPageJsonLd, languageAlternates } from '@/lib/seo'
 import { localePath } from '@/lib/locale'
+import { isUuid } from '@/lib/slug'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,20 +63,23 @@ export async function generateMetadata({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ slug: string }>
   searchParams: Promise<{ lang?: string }>
 }): Promise<Metadata> {
-  const { id } = await params
+  const { slug } = await params
   const sp = await searchParams
   const locale = await getServerLocale(sp)
   const supabase = await createClient()
   const { data: tour } = await supabase
     .from('tours')
-    .select('title_en, title_ar, overview_en, overview_ar, hero_image_url')
-    .eq('id', id)
+    .select('id, slug, title_en, title_ar, overview_en, overview_ar, hero_image_url')
+    .eq(isUuid(slug) ? 'id' : 'slug', slug)
     .eq('status', 'active')
     .maybeSingle()
   if (!tour) return {}
+  // Always advertise the slug URL, even when reached by UUID, so the two forms
+  // never compete for the same content in the index.
+  const path = `/tours/${tour.slug ?? tour.id}`
   const isAr = locale === 'ar'
   const title = isAr ? (tour.title_ar || tour.title_en) : tour.title_en
   // Fall back to English so a tour with no Arabic overview still gets a snippet.
@@ -84,13 +88,13 @@ export async function generateMetadata({
     title: title ?? undefined,
     description: overview?.slice(0, 160) ?? undefined,
     alternates: {
-      canonical: localePath(`/tours/${id}`, locale),
-      languages: languageAlternates(`/tours/${id}`),
+      canonical: localePath(path, locale),
+      languages: languageAlternates(path),
     },
     openGraph: {
       title: title ?? undefined,
       description: overview?.slice(0, 160) ?? undefined,
-      url: localePath(`/tours/${id}`, locale),
+      url: localePath(path, locale),
       locale,
       images: tour.hero_image_url ? [tour.hero_image_url] : [],
     },
@@ -101,10 +105,10 @@ export default async function TourDetailPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ slug: string }>
   searchParams: Promise<{ lang?: string }>
 }) {
-  const { id } = await params
+  const { slug } = await params
   const sp = await searchParams
   const locale = await getServerLocale(sp)
   const isAr = locale === 'ar'
@@ -114,7 +118,7 @@ export default async function TourDetailPage({
   const { data: tour } = await supabase
     .from('tours')
     .select(`
-      id, title_en, title_ar, subtitle_en, subtitle_ar,
+      id, slug, title_en, title_ar, subtitle_en, subtitle_ar,
       overview_en, overview_ar, type,
       duration_days, duration_nights, countries_visited,
       start_destination, end_destination,
@@ -125,11 +129,18 @@ export default async function TourDetailPage({
       total_distance_km, difficulty_rating, max_group_size,
       faqs, status
     `)
-    .eq('id', id)
+    .eq(isUuid(slug) ? 'id' : 'slug', slug)
     .eq('status', 'active')
     .maybeSingle()
 
   if (!tour) notFound()
+
+  // Reached by the old UUID URL: send it to the slug, permanently, so links
+  // already out in the world consolidate onto one address.
+  if (tour.slug && slug !== tour.slug) {
+    permanentRedirect(localePath(`/tours/${tour.slug}`, locale))
+  }
+  const id = tour.id
 
   const accent = accentFor(tour.type)
   const title = isAr ? (tour.title_ar || tour.title_en) : tour.title_en
@@ -290,7 +301,7 @@ export default async function TourDetailPage({
     <div dir={isAr ? 'rtl' : 'ltr'} style={{ background: '#fff' }}>
       <StructuredData
         data={touristTripJsonLd({
-          url: `${site.url}/tours/${id}`,
+          url: `${site.url}${localePath(`/tours/${tour.slug ?? id}`, locale)}`,
           name: title ?? '',
           description: overview,
           image: tour.hero_image_url,

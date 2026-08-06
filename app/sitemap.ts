@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { site } from '@/lib/site'
 import { localePath } from '@/lib/locale'
+import { tourSegment } from '@/lib/slug'
 
 // Regenerate at most hourly; tour/departure churn is low.
 export const revalidate = 3600
@@ -50,7 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const admin = createAdminClient()
     const [{ data: tours }, { data: departures }] = await Promise.all([
-      admin.from('tours').select('id, updated_at').eq('status', 'active'),
+      admin.from('tours').select('id, slug, updated_at').eq('status', 'active'),
       admin
         .from('departures')
         .select('id, start_date')
@@ -59,7 +60,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ])
 
     const tourEntries: Entry[] = (tours ?? []).map((t) => ({
-      path: `/tours/${t.id}`,
+      path: `/tours/${tourSegment(t)}`,
       lastModified: t.updated_at ? new Date(t.updated_at) : undefined,
       changeFrequency: 'weekly',
       priority: 0.8,

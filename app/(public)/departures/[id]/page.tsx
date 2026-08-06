@@ -159,7 +159,7 @@ export default async function DepartureDetailPage({
       id, tour_id, start_date, end_date,
       max_seats, booked_seats, price_usd, status, is_active,
       tours (
-        id, title_en, title_ar, subtitle_en, subtitle_ar,
+        id, slug, title_en, title_ar, subtitle_en, subtitle_ar,
         overview_en, overview_ar, type,
         countries_visited, start_destination, end_destination,
         hero_image_url, gallery_urls, route_map_url,
@@ -176,6 +176,9 @@ export default async function DepartureDetailPage({
   if (!departure) notFound()
 
   const tour = departure.tours as any
+  // Link back to the tour by its slug; falls back to the id for a tour whose
+  // title has no latin characters to slugify.
+  const tourSlug: string | null = tour?.slug ?? null
   const accent = accentFor(tour?.type ?? null)
   const daysCount = getDaysCount(departure.start_date, departure.end_date)
   const availableSpots = departure.max_seats - departure.booked_seats
@@ -357,7 +360,7 @@ export default async function DepartureDetailPage({
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
         <DepartureHero
           tourTitle={title ?? ''}
-          backToTourHref={localePath(`/tours/${departure.tour_id}`, locale)}
+          backToTourHref={localePath(`/tours/${tourSlug ?? departure.tour_id}`, locale)}
           backToTourLabel={t.backToTour}
           departureLabel={t.departure}
           dateRangeText={`${formatDate(departure.start_date, locale)} ${isAr ? '←' : '→'} ${formatDate(departure.end_date, locale)}`}
