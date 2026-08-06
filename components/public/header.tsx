@@ -136,7 +136,11 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
       {/* subtle top hairline in brand olive for a finished edge */}
       <div aria-hidden className="h-0.5 w-full bg-gradient-to-r from-olive via-gold to-murram opacity-80" />
 
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
+      {/* dir="ltr" on the bar only, in both languages: the brand mark belongs on
+          the left and the menu on the right whichever way the page reads. The
+          labels inside are still laid out by the bidi algorithm, so Arabic text
+          renders right-to-left within each item. */}
+      <div dir="ltr" className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
         {/* Logo */}
         <Link
           href={localePath('/', locale)}
@@ -226,7 +230,8 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
         }`}
         dir={ar ? 'rtl' : 'ltr'}
       >
-        <div className="flex h-16 items-center justify-between px-4 sm:px-6">
+        {/* Same rule for the open menu's own bar: brand left, close right. */}
+        <div dir="ltr" className="flex h-16 items-center justify-between px-4 sm:px-6">
           <span className="text-base font-bold text-white" style={display}>Safari Adventure Riders</span>
           <button
             className="flex h-10 w-10 items-center justify-center rounded-lg text-white hover:bg-white/10"
