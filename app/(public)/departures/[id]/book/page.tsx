@@ -7,6 +7,7 @@ import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import { createClient } from '@/lib/supabase/client'
 import { localePath } from '@/lib/locale'
+import { useLocale } from '@/lib/use-locale'
 
 const G = '#7A9A4A'
 
@@ -38,7 +39,10 @@ function BookingFormContent() {
   const params = useParams()
   const searchParams = useSearchParams()
   const departureId = params.id as string
-  const locale = (searchParams.get('lang') as 'en' | 'ar') || 'en'
+  // From the path, like every other client page. Reading ?lang= meant the whole
+  // booking form — which has a complete Arabic dictionary below — rendered in
+  // English at /ar/departures/<id>/book.
+  const locale = useLocale()
   const pricePerPerson = searchParams.get('price') ? parseFloat(searchParams.get('price')!) : 0
   const tourTitle = searchParams.get('tour') || ''
 

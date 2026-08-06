@@ -6,15 +6,28 @@ import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import PrintButton from '@/components/public/print-button'
 import type { BookingTraveller } from '@/lib/types'
+import { getServerLocale } from '@/lib/i18n'
+import { localePath } from '@/lib/locale'
 
 const G = '#7A9A4A'
 
+// Same convention as the departures list: Gregorian months in Arabic script,
+// so a date reads naturally without changing calendar under the client.
+const fmtDate = (value: string | Date | null | undefined, isAr: boolean, withTime = false) => {
+  if (!value) return '—'
+  const d = value instanceof Date ? value : new Date(value)
+  const tag = isAr ? 'ar-SA-u-ca-gregory' : 'en-GB'
+  return withTime ? d.toLocaleString(tag) : d.toLocaleDateString(tag)
+}
+
 export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const locale = await getServerLocale()
+  const isAr = locale === 'ar'
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(localePath('/login', locale))
 
   const admin = createAdminClient()
 
@@ -98,11 +111,55 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
   // Status timeline steps. Mark progress based on the booking status.
   const currentStep = bookingStatus === 'completed' ? 2 : bookingStatus === 'confirmed' ? 1 : 0
-  const timeline = [
+  const timeline = isAr ? [
+    { key: 'pending', label: 'تم الحجز', desc: 'استلمنا طلبك' },
+    { key: 'confirmed', label: 'مؤكد', desc: 'تم تأمين مقعدك' },
+    { key: 'completed', label: 'مكتملة', desc: 'انتهت الرحلة' },
+  ] : [
     { key: 'pending', label: 'Booked', desc: 'Request received' },
     { key: 'confirmed', label: 'Confirmed', desc: 'Spot secured' },
     { key: 'completed', label: 'Completed', desc: 'Trip finished' },
   ]
+
+  const t = isAr ? {
+    back: 'العودة إلى لوحة التحكم', startsToday: 'تبدأ رحلتك اليوم! 🦁',
+    day: 'يوم', days: 'أيام', untilSafari: 'حتى موعد رحلتك', departing: 'الانطلاق',
+    reference: 'الرقم المرجعي', cancelled: 'تم إلغاء هذا الحجز.',
+    startDate: 'تاريخ البداية', endDate: 'تاريخ النهاية',
+    travellers: 'المسافرون', totalPrice: 'السعر الإجمالي',
+    payment: 'الدفع', paidInFull: 'مدفوع بالكامل', partiallyPaid: 'مدفوع جزئياً',
+    awaitingPayment: 'بانتظار الدفع', paid: 'المدفوع', balanceDue: 'المبلغ المتبقي',
+    howToPay: 'طريقة الدفع',
+    payIntro: 'ادفع عبر التحويل البنكي باستخدام البيانات أدناه، ثم أرسل لنا إشعار التحويل لنحدّث حجزك.',
+    depositA: 'دفعة مقدمة قدرها', depositB: 'تؤكد حجزك.',
+    bank: 'البنك', accountName: 'اسم الحساب', accountNumber: 'رقم الحساب',
+    accountType: 'نوع الحساب', amountDue: 'المبلغ المستحق',
+    bookingRef: 'حجز', sendConfirmationTo: 'أرسل إشعار التحويل إلى', or: ' أو ',
+    travellerInfo: 'بيانات المسافرين', traveller: 'المسافر',
+    name: 'الاسم', email: 'البريد الإلكتروني', phone: 'الهاتف',
+    dob: 'تاريخ الميلاد', nationality: 'الجنسية', passport: 'رقم جواز السفر',
+    confirmedOn: 'تاريخ تأكيد الحجز',
+    statuses: { pending: 'قيد الانتظار', confirmed: 'مؤكد', completed: 'مكتمل', cancelled: 'ملغي' } as Record<string, string>,
+  } : {
+    back: 'Back to Dashboard', startsToday: 'Your safari starts today! 🦁',
+    day: 'day', days: 'days', untilSafari: 'until your safari', departing: 'Departing',
+    reference: 'Reference', cancelled: 'This booking has been cancelled.',
+    startDate: 'Start Date', endDate: 'End Date',
+    travellers: 'Travellers', totalPrice: 'Total Price',
+    payment: 'Payment', paidInFull: 'Paid in full', partiallyPaid: 'Partially paid',
+    awaitingPayment: 'Awaiting payment', paid: 'Paid', balanceDue: 'Balance due',
+    howToPay: 'How to pay',
+    payIntro: 'Pay by bank transfer using the details below, then send us your transfer confirmation so we can update your booking.',
+    depositA: 'A deposit of', depositB: 'secures your booking.',
+    bank: 'Bank', accountName: 'Account name', accountNumber: 'Account number',
+    accountType: 'Account type', amountDue: 'Amount due',
+    bookingRef: 'Booking', sendConfirmationTo: 'Send your transfer confirmation to', or: ' or ',
+    travellerInfo: 'Traveller Information', traveller: 'Traveller',
+    name: 'Name', email: 'Email', phone: 'Phone',
+    dob: 'Date of Birth', nationality: 'Nationality', passport: 'Passport Number',
+    confirmedOn: 'Booking Confirmation Date',
+    statuses: {} as Record<string, string>,
+  }
 
   const statusMap: Record<string, { bg: string; text: string; badge: string }> = {
     confirmed: { bg: 'bg-green-50', text: 'text-green-900', badge: 'bg-green-100 text-green-700' },
@@ -119,8 +176,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       <main className="min-h-screen bg-gray-50 py-12">
         <div className="max-w-3xl mx-auto px-4">
           <div className="flex items-center justify-between mb-6 print:hidden">
-            <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900 inline-block">
-              ← Back to Dashboard
+            <Link href={localePath('/dashboard', locale)} className="text-sm text-gray-600 hover:text-gray-900 inline-block">
+              {isAr ? '→' : '←'} {t.back}
             </Link>
             <PrintButton />
           </div>
@@ -129,14 +186,17 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           {!isCancelled && daysToGo !== null && daysToGo >= 0 && (
             <div className="rounded-lg p-5 mb-6 text-white text-center" style={{ backgroundColor: G }}>
               {daysToGo === 0 ? (
-                <p className="text-xl font-bold">Your safari starts today! 🦁</p>
+                <p className="text-xl font-bold">{t.startsToday}</p>
               ) : (
                 <p className="text-xl font-bold">
-                  {daysToGo} {daysToGo === 1 ? 'day' : 'days'} until your safari
+                  {daysToGo} {daysToGo === 1 ? t.day : t.days} {t.untilSafari}
                 </p>
               )}
               <p className="text-sm opacity-90 mt-1">
-                Departing {startDate ? startDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+                {t.departing}{' '}
+                {startDate
+                  ? startDate.toLocaleDateString(isAr ? 'ar-SA-u-ca-gregory' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                  : '—'}
               </p>
             </div>
           )}
@@ -145,13 +205,15 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           <div className={`rounded-lg border border-gray-200 p-6 mb-6 ${status.bg}`}>
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{tour?.title_en}</h1>
+                <h1 dir="auto" className="text-2xl font-bold text-gray-900">
+                  {(isAr ? tour?.title_ar || tour?.title_en : tour?.title_en) ?? ''}
+                </h1>
                 <p className="text-sm text-gray-600 mt-1">
-                  Reference: {booking.reference || id}
+                  {t.reference}: {booking.reference || id}
                 </p>
               </div>
               <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${status.badge}`}>
-                {bookingStatus}
+                {t.statuses[bookingStatus] ?? bookingStatus}
               </span>
             </div>
 
@@ -182,28 +244,24 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                 })}
               </div>
             ) : (
-              <p className="text-sm font-medium text-red-700 mt-2">This booking has been cancelled.</p>
+              <p className="text-sm font-medium text-red-700 mt-2">{t.cancelled}</p>
             )}
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-300">
               <div>
-                <p className="text-xs font-semibold text-gray-600 uppercase">Start Date</p>
-                <p className="text-lg font-bold text-gray-900 mt-1">
-                  {departure?.start_date ? new Date(departure.start_date).toLocaleDateString('en-GB') : '—'}
-                </p>
+                <p className="text-xs font-semibold text-gray-600 uppercase">{t.startDate}</p>
+                <p className="text-lg font-bold text-gray-900 mt-1">{fmtDate(departure?.start_date, isAr)}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-600 uppercase">End Date</p>
-                <p className="text-lg font-bold text-gray-900 mt-1">
-                  {departure?.end_date ? new Date(departure.end_date).toLocaleDateString('en-GB') : '—'}
-                </p>
+                <p className="text-xs font-semibold text-gray-600 uppercase">{t.endDate}</p>
+                <p className="text-lg font-bold text-gray-900 mt-1">{fmtDate(departure?.end_date, isAr)}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-600 uppercase">Travellers</p>
+                <p className="text-xs font-semibold text-gray-600 uppercase">{t.travellers}</p>
                 <p className="text-lg font-bold text-gray-900 mt-1">{booking.number_of_travellers}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-600 uppercase">Total Price</p>
+                <p className="text-xs font-semibold text-gray-600 uppercase">{t.totalPrice}</p>
                 <p className="text-lg font-bold mt-1" style={{ color: G }}>
                   ${totalPrice.toLocaleString()}
                 </p>
@@ -214,20 +272,20 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           {/* Payment progress */}
           <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-bold text-gray-900">Payment</h2>
+              <h2 className="text-lg font-bold text-gray-900">{t.payment}</h2>
               <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${
                 paidPct >= 100 ? 'bg-green-100 text-green-700' : paidAmount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
               }`}>
-                {paidPct >= 100 ? 'Paid in full' : paidAmount > 0 ? 'Partially paid' : 'Awaiting payment'}
+                {paidPct >= 100 ? t.paidInFull : paidAmount > 0 ? t.partiallyPaid : t.awaitingPayment}
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
               <div className="h-3 rounded-full transition-all" style={{ width: `${paidPct}%`, backgroundColor: G }} />
             </div>
             <div className="flex justify-between mt-2 text-sm">
-              <span className="text-gray-600">Paid: <span className="font-semibold text-gray-900">${paidAmount.toLocaleString()}</span></span>
+              <span className="text-gray-600">{t.paid}: <span className="font-semibold text-gray-900">${paidAmount.toLocaleString()}</span></span>
               {balanceDue > 0 && (
-                <span className="text-gray-600">Balance due: <span className="font-semibold text-gray-900">${balanceDue.toLocaleString()}</span></span>
+                <span className="text-gray-600">{t.balanceDue}: <span className="font-semibold text-gray-900">${balanceDue.toLocaleString()}</span></span>
               )}
             </div>
             {payments && payments.length > 0 && (
@@ -235,7 +293,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                 {payments.map((p, i) => (
                   <div key={i} className="flex justify-between text-xs text-gray-500">
                     <span>
-                      {new Date(p.created_at).toLocaleDateString('en-GB')}
+                      {fmtDate(p.created_at, isAr)}
                       {p.method ? ` · ${p.method}` : ''}
                     </span>
                     <span className="font-medium text-gray-700">
@@ -250,53 +308,52 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           {/* How to pay — bank transfer details, shown while a balance is outstanding */}
           {balanceDue > 0 && hasBankDetails && (
             <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-1">How to pay</h2>
+              <h2 className="text-lg font-bold text-gray-900 mb-1">{t.howToPay}</h2>
               <p className="text-sm text-gray-600 mb-4">
-                Pay by bank transfer using the details below, then send us your transfer
-                confirmation so we can update your booking.
+                {t.payIntro}
                 {depositDue > 0 && paidAmount === 0 && (
-                  <> A deposit of <span className="font-semibold text-gray-900">${depositDue.toLocaleString()}</span> ({depositPercent}%) secures your booking.</>
+                  <> {t.depositA} <span className="font-semibold text-gray-900">${depositDue.toLocaleString()}</span> ({depositPercent}%) {t.depositB}</>
                 )}
               </p>
               <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 {settings?.bank_name && (
                   <div>
-                    <dt className="text-gray-600">Bank</dt>
+                    <dt className="text-gray-600">{t.bank}</dt>
                     <dd className="font-semibold text-gray-900">{settings.bank_name}</dd>
                   </div>
                 )}
                 {settings?.bank_account_name && (
                   <div>
-                    <dt className="text-gray-600">Account name</dt>
+                    <dt className="text-gray-600">{t.accountName}</dt>
                     <dd className="font-semibold text-gray-900">{settings.bank_account_name}</dd>
                   </div>
                 )}
                 {settings?.bank_account_number && (
                   <div>
-                    <dt className="text-gray-600">Account number</dt>
+                    <dt className="text-gray-600">{t.accountNumber}</dt>
                     <dd className="font-semibold text-gray-900 tabular-nums">{settings.bank_account_number}</dd>
                   </div>
                 )}
                 {settings?.bank_account_type && (
                   <div>
-                    <dt className="text-gray-600">Account type</dt>
+                    <dt className="text-gray-600">{t.accountType}</dt>
                     <dd className="font-semibold text-gray-900">{settings.bank_account_type}</dd>
                   </div>
                 )}
                 <div>
-                  <dt className="text-gray-600">Amount due</dt>
+                  <dt className="text-gray-600">{t.amountDue}</dt>
                   <dd className="font-semibold" style={{ color: G }}>${balanceDue.toLocaleString()}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-600">Reference</dt>
-                  <dd className="font-semibold text-gray-900">Booking {String(booking.id).slice(0, 8).toUpperCase()}</dd>
+                  <dt className="text-gray-600">{t.reference}</dt>
+                  <dd className="font-semibold text-gray-900">{t.bookingRef} {String(booking.id).slice(0, 8).toUpperCase()}</dd>
                 </div>
               </dl>
               {(settings?.email || settings?.whatsapp) && (
                 <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-100">
-                  Send your transfer confirmation to{' '}
+                  {t.sendConfirmationTo}{' '}
                   {settings.email && <span className="font-medium text-gray-700">{settings.email}</span>}
-                  {settings.email && settings.whatsapp && ' or '}
+                  {settings.email && settings.whatsapp && t.or}
                   {settings.whatsapp && <span className="font-medium text-gray-700">WhatsApp {settings.whatsapp}</span>}.
                 </p>
               )}
@@ -305,38 +362,36 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
           {/* Traveller Information */}
           <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-6">Traveller Information</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-6">{t.travellerInfo}</h2>
             <div className="space-y-6">
               {travellers.map((traveller, index) => (
                 <div key={traveller.id} className="pb-6 border-b border-gray-200 last:border-b-0">
                   <h3 className="font-semibold text-gray-900 mb-3">
-                    Traveller {index + 1}
+                    {t.traveller} {index + 1}
                   </h3>
                   <div className="grid md:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-600">Name</p>
+                      <p className="text-gray-600">{t.name}</p>
                       <p className="font-medium text-gray-900">{traveller.first_name} {traveller.last_name}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600">Email</p>
+                      <p className="text-gray-600">{t.email}</p>
                       <p className="font-medium text-gray-900">{traveller.email}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600">Phone</p>
+                      <p className="text-gray-600">{t.phone}</p>
                       <p className="font-medium text-gray-900">{traveller.phone}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600">Date of Birth</p>
-                      <p className="font-medium text-gray-900">
-                        {traveller.date_of_birth ? new Date(traveller.date_of_birth).toLocaleDateString('en-GB') : '—'}
-                      </p>
+                      <p className="text-gray-600">{t.dob}</p>
+                      <p className="font-medium text-gray-900">{fmtDate(traveller.date_of_birth, isAr)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600">Nationality</p>
+                      <p className="text-gray-600">{t.nationality}</p>
                       <p className="font-medium text-gray-900">{traveller.nationality}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600">Passport Number</p>
+                      <p className="text-gray-600">{t.passport}</p>
                       <p className="font-medium text-gray-900">{traveller.passport_number}</p>
                     </div>
                   </div>
@@ -347,10 +402,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
           {/* Booking Date */}
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
-            <p className="text-sm text-gray-600">Booking Confirmation Date</p>
-            <p className="text-lg font-bold text-gray-900 mt-1">
-              {new Date(booking.created_at).toLocaleString('en-GB')}
-            </p>
+            <p className="text-sm text-gray-600">{t.confirmedOn}</p>
+            <p className="text-lg font-bold text-gray-900 mt-1">{fmtDate(booking.created_at, isAr, true)}</p>
           </div>
         </div>
       </main>
