@@ -4,6 +4,7 @@ import { useRef } from 'react'
 import { motion, useInView, useReducedMotion } from 'framer-motion'
 import Link from 'next/link'
 import SafariImage from '@/components/public/safari-image'
+import { localePath, type Locale } from '@/lib/locale'
 
 const MURRAM = '#B0492B'
 const GOLD = '#C9A24B'
@@ -22,7 +23,7 @@ interface ChooseYourTrailProps {
   bikeCard: TrailCard
   privateCard: TrailCard
   isAr: boolean
-  locale: string
+  locale: Locale
 }
 
 function ForkSVG({ inView, reduced, isAr }: { inView: boolean; reduced: boolean | null; isAr: boolean }) {
@@ -90,7 +91,7 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
         ? 'جولات دراجات جماعية بقيادة خبراء من نيروبي إلى الساحل. مدعومة بالكامل، ممتازة للمغامرين.'
         : 'Expert-led group rides from Nairobi to the coast. Fully supported, KTM-grade adventure for serious riders.',
       cta: isAr ? 'استكشف جولات الدراجات' : 'Explore Bike Tours',
-      href: `/tours?lang=${locale}&type=bike`,
+      href: `${localePath('/tours', locale)}?type=bike`,
     },
     {
       accent: GOLD,
@@ -102,7 +103,7 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
         ? 'مسارات مخصصة، مخيمات حصرية، مجموعتك وحدها فقط. سفاري مصمم حول تفضيلاتك.'
         : 'Custom itineraries, exclusive camps, your group only. Safari built entirely around your preferences.',
       cta: isAr ? 'استكشف السفاري الخاص' : 'Explore Private Safaris',
-      href: `/tours?lang=${locale}&type=private`,
+      href: `${localePath('/tours', locale)}?type=private`,
     },
   ]
 

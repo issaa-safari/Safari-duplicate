@@ -21,7 +21,8 @@ import StickyEnquiryBar from '@/components/public/sticky-enquiry-bar'
 import { getServerLocale } from '@/lib/i18n'
 import { site, whatsappLink } from '@/lib/site'
 import StructuredData, { touristTripJsonLd } from '@/components/public/structured-data'
-import { faqPageJsonLd } from '@/lib/seo'
+import { faqPageJsonLd, languageAlternates } from '@/lib/seo'
+import { localePath } from '@/lib/locale'
 
 export const dynamic = 'force-dynamic'
 
@@ -82,11 +83,15 @@ export async function generateMetadata({
   return {
     title: title ?? undefined,
     description: overview?.slice(0, 160) ?? undefined,
-    alternates: { canonical: `/tours/${id}` },
+    alternates: {
+      canonical: localePath(`/tours/${id}`, locale),
+      languages: languageAlternates(`/tours/${id}`),
+    },
     openGraph: {
       title: title ?? undefined,
       description: overview?.slice(0, 160) ?? undefined,
-      url: `/tours/${id}`,
+      url: localePath(`/tours/${id}`, locale),
+      locale,
       images: tour.hero_image_url ? [tour.hero_image_url] : [],
     },
   }
@@ -259,9 +264,9 @@ export default async function TourDetailPage({
 
   const staff: StaffMember[] = (rawStaff ?? []).map(s => ({ id: s.id, name: s.name, role: s.role }))
 
-  const enquireHref = `/quote-request?tour=${id}&lang=${locale}`
+  const enquireHref = `${localePath('/quote-request', locale)}?tour=${id}`
   const bookHref = departures[0]
-    ? `/departures/${departures[0].id}/book?lang=${locale}&price=${departures[0].priceUsd}&tour=${encodeURIComponent(title ?? '')}`
+    ? `${localePath(`/departures/${departures[0].id}/book`, locale)}?price=${departures[0].priceUsd}&tour=${encodeURIComponent(title ?? '')}`
     : enquireHref
   const waHref = whatsappLink(isAr ? `مرحباً، أريد الاستفسار عن جولة: ${title}` : `Hi, I'd like to enquire about: ${title}`)
 

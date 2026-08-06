@@ -5,6 +5,8 @@ import PwaRegister from "@/components/pwa-register";
 import GoogleAnalytics from "@/components/google-analytics";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { site } from "@/lib/site";
+import { getPathLocale } from "@/lib/i18n";
+import { dir } from "@/lib/locale";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -111,14 +113,19 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Follows the URL, not the visitor's cookie: /ar/* is Arabic and everything
+  // else is English, so the declared language always matches the address.
+  const locale = await getPathLocale();
+
   return (
     <html
-      lang="en"
+      lang={locale}
+      dir={dir(locale)}
       className={`${geistSans.variable} ${geistMono.variable} ${readexPro.variable} ${ibmPlexSans.variable} ${ibmPlexSansAr.variable} ${cairo.variable} ${inter.variable} ${playfairDisplay.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-body, 'IBM Plex Sans', sans-serif)" }}>

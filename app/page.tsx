@@ -15,6 +15,7 @@ import { whatsappLink } from '@/lib/site'
 import type { Metadata } from 'next'
 import StructuredData from '@/components/public/structured-data'
 import { pageMetadata, travelAgencyJsonLd } from '@/lib/seo'
+import { localePath } from '@/lib/locale'
 
 const BUSH = '#20271A'
 const OLIVE = '#7A9A4A'
@@ -192,7 +193,7 @@ export default async function HomePage({
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, justifyContent: 'center' }}>
                 <Link
-                  href={`/quote-request?lang=${locale}`}
+                  href={localePath('/quote-request', locale)}
                   style={{
                     background: OLIVE,
                     color: '#fff',

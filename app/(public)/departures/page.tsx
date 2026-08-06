@@ -8,6 +8,7 @@ import { STOCK_HERO_IMAGE } from '@/lib/stock-images'
 import type { Metadata } from 'next'
 import { getServerLocale } from '@/lib/i18n'
 import { pageMetadata } from '@/lib/seo'
+import { localePath } from '@/lib/locale'
 
 const G = '#7A9A4A'
 
@@ -259,7 +260,7 @@ export default async function DeparturesPage({
 
                         {/* View Details Button */}
                         <Link
-                          href={`/departures/${dep.id}?lang=${locale}`}
+                          href={localePath(`/departures/${dep.id}`, locale)}
                           className={`block text-center px-4 py-3 rounded-lg font-semibold transition ${
                             isAvailable
                               ? 'text-white hover:opacity-90'

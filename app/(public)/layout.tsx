@@ -1,37 +1,13 @@
 import type { Metadata } from 'next'
-import { Readex_Pro, IBM_Plex_Sans, IBM_Plex_Sans_Arabic, Cairo } from 'next/font/google'
 
-const readexPro = Readex_Pro({
-  subsets: ['latin', 'arabic'],
-  variable: '--font-display',
-  weight: ['300', '400', '500', '600', '700'],
-  display: 'swap',
-})
+// This layout used to render its own <html> and <body> inside the root
+// layout's, so every page in the group shipped two of each — the live site
+// served nested <html> tags, and the outer (root) one is what the browser and
+// crawlers actually read, which made the lang/dir set here dead markup.
+// The four fonts it also declared are already loaded by the root layout, so
+// dropping the wrapper loses nothing.
 
-const ibmPlexSans = IBM_Plex_Sans({
-  subsets: ['latin'],
-  variable: '--font-body',
-  weight: ['400', '500', '600'],
-  display: 'swap',
-})
-
-const ibmPlexSansAr = IBM_Plex_Sans_Arabic({
-  subsets: ['arabic'],
-  variable: '--font-body-ar',
-  weight: ['400', '500', '600'],
-  display: 'swap',
-})
-
-// Arabic/RTL type: unified to Cairo for headings + body via the [dir="rtl"]
-// variable swap in globals.css.
-const cairo = Cairo({
-  subsets: ['arabic', 'latin'],
-  variable: '--font-arabic',
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-})
-
-// A plain string here would replace the root layout's title *object*, dropping
+// A plain string title would replace the root layout's title *object*, dropping
 // its template for every page in this group — which is why these pages used to
 // render without the brand suffix. Restate the template so page titles keep it.
 export const metadata: Metadata = {
@@ -43,11 +19,5 @@ export const metadata: Metadata = {
 }
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" className={`${readexPro.variable} ${ibmPlexSans.variable} ${ibmPlexSansAr.variable} ${cairo.variable}`}>
-      <body className="bg-white" style={{ fontFamily: "var(--font-body, 'IBM Plex Sans', sans-serif)" }}>
-        {children}
-      </body>
-    </html>
-  )
+  return <div className="bg-white">{children}</div>
 }

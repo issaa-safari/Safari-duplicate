@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Suspense } from 'react'
 import { useLocale } from '@/lib/use-locale'
 import { site, whatsappLink } from '@/lib/site'
+import { localePath } from '@/lib/locale'
 
 export default function PublicFooter() {
   return (
@@ -17,7 +18,7 @@ export default function PublicFooter() {
 function FooterInner() {
   const locale = useLocale()
   const isAr = locale === 'ar'
-  const withLang = (href: string) => `${href}?lang=${locale}`
+  const withLang = (href: string) => localePath(href, locale)
 
   const t = isAr ? {
     tagline: 'اختبر البرية. رحلات سفاري بقيادة خبراء عبر أكثر وجهات شرق أفريقيا شهرة.',

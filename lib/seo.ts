@@ -1,6 +1,19 @@
 import type { Metadata } from 'next'
-import type { Locale } from '@/lib/i18n'
+import { localePath, type Locale } from '@/lib/locale'
 import { site } from '@/lib/site'
+
+/**
+ * hreflang set for a route, so Google serves the Arabic page to Arabic
+ * searchers instead of treating the two languages as competing duplicates.
+ * x-default points at English, which is what an unmatched locale should get.
+ */
+export function languageAlternates(path: string): Record<string, string> {
+  return {
+    en: localePath(path, 'en'),
+    ar: localePath(path, 'ar'),
+    'x-default': localePath(path, 'en'),
+  }
+}
 
 // Copy that exists in both site languages. Public pages pick their language
 // from ?lang= / the locale cookie rather than from the path, so a page's
@@ -13,9 +26,10 @@ export const localise = (copy: LocalisedCopy, locale: Locale): string =>
 /**
  * Page metadata with a canonical that drops the query string.
  *
- * Both languages currently share one URL, so the canonical points at the clean
- * path — that keeps ?lang=, ?type= and campaign parameters from being indexed
- * as separate near-duplicate pages.
+ * The canonical is the *localised* path, so the Arabic page is its own indexed
+ * URL rather than pointing back at English — paired with the hreflang set so
+ * the two are understood as translations, not duplicates. Query strings are
+ * excluded so ?type= and campaign parameters never fragment the signals.
  */
 export function pageMetadata({
   path,
@@ -33,11 +47,12 @@ export function pageMetadata({
 }): Metadata {
   const t = localise(title, locale)
   const d = localise(description, locale)
+  const self = localePath(path, locale)
   return {
     title: absoluteTitle ? { absolute: t } : t,
     description: d,
-    alternates: { canonical: path },
-    openGraph: { title: t, description: d, url: path },
+    alternates: { canonical: self, languages: languageAlternates(path) },
+    openGraph: { title: t, description: d, url: self, locale },
     twitter: { title: t, description: d },
   }
 }

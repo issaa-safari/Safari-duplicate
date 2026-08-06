@@ -8,6 +8,7 @@ import { getServerLocale } from '@/lib/i18n'
 import { STOCK_HERO_IMAGE } from '@/lib/stock-images'
 import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/seo'
+import { localePath } from '@/lib/locale'
 
 const G = '#7A9A4A'
 
@@ -166,7 +167,7 @@ export default async function AboutPage({
             <h2 className="text-3xl md:text-4xl font-bold mb-6">{t.ctaTitle}</h2>
             <p className="text-lg mb-8 opacity-90">{t.ctaText}</p>
             <Link
-              href={`/quote-request?lang=${locale}`}
+              href={localePath('/quote-request', locale)}
               className="px-8 py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition inline-block"
             >
               {t.ctaButton}

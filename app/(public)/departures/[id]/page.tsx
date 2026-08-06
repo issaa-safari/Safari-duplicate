@@ -16,6 +16,8 @@ import StickyEnquiryBar from '@/components/public/sticky-enquiry-bar'
 import { getServerLocale } from '@/lib/i18n'
 import { site, whatsappLink } from '@/lib/site'
 import StructuredData, { touristTripJsonLd } from '@/components/public/structured-data'
+import { languageAlternates } from '@/lib/seo'
+import { localePath } from '@/lib/locale'
 
 export const dynamic = 'force-dynamic'
 
@@ -112,7 +114,7 @@ export async function generateMetadata({
   if (!dep) return {}
   const tour = dep.tours as any
   const title = locale === 'ar' ? (tour?.title_ar || tour?.title_en) : tour?.title_en
-  if (!title) return { alternates: { canonical: `/departures/${id}` } }
+  if (!title) return { alternates: { canonical: localePath(`/departures/${id}`, locale) } }
   const heading = `${title} — ${formatDate(dep.start_date, locale)}`
   const description =
     locale === 'ar'
@@ -121,11 +123,15 @@ export async function generateMetadata({
   return {
     title: heading,
     description,
-    alternates: { canonical: `/departures/${id}` },
+    alternates: {
+      canonical: localePath(`/departures/${id}`, locale),
+      languages: languageAlternates(`/departures/${id}`),
+    },
     openGraph: {
       title: heading,
       description,
-      url: `/departures/${id}`,
+      url: localePath(`/departures/${id}`, locale),
+      locale,
       images: tour?.hero_image_url ? [tour.hero_image_url] : [],
     },
   }
@@ -251,7 +257,7 @@ export default async function DepartureDetailPage({
     }
   })
 
-  const bookHref = `/departures/${id}/book?lang=${locale}&price=${departure.price_usd}&tour=${encodeURIComponent(title ?? '')}`
+  const bookHref = `${localePath(`/departures/${id}/book`, locale)}?price=${departure.price_usd}&tour=${encodeURIComponent(title ?? '')}`
   const waHref = whatsappLink(`Hi, I'm interested in the ${title} departure on ${formatDate(departure.start_date, 'en')}`)
 
   const t = isAr ? {
@@ -351,7 +357,7 @@ export default async function DepartureDetailPage({
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
         <DepartureHero
           tourTitle={title ?? ''}
-          backToTourHref={`/tours/${departure.tour_id}?lang=${locale}`}
+          backToTourHref={localePath(`/tours/${departure.tour_id}`, locale)}
           backToTourLabel={t.backToTour}
           departureLabel={t.departure}
           dateRangeText={`${formatDate(departure.start_date, locale)} ${isAr ? '←' : '→'} ${formatDate(departure.end_date, locale)}`}

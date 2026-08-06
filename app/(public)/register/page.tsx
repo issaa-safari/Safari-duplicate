@@ -8,6 +8,7 @@ import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { useLocale } from '@/lib/use-locale'
+import { localePath } from '@/lib/locale'
 
 const G = '#7A9A4A'
 
@@ -81,7 +82,7 @@ function RegisterInner() {
         options: { data: { first_name: formData.firstName, last_name: formData.lastName } },
       })
       if (error) { setError(error.message); setLoading(false); return }
-      router.push(`/login?registered=true&lang=${locale}`)
+      router.push(`${localePath('/login', locale)}?registered=true`)
     } catch {
       setError(t.genericError); setLoading(false)
     }
@@ -153,7 +154,7 @@ function RegisterInner() {
 
             <div className="mt-6 text-center text-sm text-gray-600">
               {t.haveAccount}{' '}
-              <Link href={`/login?lang=${locale}`} className="font-medium hover:underline" style={{ color: G }}>{t.signIn}</Link>
+              <Link href={localePath('/login', locale)} className="font-medium hover:underline" style={{ color: G }}>{t.signIn}</Link>
             </div>
           </div>
         </div>

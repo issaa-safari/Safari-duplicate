@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from 'framer-motion'
 import Link from 'next/link'
+import { localePath, type Locale } from '@/lib/locale'
 
 export interface DepartureCardData {
   id: string
@@ -18,7 +19,7 @@ interface DepartureCardsProps {
   accentColor: string
   isAr: boolean
   tourTitle: string
-  locale: string
+  locale: Locale
 }
 
 const OLIVE = '#7A9A4A'
@@ -70,7 +71,7 @@ export default function DepartureCards({ departures, accentColor, isAr, tourTitl
           {isAr ? 'هذه الجولة متاحة بطلب مسبق — اتصل بنا للتحدث عن تواريخك.' : 'This tour is available on request — get in touch to discuss your dates.'}
         </p>
         <a
-          href={`/quote-request?tour=${tourTitle}&lang=${locale}`}
+          href={`${localePath('/quote-request', locale)}?tour=${tourTitle}`}
           style={{
             display: 'inline-block', padding: '12px 28px', borderRadius: 8,
             background: OLIVE, color: '#fff', fontWeight: 700, textDecoration: 'none',
@@ -89,8 +90,8 @@ export default function DepartureCards({ departures, accentColor, isAr, tourTitl
         const seats = dep.maxSeats - dep.bookedSeats
         const available = seats > 0 && dep.status !== 'cancelled' && dep.status !== 'full'
         const pct = Math.min(100, Math.round((dep.bookedSeats / dep.maxSeats) * 100))
-        const bookHref = `/departures/${dep.id}/book?lang=${locale}&price=${dep.priceUsd}&tour=${encodeURIComponent(tourTitle)}`
-        const detailHref = `/departures/${dep.id}?lang=${locale}`
+        const bookHref = `${localePath(`/departures/${dep.id}/book`, locale)}?price=${dep.priceUsd}&tour=${encodeURIComponent(tourTitle)}`
+        const detailHref = localePath(`/departures/${dep.id}`, locale)
 
         return (
           <motion.div

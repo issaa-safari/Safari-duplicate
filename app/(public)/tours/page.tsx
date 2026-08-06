@@ -8,6 +8,7 @@ import { getServerLocale } from '@/lib/i18n'
 import { STOCK_HERO_IMAGE } from '@/lib/stock-images'
 import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/seo'
+import { localePath } from '@/lib/locale'
 
 const G = '#7A9A4A'
 
@@ -112,7 +113,7 @@ export default async function ToursPage({
                   {typeFilter === 'bike' ? t.filterBike : t.filterPrivate}
                 </span>
                 <Link
-                  href={`/tours?lang=${locale}`}
+                  href={localePath('/tours', locale)}
                   className="text-sm font-semibold underline underline-offset-2"
                   style={{ color: G }}
                 >
@@ -145,7 +146,7 @@ export default async function ToursPage({
                         )}
                         {desc && <p className="text-sm text-gray-600 mb-6 line-clamp-3">{desc}</p>}
                         <Link
-                          href={`/tours/${tour.id}?lang=${locale}`}
+                          href={localePath(`/tours/${tour.id}`, locale)}
                           className="block text-center px-4 py-2 rounded-lg font-semibold text-white transition"
                           style={{ backgroundColor: G }}
                         >
@@ -161,7 +162,7 @@ export default async function ToursPage({
                 <p className="text-gray-600 text-lg">{typeFilter ? t.noneFiltered : t.none}</p>
                 {typeFilter && (
                   <Link
-                    href={`/tours?lang=${locale}`}
+                    href={localePath('/tours', locale)}
                     className="mt-4 inline-block text-sm font-semibold underline underline-offset-2"
                     style={{ color: G }}
                   >
@@ -179,7 +180,7 @@ export default async function ToursPage({
             <h2 className="text-3xl font-bold text-gray-900 mb-6">{t.ctaTitle}</h2>
             <p className="text-lg text-gray-600 mb-8">{t.ctaText}</p>
             <Link
-              href={`/quote-request?lang=${locale}`}
+              href={localePath('/quote-request', locale)}
               className="px-8 py-3 rounded-lg font-semibold text-white transition inline-block"
               style={{ backgroundColor: G }}
             >

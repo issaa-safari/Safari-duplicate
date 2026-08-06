@@ -8,6 +8,7 @@ import { getServerLocale } from '@/lib/i18n'
 import { STOCK_HERO_IMAGE, STOCK_SAFARI_IMAGES } from '@/lib/stock-images'
 import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/seo'
+import { localePath } from '@/lib/locale'
 
 const G = '#7A9A4A'
 
@@ -119,7 +120,7 @@ export default async function GalleryPage({
 
             <div className="mt-12 text-center">
               <Link
-                href={`/quote-request?lang=${locale}`}
+                href={localePath('/quote-request', locale)}
                 className="px-8 py-3 rounded-lg font-semibold text-white transition inline-block"
                 style={{ backgroundColor: G }}
               >
