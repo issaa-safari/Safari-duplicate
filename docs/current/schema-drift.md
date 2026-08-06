@@ -20,8 +20,20 @@ Both sides fingerprinted after the fixes below:
 | triggers    |         44 |                      44 |  yes  |
 
 Identical md5 over the sorted object names in every category, not just equal
-counts. Functions and triggers exclude the three objects added by `group_71`,
-which production has not yet received (its PR is unmerged).
+counts. Functions and triggers were counted before `group_71` landed; see below.
+
+### `group_71` — applied 2026-08-06
+
+Applied after the table above was taken, bringing production to 18 functions and
+45 triggers. Production already had a slug on all 19 tours but none of the three
+functions and not the trigger, so the values had been filled by hand and nothing
+was maintaining them: a tour created through the admin would have been saved with
+a null slug and served at its UUID.
+
+Verified after applying, in a transaction aborted on purpose so no rows survived:
+a new tour got `trigger-probe-kenya-safari`, a second one with the same title got
+`trigger-probe-kenya-safari-2`, and a title with no latin characters got `null` —
+which the route handles by falling back to the UUID.
 
 ## What was wrong
 
