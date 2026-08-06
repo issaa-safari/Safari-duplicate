@@ -372,6 +372,10 @@ export default async function QuotePortalPage({
       // Right column = the day's own scenic photos.
       scenicPhotos: photos.slice(0, 2),
       meals: (d.meals ?? []).map((m: string) => mealLabels[m] ?? m),
+      // Selected here since the proposal was written but only ever rendered on
+      // the print view, so a note typed in the builder never reached the client
+      // reading the page.
+      notes: (isArabic ? (d.client_notes_ar || d.client_notes) : d.client_notes) ?? null,
     }
   })
 
