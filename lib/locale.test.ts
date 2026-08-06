@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  isDocumentNavigation,
+  isNegotiable,
   isUnlocalised,
   localePath,
   preferredLocale,
@@ -83,30 +83,25 @@ describe('isUnlocalised', () => {
   })
 })
 
-describe('isDocumentNavigation', () => {
-  it('accepts a real page load', () => {
-    expect(isDocumentNavigation('document', false)).toBe(true)
+describe('isNegotiable', () => {
+  it('negotiates a real page load', () => {
+    expect(isNegotiable(false)).toBe(true)
   })
 
-  it('rejects the RSC fetches Next fires for every visible link', () => {
+  it('leaves the RSC fetches Next fires for every visible link alone', () => {
     // Redirecting one of these poisons the router cache: the language toggle
     // prefetches the other language, gets negotiated back, and then reloads the
-    // page it was already on.
-    expect(isDocumentNavigation('empty', true)).toBe(false)
-    expect(isDocumentNavigation('empty', false)).toBe(false)
-    // The _rsc parameter alone is enough, whatever the fetch destination says.
-    expect(isDocumentNavigation('document', true)).toBe(false)
+    // page it was already on. A prefetched ?lang= link would also write the
+    // locale cookie for a link nobody clicked.
+    expect(isNegotiable(true)).toBe(false)
   })
 
-  it('treats a client that sends no Sec-Fetch-Dest as a document', () => {
-    // Absent is not "not a document" — an old browser still deserves its
-    // language negotiated.
-    expect(isDocumentNavigation(null, false)).toBe(true)
-  })
-
-  it('rejects embedded requests', () => {
-    expect(isDocumentNavigation('iframe', false)).toBe(false)
-    expect(isDocumentNavigation('image', false)).toBe(false)
+  it('does not depend on Sec-Fetch-Dest', () => {
+    // The service worker re-issues each navigation as a plain fetch, which
+    // arrives as Sec-Fetch-Dest: empty. Requiring "document" skipped
+    // negotiation for every returning visitor, who is exactly the visitor with
+    // the worker installed.
+    expect(isNegotiable(false)).toBe(true)
   })
 })
 

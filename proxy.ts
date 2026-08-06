@@ -3,7 +3,7 @@ import { updateSession } from '@/lib/supabase/middleware'
 import { LOCALE_HEADER } from '@/lib/i18n'
 import {
   LOCALE_COOKIE,
-  isDocumentNavigation,
+  isNegotiable,
   isUnlocalised,
   localePath,
   preferredLocale,
@@ -47,7 +47,19 @@ export async function proxy(request: NextRequest) {
     url.pathname = path
     const requestHeaders = new Headers(request.headers)
     requestHeaders.set(LOCALE_HEADER, 'ar')
-    return NextResponse.rewrite(url, { request: { headers: requestHeaders } })
+    const response = NextResponse.rewrite(url, { request: { headers: requestHeaders } })
+    // Arriving at an Arabic URL is itself a choice — whether it came from the
+    // toggle, a link a friend sent, or a bookmark. Remember it, so detection
+    // does not later send the visitor somewhere else. Only when nothing is
+    // stored: an explicit switch to English must never be overwritten.
+    if (!request.cookies.has(LOCALE_COOKIE)) {
+      response.cookies.set(LOCALE_COOKIE, 'ar', {
+        path: '/',
+        maxAge: LOCALE_COOKIE_MAX_AGE,
+        sameSite: 'lax',
+      })
+    }
+    return response
   }
 
   // Language used to be a query parameter, so one URL served two languages —
@@ -55,8 +67,12 @@ export async function proxy(request: NextRequest) {
   // Send those links to the canonical localised path, once and permanently.
   // An explicit ?lang= is a choice, so it is honoured before any detection and
   // remembered like one made with the toggle.
+  // Prefetches are excluded here too: a prefetched ?lang= link would otherwise
+  // redirect *and* write the cookie, pinning a visitor's language to a link
+  // they never clicked.
+  const negotiable = isNegotiable(searchParams.has('_rsc'))
   const legacyLang = searchParams.get('lang')
-  if (legacyLang === 'ar' || legacyLang === 'en') {
+  if (negotiable && (legacyLang === 'ar' || legacyLang === 'en')) {
     const url = request.nextUrl.clone()
     url.searchParams.delete('lang')
     url.pathname = localePath(path, legacyLang)
@@ -83,11 +99,7 @@ export async function proxy(request: NextRequest) {
   // then reloaded the Arabic page and the toggle looked dead. Any client-side
   // navigation reaching here already had its document request negotiated, so
   // the cookie is set and there is nothing left to decide.
-  const isDocument = isDocumentNavigation(
-    request.headers.get('sec-fetch-dest'),
-    searchParams.has('_rsc')
-  )
-  if (locale === 'en' && isDocument && !isUnlocalised(path) && !request.cookies.has(LOCALE_COOKIE)) {
+  if (locale === 'en' && negotiable && !isUnlocalised(path) && !request.cookies.has(LOCALE_COOKIE)) {
     const detected = preferredLocale(
       request.headers.get('accept-language'),
       request.headers.get('x-vercel-ip-country')

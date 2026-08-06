@@ -148,27 +148,25 @@ export default async function DeparturesPage({
                   : 'Choose from our available tours and book your spot today'}
               </p>
             </div>
+            {/* Plain anchors to the localised paths, like the header toggle.
+                These were <Link href="/departures?lang=xx"> — and because Next
+                prefetches links, simply rendering this page asked the server to
+                honour ?lang=, which wrote the locale cookie. A visitor's
+                language was being pinned by a link they never clicked. */}
             <div className="flex gap-2">
-              <Link
-                href={`/departures?lang=en`}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
-                  locale === 'en'
-                    ? 'bg-white text-gray-900'
-                    : 'bg-gray-700 text-white hover:bg-gray-600'
-                }`}
-              >
-                EN
-              </Link>
-              <Link
-                href={`/departures?lang=ar`}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
-                  locale === 'ar'
-                    ? 'bg-white text-gray-900'
-                    : 'bg-gray-700 text-white hover:bg-gray-600'
-                }`}
-              >
-                العربية
-              </Link>
+              {(['en', 'ar'] as const).map((l) => (
+                <a
+                  key={l}
+                  href={localePath('/departures', l)}
+                  className={`px-4 py-2 rounded-lg font-medium transition ${
+                    locale === l
+                      ? 'bg-white text-gray-900'
+                      : 'bg-gray-700 text-white hover:bg-gray-600'
+                  }`}
+                >
+                  {l === 'en' ? 'EN' : 'العربية'}
+                </a>
+              ))}
             </div>
           </div>
         </section>
