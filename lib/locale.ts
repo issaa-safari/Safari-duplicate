@@ -74,22 +74,23 @@ export function splitLocalePath(pathname: string): { locale: Locale; path: strin
 }
 
 /**
- * Whether a request is a top-level document load, as opposed to one of the RSC
- * payload fetches Next fires for every visible link.
+ * Whether a request should have its language negotiated, as opposed to one of
+ * the RSC payload fetches Next fires for every visible link.
  *
- * Language negotiation must only ever act on the former. Next prefetches links
- * eagerly, so negotiating a prefetch of the English URL from an Arabic page
- * redirects it — and the router caches that redirect, which made the language
- * toggle reload the page it was on.
+ * Next prefetches links eagerly, so negotiating a prefetch of the English URL
+ * from an Arabic page redirects it — and the router caches that redirect, which
+ * made the language toggle reload the page it was on.
  *
- * Next strips the RSC request header before middleware runs, so the tells are
- * the `_rsc` query parameter Next appends and Sec-Fetch-Dest. A client too old
- * to send Sec-Fetch-Dest is still treated as a document: absent is not the same
- * as "not a document".
+ * Next strips the RSC request header before middleware runs, so the tell is the
+ * `_rsc` query parameter it appends. Sec-Fetch-Dest looks like a better signal
+ * and is not: the site registers a service worker whose navigation handler
+ * re-issues each navigation as a plain fetch, which arrives with
+ * Sec-Fetch-Dest: empty. Requiring "document" therefore skipped negotiation for
+ * every returning visitor — the ones who have the worker installed — and left
+ * them on the English page until they refreshed.
  */
-export function isDocumentNavigation(secFetchDest: string | null, hasRscParam: boolean): boolean {
-  if (hasRscParam) return false
-  return secFetchDest === null || secFetchDest === 'document'
+export function isNegotiable(hasRscParam: boolean): boolean {
+  return !hasRscParam
 }
 
 /** Countries where a visitor is far more likely to want Arabic than English. */
