@@ -731,7 +731,13 @@ export default async function QuotePrintPage({
           const title = (isArabic && day.title_ar ? day.title_ar : day.title)
             || (isLast ? (isArabic ? 'اليوم الأخير معنا' : 'The last day with us') : (dest || `Day ${day.day_number}`))
           const dd = destId ? destDescMap[destId] : null
-          const intro = dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : null
+          // Same order as the web proposal: the destination's stock text when
+          // there is one, else whatever was written for this day. Print used to
+          // stop at the destination, so a day with only its own description
+          // printed blank.
+          const intro = dd
+            ? (isArabic ? (dd.ar || dd.en) : dd.en)
+            : (isArabic ? (day.description_ar || day.description_en) : day.description_en)
           const notes = isArabic && day.client_notes_ar ? day.client_notes_ar : day.client_notes
 
           const accName = accomByDay[day.id]?.[0] ?? null

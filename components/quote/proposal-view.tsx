@@ -31,6 +31,9 @@ export type ProposalDay = {
   // distinct from the accommodation's own gallery in the left column.
   scenicPhotos?: string[]
   meals: string[]               // localized meal labels
+  // Free-text note the consultant wrote for this day (pickup time, what to
+  // pack, a caveat). Already rendered on the print proposal.
+  notes?: string | null
 }
 export type SummaryRow = {
   dayLabel: string
@@ -500,6 +503,8 @@ export default function ProposalView(p: ProposalViewProps) {
                   )}
                 </div>
               </div>
+
+              {d.notes && <p className="mt-4 text-sm italic leading-relaxed text-gray-500">{d.notes}</p>}
             </section>
           )
         })}
