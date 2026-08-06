@@ -7,10 +7,13 @@ const __impeccableLiveDev =
 const csp = [
   "default-src 'self'",
   "img-src 'self' https: data:",
-  `script-src 'self' 'unsafe-inline'${__impeccableLiveDev}`,
+  `script-src 'self' 'unsafe-inline' https://www.googletagmanager.com${__impeccableLiveDev}`,
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
-  `connect-src 'self' https://*.supabase.co https://*.supabase.in https://va.vercel-scripts.com${__impeccableLiveDev}`,
+  // GA4 sends hits to the regional google-analytics.com collectors and, for
+  // some configurations, analytics.google.com; gtag.js also fetches its own
+  // config from googletagmanager.com.
+  `connect-src 'self' https://*.supabase.co https://*.supabase.in https://va.vercel-scripts.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com${__impeccableLiveDev}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
