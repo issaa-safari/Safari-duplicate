@@ -16,6 +16,13 @@ and admin back office (`app/admin/`) in one Next.js app. Bilingual EN/AR (RTL).
 ## Authoritative sources (in order)
 1. `migrations/` — **the schema source of truth.** Ordered `group_NN_*.sql`; append a new group_NN,
    never edit an applied migration. (`group_28` is intentionally absent from the sequence.)
+   - The group files do **not** apply in one pass — 21 of them reference tables a *later* group
+     creates. They all succeed on a second pass. To build a database, use
+     `migrations/baseline/` (prerequisites + consolidated schema), not the group files;
+     see `scripts/dev-backend.md`. Regenerate the baseline whenever a group_NN lands.
+   - `migrations/` and production have drifted: three migrations were never applied, and
+     production carries 12 columns and 2 functions no migration defines. Until that is
+     reconciled, treat this as a near-truth — see `docs/current/schema-drift.md`.
 2. `DESIGN.md` — design system: olive `#7A9A4A` palette, Readex Pro + IBM Plex Sans (public),
    Inter + Playfair scoped under `.admin-theme` (admin).
 3. `PRODUCT.md` — brand/product positioning.
