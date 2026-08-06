@@ -6,7 +6,10 @@ import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { whatsappLink } from '@/lib/site'
-import { localePath, splitLocalePath } from '@/lib/locale'
+import { LOCALE_COOKIE, localePath, splitLocalePath } from '@/lib/locale'
+
+// A year, matching the cookie proxy.ts writes when it detects a language.
+const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
 function LangToggle({
   currentLang, hrefFor, onSelect, full = false,
@@ -22,7 +25,13 @@ function LangToggle({
         <Link
           key={l}
           href={hrefFor(l)}
-          onClick={onSelect}
+          onClick={() => {
+            // Record the choice so the language detection in proxy.ts stops
+            // guessing — without this, an Arabic-preferring browser would be
+            // bounced back to /ar on the next navigation.
+            document.cookie = `${LOCALE_COOKIE}=${l};path=/;max-age=${LOCALE_COOKIE_MAX_AGE};samesite=lax`
+            onSelect()
+          }}
           className={`rounded-full px-3 py-1 text-center text-xs font-semibold transition-colors ${full ? 'flex-1' : ''} ${
             currentLang === l ? 'bg-olive text-white' : 'text-white/70 hover:text-white'
           }`}
@@ -36,7 +45,6 @@ function LangToggle({
 
 export default function PublicHeader({ initialLang }: { initialLang?: string }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
@@ -89,31 +97,6 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
     router.push(localePath('/', locale))
     router.refresh()
   }
-
-  // The path is the language now, so there is nothing to resolve after mount —
-  // keep the flag only for the one-time redirect below.
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // First visit with no stored preference: send Arabic speakers to the Arabic
-  // URL once, then remember the choice. This has to be a navigation rather than
-  // a state flip, because the language is the address.
-  useEffect(() => {
-    if (!mounted) return
-    if (document.cookie.includes('locale=')) return
-    let detected: 'en' | 'ar' = navigator.language.split('-')[0] === 'ar' ? 'ar' : 'en'
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''
-      if (tz.includes('Mecca') || tz.includes('Riyadh') || tz.includes('Jeddah')) detected = 'ar'
-    } catch {
-      // ignore — keep browser-language detection
-    }
-    document.cookie = `locale=${detected};path=/;max-age=31536000;samesite=lax`
-    if (detected === 'ar' && locale !== 'ar') {
-      router.replace(localePath(basePath, 'ar'))
-    }
-  }, [mounted, locale, basePath, router])
 
   // Same page, other language — the switcher swaps the prefix, it does not
   // append a parameter.

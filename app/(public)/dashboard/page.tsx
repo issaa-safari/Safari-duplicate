@@ -24,7 +24,8 @@ export default async function DashboardPage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) redirect('/login')
+  // Stay in the language the visitor was reading when they hit the login wall.
+  if (!user) redirect(localePath('/login', locale))
 
   const t = isAr ? {
     myDashboard: 'لوحة التحكم', welcome: 'مرحباً بعودتك! أدر حجوزاتك وحسابك',

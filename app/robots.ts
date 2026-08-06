@@ -7,7 +7,9 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin/', '/api/', '/dashboard/', '/quote/'],
+        // /dashboard is bilingual, so its Arabic address needs excluding too —
+        // the rest are single-language and have no /ar form.
+        disallow: ['/admin/', '/api/', '/dashboard', '/ar/dashboard', '/quote/'],
       },
     ],
     sitemap: `${site.url}/sitemap.xml`,
