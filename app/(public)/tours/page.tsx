@@ -51,7 +51,7 @@ export default async function ToursPage({
   // and carry duration_days / countries_visited (not country/min_days/max_days).
   let query = admin
     .from('tours')
-    .select('id, slug, title_en, title_ar, subtitle_en, overview_en, type, duration_days, duration_nights, countries_visited, status, hero_image_url, gallery_urls')
+    .select('id, slug, title_en, title_ar, subtitle_en, subtitle_ar, overview_en, overview_ar, type, duration_days, duration_nights, countries_visited, status, hero_image_url, gallery_urls')
     .eq('status', 'active')
   if (typeFilter) query = query.eq('type', typeFilter)
   const { data: tours } = await query.order('title_en')
@@ -126,7 +126,13 @@ export default async function ToursPage({
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {tours.map((tour: any) => {
                   const title = isAr ? (tour.title_ar || tour.title_en) : tour.title_en
-                  const desc = tour.overview_en || tour.subtitle_en || ''
+                  // The Arabic columns were never read here, so a tour with a
+                  // full Arabic overview still showed its English one on the
+                  // Arabic listing. English remains the fallback for a tour
+                  // that genuinely has no Arabic yet.
+                  const desc = isAr
+                    ? (tour.overview_ar || tour.subtitle_ar || tour.overview_en || tour.subtitle_en || '')
+                    : (tour.overview_en || tour.subtitle_en || '')
                   return (
                     <div key={tour.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition">
                       <SafariImage
@@ -136,7 +142,11 @@ export default async function ToursPage({
                         className="w-full h-48"
                       />
                       <div className="p-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
+                        {/* dir="auto" so an English title inside the RTL page
+                            keeps its own direction — without it "7-Day Magical
+                            Kenya Safari" renders as "Day Magical Kenya
+                            Safari-7", the leading number flipped to the end. */}
+                        <h3 dir="auto" className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
                         {tour.countries_visited && (
                           <p className="text-sm text-gray-500 mb-3">{tour.countries_visited}</p>
                         )}
@@ -145,7 +155,7 @@ export default async function ToursPage({
                             <span className="font-semibold">{tour.duration_days} {t.days}</span>
                           </p>
                         )}
-                        {desc && <p className="text-sm text-gray-600 mb-6 line-clamp-3">{desc}</p>}
+                        {desc && <p dir="auto" className="text-sm text-gray-600 mb-6 line-clamp-3">{desc}</p>}
                         <Link
                           href={localePath(`/tours/${tourSegment(tour)}`, locale)}
                           className="block text-center px-4 py-2 rounded-lg font-semibold text-white transition"

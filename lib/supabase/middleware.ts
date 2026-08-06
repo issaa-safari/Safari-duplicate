@@ -19,8 +19,18 @@ function readAal(accessToken: string): string | null {
   }
 }
 
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+/**
+ * @param makeResponse how to build the response when the request is allowed
+ *   through. Defaults to passing it along untouched; proxy.ts overrides it so
+ *   /ar/dashboard can be session-gated *and* rewritten onto the shared route.
+ *   It is called again after a token refresh, since the refreshed cookies have
+ *   to be attached to whatever response is finally returned.
+ */
+export async function updateSession(
+  request: NextRequest,
+  makeResponse: () => NextResponse = () => NextResponse.next({ request })
+) {
+  let supabaseResponse = makeResponse()
 
   const supabase = createServerClient(
     SUPABASE_URL,
@@ -32,7 +42,7 @@ export async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
+          supabaseResponse = makeResponse()
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )

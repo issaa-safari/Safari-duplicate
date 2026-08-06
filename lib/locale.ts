@@ -21,15 +21,20 @@ export function isLocale(v: unknown): v is Locale {
 
 export const dir = (l: Locale): 'rtl' | 'ltr' => (l === 'ar' ? 'rtl' : 'ltr')
 
+/** Where an explicit choice from the language toggle is remembered. */
+export const LOCALE_COOKIE = 'locale'
+
 /**
- * Areas that exist in one language only: the back office, the client dashboard,
- * token-scoped client documents, and the untranslated legal pages. Prefixing
- * these would serve English text inside a lang="ar" document, so they stay
- * unprefixed — and proxy.ts redirects the prefixed forms back here.
+ * Areas that exist in one language only: the back office, token-scoped client
+ * documents, and the untranslated legal pages. Prefixing these would serve
+ * English text inside a lang="ar" document, so they stay unprefixed — and
+ * proxy.ts redirects the prefixed forms back here.
+ *
+ * The client dashboard is deliberately *not* here: it is fully translated, so
+ * it lives at /ar/dashboard like the rest of the bilingual site.
  */
 export const UNLOCALISED_PREFIXES = [
   '/admin',
-  '/dashboard',
   '/auth',
   '/quote',
   '/agreement',
@@ -66,4 +71,47 @@ export function splitLocalePath(pathname: string): { locale: Locale; path: strin
     return { locale: 'ar', path: pathname.slice(AR_PREFIX.length) }
   }
   return { locale: DEFAULT_LOCALE, path: pathname }
+}
+
+/** Countries where a visitor is far more likely to want Arabic than English. */
+const ARABIC_COUNTRIES = new Set([
+  'AE', 'BH', 'DJ', 'DZ', 'EG', 'IQ', 'JO', 'KM', 'KW', 'LB', 'LY', 'MA',
+  'MR', 'OM', 'PS', 'QA', 'SA', 'SD', 'SO', 'SY', 'TN', 'YE',
+])
+
+/** Language tags from an Accept-Language header, best-preferred first. */
+function acceptedLanguages(header: string | null): string[] {
+  if (!header) return []
+  return header
+    .split(',')
+    .map((part, i) => {
+      const [tag, ...params] = part.trim().split(';')
+      const q = params
+        .map((p) => p.trim())
+        .find((p) => p.startsWith('q='))
+      const parsed = q ? Number.parseFloat(q.slice(2)) : 1
+      // Index breaks ties so equal-quality tags keep the order they were sent.
+      return { tag: tag.trim().toLowerCase(), q: Number.isFinite(parsed) ? parsed : 0, i }
+    })
+    .filter((l) => l.tag !== '' && l.q > 0)
+    .sort((a, b) => b.q - a.q || a.i - b.i)
+    .map((l) => l.tag)
+}
+
+/**
+ * Which language to serve a visitor who has not chosen one.
+ *
+ * The browser's own setting decides it wherever it says anything about Arabic
+ * or English — someone who asked for English gets English regardless of where
+ * they are connecting from, which also keeps crawlers on the English site.
+ * Location is consulted only when the header is silent or lists neither.
+ */
+export function preferredLocale(acceptLanguage: string | null, country?: string | null): Locale {
+  for (const tag of acceptedLanguages(acceptLanguage)) {
+    const base = tag.split('-')[0]
+    if (base === 'ar') return 'ar'
+    if (base === 'en') return 'en'
+  }
+  if (country && ARABIC_COUNTRIES.has(country.toUpperCase())) return 'ar'
+  return DEFAULT_LOCALE
 }

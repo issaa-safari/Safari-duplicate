@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { LOCALE_HEADER } from '@/lib/i18n'
-import { isUnlocalised, localePath, splitLocalePath } from '@/lib/locale'
+import { LOCALE_COOKIE, isUnlocalised, localePath, preferredLocale, splitLocalePath } from '@/lib/locale'
+
+// A year. The visitor has told us what they read; there is no reason to ask again.
+const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
 export async function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl
@@ -21,42 +24,80 @@ export async function proxy(request: NextRequest) {
   // can never route differently from its unprefixed twin.
   const { locale, path } = splitLocalePath(pathname)
 
-  // Single-language areas never take a prefix. Bouncing rather than rewriting
-  // matters for two reasons: /ar/dashboard would otherwise skip the session
-  // gate below, and /ar/privacy would serve English text in a lang="ar"
-  // document.
+  // Single-language areas never take a prefix: /ar/privacy would serve English
+  // text inside a lang="ar" document.
   if (locale !== 'en' && isUnlocalised(path)) {
     const url = request.nextUrl.clone()
     url.pathname = path
     return NextResponse.redirect(url, 308)
   }
 
-  // Session gating and cookie refresh only apply to the protected areas.
-  if (path.startsWith('/admin') || path.startsWith('/dashboard')) {
-    return await updateSession(request)
-  }
-
-  // Language used to be a query parameter, so one URL served two languages —
-  // invisible to crawlers, and duplicate content wherever it was visible.
-  // Send those links to the canonical localised path, once and permanently.
-  const legacyLang = searchParams.get('lang')
-  if (legacyLang === 'ar' || legacyLang === 'en') {
-    const url = request.nextUrl.clone()
-    url.searchParams.delete('lang')
-    url.pathname = localePath(path, legacyLang)
-    return NextResponse.redirect(url, 308)
-  }
-
   // /ar/tours renders the shared /tours route with the locale carried on a
   // request header. Rewriting rather than redirecting keeps the Arabic URL in
   // the address bar, and in the index.
-  if (locale === 'ar') {
+  const rewriteToArabic = () => {
     const url = request.nextUrl.clone()
     url.pathname = path
     const requestHeaders = new Headers(request.headers)
     requestHeaders.set(LOCALE_HEADER, 'ar')
     return NextResponse.rewrite(url, { request: { headers: requestHeaders } })
   }
+
+  // Language used to be a query parameter, so one URL served two languages —
+  // invisible to crawlers, and duplicate content wherever it was visible.
+  // Send those links to the canonical localised path, once and permanently.
+  // An explicit ?lang= is a choice, so it is honoured before any detection and
+  // remembered like one made with the toggle.
+  const legacyLang = searchParams.get('lang')
+  if (legacyLang === 'ar' || legacyLang === 'en') {
+    const url = request.nextUrl.clone()
+    url.searchParams.delete('lang')
+    url.pathname = localePath(path, legacyLang)
+    const response = NextResponse.redirect(url, 308)
+    response.cookies.set(LOCALE_COOKIE, legacyLang, {
+      path: '/',
+      maxAge: LOCALE_COOKIE_MAX_AGE,
+      sameSite: 'lax',
+    })
+    return response
+  }
+
+  // No stored choice: serve the language the visitor's browser asks for, or
+  // failing that the one their location suggests. Once only — the cookie below
+  // means a visitor who then switches to English is never bounced again.
+  //
+  // Deciding here rather than after hydration matters: the old client-side
+  // redirect painted the English page first, and a crawler, which never runs
+  // it, saw only English at every address.
+  if (locale === 'en' && !isUnlocalised(path) && !request.cookies.has(LOCALE_COOKIE)) {
+    const detected = preferredLocale(
+      request.headers.get('accept-language'),
+      request.headers.get('x-vercel-ip-country')
+    )
+    if (detected === 'ar') {
+      const url = request.nextUrl.clone()
+      url.pathname = localePath(path, 'ar')
+      // 307, not 308: this is a guess about the visitor, not a statement that
+      // the English URL has moved.
+      const response = NextResponse.redirect(url, 307)
+      response.cookies.set(LOCALE_COOKIE, 'ar', {
+        path: '/',
+        maxAge: LOCALE_COOKIE_MAX_AGE,
+        sameSite: 'lax',
+      })
+      return response
+    }
+  }
+
+  // Session gating and cookie refresh only apply to the protected areas. The
+  // gate runs on the locale-stripped path, and the Arabic dashboard still has
+  // to be rewritten onto the shared route — so the two are composed rather
+  // than one short-circuiting the other.
+  if (path.startsWith('/admin') || path.startsWith('/dashboard')) {
+    return await updateSession(request, locale === 'ar' ? rewriteToArabic : undefined)
+  }
+
+  if (locale === 'ar') return rewriteToArabic()
 
   return NextResponse.next()
 }

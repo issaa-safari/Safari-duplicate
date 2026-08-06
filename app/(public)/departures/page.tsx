@@ -111,6 +111,8 @@ export default async function DeparturesPage({
     endDate: 'تاريخ النهاية',
     fullyBooked: 'مكتمل',
     noDepartures: 'لا توجد رحلات متاحة حالياً',
+    itinerary: 'البرنامج',
+    day: 'اليوم',
   } : {
     departures: 'Upcoming Departures',
     bookNow: 'Book Now',
@@ -121,6 +123,8 @@ export default async function DeparturesPage({
     endDate: 'End Date',
     fullyBooked: 'Fully Booked',
     noDepartures: 'No departures available at this time',
+    itinerary: 'Itinerary',
+    day: 'Day',
   }
 
   return (
@@ -176,8 +180,9 @@ export default async function DeparturesPage({
                   const daysCount = getDaysCount(dep.start_date, dep.end_date)
                   const availableSpots = dep.max_seats - dep.booked_seats
                   const isAvailable = availableSpots > 0
-                  const title = locale === 'ar' ? tour?.title_ar : tour?.title_en
-                  const desc = locale === 'ar' ? '...' : tour?.description_en
+                  // Without the fallback, a tour with no Arabic title rendered
+                  // a departure card with no title at all.
+                  const title = locale === 'ar' ? (tour?.title_ar || tour?.title_en) : tour?.title_en
 
                   return (
                     <div
@@ -194,7 +199,9 @@ export default async function DeparturesPage({
 
                       {/* Departure Info */}
                       <div className="p-6 flex flex-col flex-grow">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
+                        {/* dir="auto": an untranslated English title keeps its
+                            own direction inside the RTL card. */}
+                        <h3 dir="auto" className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
 
                         {/* Dates */}
                         <div className="mb-4 text-sm text-gray-600 space-y-1">
@@ -212,11 +219,11 @@ export default async function DeparturesPage({
                         {/* Itinerary Highlights */}
                         {tourDaysMap[dep.tour_id] && tourDaysMap[dep.tour_id].length > 0 && (
                           <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-100">
-                            <div className="text-xs font-semibold text-blue-900 mb-2 uppercase">Itinerary</div>
+                            <div className="text-xs font-semibold text-blue-900 mb-2 uppercase">{t.itinerary}</div>
                             <div className="space-y-1">
                               {tourDaysMap[dep.tour_id].slice(0, 3).map((day: any, idx: number) => (
                                 <div key={idx} className="text-xs text-blue-800">
-                                  <span className="font-semibold">Day {day.day_number}:</span> {locale === 'ar' ? day.title_ar || day.title_en : day.title_en}
+                                  <span className="font-semibold">{t.day} {day.day_number}:</span> {locale === 'ar' ? day.title_ar || day.title_en : day.title_en}
                                 </div>
                               ))}
                               {tourDaysMap[dep.tour_id].length > 3 && (
