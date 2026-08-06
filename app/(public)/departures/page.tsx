@@ -68,8 +68,11 @@ export default async function DeparturesPage({
 }: {
   searchParams: Promise<{ lang?: string }>
 }) {
-  const params = await searchParams
-  const locale = (params.lang as 'en' | 'ar') || 'en'
+  // Read the locale the way every other page does. This one still trusted the
+  // old ?lang= parameter, so once the language moved into the path it rendered
+  // English at /ar/departures — English text inside the RTL document the
+  // layout and header had correctly switched to.
+  const locale = await getServerLocale(await searchParams)
 
   const admin = createAdminClient()
 
