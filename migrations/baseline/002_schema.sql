@@ -3463,6 +3463,34 @@ CREATE INDEX expenses_date_idx ON public.expenses USING btree (expense_date);
 
 
 --
+-- Name: idx_accommodations_destination_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_accommodations_destination_id ON public.accommodations USING btree (destination_id);
+
+
+--
+-- Name: idx_activities_destination_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_activities_destination_id ON public.activities USING btree (destination_id);
+
+
+--
+-- Name: idx_activity_locations_destination_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_activity_locations_destination_id ON public.activity_locations USING btree (destination_id);
+
+
+--
+-- Name: idx_activity_locations_park_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_activity_locations_park_id ON public.activity_locations USING btree (park_id);
+
+
+--
 -- Name: idx_activity_log_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3575,6 +3603,13 @@ CREATE INDEX idx_bookings_user_id ON public.bookings USING btree (user_id);
 
 
 --
+-- Name: idx_communication_logs_request_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_communication_logs_request_id ON public.communication_logs USING btree (request_id);
+
+
+--
 -- Name: idx_departures_start_date; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3603,10 +3638,24 @@ CREATE INDEX idx_hotel_vouchers_accommodation_id ON public.hotel_vouchers USING 
 
 
 --
+-- Name: idx_hotel_vouchers_booking_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hotel_vouchers_booking_id ON public.hotel_vouchers USING btree (booking_id);
+
+
+--
 -- Name: idx_hotel_vouchers_departure_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_hotel_vouchers_departure_id ON public.hotel_vouchers USING btree (departure_id);
+
+
+--
+-- Name: idx_hotel_vouchers_quote_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hotel_vouchers_quote_id ON public.hotel_vouchers USING btree (quote_id);
 
 
 --
@@ -3656,6 +3705,188 @@ CREATE INDEX idx_motorbikes_is_active ON public.motorbikes USING btree (is_activ
 --
 
 CREATE INDEX idx_motorbikes_status ON public.motorbikes USING btree (status);
+
+
+--
+-- Name: idx_quote_acceptances_delivery_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quote_acceptances_delivery_id ON public.quote_acceptances USING btree (delivery_id);
+
+
+--
+-- Name: idx_quote_acceptances_quote_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quote_acceptances_quote_id ON public.quote_acceptances USING btree (quote_id);
+
+
+--
+-- Name: idx_quote_day_items_accommodation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quote_day_items_accommodation_id ON public.quote_day_items USING btree (accommodation_id);
+
+
+--
+-- Name: idx_quote_day_items_activity_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quote_day_items_activity_id ON public.quote_day_items USING btree (activity_id);
+
+
+--
+-- Name: idx_quote_day_items_room_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quote_day_items_room_id ON public.quote_day_items USING btree (room_id);
+
+
+--
+-- Name: idx_quote_day_items_staff_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quote_day_items_staff_id ON public.quote_day_items USING btree (staff_id);
+
+
+--
+-- Name: idx_quote_day_items_vehicle_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quote_day_items_vehicle_id ON public.quote_day_items USING btree (vehicle_id);
+
+
+--
+-- Name: idx_quote_days_destination_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quote_days_destination_id ON public.quote_days USING btree (destination_id);
+
+
+--
+-- Name: idx_quote_deliveries_quote_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quote_deliveries_quote_id ON public.quote_deliveries USING btree (quote_id);
+
+
+--
+-- Name: idx_quote_deliveries_quote_version_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quote_deliveries_quote_version_id ON public.quote_deliveries USING btree (quote_version_id);
+
+
+--
+-- Name: idx_quote_price_lines_quote_day_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quote_price_lines_quote_day_id ON public.quote_price_lines USING btree (quote_day_id);
+
+
+--
+-- Name: idx_quote_price_lines_rate_card_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quote_price_lines_rate_card_id ON public.quote_price_lines USING btree (rate_card_id);
+
+
+--
+-- Name: idx_quote_price_lines_supplier_rate_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quote_price_lines_supplier_rate_id ON public.quote_price_lines USING btree (supplier_rate_id);
+
+
+--
+-- Name: idx_quote_travellers_age_band_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quote_travellers_age_band_id ON public.quote_travellers USING btree (age_band_id);
+
+
+--
+-- Name: idx_quotes_accepted_version_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quotes_accepted_version_id ON public.quotes USING btree (accepted_version_id);
+
+
+--
+-- Name: idx_quotes_departure_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quotes_departure_id ON public.quotes USING btree (departure_id);
+
+
+--
+-- Name: idx_quotes_tour_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quotes_tour_id ON public.quotes USING btree (tour_id);
+
+
+--
+-- Name: idx_request_staff_assignments_staff_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_request_staff_assignments_staff_id ON public.request_staff_assignments USING btree (staff_id);
+
+
+--
+-- Name: idx_request_vehicle_assignments_vehicle_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_request_vehicle_assignments_vehicle_id ON public.request_vehicle_assignments USING btree (vehicle_id);
+
+
+--
+-- Name: idx_requests_handled_by; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_requests_handled_by ON public.requests USING btree (handled_by);
+
+
+--
+-- Name: idx_requests_tour_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_requests_tour_id ON public.requests USING btree (tour_id);
+
+
+--
+-- Name: idx_supplier_payments_quote_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_supplier_payments_quote_id ON public.supplier_payments USING btree (quote_id);
+
+
+--
+-- Name: idx_tour_days_accommodation_alt_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_tour_days_accommodation_alt_id ON public.tour_days USING btree (accommodation_alt_id);
+
+
+--
+-- Name: idx_tour_days_accommodation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_tour_days_accommodation_id ON public.tour_days USING btree (accommodation_id);
+
+
+--
+-- Name: idx_tour_days_destination_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_tour_days_destination_id ON public.tour_days USING btree (destination_id);
+
+
+--
+-- Name: idx_traveller_agreements_agreement_template_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_traveller_agreements_agreement_template_id ON public.traveller_agreements USING btree (agreement_template_id);
 
 
 --
@@ -4997,6 +5228,13 @@ CREATE POLICY "Public read active tour_staff" ON public.tour_staff FOR SELECT US
 --
 
 CREATE POLICY "Public read active tours" ON public.tours FOR SELECT USING ((status = 'active'::text));
+
+
+--
+-- Name: activity_locations Public read activity locations; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Public read activity locations" ON public.activity_locations FOR SELECT USING (true);
 
 
 --
