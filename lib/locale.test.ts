@@ -84,24 +84,35 @@ describe('isUnlocalised', () => {
 })
 
 describe('isNegotiable', () => {
-  it('negotiates a real page load', () => {
-    expect(isNegotiable(false)).toBe(true)
+  const NAV_ACCEPT = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+
+  it('negotiates a page load', () => {
+    expect(isNegotiable(NAV_ACCEPT, 'navigate')).toBe(true)
+  })
+
+  it('still negotiates one the service worker re-issued', () => {
+    // The worker turns a navigation into a plain fetch, so Sec-Fetch-Dest reads
+    // "empty" — the reason an earlier version of this check skipped every
+    // returning visitor. Sec-Fetch-Mode survives the re-issue.
+    expect(isNegotiable(NAV_ACCEPT, 'navigate')).toBe(true)
   })
 
   it('leaves the RSC fetches Next fires for every visible link alone', () => {
-    // Redirecting one of these poisons the router cache: the language toggle
-    // prefetches the other language, gets negotiated back, and then reloads the
-    // page it was already on. A prefetched ?lang= link would also write the
-    // locale cookie for a link nobody clicked.
-    expect(isNegotiable(true)).toBe(false)
+    // Redirecting one poisons the router cache, and a prefetched ?lang= link
+    // would write the locale cookie for a link nobody clicked. Next strips
+    // _rsc, the RSC header and Next-Router-Prefetch before middleware, so this
+    // signature is all there is to go on.
+    expect(isNegotiable('*/*', 'cors')).toBe(false)
+    expect(isNegotiable('*/*', 'no-cors')).toBe(false)
   })
 
-  it('does not depend on Sec-Fetch-Dest', () => {
-    // The service worker re-issues each navigation as a plain fetch, which
-    // arrives as Sec-Fetch-Dest: empty. Requiring "document" skipped
-    // negotiation for every returning visitor, who is exactly the visitor with
-    // the worker installed.
-    expect(isNegotiable(false)).toBe(true)
+  it('treats a client asking for HTML without Sec-Fetch-Mode as a page load', () => {
+    expect(isNegotiable(NAV_ACCEPT, null)).toBe(true)
+  })
+
+  it('leaves a plain API-style client alone', () => {
+    expect(isNegotiable('*/*', null)).toBe(false)
+    expect(isNegotiable(null, null)).toBe(false)
   })
 })
 

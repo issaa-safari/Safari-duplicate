@@ -78,19 +78,25 @@ export function splitLocalePath(pathname: string): { locale: Locale; path: strin
  * the RSC payload fetches Next fires for every visible link.
  *
  * Next prefetches links eagerly, so negotiating a prefetch of the English URL
- * from an Arabic page redirects it — and the router caches that redirect, which
- * made the language toggle reload the page it was on.
+ * from an Arabic page redirects it — and the router caches that redirect.
  *
- * Next strips the RSC request header before middleware runs, so the tell is the
- * `_rsc` query parameter it appends. Sec-Fetch-Dest looks like a better signal
- * and is not: the site registers a service worker whose navigation handler
- * re-issues each navigation as a plain fetch, which arrives with
- * Sec-Fetch-Dest: empty. Requiring "document" therefore skipped negotiation for
- * every returning visitor — the ones who have the worker installed — and left
- * them on the English page until they refreshed.
+ * The signals here were arrived at by logging what middleware actually
+ * receives, because the obvious ones are all absent: Next strips the `_rsc`
+ * query parameter, the RSC header and Next-Router-Prefetch before middleware
+ * runs, and Sec-Fetch-Dest reads "empty" on a real navigation too, because the
+ * service worker re-issues each one as a plain fetch. What is left, and what
+ * does survive that re-issue, is Sec-Fetch-Mode and Accept:
+ *
+ *   prefetch    mode=cors      accept=*\/*
+ *   navigation  mode=navigate  accept=text/html,...
+ *
+ * A client sending neither is not a browser mid-navigation, so it is left
+ * alone; one asking for HTML without Sec-Fetch-Mode is treated as a page load.
  */
-export function isNegotiable(hasRscParam: boolean): boolean {
-  return !hasRscParam
+export function isNegotiable(accept: string | null, secFetchMode: string | null): boolean {
+  if (secFetchMode === 'navigate') return true
+  if (secFetchMode !== null) return false
+  return accept !== null && accept.includes('text/html')
 }
 
 /** Countries where a visitor is far more likely to want Arabic than English. */
