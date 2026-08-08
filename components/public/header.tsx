@@ -176,7 +176,7 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
           <LangToggle currentLang={currentLang} hrefFor={getLangUrl} onSelect={() => setMobileMenuOpen(false)} />
           {signedIn ? (
             <>
-              <Link href={'/dashboard'} className="text-sm font-medium text-white/80 hover:text-white">
+              <Link href={localePath('/dashboard', locale)} className="text-sm font-medium text-white/80 hover:text-white">
                 {ar ? 'حسابي' : 'Dashboard'}
               </Link>
               <button onClick={handleSignOut} className="text-sm font-medium text-white/80 hover:text-white">
@@ -262,7 +262,7 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
             ))}
             {signedIn ? (
               <>
-                <Link href={'/dashboard'} onClick={() => setMobileMenuOpen(false)}
+                <Link href={localePath('/dashboard', locale)} onClick={() => setMobileMenuOpen(false)}
                   className="border-b border-white/10 py-4 text-2xl font-semibold text-white/75 hover:text-white" style={display}>
                   {ar ? 'حسابي' : 'Dashboard'}
                 </Link>

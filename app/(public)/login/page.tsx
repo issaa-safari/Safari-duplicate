@@ -25,7 +25,9 @@ function ClientLoginInner() {
   const locale = useLocale()
   const isAr = locale === 'ar'
   const redirectParam = useSearchParams().get('redirect')
-  const destination = redirectParam || `/dashboard`
+  // Localised, so signing in from the Arabic site lands on the Arabic
+  // dashboard rather than its English twin.
+  const destination = redirectParam || localePath('/dashboard', locale)
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null)
 
   useEffect(() => {

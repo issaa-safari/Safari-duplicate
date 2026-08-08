@@ -3,6 +3,7 @@ import { updateSession } from '@/lib/supabase/middleware'
 import { LOCALE_HEADER } from '@/lib/i18n'
 import {
   LOCALE_COOKIE,
+  isLocale,
   isNegotiable,
   isUnlocalised,
   localePath,
@@ -70,7 +71,10 @@ export async function proxy(request: NextRequest) {
   // Prefetches are excluded here too: a prefetched ?lang= link would otherwise
   // redirect *and* write the cookie, pinning a visitor's language to a link
   // they never clicked.
-  const negotiable = isNegotiable(searchParams.has('_rsc'))
+  const negotiable = isNegotiable(
+    request.headers.get('accept'),
+    request.headers.get('sec-fetch-mode')
+  )
   const legacyLang = searchParams.get('lang')
   if (negotiable && (legacyLang === 'ar' || legacyLang === 'en')) {
     const url = request.nextUrl.clone()
@@ -99,11 +103,19 @@ export async function proxy(request: NextRequest) {
   // then reloaded the Arabic page and the toggle looked dead. Any client-side
   // navigation reaching here already had its document request negotiated, so
   // the cookie is set and there is nothing left to decide.
-  if (locale === 'en' && negotiable && !isUnlocalised(path) && !request.cookies.has(LOCALE_COOKIE)) {
-    const detected = preferredLocale(
-      request.headers.get('accept-language'),
-      request.headers.get('x-vercel-ip-country')
-    )
+  if (locale === 'en' && negotiable && !isUnlocalised(path)) {
+    // A stored choice decides on its own. It used to only *suppress* detection,
+    // which left a visitor who had chosen Arabic on the English page whenever a
+    // link pointed at the unprefixed URL — a bookmark, a link in an email, or
+    // the header's own Dashboard link. Falling back to the browser's setting
+    // only when nothing is stored keeps first visits working as before.
+    const stored = request.cookies.get(LOCALE_COOKIE)?.value
+    const detected = isLocale(stored)
+      ? stored
+      : preferredLocale(
+          request.headers.get('accept-language'),
+          request.headers.get('x-vercel-ip-country')
+        )
     if (detected === 'ar') {
       const url = request.nextUrl.clone()
       url.pathname = localePath(path, 'ar')
