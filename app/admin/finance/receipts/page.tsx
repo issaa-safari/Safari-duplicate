@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import ReceivablesTable from '../receivables-table'
 import FinanceNav from '../finance-nav'
+import { computeBalance } from '@/lib/balance'
 
 function fmt(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -10,7 +11,8 @@ function fmt(n: number) {
 
 interface PaymentRow {
   id: string
-  quote_id: string
+  quote_id: string | null
+  booking_id: string | null
   amount_usd: number
   payment_type: string
   method: string | null
@@ -29,28 +31,27 @@ export default async function ReceiptsPage() {
     { data: acceptances, error: acceptancesError },
     { data: payments, error: paymentsError },
     { data: directBookings },
-    { data: bookingPayments },
   ] = await Promise.all([
     admin.from('quote_acceptances')
       .select('id, client_name, accepted_at, quote_version_id, quote_id, quote_versions(title, total_selling_usd, total_cost_usd), quotes(id, quote_number)')
       .order('accepted_at', { ascending: false }),
-    admin.from('quote_payments')
-      .select('id, quote_id, amount_usd, payment_type, method, reference, received_at'),
+    admin.from('trip_payments')
+      .select('id, quote_id, booking_id, amount_usd, payment_type, method, reference, received_at'),
     admin.from('bookings')
       .select('id, total_price_usd, status, created_at, departure_id, departures(start_date, tours(title_en))')
       .is('quote_id', null)
       .eq('status', 'confirmed'),
-    admin.from('booking_payments')
-      .select('id, booking_id, amount_usd, status, created_at'),
   ])
 
   if (acceptancesError) console.error('[Receipts] quote_acceptances read error:', acceptancesError.message)
-  if (paymentsError) console.error('[Receipts] quote_payments read error:', paymentsError.message)
+  if (paymentsError) console.error('[Receipts] trip_payments read error:', paymentsError.message)
 
+  // One ledger now, so both kinds of trip are bucketed from the same rows.
   const paymentsByQuote: Record<string, PaymentRow[]> = {}
+  const paymentsByBooking: Record<string, PaymentRow[]> = {}
   for (const p of ((payments ?? []) as PaymentRow[])) {
-    if (!paymentsByQuote[p.quote_id]) paymentsByQuote[p.quote_id] = []
-    paymentsByQuote[p.quote_id]!.push(p)
+    if (p.quote_id) (paymentsByQuote[p.quote_id] ??= []).push(p)
+    else if (p.booking_id) (paymentsByBooking[p.booking_id] ??= []).push(p)
   }
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -59,20 +60,15 @@ export default async function ReceiptsPage() {
     const quoteNumber = (a.quotes as any)?.quote_number ?? '—'
     const totalSelling = Number((a.quote_versions as any)?.total_selling_usd ?? 0)
     const qPayments = paymentsByQuote[quoteId] ?? []
-    const totalReceived = qPayments.reduce((sum, p) =>
-      p.payment_type === 'refund' ? sum - Number(p.amount_usd) : sum + Number(p.amount_usd), 0)
+    const { receivedUsd: totalReceived } = computeBalance({ invoicedUsd: totalSelling, payments: qPayments })
     return { quoteId, quoteNumber, clientName: a.client_name, totalSelling, totalReceived, acceptedAt: a.accepted_at, payments: qPayments }
   })
 
-  const bpByBooking: Record<string, number> = {}
-  for (const bp of (bookingPayments ?? [])) {
-    if (bp.status === 'paid') {
-      bpByBooking[bp.booking_id] = (bpByBooking[bp.booking_id] ?? 0) + Number(bp.amount_usd)
-    }
-  }
   const directRows = (directBookings ?? []).map((b: any) => {
     const amountDue = Number(b.total_price_usd ?? 0)
-    const amountReceived = bpByBooking[b.id] ?? 0
+    const { receivedUsd: amountReceived } = computeBalance({
+      invoicedUsd: amountDue, payments: paymentsByBooking[b.id] ?? [],
+    })
     const tourTitle = (b.departures as any)?.tours?.title_en ?? 'Direct Booking'
     const startDate = (b.departures as any)?.start_date ?? null
     return { bookingId: b.id, tourTitle, startDate, amountDue, amountReceived, createdAt: b.created_at }

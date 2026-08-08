@@ -8,6 +8,7 @@ import PrintButton from '@/components/public/print-button'
 import type { BookingTraveller } from '@/lib/types'
 import { getServerLocale } from '@/lib/i18n'
 import { localePath } from '@/lib/locale'
+import { getTripBalance } from '@/lib/server/accounting'
 
 const G = '#7A9A4A'
 
@@ -73,19 +74,16 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const tour = departure?.tours as any
   const travellers = (booking.booking_travellers ?? []) as BookingTraveller[]
 
-  // Payment records (group_25). Sum what's been paid vs the booking total.
-  const { data: payments } = await admin
-    .from('booking_payments')
-    .select('amount_usd, status, method, created_at')
-    .eq('booking_id', id)
-    .order('created_at', { ascending: true })
-
-  const totalPrice = Number(booking.total_price_usd) || 0
-  const paidAmount = (payments ?? [])
-    .filter((p) => p.status === 'paid')
-    .reduce((sum, p) => sum + (Number(p.amount_usd) || 0), 0)
-  const paidPct = totalPrice > 0 ? Math.min(100, Math.round((paidAmount / totalPrice) * 100)) : 0
-  const balanceDue = Math.max(0, totalPrice - paidAmount)
+  // What this trip owes, from the one shared calculation — so the figure a
+  // client reads here is the same one the back office sees.
+  const {
+    invoicedUsd: totalPrice,
+    receivedUsd: paidAmount,
+    balanceUsd: balanceDue,
+    paidPercent: paidPct,
+    depositDueUsd: depositDue,
+    payments,
+  } = await getTripBalance(admin, { bookingId: id })
 
   // Bank-transfer details so the client knows how to pay the balance. Pulled
   // from company_settings; when an online payment gateway is added later a pay
@@ -97,7 +95,6 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
     .maybeSingle()
   const hasBankDetails = !!(settings?.bank_account_number || settings?.bank_name)
   const depositPercent = Number(settings?.deposit_percent) || 0
-  const depositDue = depositPercent > 0 ? Math.round(totalPrice * depositPercent) / 100 : 0
 
   // Countdown to departure.
   const startDate = departure?.start_date ? new Date(departure.start_date) : null
@@ -290,14 +287,14 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             </div>
             {payments && payments.length > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-100 space-y-1.5">
-                {payments.map((p, i) => (
-                  <div key={i} className="flex justify-between text-xs text-gray-500">
+                {payments.map((p) => (
+                  <div key={p.id} className="flex justify-between text-xs text-gray-500">
                     <span>
-                      {fmtDate(p.created_at, isAr)}
+                      {fmtDate(p.received_at, isAr)}
                       {p.method ? ` · ${p.method}` : ''}
                     </span>
                     <span className="font-medium text-gray-700">
-                      ${Number(p.amount_usd).toLocaleString()} · {p.status}
+                      ${Number(p.amount_usd).toLocaleString()}{p.payment_type ? ` · ${p.payment_type}` : ''}
                     </span>
                   </div>
                 ))}

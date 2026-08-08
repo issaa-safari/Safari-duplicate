@@ -2598,6 +2598,33 @@ CREATE TABLE public.traveller_agreements (
 
 
 --
+-- Name: trip_payments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.trip_payments (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    quote_id uuid,
+    booking_id uuid,
+    amount_usd numeric(12,2) NOT NULL,
+    payment_type text DEFAULT 'deposit'::text NOT NULL,
+    method text,
+    reference text,
+    notes text,
+    received_at date DEFAULT CURRENT_DATE NOT NULL,
+    created_by uuid,
+    source_table text,
+    source_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT trip_payments_amount_usd_check CHECK ((amount_usd > (0)::numeric)),
+    CONSTRAINT trip_payments_method_check CHECK ((method = ANY (ARRAY['bank_transfer'::text, 'card'::text, 'cash'::text, 'mpesa'::text, 'cheque'::text, 'other'::text]))),
+    CONSTRAINT trip_payments_payment_type_check CHECK ((payment_type = ANY (ARRAY['deposit'::text, 'balance'::text, 'full'::text, 'partial'::text, 'refund'::text]))),
+    CONSTRAINT trip_payments_source_table_check CHECK ((source_table = ANY (ARRAY['quote_payments'::text, 'booking_payments'::text]))),
+    CONSTRAINT trip_payments_trip_ref_chk CHECK (((quote_id IS NOT NULL) OR (booking_id IS NOT NULL)))
+);
+
+
+--
 -- Name: vehicle_pricing; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3278,6 +3305,14 @@ ALTER TABLE ONLY public.traveller_agreements
 
 
 --
+-- Name: trip_payments trip_payments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trip_payments
+    ADD CONSTRAINT trip_payments_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: vehicle_pricing vehicle_pricing_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3808,6 +3843,34 @@ CREATE INDEX traveller_agreements_token_idx ON public.traveller_agreements USING
 
 
 --
+-- Name: trip_payments_booking_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX trip_payments_booking_idx ON public.trip_payments USING btree (booking_id);
+
+
+--
+-- Name: trip_payments_quote_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX trip_payments_quote_idx ON public.trip_payments USING btree (quote_id);
+
+
+--
+-- Name: trip_payments_received_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX trip_payments_received_idx ON public.trip_payments USING btree (received_at DESC);
+
+
+--
+-- Name: trip_payments_source_uniq; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX trip_payments_source_uniq ON public.trip_payments USING btree (source_table, source_id) WHERE (source_id IS NOT NULL);
+
+
+--
 -- Name: vehicles_is_active_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4120,6 +4183,13 @@ CREATE TRIGGER update_proposal_templates_updated_at BEFORE UPDATE ON public.prop
 --
 
 CREATE TRIGGER update_traveller_agreements_updated_at BEFORE UPDATE ON public.traveller_agreements FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: trip_payments update_trip_payments_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_trip_payments_updated_at BEFORE UPDATE ON public.trip_payments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
 --
@@ -4673,6 +4743,22 @@ ALTER TABLE ONLY public.traveller_agreements
 
 
 --
+-- Name: trip_payments trip_payments_booking_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trip_payments
+    ADD CONSTRAINT trip_payments_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: trip_payments trip_payments_quote_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trip_payments
+    ADD CONSTRAINT trip_payments_quote_id_fkey FOREIGN KEY (quote_id) REFERENCES public.quotes(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: booking_links Admins can manage booking_links; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -5140,6 +5226,12 @@ ALTER TABLE public.traveller_age_bands ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.traveller_agreements ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: trip_payments; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.trip_payments ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: vehicle_pricing; Type: ROW SECURITY; Schema: public; Owner: -

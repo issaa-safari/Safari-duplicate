@@ -93,12 +93,11 @@ export async function createBookingFromAcceptedQuote(
     console.error('[quote-booking] traveller rows skipped', e)
   }
 
-  // Best-effort: finance stub.
-  try {
-    await admin.from('booking_payments').insert({
-      booking_id: booking.id, amount_usd: total, status: 'pending', notes: 'Accepted quote',
-    })
-  } catch { /* finance record is non-critical */ }
+  // No finance row is written here on purpose. This used to insert a 'pending'
+  // booking_payments stub for the whole trip price, which was never a payment —
+  // it was the amount expected, and nothing could ever mark it received. What is
+  // owed is now derived from the trip (lib/server/accounting.ts); trip_payments
+  // only ever records money that actually arrived.
 
   // Best-effort: seat reservation on the linked departure.
   if (quote.departure_id) {

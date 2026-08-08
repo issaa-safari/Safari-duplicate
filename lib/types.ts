@@ -275,3 +275,32 @@ export interface Lead {
   status: LeadStatus
   source: string
 }
+
+// --- Trip payments (migrations/group_73_trip_payments.sql) ---
+// One ledger for money received, whether the trip was sold as a quote or booked
+// directly. A row here means money arrived; what is *expected* is the invoice's
+// job, not the ledger's. Replaces quote_payments and booking_payments.
+
+export type PaymentType = 'deposit' | 'balance' | 'full' | 'partial' | 'refund'
+
+export type PaymentMethod =
+  | 'bank_transfer' | 'card' | 'cash' | 'mpesa' | 'cheque' | 'other'
+
+export interface TripPayment {
+  id: string
+  /** At least one of quote_id / booking_id is always present. */
+  quote_id: string | null
+  booking_id: string | null
+  amount_usd: number
+  payment_type: PaymentType
+  method: PaymentMethod | null
+  reference: string | null
+  notes: string | null
+  received_at: string
+  created_by: string | null
+  /** Set only on rows carried over by the group_73 backfill. */
+  source_table: 'quote_payments' | 'booking_payments' | null
+  source_id: string | null
+  created_at: string
+  updated_at: string
+}

@@ -1,32 +1,25 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-
-interface Payment {
-  amount_usd: number
-  status: string
-  method: string | null
-  reference: string | null
-  created_at: string
-}
+import PaymentForm from '@/app/admin/finance/payment-form'
+import type { TripBalance } from '@/lib/server/accounting'
 
 interface BookingDetailFormProps {
   booking: any
   bookingId: string
-  payments?: Payment[]
+  balance: TripBalance
 }
 
-export default function BookingDetailForm({ booking, bookingId, payments = [] }: BookingDetailFormProps) {
+export default function BookingDetailForm({ booking, bookingId, balance }: BookingDetailFormProps) {
   const departure = booking.departures as any
   const tour = departure?.tours as any
   const travellers = booking.booking_travellers as any[]
+  const [paying, setPaying] = useState(false)
 
-  const totalPrice = Number(booking.total_price_usd) || 0
-  const paidAmount = payments
-    .filter((p) => p.status === 'paid')
-    .reduce((sum, p) => sum + (Number(p.amount_usd) || 0), 0)
-  const balanceDue = Math.max(0, totalPrice - paidAmount)
-  const paidPct = totalPrice > 0 ? Math.min(100, Math.round((paidAmount / totalPrice) * 100)) : 0
+  // One shared calculation, so this page, the client dashboard and Finance can
+  // never disagree about what a trip is owed.
+  const { invoicedUsd: totalPrice, receivedUsd: paidAmount, balanceUsd: balanceDue, paidPercent: paidPct, payments } = balance
 
   const statusMap: Record<string, { bg: string; text: string; badge: string }> = {
     confirmed: { bg: 'bg-green-50', text: 'text-green-900', badge: 'bg-green-100 text-green-700' },
@@ -106,23 +99,48 @@ export default function BookingDetailForm({ booking, bookingId, payments = [] }:
           </div>
           {payments.length > 0 ? (
             <div className="mt-4 pt-4 border-t border-border space-y-1.5">
-              {payments.map((p, i) => (
-                <div key={i} className="flex justify-between text-xs text-muted-foreground">
+              {payments.map((p) => (
+                <div key={p.id} className="flex justify-between text-xs text-muted-foreground">
                   <span>
-                    {new Date(p.created_at).toLocaleDateString('en-GB')}
+                    {new Date(p.received_at).toLocaleDateString('en-GB')}
                     {p.method ? ` · ${p.method}` : ''}
                     {p.reference ? ` · ${p.reference}` : ''}
                   </span>
-                  <span className="font-medium text-foreground">${Number(p.amount_usd).toLocaleString()} · {p.status}</span>
+                  <span className="font-medium text-foreground">
+                    ${Number(p.amount_usd).toLocaleString()}{p.payment_type ? ` · ${p.payment_type}` : ''}
+                  </span>
                 </div>
               ))}
             </div>
           ) : (
             <p className="mt-4 pt-4 border-t border-border text-xs text-muted-foreground">
-              No payments recorded yet. Record payments in{' '}
-              <Link href="/admin/finance" className="underline hover:text-foreground">Finance</Link>.
+              No payments recorded yet.
             </p>
           )}
+
+          {/* Recording a payment used to be possible only against a quote, which
+              is why a booking made on the website could never be settled. */}
+          <div className="mt-4 pt-4 border-t border-border">
+            {paying ? (
+              <div className="max-w-md">
+                <PaymentForm
+                  bookingId={bookingId}
+                  label={tour?.title_en ?? 'This booking'}
+                  totalSelling={totalPrice}
+                  alreadyReceived={paidAmount}
+                  onDone={() => { setPaying(false); window.location.reload() }}
+                />
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setPaying(true)}
+                className="text-sm font-medium text-olive hover:underline"
+              >
+                + Record payment
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Traveller Information */}

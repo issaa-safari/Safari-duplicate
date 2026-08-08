@@ -35,6 +35,21 @@ a new tour got `trigger-probe-kenya-safari`, a second one with the same title go
 `trigger-probe-kenya-safari-2`, and a title with no latin characters got `null` —
 which the route handles by falling back to the UUID.
 
+### `group_73` — not yet applied to production
+
+Adds `trip_payments`, one ledger for money received against either kind of trip.
+The baseline was regenerated with it (66 tables, 160 indexes) and verified to load
+into an empty database in a single pass.
+
+Two things were stripped from the regenerated dump, and should be stripped again
+next time: a bare `CREATE SCHEMA public` (it collides with the schema Supabase
+already provides — patched back to `IF NOT EXISTS`) along with its
+`COMMENT ON SCHEMA`, which needs an ownership the migration role does not have;
+and pg_dump's `\restrict` / `\unrestrict` session guards, which older psql builds
+reject outright and which no earlier baseline carried.
+
+Re-check the fingerprint after applying, using the query at the end of this file.
+
 ## What was wrong
 
 Found by loading every `group_*.sql` into a clean Postgres 16 and diffing
