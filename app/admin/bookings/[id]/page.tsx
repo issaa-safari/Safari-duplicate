@@ -4,6 +4,8 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import BookingDetailForm from './form'
 import { getTripBalance } from '@/lib/server/accounting'
+import { getTripInvoiceSummary } from '@/lib/server/invoices'
+import type { Service } from '@/lib/types'
 
 export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -56,5 +58,27 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   // payments recorded under the quote.
   const balance = await getTripBalance(admin, { bookingId: id })
 
-  return <BookingDetailForm booking={booking} bookingId={id} balance={balance} />
+  const [{ data: catalogue }, invoiceSummary] = await Promise.all([
+    admin
+      .from('services')
+      .select('id, name_en, name_ar, default_price_usd, pricing_unit, is_active, sort_order')
+      .eq('is_active', true)
+      .order('sort_order')
+      .order('name_en'),
+    getTripInvoiceSummary(admin, balance.ref),
+  ])
+
+  return (
+    <BookingDetailForm
+      booking={booking}
+      bookingId={id}
+      balance={balance}
+      catalogue={(catalogue ?? []) as unknown as Service[]}
+      invoices={invoiceSummary.invoices.map((s) => ({
+        id: s.invoice.id,
+        invoice_number: s.invoice.invoice_number,
+        displayStatus: s.displayStatus,
+      }))}
+    />
+  )
 }

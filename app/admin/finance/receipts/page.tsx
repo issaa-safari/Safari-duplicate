@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import ReceivablesTable from '../receivables-table'
 import FinanceNav from '../finance-nav'
 import { computeBalance } from '@/lib/balance'
+import { invoiceDisplayStatus } from '@/lib/invoice'
+import type { InvoiceStatus, Service } from '@/lib/types'
 
 function fmt(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -20,6 +22,27 @@ interface PaymentRow {
   received_at: string
 }
 
+interface ServiceRow {
+  id: string
+  quote_id: string | null
+  booking_id: string | null
+  name_en: string
+  name_ar: string | null
+  unit_price_usd: number
+  quantity: number
+  total_usd: number
+}
+
+interface InvoiceRow {
+  id: string
+  quote_id: string | null
+  booking_id: string | null
+  invoice_number: string | null
+  status: InvoiceStatus
+  due_date: string | null
+  total_usd: number
+}
+
 export default async function ReceiptsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -31,6 +54,9 @@ export default async function ReceiptsPage() {
     { data: acceptances, error: acceptancesError },
     { data: payments, error: paymentsError },
     { data: directBookings },
+    { data: catalogue },
+    { data: tripServices },
+    { data: invoiceRows },
   ] = await Promise.all([
     admin.from('quote_acceptances')
       .select('id, client_name, accepted_at, quote_version_id, quote_id, quote_versions(title, total_selling_usd, total_cost_usd), quotes(id, quote_number)')
@@ -41,6 +67,16 @@ export default async function ReceiptsPage() {
       .select('id, total_price_usd, status, created_at, departure_id, departures(start_date, tours(title_en))')
       .is('quote_id', null)
       .eq('status', 'confirmed'),
+    admin.from('services')
+      .select('id, name_en, name_ar, default_price_usd, pricing_unit, is_active, sort_order')
+      .eq('is_active', true)
+      .order('sort_order')
+      .order('name_en'),
+    admin.from('trip_services')
+      .select('id, quote_id, booking_id, name_en, name_ar, unit_price_usd, quantity, total_usd'),
+    admin.from('invoices')
+      .select('id, quote_id, booking_id, invoice_number, status, due_date, total_usd')
+      .order('created_at', { ascending: false }),
   ])
 
   if (acceptancesError) console.error('[Receipts] quote_acceptances read error:', acceptancesError.message)
@@ -54,18 +90,67 @@ export default async function ReceiptsPage() {
     else if (p.booking_id) (paymentsByBooking[p.booking_id] ??= []).push(p)
   }
 
+  // Add-ons and invoices, bucketed the same way.
+  const servicesByQuote: Record<string, ServiceRow[]> = {}
+  const servicesByBooking: Record<string, ServiceRow[]> = {}
+  for (const s of ((tripServices ?? []) as unknown as ServiceRow[])) {
+    if (s.quote_id) (servicesByQuote[s.quote_id] ??= []).push(s)
+    else if (s.booking_id) (servicesByBooking[s.booking_id] ??= []).push(s)
+  }
+
+  const invoicesByQuote: Record<string, InvoiceRow[]> = {}
+  const invoicesByBooking: Record<string, InvoiceRow[]> = {}
+  for (const i of ((invoiceRows ?? []) as unknown as InvoiceRow[])) {
+    if (i.quote_id) (invoicesByQuote[i.quote_id] ??= []).push(i)
+    else if (i.booking_id) (invoicesByBooking[i.booking_id] ??= []).push(i)
+  }
+
+  const sum = (rows: { total_usd: number }[]) =>
+    rows.reduce((s, r) => s + (Number(r.total_usd) || 0), 0)
+
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const rows = (acceptances ?? []).map((a: any) => {
     const quoteId = (a.quotes as any)?.id ?? a.quote_id
     const quoteNumber = (a.quotes as any)?.quote_number ?? '—'
-    const totalSelling = Number((a.quote_versions as any)?.total_selling_usd ?? 0)
     const qPayments = paymentsByQuote[quoteId] ?? []
+    const qServices = servicesByQuote[quoteId] ?? []
+    const qInvoices = invoicesByQuote[quoteId] ?? []
+
+    // An issued invoice is a figure the client has been given, so it wins over
+    // the quote's internal selling total — which can still move, and which knows
+    // nothing about add-ons. Same rule as getTripBalance.
+    const issued = qInvoices.filter((i) => i.status === 'issued')
+    const totalSelling = issued.length > 0
+      ? sum(issued)
+      : Number((a.quote_versions as any)?.total_selling_usd ?? 0) + sum(qServices)
+
     const { receivedUsd: totalReceived } = computeBalance({ invoicedUsd: totalSelling, payments: qPayments })
-    return { quoteId, quoteNumber, clientName: a.client_name, totalSelling, totalReceived, acceptedAt: a.accepted_at, payments: qPayments }
+
+    return {
+      quoteId, quoteNumber, clientName: a.client_name, totalSelling, totalReceived,
+      acceptedAt: a.accepted_at, payments: qPayments, services: qServices,
+      invoices: qInvoices.map((i) => ({
+        id: i.id,
+        invoice_number: i.invoice_number,
+        displayStatus: invoiceDisplayStatus({
+          status: i.status,
+          totalUsd: Number(i.total_usd) || 0,
+          // Per-invoice allocation is the invoice screen's job; here the badge
+          // only needs to distinguish a draft from a live document.
+          receivedUsd: 0,
+          dueDate: i.due_date,
+        }),
+      })),
+    }
   })
 
   const directRows = (directBookings ?? []).map((b: any) => {
-    const amountDue = Number(b.total_price_usd ?? 0)
+    const bServices = servicesByBooking[b.id] ?? []
+    const bIssued = (invoicesByBooking[b.id] ?? []).filter((i) => i.status === 'issued')
+    const amountDue = bIssued.length > 0
+      ? sum(bIssued)
+      : Number(b.total_price_usd ?? 0) + sum(bServices)
+
     const { receivedUsd: amountReceived } = computeBalance({
       invoicedUsd: amountDue, payments: paymentsByBooking[b.id] ?? [],
     })
@@ -126,7 +211,7 @@ export default async function ReceiptsPage() {
             No accepted quotes yet. Receipts are tracked once a client accepts a quote.
           </div>
         ) : (
-          <ReceivablesTable rows={rows} />
+          <ReceivablesTable rows={rows} catalogue={(catalogue ?? []) as unknown as Service[]} />
         )}
       </div>
 

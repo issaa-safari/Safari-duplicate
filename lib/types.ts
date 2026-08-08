@@ -345,3 +345,61 @@ export interface TripService {
   created_at: string
   updated_at: string
 }
+
+// --- Invoices (migrations/group_76_invoices.sql) ---
+// trip_payments records what arrived; an invoice records what was asked for, and
+// fixes it. `paid` is deliberately not a status — whether an invoice is settled
+// is derived from the ledger by lib/balance.ts, so there is only ever one copy
+// of that answer.
+
+export type InvoiceStatus = 'draft' | 'issued' | 'void'
+
+/** What a screen shows, which is the stored status plus what the ledger says. */
+export type InvoiceDisplayStatus = InvoiceStatus | 'paid' | 'part-paid' | 'overdue'
+
+export type InvoiceLineKind = 'trip' | 'service' | 'discount' | 'other'
+
+export interface Invoice {
+  id: string
+  /** At least one of quote_id / booking_id is always present. */
+  quote_id: string | null
+  booking_id: string | null
+  /** Null while a draft: numbers are drawn at issue so drafts do not burn them. */
+  invoice_number: string | null
+  status: InvoiceStatus
+  issue_date: string | null
+  due_date: string | null
+  /** Client details as they were at issue — the client record may move since. */
+  client_id: string | null
+  client_name: string | null
+  client_email: string | null
+  client_address: string | null
+  currency: string
+  /** Maintained in Postgres from the lines. Never written directly. */
+  total_usd: number
+  notes: string | null
+  terms: string | null
+  issued_at: string | null
+  voided_at: string | null
+  void_reason: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface InvoiceLine {
+  id: string
+  invoice_id: string
+  description_en: string
+  description_ar: string | null
+  quantity: number
+  /** May be negative: a discount is a negative line. */
+  unit_price_usd: number
+  /** Generated in Postgres from quantity × unit_price_usd. */
+  total_usd: number
+  kind: InvoiceLineKind
+  trip_service_id: string | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
