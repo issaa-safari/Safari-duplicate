@@ -3,15 +3,26 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import PaymentForm from '@/app/admin/finance/payment-form'
+import TripServicesPanel from '@/app/admin/finance/trip-services/panel'
+import TripInvoicesPanel from '@/app/admin/finance/invoices/trip-panel'
 import type { TripBalance } from '@/lib/server/accounting'
+import type { InvoiceDisplayStatus, Service } from '@/lib/types'
 
 interface BookingDetailFormProps {
   booking: any
   bookingId: string
   balance: TripBalance
+  catalogue: Service[]
+  invoices: { id: string; invoice_number: string | null; displayStatus: InvoiceDisplayStatus }[]
 }
 
-export default function BookingDetailForm({ booking, bookingId, balance }: BookingDetailFormProps) {
+export default function BookingDetailForm({
+  booking,
+  bookingId,
+  balance,
+  catalogue,
+  invoices,
+}: BookingDetailFormProps) {
   const departure = booking.departures as any
   const tour = departure?.tours as any
   const travellers = booking.booking_travellers as any[]
@@ -142,6 +153,15 @@ export default function BookingDetailForm({ booking, bookingId, balance }: Booki
             )}
           </div>
         </div>
+
+        <TripServicesPanel
+          bookingId={bookingId}
+          catalogue={catalogue}
+          attached={balance.services}
+          travellerCount={Number(booking.number_of_travellers) || 1}
+        />
+
+        <TripInvoicesPanel bookingId={bookingId} invoices={invoices} />
 
         {/* Traveller Information */}
         <div className="rounded-xl border border-border bg-surface shadow-sm p-6">

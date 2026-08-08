@@ -2,15 +2,21 @@
 
 import { useState } from 'react'
 import PaymentForm from './payment-form'
+import TripServicesPanel from './trip-services/panel'
+import TripInvoicesPanel from './invoices/trip-panel'
+import type { InvoiceDisplayStatus, Service, TripService } from '@/lib/types'
 
 interface ReceivableRow {
   quoteId: string
   quoteNumber: string
   clientName: string
+  /** Issued invoices when there are any, else the quote total plus its add-ons. */
   totalSelling: number
   totalReceived: number
   acceptedAt: string | null
   payments: { id: string; amount_usd: number; payment_type: string; method: string | null; received_at: string; reference: string | null }[]
+  services: Pick<TripService, 'id' | 'name_en' | 'name_ar' | 'unit_price_usd' | 'quantity' | 'total_usd'>[]
+  invoices: { id: string; invoice_number: string | null; displayStatus: InvoiceDisplayStatus }[]
 }
 
 function fmt(n: number) {
@@ -23,7 +29,13 @@ function daysAgo(dateStr: string | null): number | null {
   return Math.floor(ms / 86_400_000)
 }
 
-export default function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
+export default function ReceivablesTable({
+  rows,
+  catalogue,
+}: {
+  rows: ReceivableRow[]
+  catalogue: Service[]
+}) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [paying, setPaying] = useState<string | null>(null)
 
@@ -141,6 +153,15 @@ export default function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
                         + Record payment
                       </button>
                     )}
+
+                    <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                      <TripServicesPanel
+                        quoteId={row.quoteId}
+                        catalogue={catalogue}
+                        attached={row.services}
+                      />
+                      <TripInvoicesPanel quoteId={row.quoteId} invoices={row.invoices} />
+                    </div>
                   </div>
                 )}
               </div>
