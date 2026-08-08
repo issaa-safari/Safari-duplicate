@@ -47,6 +47,103 @@ CREATE SCHEMA IF NOT EXISTS public;
 
 
 --
+-- Name: assert_invoice_deletable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.assert_invoice_deletable() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+begin
+  if old.status <> 'draft' then
+    raise exception 'Invoice % is % and cannot be deleted. Void it instead.',
+      coalesce(old.invoice_number, old.id::text), old.status
+      using errcode = 'check_violation';
+  end if;
+  return old;
+end;
+$$;
+
+
+--
+-- Name: assert_invoice_lines_mutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.assert_invoice_lines_mutable() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare
+  v_invoice_id uuid := coalesce(new.invoice_id, old.invoice_id);
+  v_status text;
+  v_number text;
+begin
+  select status, invoice_number into v_status, v_number
+    from invoices where id = v_invoice_id;
+
+  -- No row means the invoice itself is being deleted and the cascade is taking
+  -- its lines with it. The parent's own delete guard has already had its say.
+  if v_status is not null and v_status <> 'draft' then
+    raise exception
+      'Invoice % is % and its lines can no longer be changed. Void it and issue a new one.',
+      coalesce(v_number, v_invoice_id::text), v_status
+      using errcode = 'check_violation';
+  end if;
+
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+  return new;
+end;
+$$;
+
+
+--
+-- Name: assert_invoice_transition(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.assert_invoice_transition() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+begin
+  -- draft → issued → void, and nothing comes back: an issued number that
+  -- reverts to a draft is a number reused. A draft is not voided, it is
+  -- deleted — it was never a document.
+  if old.status <> new.status then
+    if not (
+      (old.status = 'draft'  and new.status = 'issued') or
+      (old.status = 'issued' and new.status = 'void')
+    ) then
+      raise exception 'Cannot move invoice from % to %.', old.status, new.status
+        using errcode = 'check_violation';
+    end if;
+  end if;
+
+  -- sync_invoice_total() is the one writer of total_usd, and it cannot run on a
+  -- non-draft invoice because the line trigger above blocks the write that would
+  -- call it. So any change to a financial field here came from a caller.
+  if old.status <> 'draft' then
+    if new.invoice_number is distinct from old.invoice_number
+       or new.total_usd    is distinct from old.total_usd
+       or new.quote_id     is distinct from old.quote_id
+       or new.booking_id   is distinct from old.booking_id
+       or new.issue_date   is distinct from old.issue_date
+       or new.currency     is distinct from old.currency
+       or new.client_name  is distinct from old.client_name then
+      raise exception
+        'Invoice % is % and can no longer be edited. Void it and issue a new one.',
+        coalesce(old.invoice_number, old.id::text), old.status
+        using errcode = 'check_violation';
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+
+--
 -- Name: assert_quote_version_mutable(uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -68,6 +165,40 @@ begin
   if v_status not in ('draft', 'ready') then
     raise exception 'This quote version is locked and cannot be changed.';
   end if;
+end;
+$$;
+
+
+--
+-- Name: assign_invoice_number(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.assign_invoice_number() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare
+  v_due_days integer;
+begin
+  if new.status = 'issued' and (tg_op = 'INSERT' or old.status <> 'issued') then
+    new.invoice_number := coalesce(new.invoice_number, next_invoice_number());
+    new.issued_at      := coalesce(new.issued_at, now());
+    new.issue_date     := coalesce(new.issue_date, current_date);
+
+    if new.due_date is null then
+      select coalesce(balance_due_days, 30) into v_due_days
+        from company_settings order by created_at limit 1;
+      new.due_date := new.issue_date + coalesce(v_due_days, 30);
+    end if;
+  end if;
+
+  if new.status = 'void' and (tg_op = 'INSERT' or old.status <> 'void') then
+    new.voided_at := coalesce(new.voided_at, now());
+  end if;
+
+  -- A void invoice keeps its number and its lines; what it loses is the claim
+  -- on the client, so it must not be counted as owed anywhere.
+  return new;
 end;
 $$;
 
@@ -606,6 +737,28 @@ begin
     values (new.id, 'note', format('Status changed: %s → %s', coalesce(old.stage, '—'), new.stage));
   end if;
   return new;
+end;
+$$;
+
+
+--
+-- Name: next_invoice_number(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.next_invoice_number() RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare
+  v_prefix text;
+begin
+  select coalesce(nullif(btrim(invoice_prefix), ''), 'INV')
+    into v_prefix
+    from company_settings
+    order by created_at
+    limit 1;
+
+  return coalesce(v_prefix, 'INV') || '-' || lpad(nextval('invoice_number_seq')::text, 4, '0');
 end;
 $$;
 
@@ -1162,6 +1315,32 @@ CREATE FUNCTION public.slugify(value text) RETURNS text
     trim(both '-' from regexp_replace(lower(coalesce(value, '')), '[^a-z0-9]+', '-', 'g')),
     ''
   )
+$$;
+
+
+--
+-- Name: sync_invoice_total(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sync_invoice_total() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+begin
+  if tg_op in ('UPDATE', 'DELETE') and old.invoice_id is not null then
+    update invoices
+       set total_usd = (select coalesce(sum(total_usd), 0) from invoice_lines where invoice_id = old.invoice_id)
+     where id = old.invoice_id;
+  end if;
+
+  if tg_op in ('INSERT', 'UPDATE') and new.invoice_id is not null then
+    update invoices
+       set total_usd = (select coalesce(sum(total_usd), 0) from invoice_lines where invoice_id = new.invoice_id)
+     where id = new.invoice_id;
+  end if;
+
+  return null;
+end;
 $$;
 
 
@@ -1741,12 +1920,68 @@ CREATE TABLE public.hotel_vouchers (
 
 
 --
+-- Name: invoice_lines; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.invoice_lines (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    invoice_id uuid NOT NULL,
+    description_en text NOT NULL,
+    description_ar text,
+    quantity numeric(10,2) DEFAULT 1 NOT NULL,
+    unit_price_usd numeric(12,2) DEFAULT 0 NOT NULL,
+    total_usd numeric(12,2) GENERATED ALWAYS AS (round((quantity * unit_price_usd), 2)) STORED,
+    kind text DEFAULT 'other'::text NOT NULL,
+    trip_service_id uuid,
+    sort_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT invoice_lines_kind_check CHECK ((kind = ANY (ARRAY['trip'::text, 'service'::text, 'discount'::text, 'other'::text]))),
+    CONSTRAINT invoice_lines_quantity_check CHECK ((quantity <> (0)::numeric))
+);
+
+
+--
+-- Name: invoice_number_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.invoice_number_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
 -- Name: invoices; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.invoices (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    quote_id uuid,
+    booking_id uuid,
+    invoice_number text,
+    status text DEFAULT 'draft'::text NOT NULL,
+    issue_date date,
+    due_date date,
+    client_id uuid,
+    client_name text,
+    client_email text,
+    client_address text,
+    currency text DEFAULT 'USD'::text NOT NULL,
+    total_usd numeric(12,2) DEFAULT 0 NOT NULL,
+    notes text,
+    terms text,
+    issued_at timestamp with time zone,
+    voided_at timestamp with time zone,
+    void_reason text,
+    created_by uuid,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT invoices_issued_shape_chk CHECK ((((status = 'draft'::text) AND (invoice_number IS NULL)) OR ((status = ANY (ARRAY['issued'::text, 'void'::text])) AND (invoice_number IS NOT NULL) AND (issue_date IS NOT NULL)))),
+    CONSTRAINT invoices_status_chk CHECK ((status = ANY (ARRAY['draft'::text, 'issued'::text, 'void'::text]))),
+    CONSTRAINT invoices_trip_ref_chk CHECK (((quote_id IS NOT NULL) OR (booking_id IS NOT NULL)))
 );
 
 
@@ -2637,6 +2872,7 @@ CREATE TABLE public.trip_payments (
     source_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    invoice_id uuid,
     CONSTRAINT trip_payments_amount_usd_check CHECK ((amount_usd > (0)::numeric)),
     CONSTRAINT trip_payments_method_check CHECK ((method = ANY (ARRAY['bank_transfer'::text, 'card'::text, 'cash'::text, 'mpesa'::text, 'cheque'::text, 'other'::text]))),
     CONSTRAINT trip_payments_payment_type_check CHECK ((payment_type = ANY (ARRAY['deposit'::text, 'balance'::text, 'full'::text, 'partial'::text, 'refund'::text]))),
@@ -2955,6 +3191,14 @@ ALTER TABLE ONLY public.hotel_vouchers
 
 ALTER TABLE ONLY public.hotel_vouchers
     ADD CONSTRAINT hotel_vouchers_voucher_number_key UNIQUE (voucher_number);
+
+
+--
+-- Name: invoice_lines invoice_lines_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoice_lines
+    ADD CONSTRAINT invoice_lines_pkey PRIMARY KEY (id);
 
 
 --
@@ -3890,6 +4134,62 @@ CREATE INDEX idx_traveller_agreements_agreement_template_id ON public.traveller_
 
 
 --
+-- Name: invoice_lines_invoice_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX invoice_lines_invoice_idx ON public.invoice_lines USING btree (invoice_id, sort_order);
+
+
+--
+-- Name: invoice_lines_trip_service_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX invoice_lines_trip_service_idx ON public.invoice_lines USING btree (trip_service_id);
+
+
+--
+-- Name: invoices_booking_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX invoices_booking_idx ON public.invoices USING btree (booking_id);
+
+
+--
+-- Name: invoices_client_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX invoices_client_idx ON public.invoices USING btree (client_id);
+
+
+--
+-- Name: invoices_due_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX invoices_due_idx ON public.invoices USING btree (due_date) WHERE (status = 'issued'::text);
+
+
+--
+-- Name: invoices_number_uniq; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX invoices_number_uniq ON public.invoices USING btree (invoice_number) WHERE (invoice_number IS NOT NULL);
+
+
+--
+-- Name: invoices_quote_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX invoices_quote_idx ON public.invoices USING btree (quote_id);
+
+
+--
+-- Name: invoices_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX invoices_status_idx ON public.invoices USING btree (status);
+
+
+--
 -- Name: parks_active_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4156,6 +4456,13 @@ CREATE INDEX trip_payments_booking_idx ON public.trip_payments USING btree (book
 
 
 --
+-- Name: trip_payments_invoice_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX trip_payments_invoice_idx ON public.trip_payments USING btree (invoice_id);
+
+
+--
 -- Name: trip_payments_quote_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4223,6 +4530,34 @@ CREATE TRIGGER accommodations_updated_at BEFORE UPDATE ON public.accommodations 
 --
 
 CREATE TRIGGER activities_updated_at BEFORE UPDATE ON public.activities FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: invoices assert_invoice_deletable_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER assert_invoice_deletable_trigger BEFORE DELETE ON public.invoices FOR EACH ROW EXECUTE FUNCTION public.assert_invoice_deletable();
+
+
+--
+-- Name: invoice_lines assert_invoice_lines_mutable_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER assert_invoice_lines_mutable_trigger BEFORE INSERT OR DELETE OR UPDATE ON public.invoice_lines FOR EACH ROW EXECUTE FUNCTION public.assert_invoice_lines_mutable();
+
+
+--
+-- Name: invoices assert_invoice_transition_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER assert_invoice_transition_trigger BEFORE UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION public.assert_invoice_transition();
+
+
+--
+-- Name: invoices assign_invoice_number_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER assign_invoice_number_trigger BEFORE INSERT OR UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION public.assign_invoice_number();
 
 
 --
@@ -4387,6 +4722,13 @@ CREATE TRIGGER supplier_rates_updated_at BEFORE UPDATE ON public.supplier_rates 
 
 
 --
+-- Name: invoice_lines sync_invoice_total_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER sync_invoice_total_trigger AFTER INSERT OR DELETE OR UPDATE ON public.invoice_lines FOR EACH ROW EXECUTE FUNCTION public.sync_invoice_total();
+
+
+--
 -- Name: tour_days tour_days_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -4482,6 +4824,20 @@ CREATE TRIGGER update_departures_updated_at BEFORE UPDATE ON public.departures F
 --
 
 CREATE TRIGGER update_hotel_vouchers_updated_at BEFORE UPDATE ON public.hotel_vouchers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: invoice_lines update_invoice_lines_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_invoice_lines_updated_at BEFORE UPDATE ON public.invoice_lines FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: invoices update_invoices_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
 --
@@ -4705,6 +5061,46 @@ ALTER TABLE ONLY public.hotel_vouchers
 
 ALTER TABLE ONLY public.hotel_vouchers
     ADD CONSTRAINT hotel_vouchers_quote_id_fkey FOREIGN KEY (quote_id) REFERENCES public.quotes(id) ON DELETE SET NULL;
+
+
+--
+-- Name: invoice_lines invoice_lines_invoice_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoice_lines
+    ADD CONSTRAINT invoice_lines_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id) ON DELETE CASCADE;
+
+
+--
+-- Name: invoice_lines invoice_lines_trip_service_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoice_lines
+    ADD CONSTRAINT invoice_lines_trip_service_id_fkey FOREIGN KEY (trip_service_id) REFERENCES public.trip_services(id) ON DELETE SET NULL;
+
+
+--
+-- Name: invoices invoices_booking_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoices
+    ADD CONSTRAINT invoices_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: invoices invoices_client_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoices
+    ADD CONSTRAINT invoices_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.clients(id) ON DELETE SET NULL;
+
+
+--
+-- Name: invoices invoices_quote_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoices
+    ADD CONSTRAINT invoices_quote_id_fkey FOREIGN KEY (quote_id) REFERENCES public.quotes(id) ON DELETE RESTRICT;
 
 
 --
@@ -5092,6 +5488,14 @@ ALTER TABLE ONLY public.trip_payments
 
 
 --
+-- Name: trip_payments trip_payments_invoice_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trip_payments
+    ADD CONSTRAINT trip_payments_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id) ON DELETE SET NULL;
+
+
+--
 -- Name: trip_payments trip_payments_quote_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5389,6 +5793,12 @@ ALTER TABLE public.hotel_pricing ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.hotel_vouchers ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: invoice_lines; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.invoice_lines ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: invoices; Type: ROW SECURITY; Schema: public; Owner: -

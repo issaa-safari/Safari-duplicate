@@ -1,8 +1,9 @@
 # Schema drift: migrations vs production
 
-**Status: resolved 2026-08-08 by `group_75`.** `migrations/baseline/` now
+**Status: resolved 2026-08-08, through `group_77`.** `migrations/baseline/` now
 reconstructs the live Supabase project (`oejlkzcoynijqtokbizz`) exactly — same
-counts *and* same md5 on tables, columns, indexes and policies.
+counts *and* same md5 on tables, columns, indexes and policies: 69 tables, 840
+columns, 210 indexes, 17 policies.
 
 It was previously marked resolved on 2026-08-06, and that was wrong. That check
 compared a replay of the group files on tables, columns, indexes, constraints,
@@ -109,6 +110,36 @@ reject outright and which no earlier baseline carried.
 landed, so the next person does not have to remember them.
 
 Re-check the fingerprint after applying, using the query at the end of this file.
+
+### `group_76` / `group_77` — applied to production 2026-08-08
+
+`group_76` fills in the two-column `invoices` stub group_00 left behind and adds
+`invoice_lines`; see `docs/current/accounting.md` for the model. `group_77` is
+its advisor follow-up, and is the first one to go into a group file *before*
+being applied, which is the rule this document exists to establish.
+
+**What the advisor caught, and why it mattered.** Postgres grants EXECUTE on a
+new function to PUBLIC, and Supabase publishes every `public`-schema function at
+`/rest/v1/rpc/<name>`. So all six functions `group_76` created were callable by
+an unauthenticated visitor. Five are trigger functions and would only have
+raised "can only be called as triggers" — noise. `next_invoice_number()` is not:
+no arguments, and every call does `nextval`. Anyone could have advanced the
+sequence at will and left permanent gaps in the invoice numbering.
+
+`group_77` revokes EXECUTE from `public`, `anon` and `authenticated`, keeping
+`service_role`. SECURITY DEFINER stays — it is what lets these read
+`company_settings` and `invoices`, both service-role-only under RLS — and the
+revoke does not affect trigger firing, because Postgres checks EXECUTE when a
+trigger is *created*, not each time it fires. That was verified after applying,
+in a transaction aborted on purpose so no rows survived: numbering, the total
+sync trigger and the issued-invoice freeze all still work.
+
+`is_admin_user()` carries the same warning and was deliberately left alone — it
+predates this work and RLS policies across the schema depend on it.
+
+Two `rls_enabled_no_policy` INFO notices now name `invoices` and `invoice_lines`.
+That is the intended shape: every finance table is service-role-only with no
+policies, per group_31 category 2. Leave them.
 
 ## What was wrong
 
