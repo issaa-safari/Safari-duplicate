@@ -2317,6 +2317,27 @@ CREATE TABLE public.rooms (
 
 
 --
+-- Name: services; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.services (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name_en text NOT NULL,
+    name_ar text,
+    description_en text,
+    description_ar text,
+    default_price_usd numeric(12,2) DEFAULT 0 NOT NULL,
+    pricing_unit text DEFAULT 'person'::text NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    sort_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT services_default_price_usd_check CHECK ((default_price_usd >= (0)::numeric)),
+    CONSTRAINT services_pricing_unit_check CHECK ((pricing_unit = ANY (ARRAY['person'::text, 'booking'::text])))
+);
+
+
+--
 -- Name: supplier_costs; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2621,6 +2642,30 @@ CREATE TABLE public.trip_payments (
     CONSTRAINT trip_payments_payment_type_check CHECK ((payment_type = ANY (ARRAY['deposit'::text, 'balance'::text, 'full'::text, 'partial'::text, 'refund'::text]))),
     CONSTRAINT trip_payments_source_table_check CHECK ((source_table = ANY (ARRAY['quote_payments'::text, 'booking_payments'::text]))),
     CONSTRAINT trip_payments_trip_ref_chk CHECK (((quote_id IS NOT NULL) OR (booking_id IS NOT NULL)))
+);
+
+
+--
+-- Name: trip_services; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.trip_services (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    quote_id uuid,
+    booking_id uuid,
+    service_id uuid NOT NULL,
+    name_en text NOT NULL,
+    name_ar text,
+    unit_price_usd numeric(12,2) NOT NULL,
+    quantity numeric(10,2) DEFAULT 1 NOT NULL,
+    total_usd numeric(12,2) GENERATED ALWAYS AS (round((quantity * unit_price_usd), 2)) STORED,
+    notes text,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT trip_services_quantity_check CHECK ((quantity > (0)::numeric)),
+    CONSTRAINT trip_services_trip_ref_chk CHECK (((quote_id IS NOT NULL) OR (booking_id IS NOT NULL))),
+    CONSTRAINT trip_services_unit_price_usd_check CHECK ((unit_price_usd >= (0)::numeric))
 );
 
 
@@ -3169,6 +3214,14 @@ ALTER TABLE ONLY public.rooms
 
 
 --
+-- Name: services services_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.services
+    ADD CONSTRAINT services_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: supplier_costs supplier_costs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3310,6 +3363,14 @@ ALTER TABLE ONLY public.traveller_agreements
 
 ALTER TABLE ONLY public.trip_payments
     ADD CONSTRAINT trip_payments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: trip_services trip_services_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trip_services
+    ADD CONSTRAINT trip_services_pkey PRIMARY KEY (id);
 
 
 --
@@ -3766,6 +3827,20 @@ CREATE INDEX rooms_accommodation_idx ON public.rooms USING btree (accommodation_
 
 
 --
+-- Name: services_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX services_active_idx ON public.services USING btree (is_active, sort_order);
+
+
+--
+-- Name: services_name_uniq; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX services_name_uniq ON public.services USING btree (lower(btrim(name_en)));
+
+
+--
 -- Name: supplier_payments_supplier_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3868,6 +3943,27 @@ CREATE INDEX trip_payments_received_idx ON public.trip_payments USING btree (rec
 --
 
 CREATE UNIQUE INDEX trip_payments_source_uniq ON public.trip_payments USING btree (source_table, source_id) WHERE (source_id IS NOT NULL);
+
+
+--
+-- Name: trip_services_booking_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX trip_services_booking_idx ON public.trip_services USING btree (booking_id);
+
+
+--
+-- Name: trip_services_quote_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX trip_services_quote_idx ON public.trip_services USING btree (quote_id);
+
+
+--
+-- Name: trip_services_service_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX trip_services_service_idx ON public.trip_services USING btree (service_id);
 
 
 --
@@ -4179,6 +4275,13 @@ CREATE TRIGGER update_proposal_templates_updated_at BEFORE UPDATE ON public.prop
 
 
 --
+-- Name: services update_services_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_services_updated_at BEFORE UPDATE ON public.services FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
 -- Name: traveller_agreements update_traveller_agreements_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -4190,6 +4293,13 @@ CREATE TRIGGER update_traveller_agreements_updated_at BEFORE UPDATE ON public.tr
 --
 
 CREATE TRIGGER update_trip_payments_updated_at BEFORE UPDATE ON public.trip_payments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: trip_services update_trip_services_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_trip_services_updated_at BEFORE UPDATE ON public.trip_services FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
 --
@@ -4759,6 +4869,30 @@ ALTER TABLE ONLY public.trip_payments
 
 
 --
+-- Name: trip_services trip_services_booking_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trip_services
+    ADD CONSTRAINT trip_services_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: trip_services trip_services_quote_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trip_services
+    ADD CONSTRAINT trip_services_quote_id_fkey FOREIGN KEY (quote_id) REFERENCES public.quotes(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: trip_services trip_services_service_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trip_services
+    ADD CONSTRAINT trip_services_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: booking_links Admins can manage booking_links; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -4805,6 +4939,13 @@ CREATE POLICY "Admins can manage proposal_templates" ON public.proposal_template
 --
 
 CREATE POLICY "Admins can manage requests" ON public.requests TO authenticated USING (public.is_admin_user()) WITH CHECK (public.is_admin_user());
+
+
+--
+-- Name: services Admins can manage services; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can manage services" ON public.services TO authenticated USING (public.is_admin_user()) WITH CHECK (public.is_admin_user());
 
 
 --
@@ -5156,6 +5297,12 @@ ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: services; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: supplier_costs; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -5232,6 +5379,12 @@ ALTER TABLE public.traveller_agreements ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.trip_payments ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: trip_services; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.trip_services ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: vehicle_pricing; Type: ROW SECURITY; Schema: public; Owner: -

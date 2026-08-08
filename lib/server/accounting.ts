@@ -67,15 +67,47 @@ export async function getTripPayments(
   return (data ?? []) as TripPaymentRow[]
 }
 
+export interface TripServiceRow {
+  id: string
+  service_id: string
+  name_en: string
+  name_ar: string | null
+  unit_price_usd: number
+  quantity: number
+  total_usd: number
+}
+
+/** Add-on services sold with this trip — visas, insurance and the like. */
+export async function getTripServices(
+  admin: SupabaseClient,
+  ref: ResolvedTripRef
+): Promise<TripServiceRow[]> {
+  const { quoteId, bookingId } = ref
+  if (!quoteId && !bookingId) return []
+
+  const filters: string[] = []
+  if (quoteId) filters.push(`quote_id.eq.${quoteId}`)
+  if (bookingId) filters.push(`booking_id.eq.${bookingId}`)
+
+  const { data } = await admin
+    .from('trip_services')
+    .select('id, service_id, name_en, name_ar, unit_price_usd, quantity, total_usd')
+    .or(filters.join(','))
+    .order('created_at', { ascending: true })
+
+  return (data ?? []) as TripServiceRow[]
+}
+
 /**
- * What a trip is worth. The accepted quote version's selling total when there is
- * one, else the price snapshotted onto the booking.
+ * The trip price alone: the accepted quote version's selling total when there is
+ * one, else the price snapshotted onto the booking. Services are added on top by
+ * the caller, because they are priced outside the itinerary.
  *
  * Note this is the *internal* total. Once invoices land (group_75) an issued
  * invoice's own total takes precedence, because the figure a client agreed to on
  * the proposal is derived per traveller and can differ from this one.
  */
-export async function getTripInvoicedUsd(
+export async function getTripPriceUsd(
   admin: SupabaseClient,
   ref: ResolvedTripRef
 ): Promise<number> {
@@ -107,18 +139,29 @@ export async function getDepositPercent(admin: SupabaseClient): Promise<number> 
 export interface TripBalance extends Balance {
   ref: ResolvedTripRef
   payments: TripPaymentRow[]
+  services: TripServiceRow[]
+  /** The trip itself, before add-ons. `invoicedUsd` is this plus servicesUsd. */
+  tripPriceUsd: number
+  servicesUsd: number
 }
 
 export async function getTripBalance(admin: SupabaseClient, ref: TripRef): Promise<TripBalance> {
   const resolved = await resolveTripRef(admin, ref)
-  const [payments, invoicedUsd, depositPercent] = await Promise.all([
+  const [payments, services, tripPriceUsd, depositPercent] = await Promise.all([
     getTripPayments(admin, resolved),
-    getTripInvoicedUsd(admin, resolved),
+    getTripServices(admin, resolved),
+    getTripPriceUsd(admin, resolved),
     getDepositPercent(admin),
   ])
+
+  const servicesUsd = services.reduce((sum, s) => sum + (Number(s.total_usd) || 0), 0)
+
   return {
     ref: resolved,
     payments,
-    ...computeBalance({ invoicedUsd, payments, depositPercent }),
+    services,
+    tripPriceUsd,
+    servicesUsd,
+    ...computeBalance({ invoicedUsd: tripPriceUsd + servicesUsd, payments, depositPercent }),
   }
 }

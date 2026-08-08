@@ -35,11 +35,12 @@ a new tour got `trigger-probe-kenya-safari`, a second one with the same title go
 `trigger-probe-kenya-safari-2`, and a title with no latin characters got `null` —
 which the route handles by falling back to the UUID.
 
-### `group_73` — not yet applied to production
+### `group_73` / `group_74` — not yet applied to production
 
-Adds `trip_payments`, one ledger for money received against either kind of trip.
-The baseline was regenerated with it (66 tables, 160 indexes) and verified to load
-into an empty database in a single pass.
+`group_73` adds `trip_payments`, one ledger for money received against either
+kind of trip. `group_74` adds the `services` catalogue and `trip_services`.
+The baseline was regenerated with both (68 tables, 167 indexes) and verified to
+load into an empty database in a single pass.
 
 Two things were stripped from the regenerated dump, and should be stripped again
 next time: a bare `CREATE SCHEMA public` (it collides with the schema Supabase
@@ -47,6 +48,9 @@ already provides — patched back to `IF NOT EXISTS`) along with its
 `COMMENT ON SCHEMA`, which needs an ownership the migration role does not have;
 and pg_dump's `\restrict` / `\unrestrict` session guards, which older psql builds
 reject outright and which no earlier baseline carried.
+
+`scripts/rebase-baseline.py` does the regeneration and asserts both patches
+landed, so the next person does not have to remember them.
 
 Re-check the fingerprint after applying, using the query at the end of this file.
 
