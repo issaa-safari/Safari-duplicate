@@ -275,3 +275,73 @@ export interface Lead {
   status: LeadStatus
   source: string
 }
+
+// --- Trip payments (migrations/group_73_trip_payments.sql) ---
+// One ledger for money received, whether the trip was sold as a quote or booked
+// directly. A row here means money arrived; what is *expected* is the invoice's
+// job, not the ledger's. Replaces quote_payments and booking_payments.
+
+export type PaymentType = 'deposit' | 'balance' | 'full' | 'partial' | 'refund'
+
+export type PaymentMethod =
+  | 'bank_transfer' | 'card' | 'cash' | 'mpesa' | 'cheque' | 'other'
+
+export interface TripPayment {
+  id: string
+  /** At least one of quote_id / booking_id is always present. */
+  quote_id: string | null
+  booking_id: string | null
+  amount_usd: number
+  payment_type: PaymentType
+  method: PaymentMethod | null
+  reference: string | null
+  notes: string | null
+  received_at: string
+  created_by: string | null
+  /** Set only on rows carried over by the group_73 backfill. */
+  source_table: 'quote_payments' | 'booking_payments' | null
+  source_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+// --- Add-on services (migrations/group_74_services.sql) ---
+// Visas, insurance and anything else sold alongside a trip but priced outside
+// the itinerary. They attach to the trip rather than to quote_price_lines,
+// because save_trip() deletes every price line on each save and an accepted
+// version cannot be written to at all.
+
+export type ServicePricingUnit = 'person' | 'booking'
+
+export interface Service {
+  id: string
+  name_en: string
+  name_ar: string | null
+  description_en: string | null
+  description_ar: string | null
+  default_price_usd: number
+  pricing_unit: ServicePricingUnit
+  is_active: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface TripService {
+  id: string
+  /** At least one of quote_id / booking_id is always present. */
+  quote_id: string | null
+  booking_id: string | null
+  service_id: string
+  /** Name and price as they were when sold — the catalogue may move since. */
+  name_en: string
+  name_ar: string | null
+  unit_price_usd: number
+  quantity: number
+  /** Generated in Postgres from quantity × unit_price_usd. */
+  total_usd: number
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}

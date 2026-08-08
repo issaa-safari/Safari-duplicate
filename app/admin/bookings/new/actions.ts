@@ -135,27 +135,23 @@ export async function createManualBooking(formData: FormData) {
     throw new Error('Failed to save traveller details.')
   }
 
-  // Best-effort: finance records. Record a paid deposit (if any) plus the
-  // outstanding balance as pending, so Finance reflects reality from the start.
-  try {
-    const payments: Record<string, unknown>[] = []
-    if (deposit > 0) {
-      payments.push({
-        booking_id: booking.id, amount_usd: deposit, status: 'paid',
-        method: depositMethod, reference: depositReference, notes: 'Deposit at booking (admin)',
+  // Best-effort: record the deposit actually taken at booking time. Only that —
+  // the outstanding balance used to be written as a 'pending' row, which read
+  // like a payment in every total that summed the table. The balance is derived
+  // now (lib/server/accounting.ts), so the ledger holds receipts only.
+  if (deposit > 0) {
+    try {
+      await admin.from('trip_payments').insert({
+        booking_id: booking.id,
+        amount_usd: deposit,
+        payment_type: 'deposit',
+        method: depositMethod || null,
+        reference: depositReference || null,
+        notes: 'Deposit at booking (admin)',
+        created_by: user.id,
       })
-    }
-    const balance = totalPrice - deposit
-    if (balance > 0) {
-      payments.push({
-        booking_id: booking.id, amount_usd: balance, status: 'pending', notes: 'Balance (manual booking)',
-      })
-    }
-    if (payments.length === 0) {
-      payments.push({ booking_id: booking.id, amount_usd: 0, status: 'pending', notes: 'Manual booking (admin)' })
-    }
-    await admin.from('booking_payments').insert(payments)
-  } catch { /* finance record is non-critical */ }
+    } catch { /* finance record is non-critical */ }
+  }
   try { await refreshClientTotals(admin, clientId) } catch { /* totals are a cache */ }
 
   redirect(`/admin/bookings/${booking.id}`)

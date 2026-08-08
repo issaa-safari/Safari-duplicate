@@ -4,6 +4,7 @@
 // supplier liabilities — a superseded sibling track never becomes payable.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { computeBalance } from '@/lib/balance'
 
 export interface ReceivablesSummary {
   invoicedUsd: number
@@ -46,20 +47,31 @@ export interface PayablesSummary {
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
+/**
+ * Everything owed to the business, across both kinds of trip.
+ *
+ * This used to count accepted quotes only, so revenue from bookings made
+ * directly on the website — which have no quote behind them — was missing from
+ * the dashboard entirely. Adding them moves the figure up; that is the
+ * correction, not a regression.
+ */
 export async function getReceivablesSummary(admin: SupabaseClient): Promise<ReceivablesSummary> {
-  const [{ data: acceptedVersions }, { data: payments }] = await Promise.all([
+  const [{ data: acceptedVersions }, { data: directBookings }, { data: payments }] = await Promise.all([
     admin.from('quote_versions').select('total_selling_usd').eq('status', 'accepted'),
-    admin.from('quote_payments').select('amount_usd, payment_type'),
+    admin.from('bookings').select('total_price_usd').is('quote_id', null).eq('status', 'confirmed'),
+    admin.from('trip_payments').select('amount_usd, payment_type'),
   ])
-  const invoiced = (acceptedVersions ?? []).reduce(
-    (s: number, v: { total_selling_usd: number | null }) => s + Number(v.total_selling_usd ?? 0), 0)
-  const received = (payments ?? []).reduce(
-    (s: number, p: { amount_usd: number; payment_type: string | null }) =>
-      p.payment_type === 'refund' ? s - Number(p.amount_usd) : s + Number(p.amount_usd), 0)
+  const invoiced =
+    (acceptedVersions ?? []).reduce(
+      (s: number, v: { total_selling_usd: number | null }) => s + Number(v.total_selling_usd ?? 0), 0) +
+    (directBookings ?? []).reduce(
+      (s: number, b: { total_price_usd: number | null }) => s + Number(b.total_price_usd ?? 0), 0)
+
+  const { receivedUsd, balanceUsd } = computeBalance({ invoicedUsd: invoiced, payments: payments ?? [] })
   return {
     invoicedUsd: round2(invoiced),
-    receivedUsd: round2(received),
-    outstandingUsd: round2(Math.max(invoiced - received, 0)),
+    receivedUsd,
+    outstandingUsd: balanceUsd,
   }
 }
 

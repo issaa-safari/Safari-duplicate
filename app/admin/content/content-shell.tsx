@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import {
-  Map, Tent, Compass, Mountain, Car, Bike, Users, Settings, LibraryBig,
+  Map, Tent, Compass, Mountain, Car, Bike, Users, Settings, LibraryBig, ConciergeBell,
 } from 'lucide-react'
 
 const MAIN_CONTENT = [
@@ -8,6 +8,7 @@ const MAIN_CONTENT = [
   { key: 'accommodations', href: '/admin/content/accommodations', label: 'Accommodations', icon: Tent },
   { key: 'activities', href: '/admin/content/activities', label: 'Activities', icon: Compass },
   { key: 'parks', href: '/admin/content/parks', label: 'Parks & Reserves', icon: Mountain },
+  { key: 'services', href: '/admin/content/services', label: 'Add-on Services', icon: ConciergeBell },
 ]
 
 const COMPANY_CONTENT = [

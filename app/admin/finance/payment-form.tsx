@@ -7,13 +7,17 @@ import { Alert } from '@/components/ui/alert'
 
 export default function PaymentForm({
   quoteId,
-  quoteNumber,
+  bookingId,
+  label,
   totalSelling,
   alreadyReceived,
   onDone,
 }: {
-  quoteId: string
-  quoteNumber: string
+  /** A payment belongs to a trip, reachable by either key. One is required. */
+  quoteId?: string
+  bookingId?: string
+  /** What to call the trip in the header — a quote number, or a tour name. */
+  label: string
   totalSelling: number
   alreadyReceived: number
   onDone: () => void
@@ -26,7 +30,8 @@ export default function PaymentForm({
     e.preventDefault()
     setError('')
     const fd = new FormData(e.currentTarget)
-    fd.set('quoteId', quoteId)
+    if (quoteId) fd.set('quoteId', quoteId)
+    if (bookingId) fd.set('bookingId', bookingId)
     run(async () => {
       try {
         await recordPayment(fd)
@@ -40,7 +45,7 @@ export default function PaymentForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="text-xs text-muted-foreground mb-1">
-        Quote <span className="font-mono">{quoteNumber}</span> — outstanding:{' '}
+        <span className="font-mono">{label}</span> — outstanding:{' '}
         <span className="font-semibold text-foreground">${outstanding.toLocaleString()}</span>
       </div>
 

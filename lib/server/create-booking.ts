@@ -187,15 +187,8 @@ export async function createDepartureBooking(
     return { ok: false, status: 500, error: 'Failed to save traveller information' }
   }
 
-  // Best-effort: finance stub (requires group_25 migration)
-  try {
-    await admin.from('booking_payments').insert({
-      booking_id: booking.id,
-      amount_usd: totalPrice,
-      status: 'pending',
-      notes: source === 'booking_link' ? 'Booking-link booking' : 'Website booking',
-    })
-  } catch { /* finance record is non-critical */ }
+  // No finance row here — see the note in lib/server/quote-booking.ts. The
+  // amount owed comes from the booking itself; the ledger holds receipts only.
 
   // Best-effort: link to auth user if one was supplied (requires group_22 migration)
   if (userId) {

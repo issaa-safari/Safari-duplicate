@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import BookingDetailForm from './form'
+import { getTripBalance } from '@/lib/server/accounting'
 
 export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -50,12 +51,10 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
   if (!booking) notFound()
 
-  // Payment records (group_25) so the booking page shows paid vs. balance.
-  const { data: payments } = await admin
-    .from('booking_payments')
-    .select('amount_usd, status, method, reference, created_at')
-    .eq('booking_id', id)
-    .order('created_at', { ascending: true })
+  // Money received against this trip, and what that leaves owing. Resolved
+  // through the trip reference so a booking promoted from a quote still finds
+  // payments recorded under the quote.
+  const balance = await getTripBalance(admin, { bookingId: id })
 
-  return <BookingDetailForm booking={booking} bookingId={id} payments={payments ?? []} />
+  return <BookingDetailForm booking={booking} bookingId={id} balance={balance} />
 }

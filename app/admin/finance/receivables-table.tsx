@@ -92,7 +92,7 @@ export default function ReceivablesTable({ rows }: { rows: ReceivableRow[] }) {
                   <div className="max-w-md pt-4">
                     <PaymentForm
                       quoteId={row.quoteId}
-                      quoteNumber={row.quoteNumber}
+                      label={row.quoteNumber}
                       totalSelling={row.totalSelling}
                       alreadyReceived={row.totalReceived}
                       onDone={() => { setPaying(null); window.location.reload() }}
