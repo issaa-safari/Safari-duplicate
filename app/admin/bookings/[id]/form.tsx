@@ -25,7 +25,9 @@ export default function BookingDetailForm({
 }: BookingDetailFormProps) {
   const departure = booking.departures as any
   const tour = departure?.tours as any
-  const travellers = booking.booking_travellers as any[]
+  const client = booking.clients as any
+  const request = booking.requests as any
+  const travellers = (booking.booking_travellers as any[]) ?? []
   const [paying, setPaying] = useState(false)
 
   // One shared calculation, so this page, the client dashboard and Finance can
@@ -57,8 +59,27 @@ export default function BookingDetailForm({
         <div className={`rounded-lg border border-border p-6 ${statusBgColor}`}>
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className="text-xl font-bold text-foreground">{tour?.title_en}</h2>
+              {/* A booking without a departure has no tour to name itself after
+                  (group_78), so it says what it is rather than rendering blank. */}
+              <h2 className="text-xl font-bold text-foreground">
+                {tour?.title_en ?? 'Private trip — no departure'}
+              </h2>
               <p className="text-sm text-muted-foreground mt-1">Booking ID: {bookingId}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                {client && (
+                  <Link href={`/admin/clients/${client.id}`} className="text-brand-text hover:underline">
+                    {`${client.first_name ?? ''} ${client.last_name ?? ''}`.trim() || client.email}
+                  </Link>
+                )}
+                {request && (
+                  <Link href={`/admin/requests/${request.id}`} className="text-brand-text hover:underline">
+                    {request.reference}
+                  </Link>
+                )}
+                {!client && !request && !departure && (
+                  <span className="text-muted-foreground">Not linked to a client, request or departure yet.</span>
+                )}
+              </div>
             </div>
             <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusBadgeColor}`}>
               {booking.status}
@@ -166,6 +187,12 @@ export default function BookingDetailForm({
         {/* Traveller Information */}
         <div className="rounded-xl border border-border bg-surface shadow-sm p-6">
           <h3 className="text-lg font-bold text-foreground mb-4">Traveller Information</h3>
+          {travellers.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No names on file yet — the booking is sized at {booking.number_of_travellers} traveller
+              {booking.number_of_travellers !== 1 ? 's' : ''}.
+            </p>
+          )}
           <div className="space-y-4">
             {travellers.map((traveller, index) => (
               <div key={traveller.id} className="pb-4 border-b border-border last:border-b-0">

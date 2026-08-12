@@ -18,9 +18,20 @@ type TravellerInput = {
   emergencyContact?: string
 }
 
-// Manually create a booking against a departure from the admin back office —
-// the staff-side equivalent of the public /api/departures/[id]/book flow, with
-// the same optimistic seat reservation so it can't oversell.
+/**
+ * Manually create a booking from the admin back office.
+ *
+ * A departure is optional (group_78). With one, this behaves as it always has —
+ * the staff-side equivalent of /api/departures/[id]/book, with the same
+ * optimistic seat reservation so it cannot oversell. Without one, there are no
+ * seats to reserve and none of that runs: the booking is a private trip, or one
+ * taken against an enquiry before anything is scheduled.
+ *
+ * The client is resolved in the order the operator's intent is most explicit:
+ * a client they picked, then the request's client, then the lead traveller's
+ * email. All three may be absent, and `bookings.client_id` is nullable, so a
+ * booking can be recorded before anyone knows who it is for.
+ */
 export async function createManualBooking(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -28,7 +39,9 @@ export async function createManualBooking(formData: FormData) {
   const admin = createAdminClient()
   await assertAdminAccess(admin, user.email)
 
-  const departureId = (formData.get('departureId') as string)?.trim()
+  const departureId = (formData.get('departureId') as string)?.trim() || null
+  const requestId = (formData.get('requestId') as string)?.trim() || null
+  const pickedClientId = (formData.get('clientId') as string)?.trim() || null
   const status = (formData.get('status') as string) === 'pending' ? 'pending' : 'confirmed'
   const totalPrice = parseFloat((formData.get('totalPrice') as string) ?? '')
   const depositRaw = parseFloat((formData.get('deposit') as string) ?? '')
@@ -44,39 +57,56 @@ export async function createManualBooking(formData: FormData) {
   }
   travellers = travellers.filter(t => (t.firstName?.trim() || t.lastName?.trim() || t.email?.trim()))
 
-  if (!departureId) throw new Error('Please choose a departure.')
-  if (travellers.length === 0) throw new Error('Add at least one traveller.')
+  // The head count stands on its own: a booking can be for four people whose
+  // names are not known yet. bookings_number_of_travellers_check demands > 0.
+  const declaredCount = parseInt((formData.get('travellerCount') as string) ?? '', 10)
+  const groupSize = Math.max(
+    travellers.length,
+    !isNaN(declaredCount) && declaredCount > 0 ? declaredCount : 1
+  )
+
   if (isNaN(totalPrice) || totalPrice < 0) throw new Error('Enter a valid total price.')
   if (deposit > totalPrice) throw new Error('Deposit cannot exceed the total price.')
 
   const lead = travellers[0]
-  if (!lead.email?.trim()) throw new Error('The lead traveller needs an email (used to create/link the client record).')
 
-  // 1. Resolve the departure + current seat count.
-  const { data: departure } = await admin
-    .from('departures')
-    .select('id, max_seats, booked_seats')
-    .eq('id', departureId)
-    .single()
-  if (!departure) throw new Error('Departure not found.')
-
-  const groupSize = travellers.length
-  if (groupSize > departure.max_seats - departure.booked_seats) {
-    throw new Error('Not enough seats left on this departure for that many travellers.')
+  // Something has to identify the booking. Without a departure, a client, a
+  // request or a named traveller there is nothing to find it by later.
+  if (!departureId && !requestId && !pickedClientId && !lead) {
+    throw new Error(
+      'Give the booking something to hang on: a departure, a request, a client, or at least one traveller.'
+    )
   }
 
-  // 2. Reserve seats (optimistic compare-and-swap — rejects on concurrent oversell).
-  const { data: reserved } = await admin
-    .from('departures')
-    .update({ booked_seats: departure.booked_seats + groupSize })
-    .eq('id', departureId)
-    .eq('booked_seats', departure.booked_seats)
-    .select('id')
-  if (!reserved || reserved.length === 0) {
-    throw new Error('Seats just changed — please refresh and try again.')
+  // 1. Resolve the departure and reserve seats — only when there is one.
+  let departure: { id: string; max_seats: number; booked_seats: number } | null = null
+  if (departureId) {
+    const { data } = await admin
+      .from('departures')
+      .select('id, max_seats, booked_seats')
+      .eq('id', departureId)
+      .single()
+    if (!data) throw new Error('Departure not found.')
+    departure = data
+
+    if (groupSize > departure.max_seats - departure.booked_seats) {
+      throw new Error('Not enough seats left on this departure for that many travellers.')
+    }
+
+    // Optimistic compare-and-swap — rejects on concurrent oversell.
+    const { data: reserved } = await admin
+      .from('departures')
+      .update({ booked_seats: departure.booked_seats + groupSize })
+      .eq('id', departureId)
+      .eq('booked_seats', departure.booked_seats)
+      .select('id')
+    if (!reserved || reserved.length === 0) {
+      throw new Error('Seats just changed — please refresh and try again.')
+    }
   }
 
   const releaseSeats = async () => {
+    if (!departureId) return
     try {
       const { data: current } = await admin
         .from('departures').select('booked_seats').eq('id', departureId).single()
@@ -87,22 +117,30 @@ export async function createManualBooking(formData: FormData) {
     } catch { /* best-effort release */ }
   }
 
-  // 3. Resolve the client from the lead traveller.
-  let clientId: string
-  try {
-    clientId = await findOrCreateClientByEmail(admin, {
-      email: lead.email, first_name: lead.firstName, last_name: lead.lastName, phone: lead.phone,
-    })
-  } catch (err) {
-    await releaseSeats()
-    throw new Error(err instanceof Error ? err.message : 'Could not resolve the client.')
+  // 2. Resolve the client, most explicit intent first.
+  let clientId: string | null = pickedClientId
+  if (!clientId && requestId) {
+    const { data: request } = await admin
+      .from('requests').select('client_id').eq('id', requestId).maybeSingle()
+    clientId = (request?.client_id as string | null) ?? null
+  }
+  if (!clientId && lead?.email?.trim()) {
+    try {
+      clientId = await findOrCreateClientByEmail(admin, {
+        email: lead.email, first_name: lead.firstName, last_name: lead.lastName, phone: lead.phone,
+      })
+    } catch (err) {
+      await releaseSeats()
+      throw new Error(err instanceof Error ? err.message : 'Could not resolve the client.')
+    }
   }
 
-  // 4. Create the booking.
+  // 3. Create the booking.
   const { data: booking, error: bookingError } = await admin
     .from('bookings')
     .insert({
       departure_id: departureId,
+      request_id: requestId,
       client_id: clientId,
       number_of_travellers: groupSize,
       total_price_usd: totalPrice,
@@ -112,27 +150,30 @@ export async function createManualBooking(formData: FormData) {
     .single()
   if (bookingError || !booking) {
     await releaseSeats()
-    throw new Error('Failed to create the booking.')
+    throw new Error(bookingError?.message ?? 'Failed to create the booking.')
   }
 
-  // 5. Insert traveller rows.
-  const rows = travellers.map(t => ({
-    booking_id: booking.id,
-    first_name: t.firstName?.trim() || null,
-    last_name: t.lastName?.trim() || null,
-    email: t.email?.trim() || null,
-    phone: t.phone?.trim() || null,
-    nationality: t.nationality?.trim() || null,
-    passport_number: t.passportNumber?.trim() || null,
-    date_of_birth: t.dateOfBirth?.trim() || null,
-    is_rider: t.isRider !== false,
-    emergency_contact: t.emergencyContact?.trim() || null,
-  }))
-  const { error: travellerError } = await admin.from('booking_travellers').insert(rows)
-  if (travellerError) {
-    await releaseSeats()
-    await admin.from('bookings').delete().eq('id', booking.id)
-    throw new Error('Failed to save traveller details.')
+  // 4. Insert whatever traveller detail was given. None is allowed — the head
+  //    count above is what the booking is actually sized by.
+  if (travellers.length > 0) {
+    const rows = travellers.map(t => ({
+      booking_id: booking.id,
+      first_name: t.firstName?.trim() || null,
+      last_name: t.lastName?.trim() || null,
+      email: t.email?.trim() || null,
+      phone: t.phone?.trim() || null,
+      nationality: t.nationality?.trim() || null,
+      passport_number: t.passportNumber?.trim() || null,
+      date_of_birth: t.dateOfBirth?.trim() || null,
+      is_rider: t.isRider !== false,
+      emergency_contact: t.emergencyContact?.trim() || null,
+    }))
+    const { error: travellerError } = await admin.from('booking_travellers').insert(rows)
+    if (travellerError) {
+      await releaseSeats()
+      await admin.from('bookings').delete().eq('id', booking.id)
+      throw new Error('Failed to save traveller details.')
+    }
   }
 
   // Best-effort: record the deposit actually taken at booking time. Only that —
@@ -152,7 +193,9 @@ export async function createManualBooking(formData: FormData) {
       })
     } catch { /* finance record is non-critical */ }
   }
-  try { await refreshClientTotals(admin, clientId) } catch { /* totals are a cache */ }
+  if (clientId) {
+    try { await refreshClientTotals(admin, clientId) } catch { /* totals are a cache */ }
+  }
 
   redirect(`/admin/bookings/${booking.id}`)
 }

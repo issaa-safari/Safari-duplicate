@@ -27,6 +27,13 @@ export default async function BookingsPage() {
           title_en
         )
       ),
+      clients (
+        first_name,
+        last_name
+      ),
+      requests (
+        reference
+      ),
       booking_travellers (
         id,
         first_name,
@@ -43,7 +50,9 @@ export default async function BookingsPage() {
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Bookings</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Manage all departure bookings</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Scheduled departures and private trips
+          </p>
         </div>
         <Link href="/admin/bookings/new"
           className="inline-flex items-center rounded-lg bg-primary-strong px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-strong-hover">
@@ -71,15 +80,28 @@ export default async function BookingsPage() {
                 </tr>
               </thead>
               <tbody>
+                {/* eslint-disable @typescript-eslint/no-explicit-any */}
                 {bookings.map((booking: any) => {
                   const departure = booking.departures as any
                   const tour = departure?.tours as any
-                  const travellers = booking.booking_travellers as any[]
+                  const client = booking.clients as any
+                  const request = booking.requests as any
+                  const travellers = (booking.booking_travellers as any[]) ?? []
+                  const clientName = client
+                    ? `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim()
+                    : ''
 
                   return (
                     <tr key={booking.id} className="border-b border-border/70 hover:bg-muted">
                       <td data-label="Tour" className="px-4 py-3">
-                        <p className="font-medium text-foreground">{tour?.title_en ?? 'Untitled tour'}</p>
+                        {/* Without a departure there is no tour to name (group_78),
+                            so the row identifies itself by whatever it is linked to. */}
+                        <p className="font-medium text-foreground">
+                          {tour?.title_en ?? (clientName ? `Private trip · ${clientName}` : 'Private trip')}
+                        </p>
+                        {!tour?.title_en && request?.reference && (
+                          <p className="mt-0.5 text-xs text-muted-foreground">{request.reference}</p>
+                        )}
                       </td>
                       <td data-label="Dates" className="px-4 py-3 text-muted-foreground">
                         {departure?.start_date ? new Date(departure.start_date).toLocaleDateString('en-GB') : '—'}
@@ -110,6 +132,7 @@ export default async function BookingsPage() {
                     </tr>
                   )
                 })}
+                {/* eslint-enable @typescript-eslint/no-explicit-any */}
               </tbody>
             </table>
           </div>

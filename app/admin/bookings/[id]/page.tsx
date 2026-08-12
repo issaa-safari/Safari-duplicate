@@ -20,6 +20,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
     .select(`
       id,
       departure_id,
+      request_id,
+      client_id,
       number_of_travellers,
       total_price_usd,
       status,
@@ -46,6 +48,17 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
         date_of_birth,
         nationality,
         passport_number
+      ),
+      clients (
+        id,
+        first_name,
+        last_name,
+        email
+      ),
+      requests (
+        id,
+        reference,
+        stage
       )
     `)
     .eq('id', id)

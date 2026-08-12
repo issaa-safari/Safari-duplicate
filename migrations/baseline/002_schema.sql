@@ -1648,10 +1648,32 @@ CREATE TABLE public.bookings (
     user_id uuid,
     client_id uuid,
     quote_id uuid,
+    request_id uuid,
     CONSTRAINT bookings_number_of_travellers_check CHECK ((number_of_travellers > 0)),
     CONSTRAINT bookings_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'cancelled'::text, 'completed'::text]))),
     CONSTRAINT bookings_total_price_usd_check CHECK ((total_price_usd >= (0)::numeric))
 );
+
+
+--
+-- Name: COLUMN bookings.departure_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.bookings.departure_id IS 'Null for a booking that is not a seat on a scheduled departure — a private trip, or one taken before anything is scheduled. Seat accounting only applies when this is set.';
+
+
+--
+-- Name: COLUMN bookings.client_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.bookings.client_id IS 'Null only for a booking recorded before the client is known. Normally resolved from the request, the chosen client, or the lead traveller''s email.';
+
+
+--
+-- Name: COLUMN bookings.request_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.bookings.request_id IS 'The enquiry this booking came from, when there was one. Set null on delete so losing a request never loses the booking.';
 
 
 --
@@ -3686,6 +3708,13 @@ CREATE INDEX booking_traveller_flights_traveller_idx ON public.booking_traveller
 
 
 --
+-- Name: bookings_request_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX bookings_request_idx ON public.bookings USING btree (request_id);
+
+
+--
 -- Name: clients_email_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5005,6 +5034,14 @@ ALTER TABLE ONLY public.bookings
 
 ALTER TABLE ONLY public.bookings
     ADD CONSTRAINT bookings_quote_id_fkey FOREIGN KEY (quote_id) REFERENCES public.quotes(id) ON DELETE SET NULL;
+
+
+--
+-- Name: bookings bookings_request_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bookings
+    ADD CONSTRAINT bookings_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.requests(id) ON DELETE SET NULL;
 
 
 --
