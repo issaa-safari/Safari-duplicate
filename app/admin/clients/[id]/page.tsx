@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
+import { requestBaseUrl } from '@/lib/server/base-url'
+import RequestLinkPanel from './request-link-panel'
 
 export default async function ClientDetailPage({
   params,
@@ -92,6 +94,8 @@ export default async function ClientDetailPage({
     .order('created_at', { ascending: false })
     .limit(20)
 
+  const baseUrl = await requestBaseUrl()
+
   const clientName = (client.first_name + ' ' + client.last_name).trim()
   const initials = (client.first_name?.[0] ?? '?').toUpperCase()
 
@@ -154,10 +158,31 @@ export default async function ClientDetailPage({
             <p className="text-xs text-muted-foreground">Bookings</p>
           </div>
         </div>
+
+        {/* What this client has, up front. The three lists live in the right-hand
+            column, which stacks *below* contact details and quick actions on a
+            phone — so without this you have to scroll a long way to find out
+            whether there is anything there at all. */}
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-3 text-sm">
+          <a href="#requests" className="rounded-full bg-surface-alt px-3 py-1 text-foreground hover:bg-muted">
+            {requests?.length ?? 0} request{(requests?.length ?? 0) !== 1 ? 's' : ''}
+          </a>
+          <a href="#quotes" className="rounded-full bg-surface-alt px-3 py-1 text-foreground hover:bg-muted">
+            {quotes.length} quote{quotes.length !== 1 ? 's' : ''}
+          </a>
+          <a href="#bookings" className="rounded-full bg-surface-alt px-3 py-1 text-foreground hover:bg-muted">
+            {bookings.length} booking{bookings.length !== 1 ? 's' : ''}
+          </a>
+          {(requests?.length ?? 0) + quotes.length + bookings.length === 0 && (
+            <span className="self-center text-xs text-muted-foreground">
+              Nothing on file yet — send them a request link below.
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="space-y-4">
+        <div className="order-2 space-y-4 lg:order-1">
           <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
             <h2 className="text-sm font-semibold text-foreground mb-3">Contact Details</h2>
             <div className="space-y-2 text-sm">
@@ -225,10 +250,21 @@ export default async function ClientDetailPage({
               </Link>
             </div>
           </div>
+
+          <RequestLinkPanel
+            baseUrl={baseUrl}
+            firstName={client.first_name}
+            lastName={client.last_name}
+            email={client.email}
+            phone={client.phone}
+            country={client.country}
+            whatsapp={client.whatsapp}
+            preferArabic={client.preferred_language === 'ar' || client.language === 'ar'}
+          />
         </div>
 
-        <div className="lg:col-span-2 space-y-4">
-          <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+        <div className="order-1 space-y-4 lg:order-2 lg:col-span-2">
+          <div id="requests" className="scroll-mt-24 rounded-xl border border-border bg-surface shadow-sm p-4">
             <h2 className="text-sm font-semibold text-foreground mb-3">
               Requests
               <span className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
@@ -262,7 +298,7 @@ export default async function ClientDetailPage({
             )}
           </div>
 
-          <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+          <div id="quotes" className="scroll-mt-24 rounded-xl border border-border bg-surface shadow-sm p-4">
             <h2 className="text-sm font-semibold text-foreground mb-3">
               Quotes
               <span className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
@@ -294,7 +330,7 @@ export default async function ClientDetailPage({
             )}
           </div>
 
-          <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+          <div id="bookings" className="scroll-mt-24 rounded-xl border border-border bg-surface shadow-sm p-4">
             <h2 className="text-sm font-semibold text-foreground mb-3">
               Bookings
               <span className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">

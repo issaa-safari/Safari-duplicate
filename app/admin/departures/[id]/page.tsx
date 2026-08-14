@@ -1,17 +1,11 @@
+import { requestBaseUrl } from '@/lib/server/base-url'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
-import { headers } from 'next/headers'
 import Link from 'next/link'
 import DepartureEditForm from './form'
 import BookingLinkPanel from './booking-link-panel'
 import type { BookingLink } from '@/lib/types'
-
-async function requestBaseUrl() {
-  const host = (await headers()).get('host') ?? 'localhost:3000'
-  const proto = host.startsWith('localhost') ? 'http' : 'https'
-  return `${proto}://${host}`
-}
 
 export default async function DepartureEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

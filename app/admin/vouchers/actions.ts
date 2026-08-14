@@ -1,21 +1,15 @@
 'use server'
 
+import { requestBaseUrl } from '@/lib/server/base-url'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { headers } from 'next/headers'
 import { buildVouchersForDeparture, buildVouchersForBooking, buildVouchersForQuote } from '@/lib/server/vouchers'
 import { buildVoucherEmail } from '@/lib/voucher-email'
 import { sendEmail } from '@/lib/email'
 import type { HotelVoucher } from '@/lib/types'
-
-async function requestBaseUrl() {
-  const host = (await headers()).get('host') ?? 'localhost:3000'
-  const proto = host.startsWith('localhost') ? 'http' : 'https'
-  return `${proto}://${host}`
-}
 
 async function authGuard() {
   const supabase = await createClient()

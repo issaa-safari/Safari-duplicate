@@ -25,11 +25,11 @@ interface FormData {
   preferences: string
 }
 
-async function submitQuoteRequest(formData: FormData) {
+async function submitQuoteRequest(formData: FormData, source: string | null) {
   const response = await fetch('/api/quote-request', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(formData),
+    body: JSON.stringify({ ...formData, source }),
   })
   if (!response.ok) throw new Error('Failed to submit quote request')
   return response.json()
@@ -40,6 +40,10 @@ function QuoteRequestFormContent() {
   const locale = useLocale()
   const isAr = locale === 'ar'
   const tourId = searchParams.get('tour')
+  // Prefill, so a client the operator already knows is not asked to retype what
+  // is already on file. Read once at mount: after that the visitor owns the form.
+  const prefill = (key: string) => searchParams.get(key) ?? ''
+  const source = searchParams.get('src')
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -55,11 +59,11 @@ function QuoteRequestFormContent() {
     return () => { active = false }
   }, [])
   const [formData, setFormData] = useState<FormData>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    country: '',
+    firstName: prefill('first'),
+    lastName: prefill('last'),
+    email: prefill('email'),
+    phone: prefill('phone'),
+    country: prefill('country'),
     tourType: tourId || '',
     startDate: '',
     duration: '',
@@ -80,7 +84,7 @@ function QuoteRequestFormContent() {
     setError('')
     startTransition(async () => {
       try {
-        await submitQuoteRequest(formData)
+        await submitQuoteRequest(formData, source)
         setSubmitted(true)
       } catch (err: any) {
         setError(err.message || t.failed)

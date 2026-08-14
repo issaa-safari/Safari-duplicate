@@ -11,7 +11,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { firstName, lastName, email, phone, country, tourType, startDate, duration, groupSize, budget, preferences, heardAboutUs } = body
+    const { firstName, lastName, email, phone, country, tourType, startDate, duration, groupSize, budget, preferences, heardAboutUs, source } = body
+
+    // Where the enquiry came from. Free text in the column, so it is clamped to
+    // the values the app actually produces rather than trusting the query string
+    // a visitor can edit — otherwise the Insights source breakdown becomes a
+    // write-anything field.
+    const ALLOWED_SOURCES = new Set(['website', 'request_link', 'whatsapp', 'referral'])
+    const resolvedSource = ALLOWED_SOURCES.has(String(source)) ? String(source) : 'website'
 
     if (!firstName || !lastName || !email || !phone) {
       return NextResponse.json(
@@ -46,7 +53,7 @@ export async function POST(request: NextRequest) {
         client_id: clientId,
         tour_id: tourId,
         stage: 'new',
-        source: 'website',
+        source: resolvedSource,
         travelers_adults: groupSize ? parseInt(groupSize) : 1,
         preferred_start_date: startDate || null,
         client_question: preferences || null,
@@ -64,7 +71,9 @@ export async function POST(request: NextRequest) {
     const { data: quote, error: quoteError } = await admin
       .from('quotes')
       .insert({
-        quote_number: `QR-${Date.now()}`,
+        // quote_number is left to generate_quote_number(), the same sequence the
+        // admin uses. This route used to stamp `QR-${Date.now()}`, which is why
+        // one quote in the list reads QR-1785749298270 next to SAT-Q-00104.
         status: 'draft',
         mode: 'custom',
         client_id: clientId,
