@@ -27,9 +27,11 @@ function shade(r, g, b, amount) {
 }
 
 function main(pixels) {
-  // Find the dominant saturated green: the brush stroke. Bucket by rounded RGB so
-  // anti-aliased edge pixels collapse onto the solid body of the stroke.
-  const counts = new Map()
+  // Average every qualifying green pixel rather than taking the most common
+  // one. The mark is a gradient (roughly #495A16 → #BECB96), so the modal
+  // colour is whichever end happens to cover more area — the mean lands on the
+  // mid-tone a viewer actually reads as "the brand green".
+  let n = 0, R = 0, G = 0, B = 0
   for (let i = 0; i < pixels.length; i += 4) {
     const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2], a = pixels[i + 3]
     if (a < 250) continue
@@ -37,18 +39,13 @@ function main(pixels) {
     const max = Math.max(r, g, b)
     const min = Math.min(r, g, b)
     if (g <= r || g <= b) continue
-    if (max - min < 25) continue // greyscale
+    if (max - min < 25) continue        // greyscale
     if (max < 60 || min > 220) continue // too dark / too pale
-    const key = `${r >> 3},${g >> 3},${b >> 3}`
-    const e = counts.get(key) ?? { n: 0, r: 0, g: 0, b: 0 }
-    e.n++; e.r += r; e.g += g; e.b += b
-    counts.set(key, e)
+    n++; R += r; G += g; B += b
   }
 
-  if (counts.size === 0) throw new Error('no brand green found in logo')
-
-  const top = [...counts.values()].sort((x, y) => y.n - x.n)[0]
-  const R = top.r / top.n, G = top.g / top.n, B = top.b / top.n
+  if (n === 0) throw new Error('no brand green found in logo')
+  R /= n; G /= n; B /= n
   const brand = hex(R, G, B)
 
   // Build the ramp off that single anchor so every surface is provably related to

@@ -35,6 +35,14 @@ These are stated as fact. All are sourced, but you are the one who can vouch for
 8. **نسبة من كل رحلة تدعم مشاريع الحفاظ على البيئة** — from `about/page.tsx`. *Not currently
    printed* — tell me if you want the conservation commitment added; it's a genuine differentiator for this audience.
 
+## Outstanding asset
+
+**The logo file is low-resolution.** `assets/logo.png` is the website's own
+`public/logo-safari-riders.png` at 181×256px. It renders fine on screen and in the
+Instagram slides, but at cover size in print it is roughly 98 dpi and will look
+soft. Commit a high-res PNG or SVG over it and re-run `node build.mjs` — the
+palette re-derives from the new artwork automatically, so keep the same green.
+
 ## Separate issues worth fixing on the website
 
 Found while researching, outside the scope of this profile:

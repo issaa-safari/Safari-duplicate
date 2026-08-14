@@ -41,12 +41,18 @@ business**, so the real brand wins here:
 - **Name.** العمودي للسياحة leads; `Safari Adventure Tours & Riders` is the Latin
   lockup. The website's "Safari Adventure Riders" and the database's "Safari
   Adventure Tours" are both out of step with the company's own stamp.
-- **Logo.** `assets/logo.png` — the helmet/stencil mark from the design-system
-  bundle, which matches the real stamp. The bird mark in `public/logo-safari-riders.png`
-  is a different, superseded logo. On dark grounds the mark is knocked out to white
-  (`.knock`), because its black lettering vanishes otherwise.
-- **Palette.** Derived from the logo at build time, not from `DESIGN.md`. The real
-  brand green sampled out of the artwork is **#8AA15B**, against the repo's `#7A9A4A`.
+- **Logo.** `assets/logo.png` — the Africa-and-bird **SAFARI ADVENTURE TOURS**
+  mark, the same file the website header, footer and dashboard render
+  (`public/logo-safari-riders.png`). The helmet/stencil **SAFARI RIDERS** mark on
+  the company's WhatsApp stamp is the motorcycle side of the business and is
+  deliberately not used here: this profile sells safari, family and photography
+  travel as much as riding, and the bird mark carries that without reading as a
+  motorcycle company. On dark grounds it is knocked out to white (`.knock`).
+  ⚠️ **The committed file is only 181×256px** — fine on screen, soft in print at
+  cover size. Replace it with a high-resolution PNG or SVG and re-run `build.mjs`.
+- **Palette.** Derived from the logo at build time, not from `DESIGN.md`. The mark
+  is a gradient (#495A16 → #BECB96), so the sampler averages its green pixels
+  rather than taking the modal colour, giving **#7A8A49**.
 - **Type.** Tajawal, replacing the site's Cairo.
 
 Every colour in both documents resolves to a token in the generated
