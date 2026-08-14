@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Users } from 'lucide-react'
@@ -26,6 +27,27 @@ export default async function ClientsPage({
   if (filter === 'arabic') query = query.eq('language', 'ar')
 
   const { data: clients } = await query
+
+  // Activity per client. The list used to show a bookings count and nothing
+  // else, so there was no way to see who had quotes or enquiries outstanding
+  // without opening every row. Three grouped reads beat one query per client.
+  // requests/quotes/bookings are RLS-locked to service_role (group_34), so the
+  // session client would silently return empty lists here.
+  const admin = createAdminClient()
+  const clientIds = (clients ?? []).map((c: { id: string }) => c.id)
+  const tally = (rows: { client_id: string | null }[] | null) => {
+    const out: Record<string, number> = {}
+    for (const r of rows ?? []) if (r.client_id) out[r.client_id] = (out[r.client_id] ?? 0) + 1
+    return out
+  }
+
+  const [requestCounts, quoteCounts, bookingCounts] = clientIds.length > 0
+    ? await Promise.all([
+        admin.from('requests').select('client_id').in('client_id', clientIds).then(r => tally(r.data)),
+        admin.from('quotes').select('client_id').in('client_id', clientIds).then(r => tally(r.data)),
+        admin.from('bookings').select('client_id').in('client_id', clientIds).then(r => tally(r.data)),
+      ])
+    : [{}, {}, {}]
 
   const totalClients = clients?.length ?? 0
   const arabicClients = clients?.filter((c: any) => c.language === 'ar').length ?? 0
@@ -101,7 +123,7 @@ export default async function ClientsPage({
               <Th>Email</Th>
               <Th className="hidden md:table-cell">Country</Th>
               <Th className="hidden md:table-cell">Language</Th>
-              <Th className="hidden lg:table-cell">Bookings</Th>
+              <Th>Activity</Th>
               <Th>Added</Th>
               <Th><span className="sr-only">Actions</span></Th>
             </THead>
@@ -130,7 +152,23 @@ export default async function ClientsPage({
                       {client.language === 'ar' ? 'Arabic' : 'English'}
                     </span>
                   </Td>
-                  <Td data-label="Bookings" className="hidden tabular-nums text-muted-foreground lg:table-cell">{client.total_bookings ?? 0}</Td>
+                  <Td data-label="Activity" className="text-xs tabular-nums text-muted-foreground">
+                    {(() => {
+                      const r = requestCounts[client.id] ?? 0
+                      const q = quoteCounts[client.id] ?? 0
+                      const b = bookingCounts[client.id] ?? 0
+                      if (r + q + b === 0) return <span className="text-muted-foreground/60">—</span>
+                      return (
+                        <span className="whitespace-nowrap">
+                          {r > 0 && <span title="Requests">{r}R</span>}
+                          {r > 0 && (q > 0 || b > 0) ? ' · ' : ''}
+                          {q > 0 && <span title="Quotes">{q}Q</span>}
+                          {q > 0 && b > 0 ? ' · ' : ''}
+                          {b > 0 && <span title="Bookings">{b}B</span>}
+                        </span>
+                      )
+                    })()}
+                  </Td>
                   <Td data-label="Added" className="text-xs text-muted-foreground">{new Date(client.created_at).toLocaleDateString('en-GB')}</Td>
                   <Td>
                     <ButtonLink href={"/admin/clients/" + client.id} variant="ghost" size="sm">
