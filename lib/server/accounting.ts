@@ -107,6 +107,17 @@ export async function getTripServices(
  *
  * Note this is the *internal* total. Once an invoice has been issued its own
  * total takes precedence — see `getIssuedInvoiceTotalUsd` below.
+ *
+ * Two things here are deliberate:
+ *
+ *   * A zero from the quote falls through to the booking. This used to read
+ *     `if (data) return ...`, so an accepted version priced at 0 — which happens
+ *     when a quote is accepted before the itinerary is costed — short-circuited
+ *     and the booking's own price was never consulted. The trip then invoiced at
+ *     $0 while a real figure sat on the booking.
+ *   * Multiple accepted versions take the latest rather than erroring.
+ *     `.maybeSingle()` on its own raises when it matches more than one row, and
+ *     the caller swallowed that into "no price at all".
  */
 export async function getTripPriceUsd(
   admin: SupabaseClient,
@@ -118,8 +129,12 @@ export async function getTripPriceUsd(
       .select('total_selling_usd')
       .eq('quote_id', ref.quoteId)
       .eq('status', 'accepted')
+      .order('version_number', { ascending: false })
+      .limit(1)
       .maybeSingle()
-    if (data) return Number(data.total_selling_usd ?? 0)
+
+    const quoted = Number(data?.total_selling_usd ?? 0)
+    if (quoted > 0) return quoted
   }
   if (ref.bookingId) {
     const { data } = await admin

@@ -107,6 +107,28 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
+      {/* A generated draft with no lines means the trip itself has no price —
+          a quote accepted before it was costed, most often. Without this the
+          screen just shows $0.00 and leaves you to guess why. */}
+      {invoice.status === 'draft' && lines.length === 0 && (
+        <div className="mb-6 rounded-xl border border-warning-foreground/30 bg-warning/40 p-4 text-sm">
+          <p className="font-medium text-foreground">This trip has no price yet, so the draft is empty.</p>
+          <p className="mt-0.5 text-muted-foreground">
+            Generating an invoice copies the trip price and any add-on services. Both are zero here —
+            usually a quote that was accepted before its itinerary was costed in the Trip Builder.
+            {invoice.quote_id && (
+              <>
+                {' '}
+                <Link href={`/admin/quotes/${invoice.quote_id}`} className="text-brand-text hover:underline">
+                  Open the quote
+                </Link>{' '}
+                to price it, then generate again — or add the lines by hand below.
+              </>
+            )}
+          </p>
+        </div>
+      )}
+
       {invoice.status === 'void' && (
         <div className="mb-6 rounded-xl border border-border bg-surface-alt p-4 text-sm">
           <p className="font-medium text-foreground">This invoice was voided.</p>
