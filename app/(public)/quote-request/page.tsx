@@ -40,9 +40,8 @@ function QuoteRequestFormContent() {
   const locale = useLocale()
   const isAr = locale === 'ar'
   const tourId = searchParams.get('tour')
-  // Prefill, so a client the operator already knows is not asked to retype what
-  // is already on file. Read once at mount: after that the visitor owns the form.
-  const prefill = (key: string) => searchParams.get(key) ?? ''
+  // Where the link was shared, so outreach can be told apart from organic
+  // traffic. Clamped to a known set server-side.
   const source = searchParams.get('src')
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
@@ -59,11 +58,11 @@ function QuoteRequestFormContent() {
     return () => { active = false }
   }, [])
   const [formData, setFormData] = useState<FormData>({
-    firstName: prefill('first'),
-    lastName: prefill('last'),
-    email: prefill('email'),
-    phone: prefill('phone'),
-    country: prefill('country'),
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    country: '',
     tourType: tourId || '',
     startDate: '',
     duration: '',

@@ -2,8 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { requestBaseUrl } from '@/lib/server/base-url'
-import RequestLinkPanel from './request-link-panel'
 
 export default async function ClientDetailPage({
   params,
@@ -94,8 +92,6 @@ export default async function ClientDetailPage({
     .order('created_at', { ascending: false })
     .limit(20)
 
-  const baseUrl = await requestBaseUrl()
-
   const clientName = (client.first_name + ' ' + client.last_name).trim()
   const initials = (client.first_name?.[0] ?? '?').toUpperCase()
 
@@ -175,7 +171,7 @@ export default async function ClientDetailPage({
           </a>
           {(requests?.length ?? 0) + quotes.length + bookings.length === 0 && (
             <span className="self-center text-xs text-muted-foreground">
-              Nothing on file yet — send them a request link below.
+              Nothing on file yet.
             </span>
           )}
         </div>
@@ -250,17 +246,6 @@ export default async function ClientDetailPage({
               </Link>
             </div>
           </div>
-
-          <RequestLinkPanel
-            baseUrl={baseUrl}
-            firstName={client.first_name}
-            lastName={client.last_name}
-            email={client.email}
-            phone={client.phone}
-            country={client.country}
-            whatsapp={client.whatsapp}
-            preferArabic={client.preferred_language === 'ar' || client.language === 'ar'}
-          />
         </div>
 
         <div className="order-1 space-y-4 lg:order-2 lg:col-span-2">
