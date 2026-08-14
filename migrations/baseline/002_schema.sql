@@ -1648,10 +1648,49 @@ CREATE TABLE public.bookings (
     user_id uuid,
     client_id uuid,
     quote_id uuid,
+    request_id uuid,
+    start_date date,
+    end_date date,
+    CONSTRAINT bookings_date_order_chk CHECK (((start_date IS NULL) OR (end_date IS NULL) OR (end_date >= start_date))),
     CONSTRAINT bookings_number_of_travellers_check CHECK ((number_of_travellers > 0)),
     CONSTRAINT bookings_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'cancelled'::text, 'completed'::text]))),
     CONSTRAINT bookings_total_price_usd_check CHECK ((total_price_usd >= (0)::numeric))
 );
+
+
+--
+-- Name: COLUMN bookings.departure_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.bookings.departure_id IS 'Null for a booking that is not a seat on a scheduled departure — a private trip, or one taken before anything is scheduled. Seat accounting only applies when this is set.';
+
+
+--
+-- Name: COLUMN bookings.client_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.bookings.client_id IS 'Null only for a booking recorded before the client is known. Normally resolved from the request, the chosen client, or the lead traveller''s email.';
+
+
+--
+-- Name: COLUMN bookings.request_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.bookings.request_id IS 'The enquiry this booking came from, when there was one. Set null on delete so losing a request never loses the booking.';
+
+
+--
+-- Name: COLUMN bookings.start_date; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.bookings.start_date IS 'The booking''s own start date, for a trip that is not on a scheduled departure. When departure_id is set the departure''s dates win — resolveTripDates in lib/trip-dates.ts is the one place that decides.';
+
+
+--
+-- Name: COLUMN bookings.end_date; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.bookings.end_date IS 'See start_date. Nullable: dates not yet agreed is a real state.';
 
 
 --
@@ -3686,6 +3725,20 @@ CREATE INDEX booking_traveller_flights_traveller_idx ON public.booking_traveller
 
 
 --
+-- Name: bookings_request_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX bookings_request_idx ON public.bookings USING btree (request_id);
+
+
+--
+-- Name: bookings_start_date_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX bookings_start_date_idx ON public.bookings USING btree (start_date) WHERE (start_date IS NOT NULL);
+
+
+--
 -- Name: clients_email_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5005,6 +5058,14 @@ ALTER TABLE ONLY public.bookings
 
 ALTER TABLE ONLY public.bookings
     ADD CONSTRAINT bookings_quote_id_fkey FOREIGN KEY (quote_id) REFERENCES public.quotes(id) ON DELETE SET NULL;
+
+
+--
+-- Name: bookings bookings_request_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bookings
+    ADD CONSTRAINT bookings_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.requests(id) ON DELETE SET NULL;
 
 
 --

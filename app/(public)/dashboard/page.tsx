@@ -8,6 +8,7 @@ import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import { getServerLocale } from '@/lib/i18n'
 import { localePath } from '@/lib/locale'
+import { bookingTiming, resolveTripDates } from '@/lib/trip-dates'
 
 const G = '#7A9A4A'
 const DISPLAY = 'var(--font-display, "Readex Pro", sans-serif)'
@@ -35,6 +36,7 @@ export default async function DashboardPage({
     price: 'السعر', status: 'الحالة', viewDetails: 'عرض التفاصيل', view: 'عرض', pricePaid: 'المبلغ المدفوع',
     noBookings: 'لا توجد حجوزات بعد', readyNext: 'هل أنت مستعد لمغامرة السفاري القادمة؟',
     browse: 'تصفح الرحلات المتاحة',
+    privateTrip: 'رحلة خاصة', datesTbc: 'لم تُحدَّد بعد',
   } : {
     myDashboard: 'My Dashboard', welcome: 'Welcome back! Manage your bookings and account',
     settings: 'Settings', security: 'Security',
@@ -43,6 +45,7 @@ export default async function DashboardPage({
     price: 'Price', status: 'Status', viewDetails: 'View Details', view: 'View', pricePaid: 'Price Paid',
     noBookings: 'No bookings yet', readyNext: 'Ready for your next safari adventure?',
     browse: 'Browse Available Departures',
+    privateTrip: 'Private trip', datesTbc: 'To be confirmed',
   }
 
   const admin = createAdminClient()
@@ -68,6 +71,8 @@ export default async function DashboardPage({
           number_of_travellers,
           total_price_usd,
           created_at,
+          start_date,
+          end_date,
           departures (
             id,
             start_date,
@@ -83,15 +88,20 @@ export default async function DashboardPage({
         .order('created_at', { ascending: false })
     : { data: [] as any[] }
 
+  // Dates come from the departure, or from the booking's own columns for a
+  // private trip (lib/trip-dates.ts). This used to read
+  // `new Date(departure?.end_date) > new Date()`, and every comparison against
+  // an Invalid Date is false — so a booking with no departure fell out of both
+  // lists and vanished from the client's account. 'undated' is now its own
+  // answer, and those bookings sit with the upcoming ones, which is where a
+  // trip that has not happened yet belongs.
   const upcomingBookings = bookings?.filter(b => {
-    const departure = b.departures as any
-    return new Date(departure?.end_date) > new Date() && b.status !== 'cancelled'
+    if (b.status === 'cancelled') return false
+    const timing = bookingTiming(b as any)
+    return timing === 'upcoming' || timing === 'undated'
   }) ?? []
 
-  const completedBookings = bookings?.filter(b => {
-    const departure = b.departures as any
-    return new Date(departure?.end_date) <= new Date()
-  }) ?? []
+  const completedBookings = bookings?.filter(b => bookingTiming(b as any) === 'past') ?? []
 
   const waitlistedBookings = bookings?.filter(b => b.status === 'pending') ?? []
 
@@ -198,18 +208,19 @@ export default async function DashboardPage({
                     {upcomingBookings.map((booking: any) => {
                       const departure = booking.departures as any
                       const tour = departure?.tours as any
+                      const dates = resolveTripDates(booking)
                       return (
                         <tr key={booking.id} className="border-b border-[#E5E0D8] hover:bg-[#FBF8F1]">
                           <td data-label={t.tour} className="px-6 py-4">
                             <span className="font-medium text-[#20271A]">
-                              {isAr ? (tour?.title_ar || tour?.title_en) : tour?.title_en}
+                              {(isAr ? (tour?.title_ar || tour?.title_en) : tour?.title_en) || t.privateTrip}
                             </span>
                           </td>
                           <td data-label={t.startDate} className="px-6 py-4 text-[#6E6A59]">
-                            {new Date(departure?.start_date).toLocaleDateString('en-GB')}
+                            {dates.startDate ? new Date(dates.startDate).toLocaleDateString('en-GB') : t.datesTbc}
                           </td>
                           <td data-label={t.endDate} className="px-6 py-4 text-[#6E6A59]">
-                            {new Date(departure?.end_date).toLocaleDateString('en-GB')}
+                            {dates.endDate ? new Date(dates.endDate).toLocaleDateString('en-GB') : t.datesTbc}
                           </td>
                           <td data-label={t.travellers} className="px-6 py-4 text-[#6E6A59]">
                             {booking.number_of_travellers}
@@ -289,15 +300,16 @@ export default async function DashboardPage({
                     {completedBookings.map((booking: any) => {
                       const departure = booking.departures as any
                       const tour = departure?.tours as any
+                      const dates = resolveTripDates(booking)
                       return (
                         <tr key={booking.id} className="border-b border-[#E5E0D8] hover:bg-[#FBF8F1]">
                           <td data-label={t.tour} className="px-6 py-4">
                             <span className="font-medium text-[#20271A]">
-                              {isAr ? (tour?.title_ar || tour?.title_en) : tour?.title_en}
+                              {(isAr ? (tour?.title_ar || tour?.title_en) : tour?.title_en) || t.privateTrip}
                             </span>
                           </td>
                           <td data-label={t.endDate} className="px-6 py-4 text-[#6E6A59]">
-                            {new Date(departure?.end_date).toLocaleDateString('en-GB')}
+                            {dates.endDate ? new Date(dates.endDate).toLocaleDateString('en-GB') : t.datesTbc}
                           </td>
                           <td data-label={t.travellers} className="px-6 py-4 text-[#6E6A59]">
                             {booking.number_of_travellers}

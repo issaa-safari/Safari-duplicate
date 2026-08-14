@@ -211,6 +211,14 @@ export async function buildVouchersForBooking(
   if (!booking) throw new Error('Booking not found.')
   if (booking.status === 'cancelled') throw new Error('This booking is cancelled.')
 
+  // Vouchers are built from the tour's accommodation plan, and the only route to
+  // a tour is the departure. A private booking (group_78) has neither, so say so
+  // plainly rather than reporting a missing start date on a departure that does
+  // not exist.
+  if (!booking.departure_id) {
+    throw new Error('This booking is not on a departure, so there is no tour itinerary to build vouchers from.')
+  }
+
   const { data: departure } = await admin
     .from('departures')
     .select('id, tour_id, start_date')
