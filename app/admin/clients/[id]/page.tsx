@@ -34,17 +34,44 @@ export default async function ClientDetailPage({
     .order('created_at', { ascending: false })
 
   // Quotes carry client_id + tour_id, but the price lives on quote_versions
-  // (total_selling_usd) and the tour name on the related tour — join both.
+  // (total_selling_usd) and the tour name on the related tour.
+  //
+  // The versions are fetched separately, NOT embedded. quotes ↔ quote_versions
+  // has two foreign keys — quote_versions.quote_id and quotes.accepted_version_id
+  // — so PostgREST cannot tell which relationship an embed means, errors, and
+  // returns no rows. With `?? []` swallowing it, this screen showed a client no
+  // quotes at all while their quotes sat in the database. Same fix, same reason,
+  // as app/admin/tour-templates/page.tsx and app/admin/quotes/page.tsx.
   const { data: quotesRaw } = await admin
     .from('quotes')
-    .select('id, quote_number, status, tour_id, accepted_version_id, created_at, tours(title_en, title_ar), quote_versions(id, total_selling_usd, version_number)')
+    .select('id, quote_number, status, tour_id, accepted_version_id, created_at, tours(title_en, title_ar)')
     .eq('client_id', id)
     .order('created_at', { ascending: false })
 
+  const quoteIds = (quotesRaw ?? []).map((q: any) => q.id)
+  const { data: versionRows } = quoteIds.length > 0
+    ? await admin
+        .from('quote_versions')
+        .select('id, quote_id, total_selling_usd, version_number')
+        .in('quote_id', quoteIds)
+    : { data: [] as any[] }
+
+  interface QuoteVersionRow {
+    id: string
+    quote_id: string
+    total_selling_usd: number | null
+    version_number: number | null
+  }
+
+  const versionsByQuote: Record<string, QuoteVersionRow[]> = {}
+  for (const v of (versionRows ?? []) as QuoteVersionRow[]) {
+    (versionsByQuote[v.quote_id] ??= []).push(v)
+  }
+
   const quotes = (quotesRaw ?? []).map((q: any) => {
-    const versions = Array.isArray(q.quote_versions) ? q.quote_versions : []
-    const accepted = versions.find((v: any) => v.id === q.accepted_version_id)
-    const latest = [...versions].sort((a: any, b: any) => (b.version_number ?? 0) - (a.version_number ?? 0))[0]
+    const versions = versionsByQuote[q.id] ?? []
+    const accepted = versions.find((v) => v.id === q.accepted_version_id)
+    const latest = [...versions].sort((a, b) => (b.version_number ?? 0) - (a.version_number ?? 0))[0]
     const chosen = accepted || latest
     return {
       id: q.id,
@@ -154,10 +181,31 @@ export default async function ClientDetailPage({
             <p className="text-xs text-muted-foreground">Bookings</p>
           </div>
         </div>
+
+        {/* What this client has, up front. The three lists live in the right-hand
+            column, which stacks *below* contact details and quick actions on a
+            phone — so without this you have to scroll a long way to find out
+            whether there is anything there at all. */}
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-3 text-sm">
+          <a href="#requests" className="rounded-full bg-surface-alt px-3 py-1 text-foreground hover:bg-muted">
+            {requests?.length ?? 0} request{(requests?.length ?? 0) !== 1 ? 's' : ''}
+          </a>
+          <a href="#quotes" className="rounded-full bg-surface-alt px-3 py-1 text-foreground hover:bg-muted">
+            {quotes.length} quote{quotes.length !== 1 ? 's' : ''}
+          </a>
+          <a href="#bookings" className="rounded-full bg-surface-alt px-3 py-1 text-foreground hover:bg-muted">
+            {bookings.length} booking{bookings.length !== 1 ? 's' : ''}
+          </a>
+          {(requests?.length ?? 0) + quotes.length + bookings.length === 0 && (
+            <span className="self-center text-xs text-muted-foreground">
+              Nothing on file yet.
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="space-y-4">
+        <div className="order-2 space-y-4 lg:order-1">
           <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
             <h2 className="text-sm font-semibold text-foreground mb-3">Contact Details</h2>
             <div className="space-y-2 text-sm">
@@ -227,8 +275,8 @@ export default async function ClientDetailPage({
           </div>
         </div>
 
-        <div className="lg:col-span-2 space-y-4">
-          <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+        <div className="order-1 space-y-4 lg:order-2 lg:col-span-2">
+          <div id="requests" className="scroll-mt-24 rounded-xl border border-border bg-surface shadow-sm p-4">
             <h2 className="text-sm font-semibold text-foreground mb-3">
               Requests
               <span className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
@@ -262,7 +310,7 @@ export default async function ClientDetailPage({
             )}
           </div>
 
-          <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+          <div id="quotes" className="scroll-mt-24 rounded-xl border border-border bg-surface shadow-sm p-4">
             <h2 className="text-sm font-semibold text-foreground mb-3">
               Quotes
               <span className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
@@ -294,7 +342,7 @@ export default async function ClientDetailPage({
             )}
           </div>
 
-          <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+          <div id="bookings" className="scroll-mt-24 rounded-xl border border-border bg-surface shadow-sm p-4">
             <h2 className="text-sm font-semibold text-foreground mb-3">
               Bookings
               <span className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">

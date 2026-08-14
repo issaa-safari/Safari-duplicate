@@ -1770,10 +1770,18 @@ CREATE TABLE public.company_settings (
     auto_delete_days integer DEFAULT 90 NOT NULL,
     usd_to_kes_rate numeric(10,4) DEFAULT 129 NOT NULL,
     prebooked_enabled boolean DEFAULT false NOT NULL,
+    auto_expire_quotes boolean DEFAULT true NOT NULL,
     CONSTRAINT company_settings_auto_archive_days_check CHECK ((auto_archive_days >= 0)),
     CONSTRAINT company_settings_auto_delete_days_check CHECK ((auto_delete_days >= 0)),
     CONSTRAINT company_settings_usd_to_kes_rate_check CHECK ((usd_to_kes_rate > (0)::numeric))
 );
+
+
+--
+-- Name: COLUMN company_settings.auto_expire_quotes; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.company_settings.auto_expire_quotes IS 'Daily cron marks sent/viewed quote versions expired once valid_until has passed. See shouldExpireQuote in lib/automation.ts.';
 
 
 --
@@ -2420,7 +2428,7 @@ CREATE TABLE public.quote_versions (
     CONSTRAINT quote_versions_default_markup_percent_check CHECK ((default_markup_percent >= (0)::numeric)),
     CONSTRAINT quote_versions_discount_type_check CHECK (((discount_type IS NULL) OR (discount_type = ANY (ARRAY['percentage'::text, 'fixed'::text])))),
     CONSTRAINT quote_versions_discount_value_check CHECK ((discount_value >= (0)::numeric)),
-    CONSTRAINT quote_versions_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'ready'::text, 'sent'::text, 'viewed'::text, 'accepted'::text, 'declined'::text, 'expired'::text, 'superseded'::text, 'cancelled'::text]))),
+    CONSTRAINT quote_versions_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'ready'::text, 'sent'::text, 'viewed'::text, 'accepted'::text, 'declined'::text, 'expired'::text, 'superseded'::text]))),
     CONSTRAINT quote_versions_track_label_check CHECK (((track_label IS NULL) OR (track_label = ANY (ARRAY['standard'::text, 'premium'::text])))),
     CONSTRAINT quote_versions_version_number_check CHECK ((version_number > 0))
 );
@@ -2446,7 +2454,7 @@ CREATE TABLE public.quotes (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     is_template boolean DEFAULT false NOT NULL,
     CONSTRAINT quotes_mode_check CHECK ((mode = ANY (ARRAY['custom'::text, 'fixed_departure'::text]))),
-    CONSTRAINT quotes_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'ready'::text, 'sent'::text, 'viewed'::text, 'accepted'::text, 'declined'::text, 'expired'::text, 'cancelled'::text])))
+    CONSTRAINT quotes_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'ready'::text, 'sent'::text, 'viewed'::text, 'accepted'::text, 'declined'::text, 'expired'::text, 'superseded'::text])))
 );
 
 

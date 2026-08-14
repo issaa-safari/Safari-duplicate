@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { shouldComplete, shouldArchive, shouldDelete, type AutomationSettings } from '@/lib/automation'
+import { shouldComplete, shouldArchive, shouldDelete, shouldExpireQuote, type AutomationSettings } from '@/lib/automation'
+import { syncQuoteStatus } from '@/lib/server/quote-status'
 import { sendEmail } from '@/lib/email'
 import { buildAgreementEmail } from '@/lib/agreement-email'
 import { site } from '@/lib/site'
@@ -25,14 +26,14 @@ export async function GET(req: NextRequest) {
 
   const { data: settings } = await admin
     .from('company_settings')
-    .select('auto_complete_on_end_date, auto_archive_enabled, auto_archive_days, auto_archive_stages, auto_delete_enabled, auto_delete_days')
+    .select('auto_complete_on_end_date, auto_expire_quotes, auto_archive_enabled, auto_archive_days, auto_archive_stages, auto_delete_enabled, auto_delete_days')
     .limit(1)
     .single()
 
   if (!settings) return NextResponse.json({ error: 'No company settings' }, { status: 500 })
   const s = settings as AutomationSettings
 
-  const result = { completed: 0, archived: 0, deleted: 0, agreementReminders: 0 }
+  const result = { completed: 0, expired: 0, archived: 0, deleted: 0, agreementReminders: 0 }
 
   async function logSystem(requestId: string, summary: string) {
     try {
@@ -65,7 +66,36 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 2) Auto-archive stale requests in the configured stages.
+  // 2) Expire quotes the client was sent and never answered, once the date on
+  //    them has passed. Only 'sent' and 'viewed' qualify — see shouldExpireQuote.
+  if (s.auto_expire_quotes) {
+    const { data: live } = await admin
+      .from('quote_versions')
+      .select('id, quote_id, status, valid_until')
+      .in('status', ['sent', 'viewed'])
+      .not('valid_until', 'is', null)
+
+    const touchedQuotes = new Set<string>()
+    for (const v of (live ?? [])) {
+      const row = v as { id: string; quote_id: string; status: string; valid_until: string | null }
+      if (!shouldExpireQuote(row.status, row.valid_until, s, now)) continue
+
+      const { error } = await admin
+        .from('quote_versions').update({ status: 'expired' }).eq('id', row.id)
+      if (error) continue
+
+      touchedQuotes.add(row.quote_id)
+      result.expired++
+    }
+
+    // The list tabs read quotes.status, which only tracks the most-advanced
+    // version — so it has to be recomputed, not assumed to follow.
+    for (const quoteId of touchedQuotes) {
+      try { await syncQuoteStatus(admin, quoteId) } catch { /* parent sync is best-effort */ }
+    }
+  }
+
+  // 3) Auto-archive stale requests in the configured stages.
   if (s.auto_archive_enabled) {
     const { data: candidates } = await admin
       .from('requests')
@@ -81,7 +111,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 3) Hard-delete requests archived past the delete threshold.
+  // 4) Hard-delete requests archived past the delete threshold.
   if (s.auto_delete_enabled) {
     const { data: archived } = await admin
       .from('requests')
@@ -97,7 +127,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 4) Chase unsigned traveller agreements for upcoming departures.
+  // 5) Chase unsigned traveller agreements for upcoming departures.
   // Re-send the signing link if it hasn't been emailed in the last 3 days,
   // up to 3 reminders per agreement. Best-effort — never fails the cron.
   {

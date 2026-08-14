@@ -7,6 +7,7 @@ import { ButtonLink } from '@/components/ui/button'
 import { PageShell, PageHeader } from '@/components/admin/ui/page'
 import { EmptyState } from '@/components/admin/ui/empty-state'
 import QuotesListClient, { type QuoteRow } from './quotes-list-client'
+import { countByGroup, QUOTE_GROUPS, resolveStatusFilter } from '@/lib/status-groups'
 
 export default async function QuotesPage({
   searchParams,
@@ -26,19 +27,21 @@ export default async function QuotesPage({
     .from('quotes')
     .select('status')
 
-  const counts = (allQuotes ?? []).reduce((acc: Record<string, number>, q: any) => {
-    acc[q.status] = (acc[q.status] ?? 0) + 1
-    return acc
-  }, {})
-
-  const activeStatus = status ?? 'draft'
+  // Four buckets rather than one tab per status; the exact status still shows
+  // on every row. See lib/status-groups.ts.
+  const filter = resolveStatusFilter(QUOTE_GROUPS, status)
+  const activeGroup = QUOTE_GROUPS.find(g => g.key === filter.groupKey) ?? QUOTE_GROUPS[0]
+  const counts = countByGroup(QUOTE_GROUPS, (allQuotes ?? []) as { status: string }[])
 
   // Separate queries to avoid PostgREST FK ambiguity and status-column collision
-  const { data: quotes } = await admin
+  const quotesQuery = admin
     .from('quotes')
     .select('id, quote_number, status, mode, created_at, client_id')
-    .eq('status', activeStatus)
     .order('created_at', { ascending: false })
+
+  const { data: quotes } = await (filter.statuses
+    ? quotesQuery.in('status', filter.statuses)
+    : quotesQuery)
 
   const quoteIds = (quotes ?? []).map((q: any) => q.id)
   const clientIds = [...new Set((quotes ?? []).map((q: any) => q.client_id))]
@@ -62,8 +65,6 @@ export default async function QuotesPage({
     versionsByQuote[v.quote_id].push(v)
   }
 
-  const STATUSES = ['draft', 'ready', 'sent', 'viewed', 'accepted', 'declined', 'expired', 'cancelled']
-
   return (
     <PageShell>
       <PageHeader
@@ -78,34 +79,45 @@ export default async function QuotesPage({
 
       {/* Status tabs */}
       <nav aria-label="Quote statuses" className="mb-6 flex gap-1 overflow-x-auto border-b border-border">
-        {STATUSES.map((s) => (
+        {QUOTE_GROUPS.map((group) => (
           <Link
-            key={s}
-            href={`/admin/quotes?status=${s}`}
-            aria-current={activeStatus === s ? 'page' : undefined}
+            key={group.key}
+            href={`/admin/quotes?status=${group.key}`}
+            aria-current={activeGroup.key === group.key ? 'page' : undefined}
             className={'-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors duration-150 ' +
-              (activeStatus === s
+              (activeGroup.key === group.key
                 ? 'border-primary-strong text-brand-text'
                 : 'border-transparent text-muted-foreground hover:text-foreground')}>
-            <span className="capitalize">{s}</span>
-            {counts[s] ? (
-              <span className="ml-1.5 text-xs tabular-nums text-muted-foreground">({counts[s]})</span>
+            {group.label}
+            {counts[group.key] ? (
+              <span className="ml-1.5 text-xs tabular-nums text-muted-foreground">({counts[group.key]})</span>
             ) : null}
           </Link>
         ))}
       </nav>
+
+      {/* Arrived from a link naming one status: say so, and offer the way out. */}
+      {filter.exactStatus && (
+        <p className="-mt-3 mb-4 text-sm text-muted-foreground">
+          Showing only <span className="font-medium capitalize text-foreground">{filter.exactStatus}</span>.{' '}
+          <Link href={`/admin/quotes?status=${activeGroup.key}`} className="text-brand-text hover:underline">
+            Show all {activeGroup.label.toLowerCase()}
+          </Link>
+        </p>
+      )}
 
       {/* Quote list */}
       {!quotes || quotes.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface shadow-sm">
           <EmptyState
             icon={FileText}
-            title={`No ${activeStatus} quotes`}
-            body={activeStatus === 'draft'
-              ? 'Quotes start as drafts while you build the itinerary and pricing, then move through Ready → Sent → Accepted.'
-              : `Quotes appear here when they reach the “${activeStatus}” status.`}
+            title={filter.exactStatus
+              ? `No ${filter.exactStatus} quotes`
+              : activeGroup.key === 'all' ? 'No quotes yet' : `Nothing in ${activeGroup.label.toLowerCase()}`}
+            body={activeGroup.blurb
+              ?? 'Quotes start as drafts while you build the itinerary and pricing, then go out to the client and come back accepted.'}
             action={
-              activeStatus === 'draft' && (
+              (activeGroup.key === 'all' || activeGroup.key === 'draft') && (
                 <ButtonLink href="/admin/quotes/new" variant="primary" size="sm">
                   Create your first quote
                 </ButtonLink>

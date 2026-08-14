@@ -1,10 +1,10 @@
 'use server'
 
+import { requestBaseUrl } from '@/lib/server/base-url'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { headers } from 'next/headers'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { syncQuoteStatus } from '@/lib/server/quote-status'
 import { sendEmail, emailShell, escapeHtml } from '@/lib/email'
@@ -17,12 +17,6 @@ import {
 // Same-origin base URL derived server-side from the request headers, so the
 // customer-facing link can never be pointed at an attacker host via a forged
 // form field.
-async function requestBaseUrl() {
-  const host = (await headers()).get('host') ?? 'localhost:3000'
-  const proto = host.startsWith('localhost') ? 'http' : 'https'
-  return `${proto}://${host}`
-}
-
 async function authGuard() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

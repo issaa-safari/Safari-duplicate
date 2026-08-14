@@ -5,15 +5,15 @@ import { Inbox } from 'lucide-react'
 import StatusBadge from '@/components/admin/status-badge'
 import { ButtonLink } from '@/components/ui/button'
 import { EmptyState } from '@/components/admin/ui/empty-state'
-import { STATUS_VARIANT, VARIANT_CLASSES, VARIANT_DOT, STAGE_LABELS } from '@/lib/status-colors'
+import { VARIANT_CLASSES, VARIANT_DOT, STAGE_LABELS } from '@/lib/status-colors'
+import { countByGroup, REQUEST_GROUPS, resolveStatusFilter } from '@/lib/status-groups'
 
-// Stage chips share the StatusBadge color system so the sidebar filter and
-// the badges on the cards never disagree about what color a stage is.
-const STAGES = Object.entries(STAGE_LABELS).map(([key, label]) => ({
-  key,
-  label,
-  variant: STATUS_VARIANT[key] ?? 'neutral',
-}))
+// Four buckets rather than one tab per stage. The exact stage still shows as
+// the badge on every card, and a link naming one (the dashboard and insights
+// screens do) still narrows to it — see lib/status-groups.ts.
+const GROUP_VARIANT: Record<string, string> = {
+  all: 'neutral', active: 'info', booked: 'success', closed: 'muted',
+}
 
 export default async function RequestsPage({
   searchParams,
@@ -25,19 +25,22 @@ export default async function RequestsPage({
   if (!user) redirect('/admin/login')
 
   const params = await searchParams
-  const activeStage = params.stage ?? 'new'
+  const filter = resolveStatusFilter(REQUEST_GROUPS, params.stage)
+  const activeGroup = REQUEST_GROUPS.find(g => g.key === filter.groupKey) ?? REQUEST_GROUPS[0]
 
   const { data: allRequests } = await supabase.from('requests').select('stage')
-  const stageCounts = STAGES.reduce((acc, s) => {
-    acc[s.key] = (allRequests ?? []).filter(r => r.stage === s.key).length
-    return acc
-  }, {} as Record<string, number>)
+  const stageCounts = countByGroup(REQUEST_GROUPS, allRequests ?? [])
 
-  const { data: requests } = await supabase
+  const query = supabase
     .from('requests')
     .select('*, clients (first_name, last_name, email), tours (title_en)')
-    .eq('stage', activeStage)
     .order('created_at', { ascending: false })
+
+  const { data: requests } = await (filter.statuses ? query.in('stage', filter.statuses) : query)
+
+  const heading = filter.exactStatus
+    ? `${STAGE_LABELS[filter.exactStatus] ?? filter.exactStatus} Requests`
+    : activeGroup.key === 'all' ? 'All Requests' : `${activeGroup.label} Requests`
 
   return (
     <div className="flex min-h-screen flex-1 flex-col md:flex-row">
@@ -49,26 +52,30 @@ export default async function RequestsPage({
         <ButtonLink href="/admin/requests/new" variant="primary" size="sm" className="mb-3 w-full">
           + New Request
         </ButtonLink>
-        {STAGES.map((stage) => (
-          <Link
-            key={stage.key}
-            href={"/admin/requests?stage=" + stage.key}
-            aria-current={activeStage === stage.key ? 'page' : undefined}
-            className={"flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors duration-150 " +
-              (activeStage === stage.key
-                ? `font-medium ${VARIANT_CLASSES[stage.variant]}`
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground')}
-          >
-            <span className="flex items-center gap-2">
-              <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${VARIANT_DOT[stage.variant]}`} />
-              {stage.label}
-            </span>
-            <span className={"rounded-full px-2 py-0.5 text-xs font-medium tabular-nums " +
-              (activeStage === stage.key ? 'bg-surface/60' : 'bg-muted text-muted-foreground')}>
-              {stageCounts[stage.key] ?? 0}
-            </span>
-          </Link>
-        ))}
+        {REQUEST_GROUPS.map((group) => {
+          const variant = (GROUP_VARIANT[group.key] ?? 'neutral') as keyof typeof VARIANT_CLASSES
+          const active = activeGroup.key === group.key
+          return (
+            <Link
+              key={group.key}
+              href={"/admin/requests?stage=" + group.key}
+              aria-current={active ? 'page' : undefined}
+              className={"flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors duration-150 " +
+                (active
+                  ? `font-medium ${VARIANT_CLASSES[variant]}`
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground')}
+            >
+              <span className="flex items-center gap-2">
+                <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${VARIANT_DOT[variant]}`} />
+                {group.label}
+              </span>
+              <span className={"rounded-full px-2 py-0.5 text-xs font-medium tabular-nums " +
+                (active ? 'bg-surface/60' : 'bg-muted text-muted-foreground')}>
+                {stageCounts[group.key] ?? 0}
+              </span>
+            </Link>
+          )
+        })}
       </nav>
 
       {/* Stage chips (mobile) */}
@@ -76,36 +83,49 @@ export default async function RequestsPage({
         aria-label="Request stages"
         className="flex gap-1.5 overflow-x-auto border-b border-border bg-surface px-4 py-2.5 md:hidden"
       >
-        {STAGES.map((stage) => (
-          <Link
-            key={stage.key}
-            href={"/admin/requests?stage=" + stage.key}
-            aria-current={activeStage === stage.key ? 'page' : undefined}
-            className={"flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors duration-150 " +
-              (activeStage === stage.key
-                ? VARIANT_CLASSES[stage.variant]
-                : 'bg-muted text-muted-foreground')}
-          >
-            {stage.label}
-            <span className="tabular-nums opacity-70">{stageCounts[stage.key] ?? 0}</span>
-          </Link>
-        ))}
+        {REQUEST_GROUPS.map((group) => {
+          const variant = (GROUP_VARIANT[group.key] ?? 'neutral') as keyof typeof VARIANT_CLASSES
+          const active = activeGroup.key === group.key
+          return (
+            <Link
+              key={group.key}
+              href={"/admin/requests?stage=" + group.key}
+              aria-current={active ? 'page' : undefined}
+              className={"flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors duration-150 " +
+                (active ? VARIANT_CLASSES[variant] : 'bg-muted text-muted-foreground')}
+            >
+              {group.label}
+              <span className="tabular-nums opacity-70">{stageCounts[group.key] ?? 0}</span>
+            </Link>
+          )
+        })}
       </nav>
 
       <div className="flex-1 px-4 py-6 sm:px-6">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold text-foreground">
-            {STAGES.find(s => s.key === activeStage)?.label} Requests
-          </h1>
+          <h1 className="text-xl font-semibold text-foreground">{heading}</h1>
           <ButtonLink href="/admin/requests/new" variant="primary" size="sm" className="md:hidden">
             + New
           </ButtonLink>
         </div>
+        {/* Arrived from a dashboard or insights link naming one stage: say so,
+            and offer the way back out to the whole bucket. */}
+        {filter.exactStatus && (
+          <p className="mb-4 text-sm text-muted-foreground">
+            Showing only <span className="font-medium text-foreground">
+              {STAGE_LABELS[filter.exactStatus] ?? filter.exactStatus}
+            </span>.{' '}
+            <Link href={"/admin/requests?stage=" + activeGroup.key} className="text-brand-text hover:underline">
+              Show all {activeGroup.label.toLowerCase()}
+            </Link>
+          </p>
+        )}
+
         {!requests || requests.length === 0 ? (
           <EmptyState
             icon={Inbox}
-            title={`No ${STAGES.find(s => s.key === activeStage)?.label.toLowerCase()} requests`}
-            body="Requests move through the pipeline as you work them — new enquiries land here from the website, WhatsApp, or manual entry."
+            title={`No ${heading.replace(/ Requests$/, '').toLowerCase()} requests`}
+            body={activeGroup.blurb ?? 'Requests move through the pipeline as you work them — new enquiries land here from the website, WhatsApp, or manual entry.'}
             action={
               <ButtonLink href="/admin/requests/new" variant="primary" size="sm">
                 + Add First Request
