@@ -4,6 +4,7 @@
 
 export interface AutomationSettings {
   auto_complete_on_end_date: boolean
+  auto_expire_quotes: boolean
   auto_archive_enabled: boolean
   auto_archive_days: number
   auto_archive_stages: string[]
@@ -54,4 +55,34 @@ export function shouldDelete(
   if (!settings.auto_delete_enabled) return false
   if (!archivedAt) return false
   return daysBetween(archivedAt, now) >= settings.auto_delete_days
+}
+
+/**
+ * A quote version is expired once the date on it has passed — but only if it
+ * was actually out with the client.
+ *
+ * A draft or a built-but-unsent quote is not expired, it is unsent; saying
+ * otherwise would put work-in-progress into the Closed bucket. A decided one
+ * (accepted, declined) keeps its outcome: the date passing does not un-accept a
+ * quote. Superseded already lost to a newer version.
+ */
+export function shouldExpireQuote(
+  status: string,
+  validUntil: string | null | undefined,
+  settings: Pick<AutomationSettings, 'auto_expire_quotes'>,
+  now: Date | string,
+): boolean {
+  if (!settings.auto_expire_quotes) return false
+  if (status !== 'sent' && status !== 'viewed') return false
+  if (!validUntil) return false
+
+  // Date-only comparison, like shouldComplete: a quote valid *until* today is
+  // still valid today.
+  const until = new Date(validUntil)
+  const today = new Date(now)
+  if (Number.isNaN(until.getTime())) return false
+
+  const untilDay = Date.UTC(until.getUTCFullYear(), until.getUTCMonth(), until.getUTCDate())
+  const nowDay = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+  return untilDay < nowDay
 }

@@ -72,7 +72,7 @@ export const QUOTE_GROUPS: StatusGroup[] = [
   {
     key: 'closed',
     label: 'Closed',
-    statuses: ['declined', 'expired', 'cancelled', 'superseded'],
+    statuses: ['declined', 'expired', 'superseded'],
     blurb: 'Turned down, run out of time, or replaced by a newer version.',
   },
 ]

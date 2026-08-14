@@ -9,10 +9,11 @@
 // and these interfaces re-expressed in terms of Database['public']['Tables'].
 
 export type QuoteStatus =
-  | 'draft' | 'ready' | 'sent' | 'viewed' | 'accepted' | 'declined' | 'expired' | 'cancelled'
+  | 'draft' | 'ready' | 'sent' | 'viewed' | 'accepted' | 'declined' | 'expired' | 'superseded'
 
 export type RequestStage =
   | 'new' | 'working_on' | 'open' | 'pre_booked' | 'booked' | 'completed' | 'not_booked'
+  | 'archived'
 
 export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled'
 

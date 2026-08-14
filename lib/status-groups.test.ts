@@ -17,9 +17,13 @@ describe('the groups themselves', () => {
   it('covers every quote status exactly once', () => {
     // Guards the case that would silently hide rows: a status the database can
     // hold that no bucket claims.
+    // Mirrors quotes_status_check as of group_80, which dropped 'cancelled'
+    // (no writer, no data) and admitted 'superseded' (syncQuoteStatus can
+    // produce it). If the constraint changes, this list has to follow or rows
+    // start landing outside every bucket.
     const quoteStatuses = [
       'draft', 'ready', 'sent', 'viewed', 'accepted',
-      'declined', 'expired', 'cancelled', 'superseded',
+      'declined', 'expired', 'superseded',
     ]
     const grouped = QUOTE_GROUPS.flatMap((g) => g.statuses)
     expect(new Set(grouped).size).toBe(grouped.length)

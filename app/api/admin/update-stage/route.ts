@@ -10,7 +10,13 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { requestId, stage } = await request.json()
-  const allowedStages = new Set(['new', 'working_on', 'open', 'pre_booked', 'booked', 'completed', 'not_booked'])
+  // 'archived' was missing while the stage selector offered a button for it, so
+  // the button returned 400 and the UI silently snapped back. Archiving by hand
+  // is legitimate — the daily cron does the same thing on a timer, and the
+  // requests_stamp_status_changed trigger stamps archived_at either way.
+  const allowedStages = new Set([
+    'new', 'working_on', 'open', 'pre_booked', 'booked', 'completed', 'not_booked', 'archived',
+  ])
 
   if (typeof requestId !== 'string' || !allowedStages.has(stage)) {
     return NextResponse.json({ error: 'Invalid request or stage.' }, { status: 400 })

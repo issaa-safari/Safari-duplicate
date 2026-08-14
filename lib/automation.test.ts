@@ -4,11 +4,13 @@ import {
   shouldComplete,
   shouldArchive,
   shouldDelete,
+  shouldExpireQuote,
   type AutomationSettings,
 } from './automation'
 
 const settings: AutomationSettings = {
   auto_complete_on_end_date: true,
+  auto_expire_quotes: true,
   auto_archive_enabled: true,
   auto_archive_days: 30,
   auto_archive_stages: ['not_booked', 'completed'],
@@ -69,5 +71,47 @@ describe('shouldDelete', () => {
   })
   it('respects the disabled toggle', () => {
     expect(shouldDelete('2020-01-01', { ...settings, auto_delete_enabled: false }, now)).toBe(false)
+  })
+})
+
+describe('shouldExpireQuote', () => {
+  const now = '2026-07-05'
+
+  it('expires a sent quote whose date has passed', () => {
+    expect(shouldExpireQuote('sent', '2026-06-30', settings, now)).toBe(true)
+  })
+
+  it('expires a viewed quote too — the client saw it and did nothing', () => {
+    expect(shouldExpireQuote('viewed', '2026-06-30', settings, now)).toBe(true)
+  })
+
+  it('leaves a quote valid on its own last day', () => {
+    expect(shouldExpireQuote('sent', '2026-07-05', settings, now)).toBe(false)
+  })
+
+  it('leaves drafts and ready quotes alone — unsent is not expired', () => {
+    // Otherwise work in progress would land in the Closed bucket the moment a
+    // date typed weeks ago went by.
+    expect(shouldExpireQuote('draft', '2020-01-01', settings, now)).toBe(false)
+    expect(shouldExpireQuote('ready', '2020-01-01', settings, now)).toBe(false)
+  })
+
+  it('never overturns a decided quote', () => {
+    expect(shouldExpireQuote('accepted', '2020-01-01', settings, now)).toBe(false)
+    expect(shouldExpireQuote('declined', '2020-01-01', settings, now)).toBe(false)
+    expect(shouldExpireQuote('superseded', '2020-01-01', settings, now)).toBe(false)
+  })
+
+  it('does nothing without a date', () => {
+    expect(shouldExpireQuote('sent', null, settings, now)).toBe(false)
+    expect(shouldExpireQuote('sent', undefined, settings, now)).toBe(false)
+  })
+
+  it('ignores an unparseable date rather than expiring on it', () => {
+    expect(shouldExpireQuote('sent', 'whenever', settings, now)).toBe(false)
+  })
+
+  it('respects the disabled toggle', () => {
+    expect(shouldExpireQuote('sent', '2020-01-01', { auto_expire_quotes: false }, now)).toBe(false)
   })
 })

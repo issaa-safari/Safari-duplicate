@@ -46,6 +46,7 @@ export async function saveSettings(formData: FormData) {
     .from('company_settings')
     .update({
       auto_complete_on_end_date: bool('autoCompleteOnEndDate'),
+      auto_expire_quotes: bool('autoExpireQuotes'),
       auto_archive_enabled: bool('autoArchiveEnabled'),
       auto_archive_days: intOrDefault('autoArchiveDays', 30),
       auto_archive_stages: archiveStages.length ? archiveStages : ['not_booked', 'completed'],

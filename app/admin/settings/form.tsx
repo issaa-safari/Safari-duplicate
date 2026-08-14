@@ -34,6 +34,7 @@ interface Settings {
   usd_to_kes_rate?: number | null
   logo_url: string | null
   auto_complete_on_end_date?: boolean
+  auto_expire_quotes?: boolean
   auto_archive_enabled?: boolean
   auto_archive_days?: number
   auto_archive_stages?: string[]
@@ -151,6 +152,11 @@ export default function SettingsForm({ settings }: { settings: Settings }) {
           <input type="checkbox" name="autoCompleteOnEndDate" defaultChecked={!!settings.auto_complete_on_end_date} className="mt-0.5" />
           <span><span className="font-medium text-foreground">Auto-complete finished trips</span><br />
             <span className="text-muted-foreground text-xs">Move a Booked request to Completed once its travel end date has passed.</span></span>
+        </label>
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" name="autoExpireQuotes" defaultChecked={settings.auto_expire_quotes ?? true} className="mt-0.5" />
+          <span><span className="font-medium text-foreground">Expire quotes past their date</span><br />
+            <span className="text-muted-foreground text-xs">Mark a sent or viewed quote Expired once its &ldquo;valid until&rdquo; date has passed. Drafts and decided quotes are left alone.</span></span>
         </label>
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" name="autoArchiveEnabled" defaultChecked={!!settings.auto_archive_enabled} className="mt-0.5" />
