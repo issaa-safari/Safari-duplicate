@@ -77,6 +77,8 @@ export default function NewBookingForm({
   const [requestId, setRequestId] = useState(preselectRequestId ?? '')
   const [clientId, setClientId] = useState(preselectClientId ?? '')
   const [status, setStatus] = useState('confirmed')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [travellerCount, setTravellerCount] = useState(1)
   const [travellers, setTravellers] = useState<TravellerRow[]>([emptyTraveller()])
   const [priceEdited, setPriceEdited] = useState(false)
@@ -134,12 +136,19 @@ export default function NewBookingForm({
     }
     if (overCapacity) { setError(`Only ${selected?.seatsLeft} seat(s) left on this departure.`); return }
     if (depositNum > totalNum) { setError('Deposit cannot exceed the total price.'); return }
+    if (!selected && startDate && endDate && endDate < startDate) {
+      setError('The end date is before the start date.')
+      return
+    }
 
     const fd = new FormData()
     fd.set('departureId', departureId)
     fd.set('requestId', requestId)
     fd.set('clientId', clientId)
     fd.set('status', status)
+    // A departure owns its own dates, so these only travel without one.
+    fd.set('startDate', selected ? '' : startDate)
+    fd.set('endDate', selected ? '' : endDate)
     fd.set('travellerCount', String(travellerCount))
     fd.set('totalPrice', effectivePrice || '0')
     fd.set('deposit', deposit || '0')
@@ -178,17 +187,33 @@ export default function NewBookingForm({
               </option>
             ))}
           </select>
-          {selected ? (
+          {selected && (
             <p className="mt-1 text-xs text-muted-foreground">
               {fmtDate(selected.startDate)} → {fmtDate(selected.endDate)} · {money(selected.price)}/seat · {selected.seatsLeft} available
             </p>
-          ) : (
-            <p className="mt-1 text-xs text-muted-foreground">
-              No seats are reserved and no dates are set — the trip carries whatever dates the itinerary or
-              request holds.
-            </p>
           )}
         </div>
+
+        {/* Only offered without a departure: a seat runs when its departure
+            runs, and a second editable answer is how two travellers on the same
+            trip end up printing different dates (lib/trip-dates.ts). */}
+        {!selected && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="startDate" className="block text-sm font-medium text-foreground mb-1">Start date</label>
+              <input id="startDate" type="date" value={startDate}
+                onChange={e => setStartDate(e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <label htmlFor="endDate" className="block text-sm font-medium text-foreground mb-1">End date</label>
+              <input id="endDate" type="date" value={endDate} min={startDate || undefined}
+                onChange={e => setEndDate(e.target.value)} className={inputCls} />
+            </div>
+            <p className="col-span-2 -mt-1 text-xs text-muted-foreground">
+              Optional — leave blank if the dates are not agreed yet. No seats are reserved either way.
+            </p>
+          </div>
+        )}
 
         <div>
           <label htmlFor="request" className="block text-sm font-medium text-foreground mb-1">Request</label>

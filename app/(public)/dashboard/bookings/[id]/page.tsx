@@ -8,6 +8,7 @@ import PrintButton from '@/components/public/print-button'
 import type { BookingTraveller } from '@/lib/types'
 import { getServerLocale } from '@/lib/i18n'
 import { localePath } from '@/lib/locale'
+import { resolveTripDates } from '@/lib/trip-dates'
 import { getTripBalance } from '@/lib/server/accounting'
 
 const G = '#7A9A4A'
@@ -37,6 +38,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
     .from('bookings')
     .select(`
       *,
+      start_date,
+      end_date,
       departures (
         id,
         start_date,
@@ -96,8 +99,10 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const hasBankDetails = !!(settings?.bank_account_number || settings?.bank_name)
   const depositPercent = Number(settings?.deposit_percent) || 0
 
-  // Countdown to departure.
-  const startDate = departure?.start_date ? new Date(departure.start_date) : null
+  // Countdown to the trip. Dates come from the departure, or from the booking's
+  // own columns when it is a private trip (lib/trip-dates.ts).
+  const dates = resolveTripDates(booking as any)
+  const startDate = dates.startDate ? new Date(dates.startDate) : null
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const daysToGo = startDate
     ? Math.ceil((startDate.getTime() - today.getTime()) / 86400000)
@@ -203,7 +208,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h1 dir="auto" className="text-2xl font-bold text-gray-900">
-                  {(isAr ? tour?.title_ar || tour?.title_en : tour?.title_en) ?? ''}
+                  {(isAr ? tour?.title_ar || tour?.title_en : tour?.title_en)
+                    || (isAr ? 'رحلة خاصة' : 'Private trip')}
                 </h1>
                 <p className="text-sm text-gray-600 mt-1">
                   {t.reference}: {booking.reference || id}
@@ -247,11 +253,11 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-300">
               <div>
                 <p className="text-xs font-semibold text-gray-600 uppercase">{t.startDate}</p>
-                <p className="text-lg font-bold text-gray-900 mt-1">{fmtDate(departure?.start_date, isAr)}</p>
+                <p className="text-lg font-bold text-gray-900 mt-1">{fmtDate(dates.startDate, isAr)}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-600 uppercase">{t.endDate}</p>
-                <p className="text-lg font-bold text-gray-900 mt-1">{fmtDate(departure?.end_date, isAr)}</p>
+                <p className="text-lg font-bold text-gray-900 mt-1">{fmtDate(dates.endDate, isAr)}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-600 uppercase">{t.travellers}</p>

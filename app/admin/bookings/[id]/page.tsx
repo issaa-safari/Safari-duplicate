@@ -22,6 +22,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       departure_id,
       request_id,
       client_id,
+      start_date,
+      end_date,
       number_of_travellers,
       total_price_usd,
       status,

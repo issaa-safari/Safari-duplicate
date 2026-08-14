@@ -43,6 +43,10 @@ export async function createManualBooking(formData: FormData) {
   const requestId = (formData.get('requestId') as string)?.trim() || null
   const pickedClientId = (formData.get('clientId') as string)?.trim() || null
   const status = (formData.get('status') as string) === 'pending' ? 'pending' : 'confirmed'
+  // Only meaningful without a departure — a seat runs when its departure runs
+  // (group_79, and resolveTripDates in lib/trip-dates.ts).
+  const startDate = departureId ? null : ((formData.get('startDate') as string)?.trim() || null)
+  const endDate = departureId ? null : ((formData.get('endDate') as string)?.trim() || null)
   const totalPrice = parseFloat((formData.get('totalPrice') as string) ?? '')
   const depositRaw = parseFloat((formData.get('deposit') as string) ?? '')
   const deposit = !isNaN(depositRaw) && depositRaw > 0 ? depositRaw : 0
@@ -67,6 +71,9 @@ export async function createManualBooking(formData: FormData) {
 
   if (isNaN(totalPrice) || totalPrice < 0) throw new Error('Enter a valid total price.')
   if (deposit > totalPrice) throw new Error('Deposit cannot exceed the total price.')
+  if (startDate && endDate && endDate < startDate) {
+    throw new Error('The end date is before the start date.')
+  }
 
   const lead = travellers[0]
 
@@ -142,6 +149,8 @@ export async function createManualBooking(formData: FormData) {
       departure_id: departureId,
       request_id: requestId,
       client_id: clientId,
+      start_date: startDate,
+      end_date: endDate,
       number_of_travellers: groupSize,
       total_price_usd: totalPrice,
       status,

@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import StatusBadge from '@/components/admin/status-badge'
+import { resolveTripDates } from '@/lib/trip-dates'
 
 export default async function BookingsPage() {
   const supabase = await createClient()
@@ -15,6 +16,8 @@ export default async function BookingsPage() {
     .select(`
       id,
       departure_id,
+      start_date,
+      end_date,
       number_of_travellers,
       total_price_usd,
       status,
@@ -87,6 +90,7 @@ export default async function BookingsPage() {
                   const client = booking.clients as any
                   const request = booking.requests as any
                   const travellers = (booking.booking_travellers as any[]) ?? []
+                  const dates = resolveTripDates(booking)
                   const clientName = client
                     ? `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim()
                     : ''
@@ -104,9 +108,15 @@ export default async function BookingsPage() {
                         )}
                       </td>
                       <td data-label="Dates" className="px-4 py-3 text-muted-foreground">
-                        {departure?.start_date ? new Date(departure.start_date).toLocaleDateString('en-GB') : '—'}
-                        {' → '}
-                        {departure?.end_date ? new Date(departure.end_date).toLocaleDateString('en-GB') : '—'}
+                        {dates.source === 'none' ? (
+                          <span className="text-muted-foreground/70">Dates not set</span>
+                        ) : (
+                          <>
+                            {dates.startDate ? new Date(dates.startDate).toLocaleDateString('en-GB') : '—'}
+                            {' → '}
+                            {dates.endDate ? new Date(dates.endDate).toLocaleDateString('en-GB') : '—'}
+                          </>
+                        )}
                       </td>
                       <td data-label="Travellers" className="px-4 py-3 text-foreground">
                         <span className="font-medium">{booking.number_of_travellers}</span>
