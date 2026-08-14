@@ -1,0 +1,175 @@
+/* ---------------------------------------------------------------------------
+   العمودي للسياحة — company profile, shared design layer.
+   Used by both profile-ar.html (A4 print) and slides-ar.html (Instagram 4:5).
+   Palette tokens come from assets/palette.css, generated off the real logo.
+   --------------------------------------------------------------------------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Contour linework — the highland-map texture that gives an empty photo slot a
+   designed surface instead of a flat colour field. Inline SVG so it survives in
+   a self-contained PDF with no external requests. */
+:root {
+  --topo: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='760' height='560' viewBox='0 0 760 560'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.085' stroke-width='1.5'%3E%3Cpath d='M-40 96C120 34 258 150 396 104S648 22 800 84'/%3E%3Cpath d='M-40 150C124 90 262 204 400 158S652 78 800 138'/%3E%3Cpath d='M-40 206C128 148 266 258 404 212S656 134 800 194'/%3E%3Cpath d='M-40 264C132 208 270 314 408 268S660 192 800 252'/%3E%3Cpath d='M-40 324C136 270 274 372 412 326S664 252 800 312'/%3E%3Cpath d='M-40 386C140 334 278 432 416 386S668 314 800 374'/%3E%3Cpath d='M-40 450C144 400 282 494 420 448S672 378 800 438'/%3E%3Cpath d='M-40 516C148 468 286 558 424 512S676 444 800 504'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+body {
+  margin: 0;
+  font-family: Tajawal, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  /* Arabic needs room to breathe; ascenders and diacritics clip at tight leading. */
+  line-height: 1.85;
+  text-rendering: geometricPrecision;
+}
+
+/* --- Photography slots ------------------------------------------------------
+   Every slot is finished-looking today and photo-ready tomorrow. Drop a real
+   image in by setting one custom property on the element:
+
+       <div class="photo" style="--img:url('photos/mara-dawn.jpg')">
+
+   The image becomes the top background layer; the contour linework and the
+   brand gradient sit underneath as the designed fallback. See PHOTO-BRIEF.md
+   for the slot inventory, aspect ratios and intended subjects.
+   --------------------------------------------------------------------------- */
+.photo {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--brand-dp);
+  background-image:
+    var(--img, none),
+    var(--topo),
+    linear-gradient(135deg, var(--brand-dp) 0%, var(--brand-dk) 52%, var(--brand) 100%);
+  background-size: cover, 760px 560px, cover;
+  background-position: center, center, center;
+  background-repeat: no-repeat, repeat, no-repeat;
+}
+
+/* Legibility scrim so type always holds over whatever photo lands here. */
+.photo.scrim::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(12, 15, 8, 0.94) 0%,
+    rgba(12, 15, 8, 0.62) 42%,
+    rgba(12, 15, 8, 0.16) 100%
+  );
+}
+.photo > * { position: relative; z-index: 1; }
+
+/* The logo artwork is black lettering over a green brush, drawn for light grounds.
+   On dark pages the lettering all but vanishes, so knock the mark out to solid
+   white — a mono lockup reads as deliberate where a half-visible logo reads as a
+   printing fault. */
+.knock { filter: brightness(0) invert(1); }
+
+/* --- Type ------------------------------------------------------------------ */
+.eyebrow {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--brand);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  line-height: 1.4;
+}
+.eyebrow::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.32;
+}
+.eyebrow.on-dark { color: var(--brand-lt); }
+
+h1, h2, h3 { margin: 0; font-weight: 900; letter-spacing: -0.01em; line-height: 1.24; }
+h1 { font-size: 60px; }
+h2 { font-size: 38px; }
+h3 { font-size: 19px; font-weight: 800; line-height: 1.5; }
+
+.lede {
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--stone);
+  max-width: 46ch;
+  margin: 16px 0 0;
+}
+.on-dark .lede, .lede.on-dark { color: rgba(242, 236, 223, 0.78); }
+
+p { margin: 0 0 14px; }
+p:last-child { margin-bottom: 0; }
+
+/* --- Cards & grids --------------------------------------------------------- */
+.grid { display: grid; gap: 14px; }
+.grid.c2 { grid-template-columns: 1fr 1fr; }
+.grid.c3 { grid-template-columns: repeat(3, 1fr); }
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--sand-dk);
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+.card .k {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: var(--brand-dk);
+  margin: 0 0 6px;
+}
+.card .v { font-size: 14px; color: var(--stone); margin: 0; line-height: 1.75; }
+
+.card.dark {
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(202, 213, 181, 0.22);
+}
+.card.dark .k { color: var(--brand-lt); }
+.card.dark .v { color: rgba(242, 236, 223, 0.74); }
+
+/* Numbered step, used by the planning-process page. */
+.step { display: flex; gap: 14px; align-items: flex-start; }
+.step .n {
+  flex: none;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 900;
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* Tick / cross list for the inclusions page. */
+.list { list-style: none; margin: 0; padding: 0; }
+.list li {
+  font-size: 14.5px;
+  line-height: 1.7;
+  padding: 7px 26px 7px 0;
+  position: relative;
+  color: var(--ink);
+}
+.list li::before {
+  content: '';
+  position: absolute;
+  right: 0; top: 15px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+.list.no li::before { background: var(--sand-dk); }
+.list.on-dark li { color: rgba(242, 236, 223, 0.86); }
+
+/* --- Utility --------------------------------------------------------------- */
+.rule { height: 1px; background: var(--sand-dk); border: 0; margin: 0; }
+.rule.on-dark { background: rgba(202, 213, 181, 0.22); }
+.muted { color: var(--stone); }
+.brandtext { color: var(--brand-dk); }
+.center { text-align: center; }
+.tight { line-height: 1.6; }

@@ -1,0 +1,249 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8">
+<title>العمودي للسياحة — شرائح إنستغرام</title>
+<link rel="stylesheet" href="assets/palette.css">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/base.css">
+<style>
+  /* 4:5 portrait — the tallest ratio Instagram shows uncropped in feed. */
+  html, body {
+    width: 1080px;
+    height: 1350px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* Only the targeted slide renders, so build.mjs can screenshot one per pass
+     by loading slides-ar.html#s3 and capturing a 1080×1350 viewport. Pinning the
+     slide to the viewport with inset:0 rather than letting it sit in normal flow
+     guarantees full-bleed coverage — in flow, the whitespace between the hidden
+     sections leaves a sliver of page background along the bottom edge. */
+  .slide { display: none; }
+  .slide:target { display: flex; position: absolute; inset: 0; }
+
+  .slide {
+    flex-direction: column;
+    padding: 84px 76px;
+    overflow: hidden;
+  }
+  .slide.dark { background: var(--bush); color: var(--sand); }
+  .slide.sand { background: var(--sand); }
+  .slide.paper { background: var(--paper); }
+  .slide.full { padding: 0; }
+
+  .slide h2 { font-size: 74px; line-height: 1.18; letter-spacing: -0.02em; }
+  .slide.dark h2, .slide.dark h3 { color: var(--sand); }
+  .slide .lede { font-size: 30px; line-height: 1.7; max-width: 24ch; margin-top: 26px; }
+  .slide .eyebrow { font-size: 22px; margin-bottom: 26px; }
+
+  .brandfoot {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding-top: 30px;
+  }
+  .brandfoot img { width: 100px; }
+  .slide.dark .brandfoot img { filter: brightness(0) invert(1); }
+  .brandfoot .ar { font-size: 30px; font-weight: 900; line-height: 1.2; }
+  .brandfoot .en {
+    font-size: 16px; font-weight: 700; letter-spacing: 0.12em;
+    color: var(--brand); direction: ltr; text-align: right; margin-top: 4px;
+  }
+  .slide.dark .brandfoot .en { color: var(--brand-lt); }
+  .brandfoot .hand {
+    margin-inline-start: auto; font-size: 20px; font-weight: 700;
+    direction: ltr; color: var(--stone);
+  }
+  .slide.dark .brandfoot .hand { color: rgba(242,236,223,0.6); }
+
+  .slide .card { border-radius: 20px; padding: 32px 34px; }
+  .slide .card .k { font-size: 30px; margin-bottom: 10px; }
+  .slide .card .v { font-size: 23px; line-height: 1.65; }
+  .slide .grid { gap: 22px; }
+
+  .swipe {
+    position: absolute; bottom: 54px; left: 76px;
+    font-size: 20px; font-weight: 700; color: var(--brand);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .slide.dark .swipe { color: var(--brand-lt); }
+</style>
+</head>
+<body>
+
+<!-- ---------- 1. COVER ---------- -->
+<section class="slide full" id="s1">
+  <!-- PHOTO SLOT: ig-cover — 1080×1350. Your single best vertical landscape. -->
+  <div class="photo scrim" style="position:absolute;inset:0"></div>
+  <div style="position:relative;z-index:1;display:flex;flex-direction:column;height:100%;padding:84px 76px;color:#fff">
+    <img class="knock" src="assets/logo.png" alt="" style="width:190px">
+    <div style="margin-top:auto">
+      <h2 style="color:#fff;font-size:82px">كينيا ليست وجهة.<br>إنها تجربة تُعاش.</h2>
+      <p style="font-size:30px;color:rgba(255,255,255,0.85);margin-top:26px;max-width:26ch">
+        رحلات خاصة في كينيا — سفاري، طبيعة، مغامرة، وضيافة تُدار بأدق تفاصيلها.
+      </p>
+      <div style="margin-top:40px;padding-top:26px;border-top:1px solid rgba(255,255,255,0.25)">
+        <p style="margin:0;font-size:34px;font-weight:900">العمودي للسياحة</p>
+        <p style="margin:6px 0 0;font-size:17px;font-weight:700;letter-spacing:0.14em;color:var(--brand-lt);direction:ltr;text-align:right">
+          SAFARI ADVENTURE TOURS &amp; RIDERS
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 2. WHY KENYA ---------- -->
+<section class="slide dark" id="s2">
+  <p class="eyebrow on-dark">لماذا كينيا</p>
+  <h2>كل ما لا تجده<br>في البيت.</h2>
+  <p class="lede on-dark">
+    غابات تسقيها الأمطار، بحيرات، مرتفعات خضراء طوال السنة، وحياة برية على مستوى نظرك.
+  </p>
+  <!-- PHOTO SLOT: ig-kenya — 928×420. Wide green highland or Rift Valley. -->
+  <div class="photo" style="height:420px;border-radius:24px;margin-top:44px"></div>
+  <div class="brandfoot">
+    <img src="assets/logo.png" alt="">
+    <div><div class="ar">العمودي للسياحة</div><div class="en">SAFARI ADVENTURE TOURS &amp; RIDERS</div></div>
+  </div>
+</section>
+
+<!-- ---------- 3. TWO WAYS ---------- -->
+<section class="slide sand" id="s3">
+  <p class="eyebrow">طريقتك في الاكتشاف</p>
+  <h2>طريقتان للسفر.<br>الشغف نفسه.</h2>
+  <div class="grid" style="margin-top:44px">
+    <div class="card">
+      <p class="k">سفاري خاص</p>
+      <p class="v">مسار مصمم لمجموعتك وحدها، بسيارة دفع رباعي بسقف مفتوح، وإقامة تختارها بنفسك.</p>
+    </div>
+    <div class="card">
+      <p class="k">جولات الدراجات</p>
+      <p class="v">جولات جماعية بقيادة خبراء من المرتفعات إلى الساحل، بدعم كامل طوال الطريق.</p>
+    </div>
+    <div class="card" style="background:var(--brand-pale);border-color:var(--brand-lt)">
+      <p class="k">أو الاثنان معاً</p>
+      <p class="v">أيام في البرية وأيام على الطريق، في رحلة واحدة متّصلة.</p>
+    </div>
+  </div>
+  <div class="brandfoot">
+    <img src="assets/logo.png" alt="">
+    <div><div class="ar">العمودي للسياحة</div><div class="en">SAFARI ADVENTURE TOURS &amp; RIDERS</div></div>
+  </div>
+</section>
+
+<!-- ---------- 4. EXPERIENCES ---------- -->
+<section class="slide paper" id="s4">
+  <p class="eyebrow">التجارب</p>
+  <h2>رحلة تُبنى<br>من اختياراتك.</h2>
+  <div class="grid c2" style="margin-top:40px">
+    <div class="card"><p class="k">جولات المشاهدة</p><p class="v">صباحية ومسائية وليلية.</p></div>
+    <div class="card"><p class="k">منطاد الهواء</p><p class="v">إقلاع مع أول ضوء.</p></div>
+    <div class="card"><p class="k">ركوب الخيل</p><p class="v">بين المزارع والمحميات.</p></div>
+    <div class="card"><p class="k">رحلات التصوير</p><p class="v">سقف مفتوح وتوقيت للضوء.</p></div>
+    <div class="card"><p class="k">سفاري مشياً</p><p class="v">برفقة حارس مسلّح.</p></div>
+    <div class="card"><p class="k">امتداد للساحل</p><p class="v">ختام على المحيط الهندي.</p></div>
+  </div>
+  <div class="brandfoot">
+    <img src="assets/logo.png" alt="">
+    <div><div class="ar">العمودي للسياحة</div><div class="en">SAFARI ADVENTURE TOURS &amp; RIDERS</div></div>
+  </div>
+</section>
+
+<!-- ---------- 5. DESTINATIONS ---------- -->
+<section class="slide dark" id="s5">
+  <p class="eyebrow on-dark">الوجهات</p>
+  <h2>كينيا التي نعرفها<br>طريقاً طريقاً.</h2>
+  <div style="margin-top:40px;display:grid;grid-template-columns:1fr 1fr;gap:0 40px">
+    <div class="dwrap">
+      <p style="font-size:27px;font-weight:800;padding:14px 0;border-bottom:1px solid rgba(202,213,181,0.2);margin:0">ماساي مارا</p>
+      <p style="font-size:27px;font-weight:800;padding:14px 0;border-bottom:1px solid rgba(202,213,181,0.2);margin:0">أمبوسيلي</p>
+      <p style="font-size:27px;font-weight:800;padding:14px 0;border-bottom:1px solid rgba(202,213,181,0.2);margin:0">أول بيجيتا</p>
+      <p style="font-size:27px;font-weight:800;padding:14px 0;border-bottom:1px solid rgba(202,213,181,0.2);margin:0">بحيرة ناكورو</p>
+      <p style="font-size:27px;font-weight:800;padding:14px 0;border-bottom:1px solid rgba(202,213,181,0.2);margin:0">بحيرة نايفاشا</p>
+    </div>
+    <div class="dwrap">
+      <p style="font-size:27px;font-weight:800;padding:14px 0;border-bottom:1px solid rgba(202,213,181,0.2);margin:0">جبل كينيا</p>
+      <p style="font-size:27px;font-weight:800;padding:14px 0;border-bottom:1px solid rgba(202,213,181,0.2);margin:0">أبردير</p>
+      <p style="font-size:27px;font-weight:800;padding:14px 0;border-bottom:1px solid rgba(202,213,181,0.2);margin:0">الوادي المتصدع</p>
+      <p style="font-size:27px;font-weight:800;padding:14px 0;border-bottom:1px solid rgba(202,213,181,0.2);margin:0">نيروبي</p>
+      <p style="font-size:27px;font-weight:800;padding:14px 0;border-bottom:1px solid rgba(202,213,181,0.2);margin:0">مومباسا والساحل</p>
+    </div>
+  </div>
+  <div class="brandfoot">
+    <img src="assets/logo.png" alt="">
+    <div><div class="ar">العمودي للسياحة</div><div class="en">SAFARI ADVENTURE TOURS &amp; RIDERS</div></div>
+  </div>
+</section>
+
+<!-- ---------- 6. GULF TRAVELLER ---------- -->
+<section class="slide sand" id="s6">
+  <p class="eyebrow">لضيوفنا من الخليج</p>
+  <h2>نفهم كيف<br>تسافر عائلتك.</h2>
+  <div class="grid c2" style="margin-top:40px">
+    <div class="card"><p class="k">تواصل بالعربية</p><p class="v">من أول رسالة حتى نهاية الرحلة.</p></div>
+    <div class="card"><p class="k">طعام حلال</p><p class="v">مُرتّب ضمن البرنامج.</p></div>
+    <div class="card"><p class="k">خصوصية العائلة</p><p class="v">سيارة وإقامة خاصة بكم.</p></div>
+    <div class="card"><p class="k">مجموعتك وحدها</p><p class="v">لا نضمّكم لمجموعات أخرى.</p></div>
+  </div>
+  <div class="brandfoot">
+    <img src="assets/logo.png" alt="">
+    <div><div class="ar">العمودي للسياحة</div><div class="en">SAFARI ADVENTURE TOURS &amp; RIDERS</div></div>
+  </div>
+</section>
+
+<!-- ---------- 7. CUSTOM ---------- -->
+<section class="slide paper" id="s7">
+  <p class="eyebrow">رحلة على مقاسك</p>
+  <h2>لا نبيع برنامجاً جاهزاً.<br>نبنيه من الصفر.</h2>
+  <p class="lede">
+    أخبرنا بعدد الأيام ومن معك وما يهمّك — ونعود إليك ببرنامج مكتوب يوماً بيوم،
+    بالتكلفة كاملة قبل أي التزام.
+  </p>
+  <!-- PHOTO SLOT: ig-custom — 928×380. Planning moment, map, or route shot. -->
+  <div class="photo" style="height:380px;border-radius:24px;margin-top:40px"></div>
+  <div class="brandfoot">
+    <img src="assets/logo.png" alt="">
+    <div><div class="ar">العمودي للسياحة</div><div class="en">SAFARI ADVENTURE TOURS &amp; RIDERS</div></div>
+  </div>
+</section>
+
+<!-- ---------- 8. CONTACT ---------- -->
+<section class="slide dark" id="s8">
+  <p class="eyebrow on-dark">لنبدأ التخطيط</p>
+  <h2>احكِ لنا عن الرحلة<br>اللي في بالك.</h2>
+
+  <div style="display:flex;align-items:center;gap:20px;background:var(--whatsapp);border-radius:24px;padding:34px 38px;margin-top:44px">
+    <div>
+      <p style="margin:0;font-size:22px;font-weight:700;color:#fff;opacity:.92">واتساب</p>
+      <p style="margin:4px 0 0;font-size:46px;font-weight:900;color:#fff;direction:ltr">+254 710 789 789</p>
+    </div>
+  </div>
+
+  <div style="margin-top:26px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div class="card dark">
+      <p class="k">إنستغرام · تيك توك</p>
+      <p class="v" style="direction:ltr;text-align:right;font-weight:800;color:var(--sand)">safariadventure254</p>
+    </div>
+    <div class="card dark">
+      <p class="k">سناب شات</p>
+      <p class="v" style="direction:ltr;text-align:right;font-weight:800;color:var(--sand)">safarikenya254</p>
+    </div>
+  </div>
+
+  <div class="card dark" style="margin-top:20px">
+    <p class="v" style="direction:ltr;text-align:right;font-size:25px;font-weight:800;color:var(--sand)">safariadventureriders.com</p>
+  </div>
+
+  <div class="brandfoot">
+    <img src="assets/logo.png" alt="">
+    <div><div class="ar">العمودي للسياحة</div><div class="en">SAFARI ADVENTURE TOURS &amp; RIDERS</div></div>
+    <span class="hand">Nairobi, Kenya</span>
+  </div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,701 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8">
+<title>العمودي للسياحة — الملف التعريفي</title>
+<link rel="stylesheet" href="assets/palette.css">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/base.css">
+<style>
+  @page { size: A4 portrait; margin: 0; }
+
+  .page {
+    width: 210mm;
+    height: 297mm;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    break-after: page;
+    display: flex;
+    flex-direction: column;
+  }
+  .page:last-child { page-break-after: auto; break-after: auto; }
+
+  /* Standard inner padding. Full-bleed pages opt out with .bleed. */
+  .pad { padding: 20mm 18mm; flex: 1; display: flex; flex-direction: column; }
+
+  .page.sand { background: var(--sand); }
+  .page.dark { background: var(--bush); color: var(--sand); }
+  .page.dark h1, .page.dark h2, .page.dark h3 { color: var(--sand); }
+
+  /* Running footer on interior pages — quiet, never competing with content. */
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10.5px;
+    color: var(--stone);
+    letter-spacing: 0.01em;
+    padding-top: 10px;
+  }
+  .page.dark .foot { color: rgba(242, 236, 223, 0.5); }
+  .foot .n { font-weight: 700; }
+
+  /* ---- Cover ---- */
+  .cover { padding: 0; }
+  .cover .art { position: absolute; inset: 0; }
+  .cover .inner {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 18mm;
+    color: #fff;
+  }
+  .cover .mark { width: 47mm; display: block; }
+  .cover h1 { font-size: 68px; color: #fff; letter-spacing: -0.02em; }
+  .cover .sub {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.86);
+    max-width: 38ch;
+    margin: 18px 0 0;
+    font-weight: 400;
+  }
+  .namebar { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+  .namebar .ar { font-size: 30px; font-weight: 900; color: #fff; line-height: 1.2; }
+  .namebar .en {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    color: var(--brand-lt);
+    direction: ltr;
+    text-transform: uppercase;
+    padding-bottom: 6px;
+  }
+  .cover .meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.72);
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+    padding-top: 14px;
+    margin-top: 22px;
+  }
+  .cover .meta .site { direction: ltr; letter-spacing: 0.04em; }
+
+  /* ---- Split page: half art, half copy ---- */
+  .split { flex: 1; display: grid; grid-template-rows: 118mm 1fr; }
+  .split .body { padding: 14mm 18mm 0; display: flex; flex-direction: column; }
+
+  /* ---- Two-trail fork ---- */
+  .fork { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; flex: 1; min-height: 0; }
+  .trail { border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+  .trail .top { flex: 1; min-height: 62mm; }
+  .trail .txt { padding: 18px 20px 20px; background: var(--paper); border: 1px solid var(--sand-dk); border-top: 0; border-radius: 0 0 14px 14px; flex: 1; }
+  .trail h3 { font-size: 22px; font-weight: 900; margin-bottom: 8px; }
+  .trail p { font-size: 13.5px; color: var(--stone); line-height: 1.75; }
+  .trail .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 11px;
+    border-radius: 99px;
+    margin-bottom: 10px;
+  }
+
+  /* ---- Experience tiles ---- */
+  .exp { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+  .exp .t {
+    border: 1px solid var(--sand-dk);
+    border-radius: 11px;
+    padding: 15px 15px 16px;
+    background: var(--paper);
+  }
+  .exp .t .h { font-size: 14.5px; font-weight: 800; color: var(--brand-dk); line-height: 1.45; margin: 0 0 5px; }
+  .exp .t .d { font-size: 12px; color: var(--stone); line-height: 1.65; margin: 0; }
+
+  /* ---- Destinations ---- */
+  .dests { display: grid; grid-template-columns: 1fr 1fr; gap: 0 34px; margin-top: 6px; }
+  .dests .d {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 9.5px 0;
+    border-bottom: 1px solid rgba(202, 213, 181, 0.2);
+  }
+  .dests .d .dot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
+  .dests .d .nm { font-size: 15.5px; font-weight: 700; color: var(--sand); }
+  .dests .d .ds { font-size: 11.5px; color: rgba(242, 236, 223, 0.55); margin-inline-start: auto; }
+
+  /* ---- Contact ---- */
+  .wa {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--whatsapp);
+    border-radius: 14px;
+    padding: 20px 24px;
+    color: #fff;
+  }
+  .wa .lbl { font-size: 13px; font-weight: 700; opacity: 0.92; }
+  .wa .num { font-size: 27px; font-weight: 900; direction: ltr; text-align: right; letter-spacing: 0.01em; line-height: 1.25; }
+  .contactgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .cbox { border: 1px solid rgba(202, 213, 181, 0.25); border-radius: 12px; padding: 16px 18px; }
+  .cbox .k { font-size: 11.5px; font-weight: 700; color: var(--brand-lt); margin: 0 0 5px; }
+  .cbox .v { font-size: 15px; font-weight: 700; color: var(--sand); direction: ltr; text-align: right; margin: 0; }
+  .cbox .v.ar { direction: rtl; }
+  .socials { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .soc {
+    flex: 1;
+    min-width: 46mm;
+    border: 1px solid rgba(202, 213, 181, 0.25);
+    border-radius: 12px;
+    padding: 13px 16px;
+  }
+  .soc .p { font-size: 11px; color: var(--brand-lt); font-weight: 700; margin: 0 0 3px; }
+  .soc .h { font-size: 14.5px; font-weight: 800; color: var(--sand); direction: ltr; text-align: right; margin: 0; }
+</style>
+</head>
+<body>
+
+<!-- ============================ 1. COVER ============================ -->
+<section class="page cover">
+  <!-- PHOTO SLOT: cover — full bleed 210×297mm. Subject: the single strongest
+       landscape shot you own; green highlands or Mara at first light, with room
+       at the bottom for type. -->
+  <div class="art photo scrim"></div>
+  <div class="inner">
+    <div>
+      <img class="mark knock" src="assets/logo.png" alt="">
+    </div>
+
+    <div>
+      <h1>كينيا ليست وجهة.<br>إنها تجربة تُعاش.</h1>
+      <p class="sub">رحلات خاصة في كينيا — سفاري، طبيعة، مغامرة، وضيافة تُدار بأدق تفاصيلها.</p>
+
+      <div class="meta">
+        <div class="namebar">
+          <span class="ar">العمودي للسياحة</span>
+          <span class="en">Safari Adventure Tours &amp; Riders</span>
+        </div>
+        <span class="site">safariadventureriders.com</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 2. من نحن ============================ -->
+<section class="page">
+  <div class="split">
+    <!-- PHOTO SLOT: about — 210×118mm landscape. Subject: your team, a guide with
+         guests, or the vehicles loaded at the start of a trip. A human moment. -->
+    <div class="photo"></div>
+    <div class="body">
+      <p class="eyebrow">من نحن</p>
+      <h2>نحن مَن ينفّذ الرحلة،<br>ولسنا وسيطاً بينك وبينها.</h2>
+      <p class="lede">
+        من نيروبي، نصمم رحلاتنا وننفّذها بأنفسنا. المرشد الذي يرافقك هو نفسه من رسم
+        المسار، ويعرف أين تُغمر الطريق بعد المطر وأين يشرب النمر عند الغروب. تتواصل
+        معنا مباشرة — بالعربية — من أول سؤال إلى آخر يوم في الرحلة.
+      </p>
+
+      <div class="grid c3" style="margin-top:26px">
+        <div class="card">
+          <p class="k">مقرنا نيروبي</p>
+          <p class="v">شركة محلية تعمل على الأرض، لا مكتب حجوزات في الخارج.</p>
+        </div>
+        <div class="card">
+          <p class="k">نتحدث لغتك</p>
+          <p class="v">العربية والإنجليزية والسواحيلية، وردّ من شخص يعرف حجزك.</p>
+        </div>
+        <div class="card">
+          <p class="k">حجز مباشر</p>
+          <p class="v">تتعامل مع المشغّل نفسه، بلا وسطاء ولا هوامش مضافة.</p>
+        </div>
+      </div>
+
+      <div style="flex:1"></div>
+      <hr class="rule">
+      <div class="foot"><span>العمودي للسياحة · نيروبي، كينيا</span><span class="n">٠٢</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 3. ليش كينيا ============================ -->
+<section class="page dark">
+  <div class="pad">
+    <p class="eyebrow on-dark">لماذا كينيا</p>
+    <h2 style="max-width:20ch">كل ما لا تجده في البيت،<br>على بُعد رحلة قصيرة.</h2>
+    <p class="lede on-dark" style="max-width:52ch">
+      كينيا ليست صحراء أخرى — هي نقيضها. غابات تسقيها الأمطار، بحيرات تتنفس عندها
+      الطيور بالآلاف، مرتفعات خضراء طوال السنة، وحياة برية تراها على مستوى نظرك لا
+      خلف زجاج. طقس معتدل، ورحلة طيران قصيرة من الخليج.
+    </p>
+
+    <!-- PHOTO SLOT: why-kenya — 174×86mm. Subject: wide green highland or Rift
+         Valley escarpment. Landscape, no people, plenty of depth. -->
+    <div class="photo" style="flex:1;min-height:86mm;border-radius:14px;margin-top:22px"></div>
+
+    <div class="grid c3" style="margin-top:20px">
+      <div class="card dark">
+        <p class="k">المرتفعات الخضراء</p>
+        <p class="v">مزارع الشاي والبن، وغابات جبل كينيا وأبردير على ارتفاعات تلطّف الجو صيفاً.</p>
+      </div>
+      <div class="card dark">
+        <p class="k">الوادي المتصدع</p>
+        <p class="v">أحد أعظم التكوينات الجيولوجية على الأرض، ومناظر تمتد حتى الأفق.</p>
+      </div>
+      <div class="card dark">
+        <p class="k">السهول والبحيرات</p>
+        <p class="v">ماساي مارا وأمبوسيلي وبحيرات نايفاشا وناكورو — الحياة البرية في بيتها.</p>
+      </div>
+    </div>
+
+    <hr class="rule on-dark">
+    <div class="foot"><span>لماذا كينيا</span><span class="n">٠٣</span></div>
+  </div>
+</section>
+
+<!-- ============================ 4. طريقتان للسفر ============================ -->
+<section class="page sand">
+  <div class="pad">
+    <p class="eyebrow">طريقتك في الاكتشاف</p>
+    <h2>طريقتان للسفر.<br>الشغف نفسه بأفريقيا.</h2>
+    <p class="lede">
+      بعض الضيوف يريد الهدوء والخصوصية، وبعضهم يريد الطريق والغبار. نحن نقدّم
+      الاثنين — ويمكن الجمع بينهما في رحلة واحدة.
+    </p>
+
+    <div class="fork">
+      <div class="trail">
+        <!-- PHOTO SLOT: trail-safari — 84×62mm. Subject: 4x4 with pop-up roof,
+             guests watching wildlife, or a private camp at golden hour. -->
+        <div class="top photo"></div>
+        <div class="txt">
+          <span class="tag" style="background:var(--brand-pale);color:var(--brand-dk)">سفاري خاص</span>
+          <h3>رحلتك وحدك،<br>على مقاسك تماماً</h3>
+          <p>
+            مسار مصمم لمجموعتك فقط، بسيارة دفع رباعي بسقف مفتوح للمشاهدة والتصوير،
+            وإقامة تختارها بين المخيمات الفاخرة والنُزل والفلل الخاصة. أنت من يحدد
+            الإيقاع، ونحن ندير التفاصيل.
+          </p>
+        </div>
+      </div>
+
+      <div class="trail">
+        <!-- PHOTO SLOT: trail-ride — 84×62mm. Subject: riders on a Kenyan road,
+             convoy shot, or bikes with the support vehicle behind. -->
+        <div class="top photo"></div>
+        <div class="txt">
+          <span class="tag" style="background:var(--trail-pale);color:var(--trail)">جولات الدراجات</span>
+          <h3>الطريق المفتوح،<br>بدعم كامل خلفك</h3>
+          <p>
+            جولات جماعية بقيادة خبراء تعبر المرتفعات والوادي المتصدع نحو الساحل، مع
+            سيارة دعم ومساندة ميكانيكية طوال الطريق. مغامرة حقيقية، منظّمة بعناية.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <hr class="rule">
+    <div class="foot"><span>طريقتان للسفر</span><span class="n">٠٤</span></div>
+  </div>
+</section>
+
+<!-- ============================ 5. تجاربنا ============================ -->
+<section class="page">
+  <div class="pad">
+    <p class="eyebrow">التجارب</p>
+    <h2>الرحلة تُبنى من التفاصيل<br>التي تختارها أنت.</h2>
+    <p class="lede">
+      هذه بعض ما يمكن أن يدخل في برنامجك. نرتّبها لك حسب وقتك وإيقاعك ومن معك.
+    </p>
+
+    <div class="exp">
+      <div class="t"><p class="h">جولات المشاهدة</p><p class="d">صباحية ومسائية، وجولات ليلية لرصد الحيوانات التي لا تظهر إلا بعد الغروب.</p></div>
+      <div class="t"><p class="h">سفاري مشياً</p><p class="d">تمشي في البرية برفقة حارس مسلّح — تجربة مختلفة تماماً عن المشاهدة من السيارة.</p></div>
+      <div class="t"><p class="h">منطاد الهواء الساخن</p><p class="d">إقلاع مع أول ضوء، وسهول تمتد تحتك إلى ما لا نهاية.</p></div>
+      <div class="t"><p class="h">ركوب الخيل</p><p class="d">جولات على ظهر الخيل بين المزارع والمحميات المفتوحة.</p></div>
+      <div class="t"><p class="h">رحلات التصوير</p><p class="d">سيارة بسقف مفتوح، وتوقيت مدروس للضوء، ومرشد يعرف أين تكون الحيوانات.</p></div>
+      <div class="t"><p class="h">زيارة قرية ماساي</p><p class="d">لقاء حقيقي مع أهل المكان، بعيداً عن العروض السياحية المكرّرة.</p></div>
+      <div class="t"><p class="h">رحلة قارب</p><p class="d">بين أفراس النهر والطيور في بحيرة نايفاشا عند الأصيل.</p></div>
+      <div class="t"><p class="h">مزارع الشاي والبن</p><p class="d">جولة في الحقول الخضراء وتذوّق في مكان الإنتاج نفسه.</p></div>
+      <div class="t"><p class="h">الشلالات والغابات</p><p class="d">مسارات مشي بين الغابات الجبلية وشلالات تومسون.</p></div>
+      <div class="t"><p class="h">الهجرة الكبرى</p><p class="d">في موسمها، أحد أعظم المشاهد الطبيعية على وجه الأرض.</p></div>
+      <div class="t"><p class="h">امتداد إلى الساحل</p><p class="d">ختام الرحلة على شواطئ المحيط الهندي بعد أيام البرية.</p></div>
+      <div class="t"><p class="h">وما تطلبه أنت</p><p class="d">إن كان في بالك شيء غير مذكور هنا، اطلبه — الغالب أننا نرتّبه.</p></div>
+    </div>
+
+    <!-- PHOTO SLOT: exp-band — fills the remaining column height. Subject: a strong wide action shot — balloon over the plains, or riders at speed. -->
+      <div class="photo" style="flex:1;min-height:0;border-radius:14px;margin-top:18px"></div>
+    <hr class="rule">
+    <div class="foot"><span>التجارب</span><span class="n">٠٥</span></div>
+  </div>
+</section>
+
+<!-- ============================ 6. الوجهات ============================ -->
+<section class="page dark">
+  <div class="pad">
+    <p class="eyebrow on-dark">الوجهات</p>
+    <h2>كينيا التي نعرفها<br>طريقاً طريقاً.</h2>
+    <p class="lede on-dark" style="max-width:50ch">
+      محميات وبحيرات ومرتفعات وساحل — نجمعها في مسار واحد متّصل، لا قائمة أماكن
+      متفرقة.
+    </p>
+
+    <div class="dests" style="margin-top:20px">
+      <div class="d"><span class="dot"></span><span class="nm">ماساي مارا</span><span class="ds">الهجرة الكبرى</span></div>
+      <div class="d"><span class="dot"></span><span class="nm">أمبوسيلي</span><span class="ds">سفح كليمنجارو</span></div>
+      <div class="d"><span class="dot"></span><span class="nm">أول بيجيتا</span><span class="ds">وحيد القرن</span></div>
+      <div class="d"><span class="dot"></span><span class="nm">بحيرة ناكورو</span><span class="ds">الفلامنجو</span></div>
+      <div class="d"><span class="dot"></span><span class="nm">بحيرة نايفاشا</span><span class="ds">القوارب والطيور</span></div>
+      <div class="d"><span class="dot"></span><span class="nm">هيلز جيت</span><span class="ds">الأخاديد</span></div>
+      <div class="d"><span class="dot"></span><span class="nm">جبل كينيا</span><span class="ds">الغابات الجبلية</span></div>
+      <div class="d"><span class="dot"></span><span class="nm">أبردير</span><span class="ds">المرتفعات</span></div>
+      <div class="d"><span class="dot"></span><span class="nm">نانيوكي</span><span class="ds">خط الاستواء</span></div>
+      <div class="d"><span class="dot"></span><span class="nm">نياهورورو</span><span class="ds">شلالات تومسون</span></div>
+      <div class="d"><span class="dot"></span><span class="nm">كيريتشو</span><span class="ds">مزارع الشاي</span></div>
+      <div class="d"><span class="dot"></span><span class="nm">الوادي المتصدع</span><span class="ds">المناظر الممتدة</span></div>
+      <div class="d"><span class="dot"></span><span class="nm">نيروبي</span><span class="ds">بوابة الرحلة</span></div>
+      <div class="d"><span class="dot"></span><span class="nm">مومباسا والساحل</span><span class="ds">المحيط الهندي</span></div>
+    </div>
+
+    <!-- PHOTO SLOT: destinations — 174×62mm. Subject: an open road or aerial of
+         the Rift Valley; something that reads as "distance covered". -->
+    <div class="photo" style="flex:1;min-height:62mm;border-radius:14px;margin-top:20px"></div>
+
+    <hr class="rule on-dark">
+    <div class="foot"><span>الوجهات</span><span class="n">٠٦</span></div>
+  </div>
+</section>
+
+<!-- ============================ 7. لمن نصمم ============================ -->
+<section class="page sand">
+  <div class="pad">
+    <p class="eyebrow">لمن نصمم رحلاتنا</p>
+    <h2>مجموعات صغيرة،<br>واهتمام شخصي.</h2>
+    <p class="lede">
+      لا نُسيّر حافلات سياحية. كل رحلة مجموعة واحدة، بحد أقصى عشرة ضيوف، حتى يبقى
+      الاهتمام شخصياً والإيقاع مرناً.
+    </p>
+
+    <div class="grid c2" style="margin-top:24px">
+      <div class="card">
+        <p class="k">العائلات</p>
+        <p class="v">برنامج يراعي الأطفال وكبار السن، بإقامة في فلل وشقق واسعة تناسب العائلة، وخصوصية كاملة.</p>
+      </div>
+      <div class="card">
+        <p class="k">الأزواج</p>
+        <p class="v">رحلة هادئة بخصوصية عالية، ومواقع تُختار لمشاهدها لا لشهرتها.</p>
+      </div>
+      <div class="card">
+        <p class="k">مجموعات الأصدقاء</p>
+        <p class="v">مسار أكثر حركة ونشاطاً، مع مساحة لمن يريد الاسترخاء بين الجولات.</p>
+      </div>
+      <div class="card">
+        <p class="k">المجموعات الخاصة</p>
+        <p class="v">رحلة مغلقة لمجموعتك وحدها — سيارتك ومرشدك وبرنامجك.</p>
+      </div>
+      <div class="card">
+        <p class="k">الدرّاجون</p>
+        <p class="v">لمن يريد الطريق نفسه تجربةً، بجولات جماعية مدعومة بالكامل.</p>
+      </div>
+      <div class="card">
+        <p class="k">المصوّرون</p>
+        <p class="v">توقيت يخدم الضوء، ومواقع تُختار للصورة، وصبر على انتظار اللقطة.</p>
+      </div>
+    </div>
+
+    <!-- PHOTO SLOT: audience-band — fills the remaining column height. Subject: guests together — a family or group mid-trip, relaxed and candid. -->
+      <div class="photo" style="flex:1;min-height:0;border-radius:14px;margin-top:18px"></div>
+    <hr class="rule">
+    <div class="foot"><span>لمن نصمم رحلاتنا</span><span class="n">٠٧</span></div>
+  </div>
+</section>
+
+<!-- ============================ 8. رحلة على مقاسك ============================ -->
+<section class="page">
+  <div class="split">
+    <!-- PHOTO SLOT: custom — 210×118mm. Subject: a planning/table shot, a map, or
+         guests choosing a route with a guide. Something that says "made for you". -->
+    <div class="photo"></div>
+    <div class="body">
+      <p class="eyebrow">رحلة على مقاسك</p>
+      <h2>لا نبيع برنامجاً جاهزاً.<br>نبني رحلتك من الصفر.</h2>
+      <p class="lede" style="max-width:54ch">
+        أخبرنا بعدد الأيام ومن معك وما يهمّك — ونعود إليك ببرنامج مكتوب يوماً بيوم:
+        الطريق، والإقامة، والأنشطة، والتكلفة كاملة قبل أن تلتزم بشيء.
+      </p>
+
+      <div class="grid c2" style="margin-top:22px">
+        <div class="card"><p class="k">سفاري خاص</p><p class="v">مسار مخصص لمجموعتك وحدها.</p></div>
+        <div class="card"><p class="k">جولة دراجات</p><p class="v">جولة جماعية مدعومة بالكامل.</p></div>
+        <div class="card"><p class="k">سفاري ودراجات</p><p class="v">أيام في البرية وأيام على الطريق.</p></div>
+        <div class="card"><p class="k">سفاري وساحل</p><p class="v">ختام الرحلة على شاطئ المحيط.</p></div>
+      </div>
+
+      <div style="flex:1"></div>
+      <hr class="rule">
+      <div class="foot"><span>رحلة على مقاسك</span><span class="n">٠٨</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 9. للمسافر الخليجي ============================ -->
+<section class="page dark">
+  <div class="pad">
+    <p class="eyebrow on-dark">لضيوفنا من الخليج</p>
+    <h2>نفهم كيف تسافر عائلتك.</h2>
+    <p class="lede on-dark" style="max-width:52ch">
+      معظم ضيوفنا من دول الخليج، والفرق ليس في الترجمة — بل في ترتيب الرحلة نفسها
+      بما يناسب العائلة الخليجية من أول يوم.
+    </p>
+
+    <div class="grid c2" style="margin-top:24px">
+      <div class="card dark">
+        <p class="k">تخطيط وتواصل بالعربية</p>
+        <p class="v">من أول رسالة على واتساب حتى نهاية الرحلة، تتعامل مع من يفهمك ويردّ عليك بلغتك.</p>
+      </div>
+      <div class="card dark">
+        <p class="k">ترتيبات طعام حلال</p>
+        <p class="v">نرتّب الطعام الحلال ضمن البرنامج، في أماكن الإقامة وأثناء الطريق.</p>
+      </div>
+      <div class="card dark">
+        <p class="k">خصوصية العائلة</p>
+        <p class="v">سيارة خاصة بكم، وإقامة في فلل وشقق مستقلة، وترتيبات تراعي خصوصية النساء والعائلة.</p>
+      </div>
+      <div class="card dark">
+        <p class="k">مجموعتك وحدها</p>
+        <p class="v">لا نضمّكم إلى مجموعات أخرى. الرحلة مغلقة على من تختارونه فقط.</p>
+      </div>
+    </div>
+
+    <!-- PHOTO SLOT: gulf — 174×54mm. Subject: family moment on safari, or a
+         private villa/camp setting. Warm, human, not staged. -->
+    <div class="photo" style="flex:1;min-height:54mm;border-radius:14px;margin-top:20px"></div>
+
+    <hr class="rule on-dark">
+    <div class="foot"><span>لضيوفنا من الخليج</span><span class="n">٠٩</span></div>
+  </div>
+</section>
+
+<!-- ============================ 10. كيف نخطط ============================ -->
+<section class="page sand">
+  <div class="pad">
+    <p class="eyebrow">كيف تبدأ</p>
+    <h2>من رسالة واحدة<br>إلى رحلة جاهزة.</h2>
+
+    <div style="margin-top:26px;display:flex;flex-direction:column;gap:18px">
+      <div class="step">
+        <span class="n">١</span>
+        <div>
+          <h3 class="brandtext">تراسلنا</h3>
+          <p class="v muted" style="font-size:14px;margin:2px 0 0">
+            رسالة على واتساب فيها تاريخكم التقريبي وعدد المسافرين وما يهمّكم. لا نماذج طويلة.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="n">٢</span>
+        <div>
+          <h3 class="brandtext">نقترح عليك برنامجاً</h3>
+          <p class="v muted" style="font-size:14px;margin:2px 0 0">
+            برنامج مكتوب يوماً بيوم: الطريق والإقامة والأنشطة، مع التكلفة كاملة وواضحة.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="n">٣</span>
+        <div>
+          <h3 class="brandtext">نعدّله معك حتى يناسبك</h3>
+          <p class="v muted" style="font-size:14px;margin:2px 0 0">
+            تغيير المسار أو مستوى الإقامة أو عدد الأيام — بلا حرج، وقبل أي التزام.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="n">٤</span>
+        <div>
+          <h3 class="brandtext">تأكيد الحجز</h3>
+          <p class="v muted" style="font-size:14px;margin:2px 0 0">
+            عربون يثبّت الحجز والمواعيد، والباقي قبل السفر. ثم نتولّى نحن كل التفاصيل.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="n">٥</span>
+        <div>
+          <h3 class="brandtext">نستقبلكم في نيروبي</h3>
+          <p class="v muted" style="font-size:14px;margin:2px 0 0">
+            استقبال من المطار، وبداية الرحلة — ونبقى على تواصل معكم طوال الأيام.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHOTO SLOT: process-band — fills the remaining column height. Subject: the welcome moment: airport pickup, or the first morning of a trip. -->
+      <div class="photo" style="flex:1;min-height:0;border-radius:14px;margin-top:18px"></div>
+    <hr class="rule">
+    <div class="foot"><span>كيف تبدأ</span><span class="n">١٠</span></div>
+  </div>
+</section>
+
+<!-- ============================ 11. ليش مباشرة ============================ -->
+<section class="page">
+  <div class="pad">
+    <p class="eyebrow">لماذا الحجز معنا مباشرة</p>
+    <h2>ليس شعاراً —<br>هذا ما يعنيه عملياً.</h2>
+
+    <div class="grid c3" style="margin-top:24px">
+      <div class="card">
+        <p class="k">بلا هوامش وسطاء</p>
+        <p class="v">تتفاوض مع المشغّل الذي ينفّذ الرحلة نفسه. لا وكالة بيننا، ولا نسبة مضافة على السعر.</p>
+      </div>
+      <div class="card">
+        <p class="k">مرشدون صمّموا المسارات</p>
+        <p class="v">مرشدونا وُلدوا ونشأوا في شرق أفريقيا، والمسارات خرجت من سنوات في الميدان لا من كتالوج.</p>
+      </div>
+      <div class="card">
+        <p class="k">دعم عبر واتساب</p>
+        <p class="v">قبل الرحلة وأثناءها وبعدها — يردّ عليك شخص يعرف حجزك، لا صندوق تذاكر.</p>
+      </div>
+    </div>
+
+    <!-- PHOTO SLOT: why-direct — 174×58mm. Subject: guide with guests in the
+         field; the "we're actually there" proof shot. -->
+    <div class="photo" style="flex:1;min-height:58mm;border-radius:14px;margin-top:18px"></div>
+
+    <div class="grid c3" style="margin-top:18px">
+      <div class="card">
+        <p class="k">السلامة أولاً</p>
+        <p class="v">مركبات مُصانة بالكامل، ومرشدون مدرّبون على الإسعافات الأولية في كل رحلة.</p>
+      </div>
+      <div class="card">
+        <p class="k">مجموعات صغيرة</p>
+        <p class="v">حد أقصى عشرة ضيوف — اهتمام شخصي، لا جولة حافلة.</p>
+      </div>
+      <div class="card">
+        <p class="k">دعم كامل على الطريق</p>
+        <p class="v">سيارة دعم مخصصة، ومساندة ميكانيكية، وتواصل معنا على مدار الساعة.</p>
+      </div>
+    </div>
+
+    <hr class="rule">
+    <div class="foot"><span>لماذا الحجز مباشرة</span><span class="n">١١</span></div>
+  </div>
+</section>
+
+<!-- ============================ 12. ما يشمله السعر ============================ -->
+<section class="page sand">
+  <div class="pad">
+    <p class="eyebrow">وضوح في التكلفة</p>
+    <h2>تعرف ما تدفع مقابله<br>قبل أن تلتزم.</h2>
+    <p class="lede">
+      كل عرض نرسله مكتوب بالتفصيل. وهذا ما يشمله البرنامج عادةً — ويُثبَّت النهائي في
+      عرضك الخاص.
+    </p>
+
+    <div class="grid c2" style="margin-top:22px">
+      <div class="card">
+        <p class="k" style="margin-bottom:8px">يشمل عادةً</p>
+        <ul class="list">
+          <li>الإقامة طوال البرنامج</li>
+          <li>جميع التنقلات الداخلية</li>
+          <li>رسوم دخول المحميات</li>
+          <li>مرشد محترف</li>
+          <li>جميع الأنشطة المذكورة في البرنامج</li>
+          <li>الوجبات حسب ما هو محدد يومياً</li>
+          <li>الضرائب والرسوم الحكومية</li>
+          <li>الاستقبال والتوصيل من المطار وإليه</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="k" style="margin-bottom:8px">لا يشمل عادةً</p>
+        <ul class="list no">
+          <li>تذاكر الطيران الدولية</li>
+          <li>التأشيرة (نساعدك في إجراءاتها)</li>
+          <li>التأمين الطبي وتأمين السفر</li>
+          <li>الإكراميات</li>
+          <li>المصاريف الشخصية</li>
+          <li>الإقامة الإضافية قبل الرحلة أو بعدها</li>
+          <li>الأنشطة الاختيارية غير المذكورة</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px;background:var(--brand-pale);border-color:var(--brand-lt)">
+      <p class="k">تثبيت الحجز</p>
+      <p class="v">
+        عربون بنسبة ٣٠٪ يثبّت حجزك ومواعيدك، ويُسدَّد الباقي قبل السفر. الدفع
+        بالتحويل البنكي، والتسعير بالدولار الأمريكي.
+      </p>
+    </div>
+
+    <!-- PHOTO SLOT: value-band — fills the remaining column height. Subject: a lodge/camp interior or a set table in the bush — what the money buys. -->
+      <div class="photo" style="flex:1;min-height:0;border-radius:14px;margin-top:18px"></div>
+    <hr class="rule">
+    <div class="foot"><span>وضوح في التكلفة</span><span class="n">١٢</span></div>
+  </div>
+</section>
+
+<!-- ============================ 13. تواصل ============================ -->
+<section class="page dark">
+  <div class="pad">
+    <p class="eyebrow on-dark">لنبدأ التخطيط</p>
+    <h2>احكِ لنا عن الرحلة<br>اللي في بالك.</h2>
+    <p class="lede on-dark" style="max-width:48ch">
+      رسالة واحدة تكفي لنبدأ. أخبرنا بالتاريخ التقريبي وعدد المسافرين، ونتكفّل بالباقي.
+    </p>
+
+    <a class="wa" style="margin-top:22px;text-decoration:none" href="https://wa.me/254710789789">
+      <div style="flex:1">
+        <p class="lbl" style="margin:0">تواصل معنا على واتساب</p>
+        <p class="num" style="margin:0">+254 710 789 789</p>
+      </div>
+    </a>
+
+    <div class="contactgrid">
+      <div class="cbox">
+        <p class="k">البريد الإلكتروني</p>
+        <p class="v">info@safariadventureriders.com</p>
+      </div>
+      <div class="cbox">
+        <p class="k">الموقع الإلكتروني</p>
+        <p class="v">safariadventureriders.com</p>
+      </div>
+      <div class="cbox">
+        <p class="k">المكتب</p>
+        <p class="v ar">نيروبي، كينيا — شرق أفريقيا</p>
+      </div>
+      <div class="cbox">
+        <p class="k">أوقات العمل</p>
+        <p class="v ar">الاثنين – الجمعة، ٨ صباحاً – ٦ مساءً بتوقيت شرق أفريقيا</p>
+      </div>
+    </div>
+
+    <div class="socials">
+      <div class="soc"><p class="p">إنستغرام · تيك توك</p><p class="h">safariadventure254</p></div>
+      <div class="soc"><p class="p">سناب شات</p><p class="h">safarikenya254</p></div>
+    </div>
+
+    <!-- PHOTO SLOT: closing-band — fills the remaining column height. Subject: your best closing image — the shot you want them to remember. -->
+      <div class="photo" style="flex:1;min-height:0;border-radius:14px;margin-top:18px"></div>
+
+    <div style="display:flex;align-items:center;gap:16px;padding-top:16px;border-top:1px solid rgba(202,213,181,0.22)">
+      <img class="knock" src="assets/logo.png" alt="" style="width:26mm">
+      <div>
+        <p style="margin:0;font-size:19px;font-weight:900;color:var(--sand)">العمودي للسياحة</p>
+        <p style="margin:2px 0 0;font-size:10.5px;font-weight:700;letter-spacing:0.13em;color:var(--brand-lt);direction:ltr;text-align:right">
+          SAFARI ADVENTURE TOURS &amp; RIDERS
+        </p>
+      </div>
+      <span style="margin-inline-start:auto;font-size:10.5px;color:rgba(242,236,223,0.5)">Alamoudy Group Ltd · Nairobi, Kenya</span>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
