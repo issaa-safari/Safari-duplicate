@@ -7,6 +7,7 @@ import InvoiceEditor from './editor'
 import { getInvoice } from '@/lib/server/invoices'
 import { getTripPayments, resolveTripRef } from '@/lib/server/accounting'
 import { allocatePayments, invoiceDisplayStatus } from '@/lib/invoice'
+import PaymentActions from '../../payment-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -181,6 +182,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                 <th className="px-5 py-3 font-medium">Method</th>
                 <th className="px-5 py-3 font-medium">Reference</th>
                 <th className="px-5 py-3 text-right font-medium">Amount</th>
+                <th className="px-5 py-3"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -197,6 +199,16 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                     }`}
                   >
                     {p.payment_type === 'refund' ? '−' : ''}${money(Number(p.amount_usd))}
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <PaymentActions
+                      payment={p}
+                      quoteId={ref.quoteId ?? undefined}
+                      bookingId={ref.bookingId ?? undefined}
+                      label={invoice.invoice_number ?? 'This trip'}
+                      totalSelling={total}
+                      alreadyReceived={receivedUsd}
+                    />
                   </td>
                 </tr>
               ))}

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import PaymentForm from '@/app/admin/finance/payment-form'
+import PaymentActions from '@/app/admin/finance/payment-actions'
 import { Alert } from '@/components/ui/alert'
 import { useAction } from '@/lib/hooks/use-action'
 import { updateBookingDates } from './actions'
@@ -140,15 +141,26 @@ export default function BookingDetailForm({
           {payments.length > 0 ? (
             <div className="mt-4 pt-4 border-t border-border space-y-1.5">
               {payments.map((p) => (
-                <div key={p.id} className="flex justify-between text-xs text-muted-foreground">
-                  <span>
-                    {new Date(p.received_at).toLocaleDateString('en-GB')}
-                    {p.method ? ` · ${p.method}` : ''}
-                    {p.reference ? ` · ${p.reference}` : ''}
-                  </span>
-                  <span className="font-medium text-foreground">
-                    ${Number(p.amount_usd).toLocaleString()}{p.payment_type ? ` · ${p.payment_type}` : ''}
-                  </span>
+                <div key={p.id} className="text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between gap-3">
+                    <span>
+                      {new Date(p.received_at).toLocaleDateString('en-GB')}
+                      {p.method ? ` · ${p.method}` : ''}
+                      {p.reference ? ` · ${p.reference}` : ''}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-3">
+                      <span className="font-medium text-foreground">
+                        ${Number(p.amount_usd).toLocaleString()}{p.payment_type ? ` · ${p.payment_type}` : ''}
+                      </span>
+                      <PaymentActions
+                        payment={p}
+                        bookingId={bookingId}
+                        label={tour?.title_en ?? 'This booking'}
+                        totalSelling={totalPrice}
+                        alreadyReceived={paidAmount}
+                      />
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
