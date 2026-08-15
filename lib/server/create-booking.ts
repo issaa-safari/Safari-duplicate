@@ -27,8 +27,6 @@ export interface IncomingTraveller {
 
 export interface CreateBookingInput {
   travellers: IncomingTraveller[]
-  totalPrice: number
-  currency?: string
   userId?: string | null
   source?: string
 }
@@ -42,16 +40,20 @@ export async function createDepartureBooking(
   departureId: string,
   input: CreateBookingInput,
 ): Promise<CreateBookingResult> {
-  const { travellers, totalPrice, userId, source } = input
+  const { travellers, userId, source } = input
 
   if (!departureId || !travellers || travellers.length === 0) {
     return { ok: false, status: 400, error: 'Missing required fields' }
   }
 
-  // 1. Resolve the departure — fetch tour_id up front (required for request attribution)
+  // 1. Resolve the departure — fetch tour_id up front (required for request
+  // attribution), and price_usd / security_deposit_usd so the money is priced
+  // from what is actually on sale rather than trusted from the request body.
+  // A prior version took `totalPrice` straight off the client, which made the
+  // amount charged for a website booking whatever the visitor's browser sent.
   const { data: departure, error: fetchError } = await admin
     .from('departures')
-    .select('id, tour_id, max_seats, booked_seats')
+    .select('id, tour_id, max_seats, booked_seats, price_usd, security_deposit_usd')
     .eq('id', departureId)
     .single()
 
@@ -60,6 +62,8 @@ export async function createDepartureBooking(
   }
 
   const groupSize = travellers.length
+  const totalPrice = Number(departure.price_usd) * groupSize
+  const depositDue = Number(departure.security_deposit_usd ?? 0) * groupSize
   const availableSpots = departure.max_seats - departure.booked_seats
 
   if (groupSize > availableSpots) {
@@ -155,6 +159,7 @@ export async function createDepartureBooking(
       client_id: clientId,
       number_of_travellers: groupSize,
       total_price_usd: totalPrice,
+      deposit_due_usd: depositDue,
       status: 'confirmed',
       created_at: new Date().toISOString(),
     })
@@ -209,7 +214,8 @@ export async function createDepartureBooking(
     ['Email', lead?.email],
     ['Phone', lead?.phone],
     ['Travellers', groupSize],
-    ['Total (USD)', totalPrice],
+    ['Trip total (USD)', totalPrice],
+    ['Refundable security deposit (USD)', depositDue > 0 ? depositDue : null],
     ['Booking ID', booking.id],
   ])
   await notifyAdmin(
@@ -222,6 +228,9 @@ export async function createDepartureBooking(
     lead?.email,
   )
   if (lead?.email) {
+    const depositNote = depositDue > 0
+      ? `<p style="margin:0 0 16px;font-size:14px">This trip carries a refundable security deposit of $${depositDue.toLocaleString()}, held against damage to the bike and returned in full at the end of the trip.</p>`
+      : ''
     await sendEmail({
       to: lead.email,
       subject: `Your booking with ${site.name} is confirmed`,
@@ -229,6 +238,7 @@ export async function createDepartureBooking(
         'Booking confirmed 🎉',
         `<p style="margin:0 0 16px;font-size:14px">Thank you${leadName ? `, ${escapeHtml(leadName)}` : ''}! Your booking is confirmed. Our team will contact you shortly with payment and preparation details.</p>` +
           bookingRows +
+          depositNote +
           `<p style="margin:16px 0 0;font-size:14px">Questions? Reply to this email or WhatsApp us at ${site.phoneDisplay}.</p>`,
       ),
       replyTo: site.email,

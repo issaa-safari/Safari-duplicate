@@ -13,7 +13,10 @@ export async function POST(
 
   try {
     const { id } = await params
-    const { travellers, totalPrice, currency } = await request.json()
+    // Pricing is resolved server-side from the departure record — see the note
+    // in lib/server/create-booking.ts. Anything the client sends about price is
+    // ignored rather than trusted.
+    const { travellers } = await request.json()
 
     const admin = createAdminClient()
 
@@ -27,8 +30,6 @@ export async function POST(
 
     const result = await createDepartureBooking(admin, id, {
       travellers,
-      totalPrice,
-      currency,
       userId,
       source: 'website',
     })

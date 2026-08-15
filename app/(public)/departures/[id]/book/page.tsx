@@ -21,11 +21,7 @@ interface Traveller {
   passportNumber: string
 }
 
-async function submitBooking(departureId: string, formData: {
-  travellers: Traveller[]
-  totalPrice: number
-  currency: string
-}) {
+async function submitBooking(departureId: string, formData: { travellers: Traveller[] }) {
   const response = await fetch(`/api/departures/${departureId}/book`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -44,6 +40,7 @@ function BookingFormContent() {
   // English at /ar/departures/<id>/book.
   const locale = useLocale()
   const pricePerPerson = searchParams.get('price') ? parseFloat(searchParams.get('price')!) : 0
+  const depositPerPerson = searchParams.get('deposit') ? parseFloat(searchParams.get('deposit')!) : 0
   const tourTitle = searchParams.get('tour') || ''
 
   const [submitted, setSubmitted] = useState(false)
@@ -91,6 +88,9 @@ function BookingFormContent() {
     nationality: 'الجنسية',
     passportNumber: 'رقم جواز السفر',
     totalPrice: 'السعر الإجمالي',
+    securityDeposit: 'تأمين قابل للاسترداد',
+    depositNote: 'يُدفع قبل بدء الرحلة ويُعاد كاملاً في حال عدم وجود أضرار بالدراجة.',
+    totalDue: 'الإجمالي المطلوب',
     confirmBooking: 'تأكيد الحجز',
     cancel: 'إلغاء',
     bookingConfirmed: 'تم تأكيد الحجز!',
@@ -109,6 +109,9 @@ function BookingFormContent() {
     nationality: 'Nationality',
     passportNumber: 'Passport Number',
     totalPrice: 'Total Price',
+    securityDeposit: 'Refundable security deposit',
+    depositNote: 'Paid before the trip starts, returned in full if the bike is undamaged.',
+    totalDue: 'Total due',
     confirmBooking: 'Confirm Booking',
     cancel: 'Cancel',
     bookingConfirmed: 'Booking Confirmed!',
@@ -118,6 +121,8 @@ function BookingFormContent() {
   }
 
   const totalPrice = pricePerPerson * groupSize
+  const totalDeposit = depositPerPerson * groupSize
+  const totalDue = totalPrice + totalDeposit
 
   const handleGroupSizeChange = (size: number) => {
     setGroupSize(size)
@@ -138,11 +143,7 @@ function BookingFormContent() {
     setError('')
     startTransition(async () => {
       try {
-        await submitBooking(departureId, {
-          travellers,
-          totalPrice,
-          currency: 'USD'
-        })
+        await submitBooking(departureId, { travellers })
         setSubmitted(true)
       } catch (err: any) {
         setError(err.message || 'Failed to complete booking. Please try again.')
@@ -340,8 +341,21 @@ function BookingFormContent() {
                   <span className="text-xl font-bold">{groupSize}</span>
                 </div>
                 <div className="border-t border-gray-300 pt-4 flex justify-between items-center">
-                  <span className="text-lg font-bold text-gray-900">{t.totalPrice}:</span>
-                  <span className="text-3xl font-bold" style={{ color: G }}>${totalPrice.toLocaleString()}</span>
+                  <span className="text-gray-600">{t.totalPrice}:</span>
+                  <span className="text-xl font-bold text-gray-900">${totalPrice.toLocaleString()}</span>
+                </div>
+                {totalDeposit > 0 && (
+                  <>
+                    <div className="pt-3 flex justify-between items-center">
+                      <span className="text-gray-600">{t.securityDeposit}:</span>
+                      <span className="text-xl font-bold text-gray-900">${totalDeposit.toLocaleString()}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">{t.depositNote}</p>
+                  </>
+                )}
+                <div className="border-t border-gray-300 mt-4 pt-4 flex justify-between items-center">
+                  <span className="text-lg font-bold text-gray-900">{t.totalDue}:</span>
+                  <span className="text-3xl font-bold" style={{ color: G }}>${totalDue.toLocaleString()}</span>
                 </div>
               </div>
 
