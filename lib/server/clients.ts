@@ -5,7 +5,14 @@ import { isValidEmail } from './validate-client'
 // Throws on hard DB failure — callers that require a client must not swallow this.
 export async function findOrCreateClientByEmail(
   admin: SupabaseClient,
-  details: { email?: string | null; first_name?: string | null; last_name?: string | null; phone?: string | null },
+  details: {
+    email?: string | null
+    first_name?: string | null
+    last_name?: string | null
+    phone?: string | null
+    /** Provenance for a newly-created row. Defaults to 'website' for every existing caller. */
+    source?: string
+  },
 ): Promise<string> {
   const email = (details.email ?? '').trim().toLowerCase()
   if (!email) throw new Error('Client email is required')
@@ -39,7 +46,7 @@ export async function findOrCreateClientByEmail(
       first_name: details.first_name ?? '',
       last_name: details.last_name ?? '',
       phone: details.phone ?? null,
-      source: 'website',
+      source: details.source ?? 'website',
     })
     .select('id')
     .single()

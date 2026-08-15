@@ -25,3 +25,13 @@ export async function getBookingDeposits(
 
   return (data ?? []) as unknown as SecurityDeposit[]
 }
+
+/** Every deposit ever taken, across every booking — the finance overview's "held" figure. */
+export async function getAllSecurityDeposits(admin: SupabaseClient): Promise<SecurityDeposit[]> {
+  const { data } = await admin
+    .from('security_deposits')
+    .select(COLUMNS)
+    .order('taken_at', { ascending: true })
+
+  return (data ?? []) as unknown as SecurityDeposit[]
+}

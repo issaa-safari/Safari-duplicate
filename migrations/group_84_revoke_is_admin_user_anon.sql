@@ -1,0 +1,22 @@
+-- Group 84: stop anon from calling is_admin_user() directly
+--
+-- Supabase's own security advisor flags is_admin_user() (baseline, SECURITY
+-- DEFINER) as publicly callable via /rest/v1/rpc/is_admin_user by both anon
+-- and authenticated. Real risk is low either way — an anon caller has no JWT,
+-- so auth.jwt() ->> 'email' is null and the function always returns false;
+-- an authenticated caller only learns their own admin-ness, which they could
+-- already infer by hitting a protected page — but public EXECUTE on a
+-- SECURITY DEFINER function is bad hygiene regardless of how little it leaks.
+--
+-- Revoking from anon is safe on its own terms: no policy that runs for the
+-- anon role calls this function (the "Admins can manage ..." policies are all
+-- `to authenticated`; the public-read policies don't call it at all).
+--
+-- Deliberately NOT revoking from authenticated here. Every admin RLS policy
+-- calls this function, and RLS evaluation needs the querying role to hold
+-- EXECUTE on whatever the policy body calls — revoking there needs testing
+-- against every admin-gated table first, not applying as a one-liner.
+--
+-- Idempotent — safe to re-run. Run after group_83.
+
+revoke execute on function public.is_admin_user() from anon;

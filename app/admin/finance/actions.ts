@@ -1,5 +1,6 @@
 'use server'
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
@@ -29,7 +30,26 @@ async function authGuard() {
 }
 
 /**
- * Record money received against a trip, identified by its quote or its booking.
+ * What a freehand invoice (no quote, no booking) has been paid so far — the
+ * signed sum of its own trip_payments rows, refunds counted as negative, same
+ * convention as lib/balance.ts. There is no "trip" to resolve for one of
+ * these, so this reads trip_payments by invoice_id directly rather than going
+ * through getTripBalance.
+ */
+async function getInvoiceReceivedUsd(admin: SupabaseClient, invoiceId: string): Promise<number> {
+  const { data } = await admin
+    .from('trip_payments')
+    .select('amount_usd, payment_type')
+    .eq('invoice_id', invoiceId)
+  return (data ?? []).reduce((sum, p) => {
+    const amt = Number(p.amount_usd) || 0
+    return p.payment_type === 'refund' ? sum - amt : sum + amt
+  }, 0)
+}
+
+/**
+ * Record money received against a trip (by quote or booking) or, for a
+ * freehand invoice with neither, against the invoice directly (group_83).
  *
  * It used to take a quote id only, which is why a booking made through the
  * website could never be marked as paid — its payment row was written 'pending'
@@ -40,6 +60,7 @@ export async function recordPayment(formData: FormData): Promise<PaymentResult> 
 
   const quoteId = (formData.get('quoteId') as string) || null
   const bookingId = (formData.get('bookingId') as string) || null
+  const invoiceId = (formData.get('invoiceId') as string) || null
   const amount = parseFloat(formData.get('amount') as string)
   const paymentType = formData.get('paymentType') as string
   const method = (formData.get('method') as string) || null
@@ -47,7 +68,9 @@ export async function recordPayment(formData: FormData): Promise<PaymentResult> 
   const notes = (formData.get('notes') as string) || null
   const receivedAt = formData.get('receivedAt') as string
 
-  if (!quoteId && !bookingId) return { error: 'A payment must belong to a quote or a booking.' }
+  if (!quoteId && !bookingId && !invoiceId) {
+    return { error: 'A payment must belong to a quote, a booking, or an invoice.' }
+  }
   if (isNaN(amount) || amount <= 0) return { error: 'Enter an amount greater than zero.' }
   if (!['deposit', 'balance', 'full', 'partial', 'refund'].includes(paymentType)) {
     return { error: 'Invalid payment type.' }
@@ -61,6 +84,41 @@ export async function recordPayment(formData: FormData): Promise<PaymentResult> 
     if (!['accepted', 'sent', 'viewed'].includes(quote.status)) {
       return { error: 'Can only record payment on accepted or active quotes.' }
     }
+  }
+
+  // A freehand invoice with no trip behind it: measure the ceiling against its
+  // own total rather than a resolvable trip, which doesn't exist for one of these.
+  if (!quoteId && !bookingId && invoiceId) {
+    const { data: invoice } = await admin.from('invoices').select('id, status, total_usd').eq('id', invoiceId).maybeSingle()
+    if (!invoice) return { error: 'Invoice not found.' }
+    if (invoice.status !== 'issued') return { error: 'Only an issued invoice can take a payment.' }
+
+    if (paymentType !== 'refund') {
+      const receivedUsd = await getInvoiceReceivedUsd(admin, invoiceId)
+      const totalUsd = Number(invoice.total_usd) || 0
+      if (totalUsd > 0 && receivedUsd + amount > totalUsd + 0.01) {
+        return {
+          error:
+            `This receipt would exceed the invoiced total: invoiced $${totalUsd.toFixed(2)}, ` +
+            `already received $${receivedUsd.toFixed(2)}, balance $${(totalUsd - receivedUsd).toFixed(2)}.`,
+        }
+      }
+    }
+
+    const { error } = await admin.from('trip_payments').insert({
+      invoice_id: invoiceId,
+      amount_usd: amount,
+      payment_type: paymentType,
+      method: method || null,
+      reference: reference || null,
+      notes: notes || null,
+      received_at: receivedAt || new Date().toISOString().slice(0, 10),
+      created_by: user.id,
+    })
+
+    if (error) return { error: error.message }
+    revalidateTrip(null, null, invoiceId)
+    return {}
   }
 
   const ref = await resolveTripRef(admin, { quoteId, bookingId })
@@ -94,13 +152,14 @@ export async function recordPayment(formData: FormData): Promise<PaymentResult> 
   return {}
 }
 
-/** Every screen that shows a trip's money, refreshed after the ledger moves. */
-function revalidateTrip(quoteId: string | null, bookingId: string | null) {
+/** Every screen that shows a trip's — or a freehand invoice's — money, refreshed after the ledger moves. */
+function revalidateTrip(quoteId: string | null, bookingId: string | null, invoiceId?: string | null) {
   revalidatePath('/admin/finance')
   revalidatePath('/admin/finance/receipts')
   revalidatePath('/admin/finance/invoices')
   if (quoteId) revalidatePath(`/admin/quotes/${quoteId}`)
   if (bookingId) revalidatePath(`/admin/bookings/${bookingId}`)
+  if (invoiceId) revalidatePath(`/admin/finance/invoices/${invoiceId}`)
 }
 
 /**
@@ -136,22 +195,37 @@ export async function updatePayment(formData: FormData): Promise<PaymentResult> 
 
   const { data: existing } = await admin
     .from('trip_payments')
-    .select('id, quote_id, booking_id, amount_usd, payment_type, method, reference, received_at')
+    .select('id, quote_id, booking_id, invoice_id, amount_usd, payment_type, method, reference, received_at')
     .eq('id', id)
     .maybeSingle()
 
   if (!existing) return { error: 'Payment not found.' }
 
-  const ref = { quoteId: existing.quote_id, bookingId: existing.booking_id }
+  const oldSigned = existing.payment_type === 'refund'
+    ? -Number(existing.amount_usd)
+    : Number(existing.amount_usd)
 
-  // Same ceiling as recording a new one, but measured against the trip *without*
-  // this payment — otherwise editing a payment down would still be compared
-  // against a total that already includes its old, larger self.
-  if (paymentType !== 'refund') {
+  // Same ceiling as recording a new one, but measured *without* this payment —
+  // otherwise editing a payment down would still be compared against a total
+  // that already includes its old, larger self.
+  if (!existing.quote_id && !existing.booking_id && existing.invoice_id) {
+    if (paymentType !== 'refund') {
+      const { data: invoice } = await admin.from('invoices').select('total_usd').eq('id', existing.invoice_id).maybeSingle()
+      const totalUsd = Number(invoice?.total_usd) || 0
+      const receivedUsd = await getInvoiceReceivedUsd(admin, existing.invoice_id)
+      const receivedWithout = receivedUsd - oldSigned
+
+      if (totalUsd > 0 && receivedWithout + amount > totalUsd + 0.01) {
+        return {
+          error:
+            `That would exceed the invoiced total: invoiced $${totalUsd.toFixed(2)}, ` +
+            `other receipts $${receivedWithout.toFixed(2)}.`,
+        }
+      }
+    }
+  } else if (paymentType !== 'refund') {
+    const ref = { quoteId: existing.quote_id, bookingId: existing.booking_id }
     const { invoicedUsd, receivedUsd } = await getTripBalance(admin, ref)
-    const oldSigned = existing.payment_type === 'refund'
-      ? -Number(existing.amount_usd)
-      : Number(existing.amount_usd)
     const receivedWithout = receivedUsd - oldSigned
 
     if (invoicedUsd > 0 && receivedWithout + amount > invoicedUsd + 0.01) {
@@ -196,7 +270,7 @@ export async function updatePayment(formData: FormData): Promise<PaymentResult> 
     },
   })
 
-  revalidateTrip(ref.quoteId, ref.bookingId)
+  revalidateTrip(existing.quote_id, existing.booking_id, existing.invoice_id)
   return {}
 }
 
@@ -236,6 +310,10 @@ export async function deletePayment(formData: FormData): Promise<PaymentResult> 
     metadata: { deleted: existing },
   })
 
-  revalidateTrip(existing.quote_id as string | null, existing.booking_id as string | null)
+  revalidateTrip(
+    existing.quote_id as string | null,
+    existing.booking_id as string | null,
+    existing.invoice_id as string | null
+  )
   return {}
 }

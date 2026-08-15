@@ -17,15 +17,17 @@ export interface EditablePayment {
 export default function PaymentForm({
   quoteId,
   bookingId,
+  invoiceId,
   label,
   totalSelling,
   alreadyReceived,
   payment,
   onDone,
 }: {
-  /** A payment belongs to a trip, reachable by either key. One is required. */
+  /** A payment belongs to a trip, reachable by either key, or — with neither — to a freehand invoice directly. */
   quoteId?: string
   bookingId?: string
+  invoiceId?: string
   /** What to call the trip in the header — a quote number, or a tour name. */
   label: string
   totalSelling: number
@@ -45,6 +47,7 @@ export default function PaymentForm({
     const fd = new FormData(e.currentTarget)
     if (quoteId) fd.set('quoteId', quoteId)
     if (bookingId) fd.set('bookingId', bookingId)
+    if (invoiceId) fd.set('invoiceId', invoiceId)
     run(async () => {
       try {
         // These actions return their refusals rather than throwing, because a

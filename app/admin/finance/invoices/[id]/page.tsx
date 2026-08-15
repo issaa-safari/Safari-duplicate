@@ -5,9 +5,10 @@ import Link from 'next/link'
 import InvoiceStatusBadge from '../status-badge'
 import InvoiceEditor from './editor'
 import { getInvoice } from '@/lib/server/invoices'
-import { getTripPayments, resolveTripRef } from '@/lib/server/accounting'
+import { getTripPayments, resolveTripRef, type TripPaymentRow } from '@/lib/server/accounting'
 import { allocatePayments, invoiceDisplayStatus } from '@/lib/invoice'
 import PaymentActions from '../../payment-actions'
+import RecordPaymentToggle from './record-payment'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,32 +34,56 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
 
   const { invoice, lines } = found
 
-  // Everything raised against this trip, so the allocation rule sees the same
-  // picture the list page does.
-  const ref = await resolveTripRef(admin, {
-    quoteId: invoice.quote_id,
-    bookingId: invoice.booking_id,
-  })
-  const [{ data: siblingRows }, payments] = await Promise.all([
-    admin
-      .from('invoices')
-      .select('id, status')
-      .or(
-        [
-          ref.quoteId ? `quote_id.eq.${ref.quoteId}` : null,
-          ref.bookingId ? `booking_id.eq.${ref.bookingId}` : null,
-        ]
-          .filter(Boolean)
-          .join(',')
-      ),
-    getTripPayments(admin, ref),
-  ])
+  // A freehand invoice (group_83) has no trip to resolve — it settles through
+  // its own invoice_id directly, and since there is exactly one invoice in
+  // play, there is no sibling allocation to run: every payment against it is
+  // its own.
+  const isFreehand = !invoice.quote_id && !invoice.booking_id
 
-  const siblings = (siblingRows ?? []) as { id: string; status: 'draft' | 'issued' | 'void' }[]
-  const { byInvoice } = allocatePayments(siblings, payments)
+  let ref: { quoteId: string | null; bookingId: string | null }
+  let payments: TripPaymentRow[]
+  let receivedUsd: number
+
+  if (isFreehand) {
+    ref = { quoteId: null, bookingId: null }
+    const { data } = await admin
+      .from('trip_payments')
+      .select('id, amount_usd, payment_type, method, reference, notes, received_at, invoice_id')
+      .eq('invoice_id', invoice.id)
+      .order('received_at', { ascending: true })
+    payments = (data ?? []) as TripPaymentRow[]
+    receivedUsd = payments.reduce((sum, p) => {
+      const amt = Number(p.amount_usd) || 0
+      return p.payment_type === 'refund' ? sum - amt : sum + amt
+    }, 0)
+  } else {
+    // Everything raised against this trip, so the allocation rule sees the same
+    // picture the list page does.
+    ref = await resolveTripRef(admin, {
+      quoteId: invoice.quote_id,
+      bookingId: invoice.booking_id,
+    })
+    const [{ data: siblingRows }, tripPayments] = await Promise.all([
+      admin
+        .from('invoices')
+        .select('id, status')
+        .or(
+          [
+            ref.quoteId ? `quote_id.eq.${ref.quoteId}` : null,
+            ref.bookingId ? `booking_id.eq.${ref.bookingId}` : null,
+          ]
+            .filter(Boolean)
+            .join(',')
+        ),
+      getTripPayments(admin, ref),
+    ])
+    const siblings = (siblingRows ?? []) as { id: string; status: 'draft' | 'issued' | 'void' }[]
+    const { byInvoice } = allocatePayments(siblings, tripPayments)
+    payments = tripPayments
+    receivedUsd = byInvoice[invoice.id] ?? 0
+  }
 
   const total = Number(invoice.total_usd) || 0
-  const receivedUsd = byInvoice[invoice.id] ?? 0
   const balanceUsd = Math.max(total - receivedUsd, 0)
   const displayStatus = invoiceDisplayStatus({
     status: invoice.status,
@@ -110,8 +135,10 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
 
       {/* A generated draft with no lines means the trip itself has no price —
           a quote accepted before it was costed, most often. Without this the
-          screen just shows $0.00 and leaves you to guess why. */}
-      {invoice.status === 'draft' && lines.length === 0 && (
+          screen just shows $0.00 and leaves you to guess why. A freehand
+          draft's empty lines are not that: it never had a trip to copy a
+          price from, so an empty start is simply what raising one looks like. */}
+      {!isFreehand && invoice.status === 'draft' && lines.length === 0 && (
         <div className="mb-6 rounded-xl border border-warning-foreground/30 bg-warning/40 p-4 text-sm">
           <p className="font-medium text-foreground">This trip has no price yet, so the draft is empty.</p>
           <p className="mt-0.5 text-muted-foreground">
@@ -165,10 +192,13 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
 
       <div className="mt-6 overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
         <div className="border-b border-border/70 px-5 py-4">
-          <h2 className="text-sm font-semibold text-foreground">Payments against this trip</h2>
+          <h2 className="text-sm font-semibold text-foreground">
+            {isFreehand ? 'Payments against this invoice' : 'Payments against this trip'}
+          </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Recorded on the trip, not on the document — a deposit taken before this invoice existed
-            still counts towards it.
+            {isFreehand
+              ? 'Recorded against this document directly — there is no trip to record it against.'
+              : 'Recorded on the trip, not on the document — a deposit taken before this invoice existed still counts towards it.'}
           </p>
         </div>
         {payments.length === 0 ? (
@@ -205,6 +235,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                       payment={p}
                       quoteId={ref.quoteId ?? undefined}
                       bookingId={ref.bookingId ?? undefined}
+                      invoiceId={isFreehand ? invoice.id : undefined}
                       label={invoice.invoice_number ?? 'This trip'}
                       totalSelling={total}
                       alreadyReceived={receivedUsd}
@@ -214,6 +245,16 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
               ))}
             </tbody>
           </table>
+        )}
+        {isFreehand && invoice.status === 'issued' && balanceUsd > 0 && (
+          <div className="border-t border-border/70 px-5 py-4">
+            <RecordPaymentToggle
+              invoiceId={invoice.id}
+              label={invoice.invoice_number ?? 'This invoice'}
+              totalSelling={total}
+              alreadyReceived={receivedUsd}
+            />
+          </div>
         )}
       </div>
     </div>

@@ -19,6 +19,7 @@ export default function PaymentActions({
   payment,
   quoteId,
   bookingId,
+  invoiceId,
   label,
   totalSelling,
   alreadyReceived,
@@ -26,6 +27,7 @@ export default function PaymentActions({
   payment: EditablePayment
   quoteId?: string
   bookingId?: string
+  invoiceId?: string
   label: string
   totalSelling: number
   alreadyReceived: number
@@ -59,6 +61,7 @@ export default function PaymentActions({
         <PaymentForm
           quoteId={quoteId}
           bookingId={bookingId}
+          invoiceId={invoiceId}
           label={label}
           totalSelling={totalSelling}
           alreadyReceived={alreadyReceived}
