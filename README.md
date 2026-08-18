@@ -39,8 +39,5 @@ node scripts/check-contrast.mjs             # contrast audit
 - **`docs/reference/safarioffice/`** — competitor analysis of *SafariOffice* (a
   different product). Accurate about SafariOffice and useful for feature mining;
   **nothing in it describes this repo.**
-- **`docs/archive/`** — superseded plans and specs, including a rebuild
-  (NestJS/Prisma/Turborepo) that was **never built**. Not a description of the
-  current code.
 
 New to the codebase? Read `CLAUDE.md` first, then `docs/current/`.

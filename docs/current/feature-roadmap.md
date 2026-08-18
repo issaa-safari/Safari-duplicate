@@ -2,8 +2,8 @@
 
 **Date:** 2026-07-15 · **Codebase checkpoint:** migrations through `group_54`, 28 merged PRs.
 
-This document replaces the stale `GAP-ANALYSIS.md` snapshot (now in
-`docs/archive/build-planning/`). It mines the SafariOffice competitor analysis in
+This document replaces the stale, now-removed `GAP-ANALYSIS.md` snapshot. It mines
+the SafariOffice competitor analysis in
 `docs/reference/safarioffice/` for features worth having, then diffs each against
 the app **as actually built** (Next.js 16 + Supabase), citing the real route or
 migration table. It closes with prioritized enhancement suggestions.
