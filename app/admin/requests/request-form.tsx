@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createRequest, updateRequest } from './actions'
+import { COUNTRIES_SORTED, dialCodeFor, countryByName } from '@/lib/countries'
 
 export interface ClientOption {
   id: string
@@ -52,6 +53,14 @@ export default function RequestForm({
   const [priority, setPriority] = useState(initial.priority ?? false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  // Kenya, first in COUNTRIES_SORTED, is a sensible default dial code for a
+  // Kenya/Tanzania operator — synced to the Country field, overridable.
+  const [phoneCountryCode, setPhoneCountryCode] = useState('KE')
+
+  function handleCountryChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const found = countryByName(e.target.value)
+    if (found) setPhoneCountryCode(found.code)
+  }
 
   const selectedClient = clients.find(c => c.id === selectedClientId) ?? null
   const q = query.trim().toLowerCase()
@@ -75,6 +84,13 @@ export default function RequestForm({
     formData.set('priority', String(priority))
     if (clientMode === 'existing' && selectedClientId) {
       formData.set('clientId', selectedClientId)
+    }
+    if (clientMode === 'new') {
+      const number = String(formData.get('phone') ?? '').trim()
+      if (number) {
+        const dial = dialCodeFor(phoneCountryCode)
+        formData.set('phone', dial ? `+${dial}${number}` : number)
+      }
     }
     const result = requestId
       ? await updateRequest(requestId, formData)
@@ -174,7 +190,19 @@ export default function RequestForm({
             </div>
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-1">Phone</label>
-              <input id="phone" type="text" name="phone" className={inputCls} />
+              <div className="flex gap-2">
+                <select
+                  value={phoneCountryCode}
+                  onChange={e => setPhoneCountryCode(e.target.value)}
+                  aria-label="Phone country code"
+                  className="w-24 shrink-0 rounded-md border border-border px-2 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50"
+                >
+                  {COUNTRIES_SORTED.map(c => (
+                    <option key={c.code} value={c.code}>+{c.dial}</option>
+                  ))}
+                </select>
+                <input id="phone" type="text" name="phone" className={`flex-1 min-w-0 ${inputCls}`} />
+              </div>
             </div>
             <div>
               <label htmlFor="whatsapp" className="block text-sm font-medium text-foreground mb-1">WhatsApp</label>
@@ -182,7 +210,12 @@ export default function RequestForm({
             </div>
             <div>
               <label htmlFor="country" className="block text-sm font-medium text-foreground mb-1">Country</label>
-              <input id="country" type="text" name="country" className={inputCls} />
+              <select id="country" name="country" defaultValue="" onChange={handleCountryChange} className={inputCls}>
+                <option value="">Select country...</option>
+                {COUNTRIES_SORTED.map(c => (
+                  <option key={c.code} value={c.name}>{c.name}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label htmlFor="language" className="block text-sm font-medium text-foreground mb-1">Language</label>

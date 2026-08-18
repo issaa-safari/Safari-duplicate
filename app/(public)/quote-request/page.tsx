@@ -8,6 +8,7 @@ import PublicFooter from '@/components/public/footer'
 import WhatsAppButton from '@/components/public/whatsapp-button'
 import { useLocale } from '@/lib/use-locale'
 import { localePath } from '@/lib/locale'
+import { COUNTRIES_SORTED, dialCodeFor, countryByName } from '@/lib/countries'
 
 const G = '#7A9A4A'
 
@@ -45,6 +46,9 @@ function QuoteRequestFormContent() {
   const source = searchParams.get('src')
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  // Kenya, first in COUNTRIES_SORTED, is a sensible default dial code for a
+  // Kenya/Tanzania operator — the visitor can still change it independently.
+  const [phoneCountryCode, setPhoneCountryCode] = useState('KE')
   const [isPending, startTransition] = useTransition()
   const [tours, setTours] = useState<{ id: string; title_en: string; title_ar: string | null }[]>([])
 
@@ -78,12 +82,24 @@ function QuoteRequestFormContent() {
     }))
   }
 
+  // Picking a country also syncs the phone country-code dropdown, so the
+  // visitor doesn't have to set the dial code separately — they can still
+  // override it afterwards.
+  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const name = e.target.value
+    setFormData(prev => ({ ...prev, country: name }))
+    const found = countryByName(name)
+    if (found) setPhoneCountryCode(found.code)
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     startTransition(async () => {
       try {
-        await submitQuoteRequest(formData, source)
+        const dial = dialCodeFor(phoneCountryCode)
+        const phone = dial ? `+${dial}${formData.phone.trim()}` : formData.phone.trim()
+        await submitQuoteRequest({ ...formData, phone }, source)
         setSubmitted(true)
       } catch (err: any) {
         setError(err.message || t.failed)
@@ -96,7 +112,7 @@ function QuoteRequestFormContent() {
     submitted: 'تم إرسال طلب عرض السعر!', thanks: 'شكراً! لقد استلمنا طلبك وسيتواصل معك فريقنا خلال 24 ساعة بعرض سعر مخصص.',
     backHome: 'العودة للرئيسية',
     firstName: 'الاسم الأول', lastName: 'اسم العائلة', email: 'البريد الإلكتروني', phone: 'الهاتف',
-    country: 'الدولة', tourType: 'نوع الرحلة',
+    phoneCode: 'رمز الدولة', country: 'الدولة', selectCountry: 'اختر بلدك', tourType: 'نوع الرحلة',
     selectTour: 'اختر جولة أو حدد مخصصة', custom: 'سفاري مخصص', guided: 'جولة جماعية بمرشد', luxury: 'رحلة فاخرة', adventure: 'سفاري مغامرة',
     startDate: 'تاريخ البدء المفضل', duration: 'المدة (أيام)', groupSize: 'حجم المجموعة', budget: 'الميزانية (دولار)',
     preferences: 'تفضيلات خاصة', preferencesPh: 'أخبرنا عن اهتماماتك أو ميزانيتك أو احتياجاتك الغذائية أو أي طلبات خاصة...',
@@ -107,7 +123,7 @@ function QuoteRequestFormContent() {
     submitted: 'Quote Request Submitted!', thanks: "Thank you! We've received your request and our team will be in touch within 24 hours with a personalized quote.",
     backHome: 'Back to Home',
     firstName: 'First Name', lastName: 'Last Name', email: 'Email', phone: 'Phone',
-    country: 'Country', tourType: 'Tour Type',
+    phoneCode: 'Country code', country: 'Country', selectCountry: 'Select your country', tourType: 'Tour Type',
     selectTour: 'Select a tour or choose custom', custom: 'Custom Safari', guided: 'Guided Group Tour', luxury: 'Luxury Escape', adventure: 'Adventure Safari',
     startDate: 'Preferred Start Date', duration: 'Duration (days)', groupSize: 'Group Size', budget: 'Budget (USD)',
     preferences: 'Special Preferences', preferencesPh: 'Tell us about your interests, budget, dietary needs, or any special requests...',
@@ -182,27 +198,43 @@ function QuoteRequestFormContent() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">{t.phone} *</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={phoneCountryCode}
+                      onChange={(e) => setPhoneCountryCode(e.target.value)}
+                      aria-label={t.phoneCode}
+                      className="w-24 shrink-0 px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      {COUNTRIES_SORTED.map((c) => (
+                        <option key={c.code} value={c.code}>+{c.dial}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      required
+                      className="flex-1 min-w-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">{t.country}</label>
-                  <input
-                    type="text"
+                  <select
                     name="country"
                     value={formData.country}
-                    onChange={handleChange}
+                    onChange={handleCountryChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
+                  >
+                    <option value="">{t.selectCountry}</option>
+                    {COUNTRIES_SORTED.map((c) => (
+                      <option key={c.code} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">{t.tourType}</label>

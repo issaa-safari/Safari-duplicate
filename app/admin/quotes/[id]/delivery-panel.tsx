@@ -44,6 +44,7 @@ export default function DeliveryPanel({
   dayCountByVersion = {},
   baseUrl,
   clientEmail,
+  clientPhone,
   onGoToItinerary,
 }: {
   quoteId: string
@@ -53,6 +54,7 @@ export default function DeliveryPanel({
   dayCountByVersion?: Record<string, number>
   baseUrl: string
   clientEmail?: string | null
+  clientPhone?: string | null
   /** Jumps the workspace back to the Itinerary step (from the no-days warning). */
   onGoToItinerary?: () => void
 }) {
@@ -183,6 +185,17 @@ export default function DeliveryPanel({
     setTimeout(() => setCopiedToken(null), 2000)
   }
 
+  // Same pattern as app/admin/departures/[id]/booking-link-panel.tsx: prefill
+  // a wa.me share with the link embedded. Targets the client's own number
+  // when we have one on file, otherwise opens WhatsApp's contact picker.
+  function whatsappHref(token: string) {
+    const link = `${baseUrl}/quote/${token}`
+    const msg = `Hello! Here is your travel proposal. View it here:\n${link}`
+    const digits = clientPhone?.replace(/\D/g, '')
+    const target = digits ? digits : ''
+    return `https://wa.me/${target}?text=${encodeURIComponent(msg)}`
+  }
+
   const versionLabel = (id: string) => {
     const v = versions.find(v => v.id === id)
     return v ? `v${v.version_number}` : id
@@ -302,6 +315,26 @@ export default function DeliveryPanel({
                         >
                           {copiedToken === d.access_token ? 'Copied!' : 'Copy'}
                         </button>
+                      )}
+                      {!isRevoked && (
+                        <a
+                          href={`${link}/print`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0 text-xs px-2.5 py-1 rounded border border-border hover:border-primary-strong text-muted-foreground hover:text-brand-ink transition"
+                        >
+                          Download PDF
+                        </a>
+                      )}
+                      {!isRevoked && (
+                        <a
+                          href={whatsappHref(d.access_token)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0 text-xs px-2.5 py-1 rounded border border-border hover:border-primary-strong text-green-700 transition"
+                        >
+                          Share via WhatsApp
+                        </a>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">Created {fmtDate(d.created_at)}</p>

@@ -324,6 +324,7 @@ export default async function QuoteDetailPage({
               dayCountByVersion={dayCountByVersion}
               baseUrl={baseUrl}
               clientEmail={client?.email ?? null}
+              clientPhone={client?.phone ?? null}
             />
           )}
         </div>

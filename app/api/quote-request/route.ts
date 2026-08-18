@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
         first_name: firstName,
         last_name: lastName,
         phone,
+        country,
       })
     } catch (err) {
       console.error('[quote-request] client resolution failed', err)

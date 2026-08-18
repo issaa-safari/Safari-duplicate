@@ -10,6 +10,7 @@ export async function findOrCreateClientByEmail(
     first_name?: string | null
     last_name?: string | null
     phone?: string | null
+    country?: string | null
     /** Provenance for a newly-created row. Defaults to 'website' for every existing caller. */
     source?: string
   },
@@ -20,7 +21,7 @@ export async function findOrCreateClientByEmail(
 
   const { data: existing, error: lookupError } = await admin
     .from('clients')
-    .select('id, first_name, last_name, phone')
+    .select('id, first_name, last_name, phone, country')
     .ilike('email', email)
     .limit(1)
     .maybeSingle()
@@ -33,6 +34,7 @@ export async function findOrCreateClientByEmail(
     if (!existing.first_name && details.first_name) patch.first_name = details.first_name
     if (!existing.last_name && details.last_name) patch.last_name = details.last_name
     if (!existing.phone && details.phone) patch.phone = details.phone
+    if (!existing.country && details.country) patch.country = details.country
     if (Object.keys(patch).length > 0) {
       await admin.from('clients').update(patch).eq('id', existing.id)
     }
@@ -46,6 +48,7 @@ export async function findOrCreateClientByEmail(
       first_name: details.first_name ?? '',
       last_name: details.last_name ?? '',
       phone: details.phone ?? null,
+      country: details.country ?? null,
       source: details.source ?? 'website',
     })
     .select('id')
