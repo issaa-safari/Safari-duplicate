@@ -1,0 +1,35 @@
+-- group_85 — grant the public read access to departures.security_deposit_usd
+--
+-- Fixes: every /departures/[id] page returned 404 for logged-out visitors and
+-- for signed-in customers, from group_82 (2026-08-15) until this migration.
+--
+-- Why it broke
+--   group_30 locked departures down column-by-column:
+--       REVOKE SELECT ON departures FROM anon, authenticated;
+--       GRANT  SELECT (id, tour_id, start_date, ... , updated_at) ON departures
+--         TO anon, authenticated;
+--   A column-level grant is a fixed list, so it does NOT extend to columns
+--   added later. group_82 added `security_deposit_usd` and never granted it,
+--   which left the column unreadable by anon/authenticated.
+--
+--   app/(public)/departures/[id]/page.tsx selects that column, so PostgREST
+--   answered the whole query with `permission denied for table departures`.
+--   The page reads only `data` from the result, so the error surfaced as a
+--   null row and fell through to notFound() — a 404 instead of an error.
+--
+-- The rest of the lockdown is deliberate and stays as it is: `internal_notes`
+-- remains ungranted, and the "Public read active departures" policy still
+-- limits the public to is_active = true rows.
+--
+-- NOTE for future schema work: any new departures column that the public site
+-- needs to read must be granted here too, or it will fail the same way.
+
+GRANT SELECT (security_deposit_usd) ON departures TO anon, authenticated;
+
+-- ── Verification (read-only) ────────────────────────────────────────────────
+-- As anon, this must return a row rather than a permission error:
+--   SET ROLE anon;
+--   SELECT id, price_usd, security_deposit_usd FROM departures LIMIT 1;
+-- And this must still fail:
+--   SELECT internal_notes FROM departures LIMIT 1;
+-- RESET ROLE;
