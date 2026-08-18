@@ -29,14 +29,11 @@ and admin back office (`app/admin/`) in one Next.js app. Bilingual EN/AR (RTL).
 3. `PRODUCT.md` — brand/product positioning.
 4. `docs/current/` — canonical specs for the app as built.
 
-## docs/reference/ and docs/archive/ — read with care
+## docs/reference/ — read with care
 - `docs/reference/safarioffice/` is a competitor analysis of **SafariOffice** (another product).
   It is accurate about SafariOffice and useful for feature mining, but **nothing in it describes
   this repo** — its routes, PHP field names, green `#16b408` palette, and NestJS/Prisma stack
   recommendations are not ours.
-- `docs/archive/` holds superseded plans and specs for a **rebuild that was never built**
-  (NestJS, Prisma, Turborepo, multi-tenant `company_id` — none of it exists here).
-  Never treat anything in `docs/archive/` as a claim about the current code.
 
 ## Commands
 - `npm run dev` / `npm run build` / `npm run lint` / `npm run test` (vitest run) / `npm run test:watch`
