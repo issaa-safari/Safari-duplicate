@@ -8,7 +8,7 @@ import { useEffect } from 'react'
 // property's ID is the default and the env var only exists to point a fork or
 // a staging deployment at a different property — or to switch the tag off
 // entirely by setting it to an empty string.
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? 'G-XEL8K5LN2P'
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? 'G-47W3RDL9PZ'
 
 // gtag.js checks this flag on every hit, so flipping it is how we keep the
 // admin back office out of the public site's property.
