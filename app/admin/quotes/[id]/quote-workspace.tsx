@@ -57,6 +57,7 @@ export default function QuoteWorkspace({
   dayCountByVersion,
   baseUrl,
   clientEmail,
+  clientPhone,
 }: {
   quoteId: string
   initialStep: Step
@@ -84,6 +85,7 @@ export default function QuoteWorkspace({
   dayCountByVersion: Record<string, number>
   baseUrl: string
   clientEmail?: string | null
+  clientPhone?: string | null
 }) {
   const router = useRouter()
 
@@ -271,6 +273,7 @@ export default function QuoteWorkspace({
           dayCountByVersion={dayCountByVersion}
           baseUrl={baseUrl}
           clientEmail={clientEmail}
+          clientPhone={clientPhone}
           onGoToItinerary={() => setStep('itinerary')}
         />
       </div>
