@@ -116,6 +116,7 @@ export default async function DeparturesPage({
     noDepartures: 'لا توجد رحلات متاحة حالياً',
     itinerary: 'البرنامج',
     day: 'اليوم',
+    moreDays: 'أيام إضافية',
   } : {
     departures: 'Upcoming Departures',
     bookNow: 'Book Now',
@@ -128,6 +129,7 @@ export default async function DeparturesPage({
     noDepartures: 'No departures available at this time',
     itinerary: 'Itinerary',
     day: 'Day',
+    moreDays: 'more days',
   }
 
   return (
@@ -222,14 +224,20 @@ export default async function DeparturesPage({
                           <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-100">
                             <div className="text-xs font-semibold text-blue-900 mb-2 uppercase">{t.itinerary}</div>
                             <div className="space-y-1">
-                              {tourDaysMap[dep.tour_id].slice(0, 3).map((day: any, idx: number) => (
-                                <div key={idx} className="text-xs text-blue-800">
-                                  <span className="font-semibold">{t.day} {day.day_number}:</span> {locale === 'ar' ? day.title_ar || day.title_en : day.title_en}
-                                </div>
-                              ))}
+                              {tourDaysMap[dep.tour_id].slice(0, 3).map((day: any, idx: number) => {
+                                // A day with no title shows its label alone rather than a
+                                // dangling colon — an unwritten title reads as unwritten.
+                                const dayTitle = (locale === 'ar' ? day.title_ar || day.title_en : day.title_en) || ''
+                                return (
+                                  <div key={idx} className="text-xs text-blue-800">
+                                    <span className="font-semibold">{t.day} {day.day_number}{dayTitle ? ':' : ''}</span>
+                                    {dayTitle ? ` ${dayTitle}` : ''}
+                                  </div>
+                                )
+                              })}
                               {tourDaysMap[dep.tour_id].length > 3 && (
                                 <div className="text-xs text-blue-700 mt-1">
-                                  + {tourDaysMap[dep.tour_id].length - 3} more days
+                                  + {tourDaysMap[dep.tour_id].length - 3} {t.moreDays}
                                 </div>
                               )}
                             </div>

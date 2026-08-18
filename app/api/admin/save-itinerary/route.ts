@@ -39,7 +39,10 @@ export async function POST(request: Request) {
       tour_id: tourId,
       day_number: d.day_number,
       day_number_end: d.day_number_end || null,
-      title_en: (d.title_en && d.title_en.trim()) || 'Untitled day',
+      // An empty title stays empty. Storing filler here published it to
+      // customers as if it were real content; the public pages fall back to
+      // the day label instead, and admin shows 'No title set'.
+      title_en: (d.title_en && d.title_en.trim()) || null,
       title_ar: d.title_ar || null,
       description_en: d.description_en || null,
       description_ar: d.description_ar || null,
