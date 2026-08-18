@@ -18,6 +18,7 @@ function LoginForm() {
       : ''
   )
   const [loading, setLoading] = useState(false)
+  const justReset = searchParams.get('reset') === '1'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -55,7 +56,7 @@ function LoginForm() {
             Safari Adventure Tour
           </p>
           <h2 className="text-3xl font-semibold leading-tight max-w-md">
-            Kenya's Premier Adventure Tours
+            Kenya&rsquo;s Premier Adventure Tours
           </h2>
         </div>
       </div>
@@ -106,11 +107,16 @@ className="w-full rounded-md border border-border px-3 py-2 text-sm text-foregro
                 />
                 Remember me
               </label>
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground">
+              <a href="/auth/forgot-password?next=%2Fadmin%2Fdashboard" className="text-sm text-muted-foreground hover:text-foreground">
                 Forgot password?
               </a>
             </div>
 
+            {justReset && !error && (
+              <p className="text-sm text-green-700 bg-green-50 rounded-md px-3 py-2">
+                Password updated — sign in with your new password.
+              </p>
+            )}
             {error && <p className="text-sm text-destructive">{error}</p>}
 
             <button

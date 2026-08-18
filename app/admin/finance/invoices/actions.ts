@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
-import { createDraftInvoice, getInvoice } from '@/lib/server/invoices'
+import { createBlankInvoice, createDraftInvoice, getInvoice } from '@/lib/server/invoices'
+import { findOrCreateClientByEmail } from '@/lib/server/clients'
 
 async function authGuard() {
   const supabase = await createClient()
@@ -26,7 +27,7 @@ async function authGuard() {
  * through; only the constraint names, which are not, get a translation.
  */
 const CONSTRAINT_MESSAGE: Record<string, string> = {
-  invoices_trip_ref_chk: 'An invoice must belong to a quote or a booking.',
+  invoices_trip_ref_chk: 'An invoice needs a quote, a booking, a client, or at least a client name.',
   invoices_issued_shape_chk: 'An issued invoice needs a number and an issue date.',
   invoices_status_chk: 'Unknown invoice status.',
 }
@@ -56,6 +57,40 @@ export async function generateInvoice(formData: FormData) {
 
   const id = await createDraftInvoice(admin, { quoteId, bookingId }, user.id)
   revalidateInvoice(id, quoteId, bookingId)
+  redirect(`/admin/finance/invoices/${id}`)
+}
+
+/**
+ * Raise a one-off invoice with no trip behind it — pick an existing client,
+ * create one inline from a name and email, or just type a name with no client
+ * record at all. Whichever, it starts as an empty draft edited the same way a
+ * generated one is (group_83).
+ */
+export async function createInvoiceFreehand(formData: FormData) {
+  const { user, admin } = await authGuard()
+
+  const existingClientId = ((formData.get('existingClientId') as string) || '').trim() || null
+  const clientName = ((formData.get('clientName') as string) || '').trim()
+  const clientEmail = ((formData.get('clientEmail') as string) || '').trim() || null
+  const clientAddress = ((formData.get('clientAddress') as string) || '').trim() || null
+
+  let clientId = existingClientId
+  if (!clientId && clientEmail) {
+    const [firstName, ...rest] = clientName.split(' ')
+    clientId = await findOrCreateClientByEmail(admin, {
+      email: clientEmail,
+      first_name: firstName || null,
+      last_name: rest.join(' ') || null,
+      source: 'admin',
+    })
+  }
+
+  const id = await createBlankInvoice(
+    admin,
+    { clientId, clientName, clientEmail, clientAddress },
+    user.id
+  )
+  revalidateInvoice(id, null, null)
   redirect(`/admin/finance/invoices/${id}`)
 }
 

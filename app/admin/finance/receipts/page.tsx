@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import ReceivablesTable from '../receivables-table'
 import FinanceNav from '../finance-nav'
 import { computeBalance } from '@/lib/balance'
@@ -170,7 +171,11 @@ export default async function ReceiptsPage() {
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-foreground">Finance</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Customer receipts — invoiced vs received per accepted quote</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Customer receipts — invoiced vs received per accepted quote. Looking for the documents
+          themselves? See{' '}
+          <Link href="/admin/finance/invoices" className="text-brand-text hover:underline">Invoices</Link>.
+        </p>
       </div>
 
       <FinanceNav active="/admin/finance/receipts" />

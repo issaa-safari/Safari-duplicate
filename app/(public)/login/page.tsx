@@ -24,10 +24,12 @@ function ClientLoginInner() {
   const router = useRouter()
   const locale = useLocale()
   const isAr = locale === 'ar'
-  const redirectParam = useSearchParams().get('redirect')
+  const searchParams = useSearchParams()
+  const redirectParam = searchParams.get('redirect')
   // Localised, so signing in from the Arabic site lands on the Arabic
   // dashboard rather than its English twin.
   const destination = redirectParam || localePath('/dashboard', locale)
+  const justReset = searchParams.get('reset') === '1'
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null)
 
   useEffect(() => {
@@ -47,6 +49,7 @@ function ClientLoginInner() {
     continueGoogle: 'المتابعة باستخدام Google', or: 'أو', email: 'البريد الإلكتروني', password: 'كلمة المرور',
     signingIn: 'جارٍ تسجيل الدخول...', noAccount: 'ليس لديك حساب؟', createOne: 'أنشئ حساباً',
     needHelp: 'تحتاج مساعدة؟', contactUs: 'اتصل بنا', initError: 'فشل التهيئة. حدّث الصفحة وحاول مرة أخرى.',
+    forgotPassword: 'نسيت كلمة المرور؟', resetSuccess: 'تم تحديث كلمة المرور — سجّل الدخول بكلمة المرور الجديدة.',
   } : {
     signIn: 'Sign In', subtitle: 'Access your bookings and account',
     checkEmail: 'Check Your Email', emailSentTo: "We've sent a verification code to",
@@ -54,6 +57,7 @@ function ClientLoginInner() {
     continueGoogle: 'Continue with Google', or: 'or', email: 'Email', password: 'Password',
     signingIn: 'Signing in…', noAccount: "Don't have an account?", createOne: 'Create one',
     needHelp: 'Need help?', contactUs: 'Contact us', initError: 'Failed to initialize. Please refresh and try again.',
+    forgotPassword: 'Forgot password?', resetSuccess: 'Password updated — sign in with your new password.',
   }
 
   async function handleEmailSubmit(e: React.FormEvent) {
@@ -134,11 +138,23 @@ function ClientLoginInner() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{t.password}</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">{t.password}</label>
+                    <Link
+                      href={`/auth/forgot-password?next=${encodeURIComponent(destination)}`}
+                      className="text-xs font-medium hover:underline"
+                      style={{ color: G }}
+                    >
+                      {t.forgotPassword}
+                    </Link>
+                  </div>
                   <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
                     className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent" />
                 </div>
 
+                {justReset && !error && (
+                  <p className="text-sm text-green-700 bg-green-50 rounded-lg px-4 py-3">{t.resetSuccess}</p>
+                )}
                 {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-3">{error}</p>}
 
                 <button type="submit" disabled={loading}

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import BookingDetailForm from './form'
 import { getTripBalance } from '@/lib/server/accounting'
 import { getTripInvoiceSummary } from '@/lib/server/invoices'
+import { getBookingDeposits } from '@/lib/server/security-deposits'
 import type { Service } from '@/lib/types'
 
 export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -26,6 +27,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       end_date,
       number_of_travellers,
       total_price_usd,
+      deposit_due_usd,
       status,
       created_at,
       departures (
@@ -33,6 +35,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
         start_date,
         end_date,
         price_usd,
+        security_deposit_usd,
         max_seats,
         booked_seats,
         tours (
@@ -49,7 +52,9 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
         phone,
         date_of_birth,
         nationality,
-        passport_number
+        passport_number,
+        motorbike_id,
+        is_rider
       ),
       clients (
         id,
@@ -73,7 +78,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   // payments recorded under the quote.
   const balance = await getTripBalance(admin, { bookingId: id })
 
-  const [{ data: catalogue }, invoiceSummary] = await Promise.all([
+  const [{ data: catalogue }, invoiceSummary, deposits] = await Promise.all([
     admin
       .from('services')
       .select('id, name_en, name_ar, default_price_usd, pricing_unit, is_active, sort_order')
@@ -81,7 +86,10 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       .order('sort_order')
       .order('name_en'),
     getTripInvoiceSummary(admin, balance.ref),
+    getBookingDeposits(admin, id),
   ])
+
+  const depositPerSeat = Number((booking.departures as { security_deposit_usd?: number } | null)?.security_deposit_usd) || 0
 
   return (
     <BookingDetailForm
@@ -94,6 +102,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
         invoice_number: s.invoice.invoice_number,
         displayStatus: s.displayStatus,
       }))}
+      deposits={deposits}
+      depositPerSeat={depositPerSeat}
     />
   )
 }

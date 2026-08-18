@@ -347,6 +347,39 @@ export interface TripService {
   updated_at: string
 }
 
+// --- Security deposits (migrations/group_81_security_deposits.sql) ---
+// A rider's cash held against damaging the bike, and given back at the end. A
+// liability, not income — which is why it is its own table and not a
+// `payment_type` on trip_payments. It must never reach lib/balance.ts, or a trip
+// would read as settled the moment someone handed over a deposit for the bike.
+//
+// Held vs returned is derived from `returned_at` by lib/security-deposit.ts,
+// never stored.
+
+export interface SecurityDeposit {
+  id: string
+  booking_id: string
+  /** Which rider. Nullable: the traveller row may be corrected or removed later. */
+  booking_traveller_id: string | null
+  /** The bike it was taken against, as it was at the time. */
+  motorbike_id: string | null
+  /** Snapshotted, so it survives the traveller row being deleted. */
+  rider_name: string | null
+  amount_usd: number
+  method: string | null
+  reference: string | null
+  notes: string | null
+  taken_at: string
+  returned_amount_usd: number
+  /** Null while held. This column alone decides the state. */
+  returned_at: string | null
+  /** Required when returning less than was taken. */
+  retained_reason: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 // --- Invoices (migrations/group_76_invoices.sql) ---
 // trip_payments records what arrived; an invoice records what was asked for, and
 // fixes it. `paid` is deliberately not a status — whether an invoice is settled

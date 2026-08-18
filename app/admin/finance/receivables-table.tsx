@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import PaymentForm from './payment-form'
+import PaymentActions from './payment-actions'
 import TripServicesPanel from './trip-services/panel'
 import TripInvoicesPanel from './invoices/trip-panel'
 import type { InvoiceDisplayStatus, Service, TripService } from '@/lib/types'
@@ -122,6 +123,7 @@ export default function ReceivablesTable({
                             <th className="pb-1 font-medium">Method</th>
                             <th className="pb-1 font-medium">Ref</th>
                             <th className="pb-1 font-medium text-right">Amount</th>
+                            <th className="pb-1"><span className="sr-only">Actions</span></th>
                           </tr>
                         </thead>
                         <tbody>
@@ -135,6 +137,15 @@ export default function ReceivablesTable({
                               <td data-label="Ref" className="py-1.5 text-muted-foreground text-xs">{p.reference ?? '—'}</td>
                               <td data-label="Amount" className="py-1.5 text-right font-medium text-foreground">
                                 ${fmt(Number(p.amount_usd))}
+                              </td>
+                              <td className="py-1.5 pl-3 text-right">
+                                <PaymentActions
+                                  payment={p}
+                                  quoteId={row.quoteId}
+                                  label={row.quoteNumber}
+                                  totalSelling={row.totalSelling}
+                                  alreadyReceived={row.totalReceived}
+                                />
                               </td>
                             </tr>
                           ))}

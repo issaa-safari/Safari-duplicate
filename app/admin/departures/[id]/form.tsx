@@ -15,6 +15,7 @@ interface Departure {
   max_seats: number
   booked_seats: number
   price_usd: number
+  security_deposit_usd: number
   status: string
   is_active: boolean
   internal_notes: string | null
@@ -156,6 +157,24 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="securityDepositUsd" className="block text-sm font-medium text-foreground mb-1">
+              Security Deposit per Seat (USD)
+            </label>
+            <input id="securityDepositUsd"
+              type="number"
+              name="securityDepositUsd"
+              min={0}
+              step="0.01"
+              defaultValue={departure.security_deposit_usd ?? 0}
+              className={inputCls}
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Refundable — held against damage to the bike and returned at the end of the trip. Shown on the
+              website separately from the trip price, and added to what a website booking asks for.
+            </p>
           </div>
 
           <div>

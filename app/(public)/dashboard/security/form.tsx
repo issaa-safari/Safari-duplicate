@@ -13,26 +13,24 @@ export default function SecurityForm({ user }: { user: User }) {
     initFailed: 'تعذّر التحميل. حدّث الصفحة وحاول مرة أخرى.',
     mismatch: 'كلمتا المرور غير متطابقتين',
     tooShort: 'يجب ألا تقل كلمة المرور عن 6 أحرف',
+    wrongCurrent: 'كلمة المرور الحالية غير صحيحة.',
     updated: 'تم تحديث كلمة المرور!',
     failed: 'حدث خطأ. حاول مرة أخرى.',
     change: 'تغيير كلمة المرور',
     current: 'كلمة المرور الحالية', next: 'كلمة المرور الجديدة',
     confirm: 'تأكيد كلمة المرور الجديدة',
     updating: 'جارٍ التحديث…', update: 'تحديث كلمة المرور',
-    connected: 'الحسابات المرتبطة',
-    googleNote: 'يمكنك أيضاً تسجيل الدخول عبر Google لدخول أسرع.',
   } : {
     initFailed: 'Failed to initialize. Please refresh and try again.',
     mismatch: 'New passwords do not match',
     tooShort: 'Password must be at least 6 characters',
+    wrongCurrent: 'Current password is incorrect.',
     updated: 'Password updated successfully!',
     failed: 'An error occurred. Please try again.',
     change: 'Change Password',
     current: 'Current Password', next: 'New Password',
     confirm: 'Confirm New Password',
     updating: 'Updating…', update: 'Update Password',
-    connected: 'Connected Accounts',
-    googleNote: 'You can also sign in with Google OAuth for faster authentication.',
   }
 
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null)
@@ -74,6 +72,26 @@ export default function SecurityForm({ user }: { user: User }) {
     }
 
     try {
+      // Prove the caller actually knows the current password before honouring
+      // a change. Without this, anyone with a live session — an unattended
+      // logged-in browser, say — could change the password with zero
+      // knowledge of the old one, which is not what this field's presence
+      // implies to whoever is filling it in.
+      if (!user.email) {
+        setError(t.failed)
+        setLoading(false)
+        return
+      }
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: passwordForm.currentPassword,
+      })
+      if (verifyError) {
+        setError(t.wrongCurrent)
+        setLoading(false)
+        return
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: passwordForm.newPassword,
       })
@@ -157,15 +175,6 @@ export default function SecurityForm({ user }: { user: User }) {
         >
           {loading ? t.updating : t.update}
         </button>
-      </div>
-
-      <div className="mt-8 pt-8 border-t border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t.connected}</h3>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-900">
-            {t.googleNote}
-          </p>
-        </div>
       </div>
     </form>
   )

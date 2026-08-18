@@ -10,6 +10,7 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [price, setPrice] = useState('')
+  const [deposit, setDeposit] = useState('0')
   const [maxSeats, setMaxSeats] = useState('12')
 
   // When a template is chosen, prefill the departure price from its base price
@@ -102,6 +103,19 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="securityDepositUsd" className="block text-sm font-medium text-foreground mb-1">
+              Security Deposit per Seat (USD)
+            </label>
+            <input id="securityDepositUsd" type="number" name="securityDepositUsd" min={0} step="0.01"
+              value={deposit} onChange={(e) => setDeposit(e.target.value)} className={inputCls} />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Refundable — held against damage to the bike and returned at the end of the trip. Shown on the
+              website as a separate line from the trip price, and added to what a website booking asks for.
+              Leave at 0 for tours with no bike deposit.
+            </p>
           </div>
 
           <div>

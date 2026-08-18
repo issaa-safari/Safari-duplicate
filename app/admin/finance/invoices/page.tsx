@@ -4,8 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import FinanceNav from '../finance-nav'
 import InvoiceStatusBadge from './status-badge'
-import { allocatePayments, invoiceDisplayStatus } from '@/lib/invoice'
-import type { Invoice, InvoiceDisplayStatus } from '@/lib/types'
+import { getAllInvoiceSummaries } from '@/lib/server/invoices'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,57 +23,7 @@ export default async function InvoicesPage() {
   if (!user) redirect('/admin/login')
 
   const admin = createAdminClient()
-
-  const [{ data: invoiceRows }, { data: paymentRows }] = await Promise.all([
-    admin
-      .from('invoices')
-      .select('id, quote_id, booking_id, invoice_number, status, issue_date, due_date, client_name, total_usd, created_at')
-      .order('created_at', { ascending: false }),
-    admin.from('trip_payments').select('quote_id, booking_id, invoice_id, amount_usd, payment_type'),
-  ])
-
-  const invoices = (invoiceRows ?? []) as unknown as Invoice[]
-  const payments = (paymentRows ?? []) as {
-    quote_id: string | null
-    booking_id: string | null
-    invoice_id: string | null
-    amount_usd: number
-    payment_type: string | null
-  }[]
-
-  // Allocation is per trip, not global: an unnamed payment may only fall to the
-  // sole live invoice of the trip it was recorded against.
-  const tripKey = (r: { quote_id: string | null; booking_id: string | null }) =>
-    r.quote_id ? `q:${r.quote_id}` : `b:${r.booking_id}`
-
-  const received: Record<string, number> = {}
-  const trips = new Set(invoices.map(tripKey))
-  for (const key of trips) {
-    const tripInvoices = invoices.filter((i) => tripKey(i) === key)
-    const tripPayments = payments.filter((p) => tripKey(p) === key)
-    const { byInvoice } = allocatePayments(
-      tripInvoices.map((i) => ({ id: i.id, status: i.status })),
-      tripPayments
-    )
-    Object.assign(received, byInvoice)
-  }
-
-  const rows = invoices.map((invoice) => {
-    const receivedUsd = received[invoice.id] ?? 0
-    const total = Number(invoice.total_usd) || 0
-    return {
-      invoice,
-      total,
-      receivedUsd,
-      balanceUsd: Math.max(total - receivedUsd, 0),
-      displayStatus: invoiceDisplayStatus({
-        status: invoice.status,
-        totalUsd: total,
-        receivedUsd,
-        dueDate: invoice.due_date,
-      }) as InvoiceDisplayStatus,
-    }
-  })
+  const rows = await getAllInvoiceSummaries(admin)
 
   const live = rows.filter((r) => r.invoice.status === 'issued')
   const totalIssued = live.reduce((s, r) => s + r.total, 0)
@@ -87,7 +36,9 @@ export default async function InvoicesPage() {
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-foreground">Finance</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Invoices — what each trip was asked for, and how much of it has arrived
+          Invoices — the documents raised, and how much of each has arrived. Looking for money
+          received? See{' '}
+          <Link href="/admin/finance/receipts" className="text-brand-text hover:underline">Receipts</Link>.
         </p>
       </div>
 
@@ -120,17 +71,27 @@ export default async function InvoicesPage() {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-        <div className="border-b border-border/70 px-5 py-4">
-          <h2 className="text-sm font-semibold text-foreground">All invoices</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Raise one from a quote or a booking — the trip price and its add-on services fill it in.
-          </p>
+        <div className="border-b border-border/70 px-5 py-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">All invoices</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Raise one from a quote or a booking — the trip price and its add-on services fill it
+              in — or raise a one-off with no trip behind it.
+            </p>
+          </div>
+          <Link
+            href="/admin/finance/invoices/new"
+            className="shrink-0 rounded-lg bg-olive px-3 py-1.5 text-sm font-medium text-white hover:bg-olive-dk"
+          >
+            + New invoice
+          </Link>
         </div>
 
         {rows.length === 0 ? (
           <div className="p-10 text-center text-sm text-muted-foreground">
             No invoices yet. Open an accepted quote or a confirmed booking and choose{' '}
-            <span className="font-medium text-foreground">Generate invoice</span>.
+            <span className="font-medium text-foreground">Generate invoice</span> — or raise a
+            one-off with <span className="font-medium text-foreground">+ New invoice</span> above.
           </div>
         ) : (
           <table className="stack-table w-full text-sm">

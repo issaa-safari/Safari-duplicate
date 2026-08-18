@@ -16,6 +16,10 @@ interface DepartureHeroProps {
   statusColor: string
   priceUsd: number | null
   perPersonLabel: string
+  /** Refundable, held against damage — null hides the line entirely. */
+  depositUsd?: number | null
+  depositLabel?: string
+  depositSubLabel?: string
   isAvailable: boolean
   bookHref: string
   bookNowLabel: string
@@ -38,6 +42,9 @@ export default function DepartureHero({
   statusColor,
   priceUsd,
   perPersonLabel,
+  depositUsd,
+  depositLabel,
+  depositSubLabel,
   isAvailable,
   bookHref,
   bookNowLabel,
@@ -167,6 +174,17 @@ export default function DepartureHero({
               }}>
                 ${priceUsd.toLocaleString()}
               </span>
+              {depositUsd != null && depositUsd > 0 && (
+                <span style={{
+                  display: 'block', marginTop: 4, fontSize: 13,
+                  color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--font-body, sans-serif)',
+                }}>
+                  + ${depositUsd.toLocaleString()} {depositLabel}
+                  {depositSubLabel && (
+                    <span style={{ color: 'rgba(255,255,255,0.5)' }}> · {depositSubLabel}</span>
+                  )}
+                </span>
+              )}
             </div>
           )}
 

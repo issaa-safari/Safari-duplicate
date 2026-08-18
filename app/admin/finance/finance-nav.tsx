@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 const TABS = [
+  { href: '/admin/finance', label: 'Overview' },
   { href: '/admin/finance/receipts', label: 'Receipts' },
   { href: '/admin/finance/invoices', label: 'Invoices' },
   { href: '/admin/finance/payables', label: 'Payables' },

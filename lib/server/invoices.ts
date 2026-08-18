@@ -53,6 +53,79 @@ export async function getTripInvoices(
   return (data ?? []) as unknown as Invoice[]
 }
 
+export interface InvoiceRowSummary {
+  invoice: Invoice
+  total: number
+  receivedUsd: number
+  balanceUsd: number
+  displayStatus: InvoiceDisplayStatus
+}
+
+/**
+ * Every invoice in the system with its payment allocation resolved — the
+ * invoices list (app/admin/finance/invoices/page.tsx) and the finance overview
+ * both need this exact shape.
+ *
+ * Allocation is grouped, not global: an unnamed payment may only fall to the
+ * sole live invoice of the group it was recorded against. A freehand invoice
+ * (no quote_id or booking_id) is its own group of one, keyed by its own id —
+ * this used to collapse to the literal string `"b:null"` for every freehand
+ * invoice at once when the grouping only ever considered quote/booking, which
+ * let `allocatePayments`'s sole-live-invoice fallback attribute one freehand
+ * invoice's unnamed payment to a completely unrelated one.
+ */
+export async function getAllInvoiceSummaries(admin: SupabaseClient): Promise<InvoiceRowSummary[]> {
+  const [{ data: invoiceRows }, { data: paymentRows }] = await Promise.all([
+    admin
+      .from('invoices')
+      .select('id, quote_id, booking_id, invoice_number, status, issue_date, due_date, client_name, total_usd, created_at')
+      .order('created_at', { ascending: false }),
+    admin.from('trip_payments').select('id, quote_id, booking_id, invoice_id, amount_usd, payment_type'),
+  ])
+
+  const invoices = (invoiceRows ?? []) as unknown as Invoice[]
+  const payments = (paymentRows ?? []) as {
+    id: string
+    quote_id: string | null
+    booking_id: string | null
+    invoice_id: string | null
+    amount_usd: number
+    payment_type: string | null
+  }[]
+
+  const groupKey = (r: { quote_id: string | null; booking_id: string | null; invoice_id?: string | null; id?: string }) =>
+    r.quote_id ? `q:${r.quote_id}` : r.booking_id ? `b:${r.booking_id}` : `i:${r.invoice_id ?? r.id}`
+
+  const received: Record<string, number> = {}
+  const groups = new Set(invoices.map(groupKey))
+  for (const key of groups) {
+    const groupInvoices = invoices.filter((i) => groupKey(i) === key)
+    const groupPayments = payments.filter((p) => groupKey(p) === key)
+    const { byInvoice } = allocatePayments(
+      groupInvoices.map((i) => ({ id: i.id, status: i.status })),
+      groupPayments
+    )
+    Object.assign(received, byInvoice)
+  }
+
+  return invoices.map((invoice) => {
+    const receivedUsd = received[invoice.id] ?? 0
+    const total = Number(invoice.total_usd) || 0
+    return {
+      invoice,
+      total,
+      receivedUsd,
+      balanceUsd: Math.max(total - receivedUsd, 0),
+      displayStatus: invoiceDisplayStatus({
+        status: invoice.status,
+        totalUsd: total,
+        receivedUsd,
+        dueDate: invoice.due_date,
+      }),
+    }
+  })
+}
+
 export async function getInvoice(
   admin: SupabaseClient,
   id: string
@@ -212,6 +285,41 @@ export async function createDraftInvoice(
   }
 
   return invoice.id as string
+}
+
+/**
+ * Raise a one-off invoice with no trip behind it at all — a freehand charge
+ * against a client, or against nobody but a typed name (group_83).
+ *
+ * Deliberately not a variant of createDraftInvoice above: that function is
+ * shaped entirely around a trip (resolveTripRef, getTripIdentity, the itinerary
+ * price and its services), and a freehand invoice has none of that. It starts
+ * with zero lines — an operator fills it in through the same editor a
+ * generated draft uses — which is not an error state the way an unpriced
+ * quote's empty draft is.
+ */
+export async function createBlankInvoice(
+  admin: SupabaseClient,
+  input: { clientId?: string | null; clientName: string; clientEmail?: string | null; clientAddress?: string | null },
+  createdBy?: string | null
+): Promise<string> {
+  const clientName = input.clientName.trim()
+  if (!clientName) throw new Error('A freehand invoice needs at least a client name.')
+
+  const { data, error } = await admin
+    .from('invoices')
+    .insert({
+      client_id: input.clientId ?? null,
+      client_name: clientName,
+      client_email: input.clientEmail?.trim() || null,
+      client_address: input.clientAddress?.trim() || null,
+      created_by: createdBy ?? null,
+    })
+    .select('id')
+    .single()
+
+  if (error) throw new Error(error.message)
+  return data.id as string
 }
 
 // ── Reading with the ledger alongside ───────────────────────────────────────

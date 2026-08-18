@@ -3,14 +3,17 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import PaymentForm from '@/app/admin/finance/payment-form'
+import PaymentActions from '@/app/admin/finance/payment-actions'
 import { Alert } from '@/components/ui/alert'
 import { useAction } from '@/lib/hooks/use-action'
 import { updateBookingDates } from './actions'
 import TripServicesPanel from '@/app/admin/finance/trip-services/panel'
 import TripInvoicesPanel from '@/app/admin/finance/invoices/trip-panel'
+import SecurityDepositsPanel from './security-deposits-panel'
+import BookingEditPanel from './booking-edit-panel'
 import type { TripBalance } from '@/lib/server/accounting'
 import { resolveTripDates } from '@/lib/trip-dates'
-import type { InvoiceDisplayStatus, Service } from '@/lib/types'
+import type { InvoiceDisplayStatus, SecurityDeposit, Service } from '@/lib/types'
 
 interface BookingDetailFormProps {
   booking: any
@@ -18,6 +21,8 @@ interface BookingDetailFormProps {
   balance: TripBalance
   catalogue: Service[]
   invoices: { id: string; invoice_number: string | null; displayStatus: InvoiceDisplayStatus }[]
+  deposits: SecurityDeposit[]
+  depositPerSeat: number
 }
 
 export default function BookingDetailForm({
@@ -26,6 +31,8 @@ export default function BookingDetailForm({
   balance,
   catalogue,
   invoices,
+  deposits,
+  depositPerSeat,
 }: BookingDetailFormProps) {
   const departure = booking.departures as any
   const tour = departure?.tours as any
@@ -118,6 +125,14 @@ export default function BookingDetailForm({
               </p>
             </div>
           </div>
+
+          <BookingEditPanel
+            bookingId={bookingId}
+            status={booking.status}
+            numberOfTravellers={Number(booking.number_of_travellers)}
+            totalPriceUsd={Number(booking.total_price_usd)}
+            hasDeparture={!!departure}
+          />
         </div>
 
         {/* Payment */}
@@ -140,15 +155,26 @@ export default function BookingDetailForm({
           {payments.length > 0 ? (
             <div className="mt-4 pt-4 border-t border-border space-y-1.5">
               {payments.map((p) => (
-                <div key={p.id} className="flex justify-between text-xs text-muted-foreground">
-                  <span>
-                    {new Date(p.received_at).toLocaleDateString('en-GB')}
-                    {p.method ? ` · ${p.method}` : ''}
-                    {p.reference ? ` · ${p.reference}` : ''}
-                  </span>
-                  <span className="font-medium text-foreground">
-                    ${Number(p.amount_usd).toLocaleString()}{p.payment_type ? ` · ${p.payment_type}` : ''}
-                  </span>
+                <div key={p.id} className="text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between gap-3">
+                    <span>
+                      {new Date(p.received_at).toLocaleDateString('en-GB')}
+                      {p.method ? ` · ${p.method}` : ''}
+                      {p.reference ? ` · ${p.reference}` : ''}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-3">
+                      <span className="font-medium text-foreground">
+                        ${Number(p.amount_usd).toLocaleString()}{p.payment_type ? ` · ${p.payment_type}` : ''}
+                      </span>
+                      <PaymentActions
+                        payment={p}
+                        bookingId={bookingId}
+                        label={tour?.title_en ?? 'This booking'}
+                        totalSelling={totalPrice}
+                        alreadyReceived={paidAmount}
+                      />
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -240,6 +266,20 @@ export default function BookingDetailForm({
         />
 
         <TripInvoicesPanel bookingId={bookingId} invoices={invoices} />
+
+        <SecurityDepositsPanel
+          bookingId={bookingId}
+          depositDueUsd={Number(booking.deposit_due_usd) || 0}
+          deposits={deposits}
+          depositPerSeat={depositPerSeat}
+          travellers={travellers
+            .filter((t: any) => t.is_rider !== false)
+            .map((t: any) => ({
+              id: t.id,
+              name: `${t.first_name ?? ''} ${t.last_name ?? ''}`.trim() || 'Unnamed traveller',
+              motorbikeId: t.motorbike_id ?? null,
+            }))}
+        />
 
         {/* Traveller Information */}
         <div className="rounded-xl border border-border bg-surface shadow-sm p-6">
