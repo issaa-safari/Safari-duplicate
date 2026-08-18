@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { getTripBalance, resolveTripRef } from '@/lib/server/accounting'
 import { logActivity } from '@/lib/server/audit'
+import { signedPaymentSum } from '@/lib/balance'
 
 /**
  * What a payment action gives back.
@@ -30,21 +31,16 @@ async function authGuard() {
 }
 
 /**
- * What a freehand invoice (no quote, no booking) has been paid so far — the
- * signed sum of its own trip_payments rows, refunds counted as negative, same
- * convention as lib/balance.ts. There is no "trip" to resolve for one of
- * these, so this reads trip_payments by invoice_id directly rather than going
- * through getTripBalance.
+ * What a freehand invoice (no quote, no booking) has been paid so far. There
+ * is no "trip" to resolve for one of these, so this reads trip_payments by
+ * invoice_id directly rather than going through getTripBalance.
  */
 async function getInvoiceReceivedUsd(admin: SupabaseClient, invoiceId: string): Promise<number> {
   const { data } = await admin
     .from('trip_payments')
     .select('amount_usd, payment_type')
     .eq('invoice_id', invoiceId)
-  return (data ?? []).reduce((sum, p) => {
-    const amt = Number(p.amount_usd) || 0
-    return p.payment_type === 'refund' ? sum - amt : sum + amt
-  }, 0)
+  return signedPaymentSum(data ?? [])
 }
 
 /**
@@ -209,9 +205,15 @@ export async function updatePayment(formData: FormData): Promise<PaymentResult> 
   // otherwise editing a payment down would still be compared against a total
   // that already includes its old, larger self.
   if (!existing.quote_id && !existing.booking_id && existing.invoice_id) {
+    // Same gate recordPayment enforces before it will take a new payment —
+    // a voided invoice shouldn't have its receipts "corrected" as if it were
+    // still live either.
+    const { data: invoice } = await admin.from('invoices').select('status, total_usd').eq('id', existing.invoice_id).maybeSingle()
+    if (!invoice) return { error: 'Invoice not found.' }
+    if (invoice.status !== 'issued') return { error: 'Only an issued invoice can take a payment.' }
+
     if (paymentType !== 'refund') {
-      const { data: invoice } = await admin.from('invoices').select('total_usd').eq('id', existing.invoice_id).maybeSingle()
-      const totalUsd = Number(invoice?.total_usd) || 0
+      const totalUsd = Number(invoice.total_usd) || 0
       const receivedUsd = await getInvoiceReceivedUsd(admin, existing.invoice_id)
       const receivedWithout = receivedUsd - oldSigned
 

@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { computeBalance } from './balance'
+import { computeBalance, signedPaymentSum } from './balance'
 
 const pay = (amount: number, type = 'partial') => ({ amount_usd: amount, payment_type: type })
+
+describe('signedPaymentSum', () => {
+  it('sums plain payments', () => {
+    expect(signedPaymentSum([pay(100), pay(50)])).toBe(150)
+  })
+
+  it('treats a refund as negative', () => {
+    expect(signedPaymentSum([pay(200, 'full'), pay(50, 'refund')])).toBe(150)
+  })
+
+  it('is zero for an empty list', () => {
+    expect(signedPaymentSum([])).toBe(0)
+  })
+})
 
 describe('computeBalance', () => {
   it('reports the whole total outstanding when nothing has been paid', () => {

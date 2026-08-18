@@ -6,6 +6,7 @@ import FinanceNav from './finance-nav'
 import { getAllInvoiceSummaries } from '@/lib/server/invoices'
 import { getAllSecurityDeposits } from '@/lib/server/security-deposits'
 import { summariseDeposits } from '@/lib/security-deposit'
+import { signedPaymentSum } from '@/lib/balance'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,10 +34,7 @@ export default async function FinanceOverviewPage() {
     getAllSecurityDeposits(admin),
   ])
 
-  const receivedThisMonth = (monthPayments ?? []).reduce((sum, p) => {
-    const amt = Number(p.amount_usd) || 0
-    return p.payment_type === 'refund' ? sum - amt : sum + amt
-  }, 0)
+  const receivedThisMonth = signedPaymentSum(monthPayments ?? [])
 
   const live = rows.filter((r) => r.invoice.status === 'issued')
   const outstanding = live.reduce((sum, r) => sum + r.balanceUsd, 0)

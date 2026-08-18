@@ -9,28 +9,40 @@ const G = '#7A9A4A'
 
 export default function SecurityForm({ user }: { user: User }) {
   const isAr = useLocale() === 'ar'
+  // A Google-only account has no password identity to verify against — this
+  // form is its route to setting a first one, not just changing an existing
+  // one, and "prove you know the current password" is a category error for
+  // that case.
+  const hasPassword = (user.identities ?? []).some((i) => i.provider === 'email')
+
   const t = isAr ? {
     initFailed: 'تعذّر التحميل. حدّث الصفحة وحاول مرة أخرى.',
     mismatch: 'كلمتا المرور غير متطابقتين',
     tooShort: 'يجب ألا تقل كلمة المرور عن 6 أحرف',
     wrongCurrent: 'كلمة المرور الحالية غير صحيحة.',
     updated: 'تم تحديث كلمة المرور!',
+    setDone: 'تم تعيين كلمة المرور!',
     failed: 'حدث خطأ. حاول مرة أخرى.',
     change: 'تغيير كلمة المرور',
+    setTitle: 'تعيين كلمة مرور',
+    setNote: 'حسابك متصل حالياً عبر Google فقط. عيّن كلمة مرور لتتمكن من تسجيل الدخول بها أيضاً.',
     current: 'كلمة المرور الحالية', next: 'كلمة المرور الجديدة',
     confirm: 'تأكيد كلمة المرور الجديدة',
-    updating: 'جارٍ التحديث…', update: 'تحديث كلمة المرور',
+    updating: 'جارٍ التحديث…', update: 'تحديث كلمة المرور', setButton: 'تعيين كلمة المرور',
   } : {
     initFailed: 'Failed to initialize. Please refresh and try again.',
     mismatch: 'New passwords do not match',
     tooShort: 'Password must be at least 6 characters',
     wrongCurrent: 'Current password is incorrect.',
     updated: 'Password updated successfully!',
+    setDone: 'Password set!',
     failed: 'An error occurred. Please try again.',
     change: 'Change Password',
+    setTitle: 'Set a Password',
+    setNote: "Your account currently only signs in with Google. Set a password to also be able to sign in with one.",
     current: 'Current Password', next: 'New Password',
     confirm: 'Confirm New Password',
-    updating: 'Updating…', update: 'Update Password',
+    updating: 'Updating…', update: 'Update Password', setButton: 'Set Password',
   }
 
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null)
@@ -76,20 +88,24 @@ export default function SecurityForm({ user }: { user: User }) {
       // a change. Without this, anyone with a live session — an unattended
       // logged-in browser, say — could change the password with zero
       // knowledge of the old one, which is not what this field's presence
-      // implies to whoever is filling it in.
-      if (!user.email) {
-        setError(t.failed)
-        setLoading(false)
-        return
-      }
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: passwordForm.currentPassword,
-      })
-      if (verifyError) {
-        setError(t.wrongCurrent)
-        setLoading(false)
-        return
+      // implies to whoever is filling it in. Skipped for an account with no
+      // password identity yet (Google-only) — there is nothing to verify
+      // against, and this form is how it gets its first one.
+      if (hasPassword) {
+        if (!user.email) {
+          setError(t.failed)
+          setLoading(false)
+          return
+        }
+        const { error: verifyError } = await supabase.auth.signInWithPassword({
+          email: user.email,
+          password: passwordForm.currentPassword,
+        })
+        if (verifyError) {
+          setError(t.wrongCurrent)
+          setLoading(false)
+          return
+        }
       }
 
       const { error } = await supabase.auth.updateUser({
@@ -102,7 +118,7 @@ export default function SecurityForm({ user }: { user: User }) {
         return
       }
 
-      setSuccess(t.updated)
+      setSuccess(hasPassword ? t.updated : t.setDone)
       setPasswordForm({
         currentPassword: '',
         newPassword: '',
@@ -118,19 +134,24 @@ export default function SecurityForm({ user }: { user: User }) {
   return (
     <form onSubmit={handlePasswordSubmit} className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t.change}</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{hasPassword ? t.change : t.setTitle}</h2>
+        {!hasPassword && (
+          <p className="text-sm text-gray-600 mb-4">{t.setNote}</p>
+        )}
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">{t.current}</label>
-          <input
-            type="password"
-            required
-            value={passwordForm.currentPassword}
-            onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-            placeholder="••••••••"
-            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-          />
-        </div>
+        {hasPassword && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t.current}</label>
+            <input
+              type="password"
+              required
+              value={passwordForm.currentPassword}
+              onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+              placeholder="••••••••"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+            />
+          </div>
+        )}
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">{t.next}</label>
@@ -173,7 +194,7 @@ export default function SecurityForm({ user }: { user: User }) {
           className="px-6 py-2.5 rounded-lg font-medium text-white disabled:opacity-60"
           style={{ backgroundColor: G }}
         >
-          {loading ? t.updating : t.update}
+          {loading ? t.updating : hasPassword ? t.update : t.setButton}
         </button>
       </div>
     </form>
