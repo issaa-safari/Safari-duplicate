@@ -96,15 +96,28 @@ export async function getAllInvoiceSummaries(admin: SupabaseClient): Promise<Inv
   const groupKey = (r: { quote_id: string | null; booking_id: string | null; invoice_id?: string | null; id?: string }) =>
     r.quote_id ? `q:${r.quote_id}` : r.booking_id ? `b:${r.booking_id}` : `i:${r.invoice_id ?? r.id}`
 
+  // Single-pass bucketing rather than filtering the full arrays once per
+  // group: a freehand invoice is its own group of one, so with N invoices a
+  // filter-per-group approach approaches O(n²) as freehand invoices — the
+  // whole point of this feature — accumulate.
+  const invoicesByGroup = new Map<string, { id: string; status: Invoice['status'] }[]>()
+  for (const invoice of invoices) {
+    const key = groupKey(invoice)
+    const bucket = invoicesByGroup.get(key)
+    if (bucket) bucket.push(invoice)
+    else invoicesByGroup.set(key, [invoice])
+  }
+  const paymentsByGroup = new Map<string, typeof payments>()
+  for (const payment of payments) {
+    const key = groupKey(payment)
+    const bucket = paymentsByGroup.get(key)
+    if (bucket) bucket.push(payment)
+    else paymentsByGroup.set(key, [payment])
+  }
+
   const received: Record<string, number> = {}
-  const groups = new Set(invoices.map(groupKey))
-  for (const key of groups) {
-    const groupInvoices = invoices.filter((i) => groupKey(i) === key)
-    const groupPayments = payments.filter((p) => groupKey(p) === key)
-    const { byInvoice } = allocatePayments(
-      groupInvoices.map((i) => ({ id: i.id, status: i.status })),
-      groupPayments
-    )
+  for (const [key, groupInvoices] of invoicesByGroup) {
+    const { byInvoice } = allocatePayments(groupInvoices, paymentsByGroup.get(key) ?? [])
     Object.assign(received, byInvoice)
   }
 

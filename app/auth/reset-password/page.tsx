@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import ResetPasswordForm from './reset-password-form'
 import Link from 'next/link'
+import { safeRedirect } from '@/lib/auth/safe-redirect'
 
 // Reached via app/auth/callback, which has already exchanged the recovery
 // `?code=` for a session before redirecting here — no second code-exchange
@@ -14,7 +15,7 @@ export default async function ResetPasswordPage({
   searchParams: Promise<{ next?: string }>
 }) {
   const { next } = await searchParams
-  const dest = next && /^\/(?![/\\])/.test(next) ? next : '/dashboard'
+  const dest = safeRedirect(next)
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

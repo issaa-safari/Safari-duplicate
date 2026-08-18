@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { findOrCreateClientByEmail, refreshClientTotals } from '@/lib/server/clients'
+import { adjustDepartureSeats } from '@/lib/server/departures'
 import { redirect } from 'next/navigation'
 
 type TravellerInput = {
@@ -86,42 +87,23 @@ export async function createManualBooking(formData: FormData) {
   }
 
   // 1. Resolve the departure and reserve seats — only when there is one.
-  let departure: { id: string; max_seats: number; booked_seats: number } | null = null
+  let departure: { id: string; security_deposit_usd: number } | null = null
   if (departureId) {
     const { data } = await admin
       .from('departures')
-      .select('id, max_seats, booked_seats')
+      .select('id, security_deposit_usd')
       .eq('id', departureId)
       .single()
     if (!data) throw new Error('Departure not found.')
     departure = data
 
-    if (groupSize > departure.max_seats - departure.booked_seats) {
-      throw new Error('Not enough seats left on this departure for that many travellers.')
-    }
-
-    // Optimistic compare-and-swap — rejects on concurrent oversell.
-    const { data: reserved } = await admin
-      .from('departures')
-      .update({ booked_seats: departure.booked_seats + groupSize })
-      .eq('id', departureId)
-      .eq('booked_seats', departure.booked_seats)
-      .select('id')
-    if (!reserved || reserved.length === 0) {
-      throw new Error('Seats just changed — please refresh and try again.')
-    }
+    const { error: reserveError } = await adjustDepartureSeats(admin, departureId, groupSize)
+    if (reserveError) throw new Error(reserveError)
   }
 
   const releaseSeats = async () => {
     if (!departureId) return
-    try {
-      const { data: current } = await admin
-        .from('departures').select('booked_seats').eq('id', departureId).single()
-      if (!current) return
-      await admin.from('departures')
-        .update({ booked_seats: Math.max(0, current.booked_seats - groupSize) })
-        .eq('id', departureId).eq('booked_seats', current.booked_seats)
-    } catch { /* best-effort release */ }
+    await adjustDepartureSeats(admin, departureId, -groupSize).catch(() => {})
   }
 
   // 2. Resolve the client, most explicit intent first.
@@ -142,7 +124,13 @@ export async function createManualBooking(formData: FormData) {
     }
   }
 
-  // 3. Create the booking.
+  // 3. Create the booking. deposit_due_usd is snapshotted the same way
+  // total_price_usd is — from the departure at booking time, per seat — so the
+  // security-deposit panel has something to show for a booking taken here
+  // rather than through the website (group_82's contract, previously only
+  // honoured by the website booking pipeline).
+  const depositDueUsd = departure ? Number(departure.security_deposit_usd ?? 0) * groupSize : 0
+
   const { data: booking, error: bookingError } = await admin
     .from('bookings')
     .insert({
@@ -153,6 +141,7 @@ export async function createManualBooking(formData: FormData) {
       end_date: endDate,
       number_of_travellers: groupSize,
       total_price_usd: totalPrice,
+      deposit_due_usd: depositDueUsd,
       status,
     })
     .select('id')

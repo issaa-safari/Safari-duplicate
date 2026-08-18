@@ -1,6 +1,5 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
@@ -8,6 +7,7 @@ import { revalidatePath } from 'next/cache'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { logActivity } from '@/lib/server/audit'
 import { safeAction, type ActionResult } from '@/lib/server/action-result'
+import { adjustDepartureSeats as adjustSeats } from '@/lib/server/departures'
 
 async function authGuard() {
   const supabase = await createClient()
@@ -20,46 +20,6 @@ async function authGuard() {
 
 const EDITABLE_STATUSES = ['pending', 'confirmed', 'completed'] as const
 type EditableStatus = (typeof EDITABLE_STATUSES)[number]
-
-/**
- * Reserve or release seats on a departure with the same optimistic
- * compare-and-swap `createManualBooking` uses (app/admin/bookings/new/actions.ts):
- * read the current count, write it back with a delta, and let the `.eq` guard
- * reject the write if someone else moved it first. A positive delta reserves,
- * negative releases; a reservation that would oversell is refused before the
- * write is attempted.
- */
-async function adjustSeats(
-  admin: SupabaseClient,
-  departureId: string,
-  delta: number
-): Promise<{ error: string | null }> {
-  if (delta === 0) return { error: null }
-
-  const { data: departure } = await admin
-    .from('departures')
-    .select('max_seats, booked_seats')
-    .eq('id', departureId)
-    .maybeSingle()
-  if (!departure) return { error: 'Departure not found.' }
-
-  const nextBooked = departure.booked_seats + delta
-  if (delta > 0 && nextBooked > departure.max_seats) {
-    return { error: 'Not enough seats left on this departure.' }
-  }
-
-  const { data: updated, error } = await admin
-    .from('departures')
-    .update({ booked_seats: Math.max(0, nextBooked) })
-    .eq('id', departureId)
-    .eq('booked_seats', departure.booked_seats)
-    .select('id')
-  if (error) return { error: error.message }
-  if (!updated || updated.length === 0) {
-    return { error: 'Seats just changed — please refresh and try again.' }
-  }
-  return { error: null }
-}
 
 /**
  * Set or clear a booking's own trip dates.
@@ -144,7 +104,7 @@ const updateBookingImpl = safeAction(async (formData: FormData) => {
 
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, departure_id, status, number_of_travellers')
+    .select('id, departure_id, status, number_of_travellers, departures(security_deposit_usd)')
     .eq('id', id)
     .maybeSingle()
   if (!booking) throw new Error('Booking not found.')
@@ -153,18 +113,40 @@ const updateBookingImpl = safeAction(async (formData: FormData) => {
   // reserves the new traveller count from scratch; otherwise only the delta
   // in headcount moves, and a status change between two live states (e.g.
   // pending → confirmed) touches nothing.
+  let seatDelta = 0
   if (booking.departure_id) {
     const wasCancelled = booking.status === 'cancelled'
-    const delta = wasCancelled ? numberOfTravellers : numberOfTravellers - booking.number_of_travellers
-    const { error: seatError } = await adjustSeats(admin, booking.departure_id, delta)
+    seatDelta = wasCancelled ? numberOfTravellers : numberOfTravellers - booking.number_of_travellers
+    const { error: seatError } = await adjustSeats(admin, booking.departure_id, seatDelta)
     if (seatError) throw new Error(seatError)
   }
 
-  const { error } = await admin
-    .from('bookings')
-    .update({ status, number_of_travellers: numberOfTravellers, total_price_usd: totalPriceUsd })
-    .eq('id', id)
-  if (error) throw new Error(error.message)
+  // deposit_due_usd is snapshotted from the departure's per-seat rate, same as
+  // at booking creation — it has to be recomputed here too, or raising the
+  // traveller count silently leaves the security-deposit panel's "Expected"
+  // figure pinned to the old headcount.
+  const update: Record<string, unknown> = {
+    status,
+    number_of_travellers: numberOfTravellers,
+    total_price_usd: totalPriceUsd,
+  }
+  if (booking.departure_id) {
+    const depositPerSeat = Number(
+      (booking.departures as { security_deposit_usd?: number } | null)?.security_deposit_usd ?? 0
+    )
+    update.deposit_due_usd = depositPerSeat * numberOfTravellers
+  }
+
+  const { error } = await admin.from('bookings').update(update).eq('id', id)
+  if (error) {
+    // The seat count already moved; the booking row didn't. Undo the seat
+    // write rather than leaving booked_seats desynced from what this booking
+    // actually holds — best-effort, since we're already in a failure path.
+    if (booking.departure_id && seatDelta !== 0) {
+      await adjustSeats(admin, booking.departure_id, -seatDelta).catch(() => {})
+    }
+    throw new Error(error.message)
+  }
 
   await logActivity(admin, {
     entityType: 'booking',
@@ -212,7 +194,15 @@ const cancelBookingImpl = safeAction(async (formData: FormData) => {
   }
 
   const { error } = await admin.from('bookings').update({ status: 'cancelled' }).eq('id', id)
-  if (error) throw new Error(error.message)
+  if (error) {
+    // Seats were already released; the booking still shows as active. Put the
+    // seats back rather than leaving booked_seats desynced from what this
+    // booking actually holds — best-effort, since we're already in a failure path.
+    if (booking.departure_id) {
+      await adjustSeats(admin, booking.departure_id, booking.number_of_travellers).catch(() => {})
+    }
+    throw new Error(error.message)
+  }
 
   await logActivity(admin, {
     entityType: 'booking',

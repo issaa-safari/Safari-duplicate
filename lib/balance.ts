@@ -30,17 +30,25 @@ export interface Balance {
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
-export function computeBalance({ invoicedUsd, payments, depositPercent }: BalanceInput): Balance {
-  const invoiced = round2(Number(invoicedUsd) || 0)
-
-  // A refund is money going back out, so it reduces what has been received.
-  const received = round2(
+/**
+ * A refund is money going back out, so it reduces what has been received.
+ * This is the one place that rule is written — it had drifted into six
+ * copies once already (see the file header), so anywhere that needs "what
+ * has this set of payments actually netted" should call this rather than
+ * re-writing the reduce.
+ */
+export function signedPaymentSum(payments: { amount_usd: number | string; payment_type?: string | null }[]): number {
+  return round2(
     payments.reduce((sum, p) => {
       const amount = Number(p.amount_usd) || 0
       return p.payment_type === 'refund' ? sum - amount : sum + amount
     }, 0)
   )
+}
 
+export function computeBalance({ invoicedUsd, payments, depositPercent }: BalanceInput): Balance {
+  const invoiced = round2(Number(invoicedUsd) || 0)
+  const received = signedPaymentSum(payments)
   const balance = round2(Math.max(invoiced - received, 0))
 
   const pct = Number(depositPercent) || 0

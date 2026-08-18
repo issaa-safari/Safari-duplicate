@@ -132,6 +132,8 @@ export default function BookingDetailForm({
             numberOfTravellers={Number(booking.number_of_travellers)}
             totalPriceUsd={Number(booking.total_price_usd)}
             hasDeparture={!!departure}
+            hasPayments={payments.length > 0}
+            heldDepositsUsd={deposits.filter((d) => !d.returned_at).reduce((sum, d) => sum + Number(d.amount_usd), 0)}
           />
         </div>
 

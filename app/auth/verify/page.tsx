@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import VerifyForm from './verify-form'
+import { safeRedirect } from '@/lib/auth/safe-redirect'
 
 // Two-factor step-up interstitial. Middleware redirects here (with ?next=…)
 // whenever a session holds only AAL1 but the account has a verified TOTP
@@ -11,9 +12,7 @@ export default async function VerifyPage({
   searchParams: Promise<{ next?: string }>
 }) {
   const { next } = await searchParams
-  // Only ever follow a same-origin relative path back; reject protocol-relative
-  // (`//host`) and backslash-prefixed targets.
-  const dest = next && /^\/(?![/\\])/.test(next) ? next : '/dashboard'
+  const dest = safeRedirect(next)
 
   return (
     <Suspense>

@@ -7,6 +7,7 @@ import InvoiceEditor from './editor'
 import { getInvoice } from '@/lib/server/invoices'
 import { getTripPayments, resolveTripRef, type TripPaymentRow } from '@/lib/server/accounting'
 import { allocatePayments, invoiceDisplayStatus } from '@/lib/invoice'
+import { signedPaymentSum } from '@/lib/balance'
 import PaymentActions from '../../payment-actions'
 import RecordPaymentToggle from './record-payment'
 
@@ -52,10 +53,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
       .eq('invoice_id', invoice.id)
       .order('received_at', { ascending: true })
     payments = (data ?? []) as TripPaymentRow[]
-    receivedUsd = payments.reduce((sum, p) => {
-      const amt = Number(p.amount_usd) || 0
-      return p.payment_type === 'refund' ? sum - amt : sum + amt
-    }, 0)
+    receivedUsd = signedPaymentSum(payments)
   } else {
     // Everything raised against this trip, so the allocation rule sees the same
     // picture the list page does.

@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import ForgotPasswordForm from './forgot-password-form'
+import { safeRedirect } from '@/lib/auth/safe-redirect'
 
 // Entry point for both the admin and the client-portal login screens — the
 // same Supabase Auth identity underlies both, so one reset flow serves either.
@@ -11,9 +12,7 @@ export default async function ForgotPasswordPage({
   searchParams: Promise<{ next?: string }>
 }) {
   const { next } = await searchParams
-  // Only ever follow a same-origin relative path back; reject protocol-relative
-  // (`//host`) and backslash-prefixed targets — same guard app/auth/verify uses.
-  const dest = next && /^\/(?![/\\])/.test(next) ? next : '/dashboard'
+  const dest = safeRedirect(next)
 
   return (
     <Suspense>

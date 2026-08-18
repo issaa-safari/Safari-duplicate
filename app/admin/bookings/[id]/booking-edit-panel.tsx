@@ -21,12 +21,18 @@ export default function BookingEditPanel({
   numberOfTravellers,
   totalPriceUsd,
   hasDeparture,
+  hasPayments,
+  heldDepositsUsd,
 }: {
   bookingId: string
   status: string
   numberOfTravellers: number
   totalPriceUsd: number
   hasDeparture: boolean
+  /** Whether cancelling should warn about money already on the ledger. */
+  hasPayments: boolean
+  /** Security deposits still held (not yet returned) — warned about the same way. */
+  heldDepositsUsd: number
 }) {
   const [editing, setEditing] = useState(false)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
@@ -108,9 +114,16 @@ export default function BookingEditPanel({
             <form action={cancelAction} className="flex flex-wrap items-center gap-2">
               <input type="hidden" name="id" value={bookingId} />
               <span className="text-xs text-muted-foreground">
-                {hasDeparture
-                  ? `This frees ${numberOfTravellers} seat${numberOfTravellers !== 1 ? 's' : ''} on the departure. Are you sure?`
-                  : 'Are you sure?'}
+                {[
+                  hasDeparture
+                    ? `This frees ${numberOfTravellers} seat${numberOfTravellers !== 1 ? 's' : ''} on the departure.`
+                    : null,
+                  hasPayments ? 'It has payments recorded — cancelling does not refund them.' : null,
+                  heldDepositsUsd > 0
+                    ? `$${heldDepositsUsd.toLocaleString()} in security deposits is still held — return it separately.`
+                    : null,
+                  'Are you sure?',
+                ].filter(Boolean).join(' ')}
               </span>
               <button type="submit" disabled={cancelPending}
                 className="text-sm font-medium text-destructive hover:underline disabled:opacity-50">
