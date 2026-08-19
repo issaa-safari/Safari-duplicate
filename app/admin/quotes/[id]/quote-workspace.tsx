@@ -7,6 +7,7 @@ import VersionEditorForm from './versions/[versionId]/form'
 import VersionStatusControls from './versions/[versionId]/version-status-controls'
 import TripBuilderForm, { type LookupOption, type AccommodationOption } from '../../trip-builder/trip-builder-form'
 import DeliveryPanel from './delivery-panel'
+import ProposalContentPanel from './proposal-content-panel'
 import type { TripBuilderState } from '../../trip-builder/types'
 
 type Step = 'itinerary' | 'pricing' | 'preview' | 'send'
@@ -266,6 +267,30 @@ export default function QuoteWorkspace({
       </div>
 
       <div className={step === 'preview' || step === 'send' ? '' : 'hidden'}>
+        {/* Read and fix the proposal's copy before it goes out. Sits above the
+            delivery panel so the content is reviewed on the way to Send. */}
+        {(() => {
+          if (step !== 'preview' || !activeVersionId) return null
+          const data = itineraryByVersion[activeVersionId]
+          const version = effectiveVersions.find(v => v.id === activeVersionId)
+          if (!data || !version) return null
+          return (
+            <div className="mb-4">
+              <ProposalContentPanel
+                key={activeVersionId}
+                quoteId={quoteId}
+                versionId={activeVersionId}
+                language={(version.language as 'en' | 'ar') ?? 'en'}
+                isLocked={data.isLocked}
+                quoteDays={data.quoteDays}
+                dayItems={data.dayItems}
+                destinations={destinations}
+                accommodations={accommodations}
+                activities={activities}
+              />
+            </div>
+          )
+        })()}
         <DeliveryPanel
           quoteId={quoteId}
           versions={effectiveVersions.map(v => ({ id: v.id, version_number: v.version_number, status: v.status }))}
