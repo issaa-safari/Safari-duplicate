@@ -739,12 +739,13 @@ export default async function QuotePrintPage({
           const title = (isArabic && day.title_ar ? day.title_ar : day.title)
             || (isLast ? (isArabic ? 'اليوم الأخير معنا' : 'The last day with us') : (dest || `Day ${day.day_number}`))
           const dd = destId ? destDescMap[destId] : null
-          // Same order as the web proposal: the day's own text → a destination
-          // description written for this proposal only → the Content library.
+          // Same order as the web proposal: a description written for this
+          // proposal only, then the destination's Content library text, then
+          // whatever was written for this day.
           const intro = firstFilled(
-            isArabic ? (day.description_ar || day.description_en) : day.description_en,
             overrideDescription(day.destination_snapshot, isArabic),
             dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : null,
+            isArabic ? (day.description_ar || day.description_en) : day.description_en,
           )
           const notes = isArabic && day.client_notes_ar ? day.client_notes_ar : day.client_notes
 

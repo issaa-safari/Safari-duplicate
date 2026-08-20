@@ -9,10 +9,10 @@ import { logActivity } from '@/lib/server/audit'
 
 // Editing the prose a proposal is built from, at the Preview step.
 //
-// The client proposal assembles its copy at render time: day title/description
-// come off `quote_days`, while destination / hotel / activity descriptions are
-// looked up live in the Content library. A library record with no description
-// therefore renders a blank section, which is what this screen exists to fill.
+// The client proposal looks its destination / hotel / activity descriptions up
+// live in the Content library at render time. A library record with no
+// description renders a blank section, which is what this screen exists to
+// fill. Day-level copy is not edited here — it belongs to the itinerary step.
 //
 // Each field is saved one of two ways:
 //   'library'  — write the Content library record, so every future proposal
@@ -30,8 +30,6 @@ import { logActivity } from '@/lib/server/audit'
 export type SaveTarget = 'library' | 'proposal'
 
 export type ContentField =
-  | { kind: 'day_title'; quoteDayId: string }
-  | { kind: 'day_description'; quoteDayId: string }
   | { kind: 'destination'; quoteDayId: string; destinationId: string | null }
   | { kind: 'accommodation'; itemId: string; accommodationId: string | null }
   | { kind: 'activity'; itemId: string; activityId: string | null }
@@ -95,7 +93,6 @@ export const saveProposalContent = safeAction(async (
   const isAr = version.language === 'ar'
   // The column this proposal's language writes into.
   const descCol = isAr ? 'description_ar' : 'description_en'
-  const dayTitleCol = isAr ? 'title_ar' : 'title'
   const snapshotKey = isAr ? 'description_ar' : 'description_en'
 
   // Blank means "no override" rather than "an empty description", so the
@@ -111,24 +108,6 @@ export const saveProposalContent = safeAction(async (
   for (const edit of edits) {
     const value = clean(edit.value)
     const f = edit.field
-
-    if (f.kind === 'day_title') {
-      const { error } = await admin.from('quote_days')
-        .update({ [dayTitleCol]: value, updated_at: new Date().toISOString() })
-        .eq('id', f.quoteDayId).eq('quote_version_id', versionId)
-      if (error) throw new Error(error.message)
-      saved++
-      continue
-    }
-
-    if (f.kind === 'day_description') {
-      const { error } = await admin.from('quote_days')
-        .update({ [descCol]: value, updated_at: new Date().toISOString() })
-        .eq('id', f.quoteDayId).eq('quote_version_id', versionId)
-      if (error) throw new Error(error.message)
-      saved++
-      continue
-    }
 
     if (f.kind === 'destination') {
       if (edit.target === 'library') {

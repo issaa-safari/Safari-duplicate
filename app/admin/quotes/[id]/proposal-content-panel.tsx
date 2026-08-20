@@ -4,13 +4,13 @@ import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { saveProposalContent, type ContentEdit, type SaveTarget } from './proposal-content-actions'
 
-// The copy a proposal is built from, shown at the Preview step so it can be
-// read and fixed before the client ever sees it.
+// The descriptions a proposal is built from, shown at the Preview step so they
+// can be read and fixed before the client ever sees them.
 //
-// Day title and day description are the quote's own. Destination, hotel and
-// activity descriptions are looked up live in the Content library, so a record
-// with nothing written renders a blank section on the proposal — those are
-// flagged here as "Nothing written yet".
+// Destination, hotel and activity descriptions are looked up live in the
+// Content library, so a record with nothing written renders a blank section on
+// the proposal — those are flagged here as "Nothing written yet". Day titles
+// and day copy are not edited here; they belong to the itinerary step.
 //
 // Language follows the version: an Arabic proposal edits the Arabic fields, an
 // English one the English fields. Only the proposal's own language is touched.
@@ -29,10 +29,6 @@ type QuoteDayRow = {
   id: string
   day_number: number
   day_number_end?: number | null
-  title?: string | null
-  title_ar?: string | null
-  description_en?: string | null
-  description_ar?: string | null
   destination_id?: string | null
   destination_snapshot?: Snapshot
 }
@@ -69,9 +65,8 @@ type Row = {
   initial: string
   /** True when the value came from the Content library rather than the quote. */
   fromLibrary: boolean
-  /** A library record can take a reusable description; a day cannot. */
+  /** A record linked to the Content library can take a reusable description. */
   canSaveToLibrary: boolean
-  multiline: boolean
 }
 
 const dayLabel = (d: QuoteDayRow) =>
@@ -121,34 +116,10 @@ export default function ProposalContentPanel({
       .map((d) => {
         const rows: Row[] = []
 
-        rows.push({
-          key: `title:${d.id}`,
-          edit: { field: { kind: 'day_title', quoteDayId: d.id }, target: 'proposal', value: '' },
-          label: 'Day title',
-          sublabel: null,
-          initial: (isAr ? d.title_ar : d.title) ?? '',
-          fromLibrary: false,
-          canSaveToLibrary: false,
-          multiline: false,
-        })
-
         const destId: string | null = d.destination_snapshot?.id ?? d.destination_id ?? null
         const destName: string | null = d.destination_snapshot?.name ?? (destId ? destMap[destId]?.name : null) ?? null
-        // The proposal prefers the quote's own text, then the library's.
-        const dayOwn = (isAr ? d.description_ar : d.description_en) ?? ''
         const destOverride = snap(d.destination_snapshot)
         const destLib = lib(destId ? destMap[destId] : undefined)
-
-        rows.push({
-          key: `daydesc:${d.id}`,
-          edit: { field: { kind: 'day_description', quoteDayId: d.id }, target: 'proposal', value: '' },
-          label: 'Day description',
-          sublabel: null,
-          initial: dayOwn,
-          fromLibrary: false,
-          canSaveToLibrary: false,
-          multiline: true,
-        })
 
         if (destId || destName) {
           rows.push({
@@ -163,7 +134,6 @@ export default function ProposalContentPanel({
             initial: destOverride || destLib,
             fromLibrary: !destOverride && !!destLib,
             canSaveToLibrary: !!destId,
-            multiline: true,
           })
         }
 
@@ -183,8 +153,7 @@ export default function ProposalContentPanel({
               initial: override || libText,
               fromLibrary: !override && !!libText,
               canSaveToLibrary: !!it.accommodation_id,
-              multiline: true,
-            })
+              })
           } else if (it.item_type === 'activity') {
             const override = snap(it.content_snapshot)
             const libText = lib(it.activity_id ? actMap[it.activity_id] : undefined)
@@ -200,22 +169,19 @@ export default function ProposalContentPanel({
               initial: override || libText,
               fromLibrary: !override && !!libText,
               canSaveToLibrary: !!it.activity_id,
-              multiline: true,
-            })
+              })
           }
         }
 
         return { day: d, rows }
       })
-  }, [quoteDays, dayItems, destMap, accMap, actMap, isAr, lib, snap])
+  }, [quoteDays, dayItems, destMap, accMap, actMap, lib, snap])
 
   const allRows = useMemo(() => groups.flatMap(g => g.rows), [groups])
   const valueOf = (r: Row) => values[r.key] ?? r.initial
   const targetOf = (r: Row) => targets[r.key] ?? r.edit.target
   const dirtyRows = allRows.filter(r => valueOf(r) !== r.initial)
-  const isLibraryBacked = (r: Row) =>
-    r.key.startsWith('dest:') || r.key.startsWith('acc:') || r.key.startsWith('act:')
-  const missingCount = allRows.filter(r => isLibraryBacked(r) && !valueOf(r).trim()).length
+  const missingCount = allRows.filter(r => !valueOf(r).trim()).length
 
   async function onSave() {
     setSaving(true); setError(null); setSavedCount(null)
@@ -306,27 +272,15 @@ export default function ProposalContentPanel({
                       )}
                     </div>
                     {r.sublabel && <p className="mt-1 text-[11px] text-muted-foreground">{r.sublabel}</p>}
-                    {r.multiline ? (
-                      <textarea
+                    <textarea
                         dir={isAr ? 'rtl' : 'ltr'}
                         rows={3}
                         value={v}
                         disabled={isLocked}
                         onChange={(e) => setValues(p => ({ ...p, [r.key]: e.target.value }))}
                         className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground disabled:opacity-60"
-                        placeholder={isAr ? 'اكتب الوصف هنا…' : 'Write the description shown to the client…'}
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        dir={isAr ? 'rtl' : 'ltr'}
-                        value={v}
-                        disabled={isLocked}
-                        onChange={(e) => setValues(p => ({ ...p, [r.key]: e.target.value }))}
-                        className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground disabled:opacity-60"
-                        placeholder={isAr ? 'عنوان اليوم…' : 'Day title shown to the client…'}
-                      />
-                    )}
+                      placeholder={isAr ? 'اكتب الوصف هنا…' : 'Write the description shown to the client…'}
+                    />
                   </div>
                 )
               })}

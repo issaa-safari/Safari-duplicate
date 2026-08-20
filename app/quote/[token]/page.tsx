@@ -357,13 +357,14 @@ export default async function QuotePortalPage({
       // twin is blank; this one did not, so an Arabic proposal with an
       // untranslated day rendered that day with no description at all — which
       // is what made filling both languages feel compulsory.
-      // Priority: the day's own text (written for this quote) → a destination
-      // description written for this proposal only → the Content library entry.
-      // Day text used to lose to the library, which made editing it look inert.
+      // Original order, unchanged: the destination's text when there is one,
+      // else whatever was written for this day. The only addition is a
+      // description written for this proposal only, which outranks the shared
+      // Content library entry it stands in for.
       description: firstFilled(
-        isArabic ? (d.description_ar || d.description_en) : d.description_en,
         overrideDescription(d.destination_snapshot, isArabic),
         dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : null,
+        isArabic ? (d.description_ar || d.description_en) : d.description_en,
       ),
       heroPhoto: photos[0] ?? acc?.cover ?? null,
       activities: acts.map(mapAct),

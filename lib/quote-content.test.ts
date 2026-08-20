@@ -41,11 +41,13 @@ describe('firstFilled', () => {
     expect(firstFilled(null, undefined, '', '  ')).toBeNull()
   })
 
-  it('lets the quote day outrank a destination override and the library', () => {
-    // The precedence the proposal renders: day text → per-proposal override →
-    // Content library. Editing the day used to lose to the library entry.
-    expect(firstFilled('day text', 'per-proposal', 'library')).toBe('day text')
-    expect(firstFilled(null, 'per-proposal', 'library')).toBe('per-proposal')
-    expect(firstFilled(null, null, 'library')).toBe('library')
+  it('lets a per-proposal override outrank the library and the day text', () => {
+    // The precedence the proposal renders: a description written for this
+    // proposal only → the destination's Content library entry → the day's own
+    // text. Only the override is new; the library still beats the day text as
+    // it always has.
+    expect(firstFilled('per-proposal', 'library', 'day text')).toBe('per-proposal')
+    expect(firstFilled(null, 'library', 'day text')).toBe('library')
+    expect(firstFilled(null, null, 'day text')).toBe('day text')
   })
 })
