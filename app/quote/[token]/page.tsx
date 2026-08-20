@@ -4,7 +4,6 @@ import AcceptForm from './accept-form'
 import { syncQuoteStatus } from '@/lib/server/quote-status'
 import ProposalView, { type ProposalDay, type SummaryRow, type TravellerGroup, type RouteRow, type TourMapData } from '@/components/quote/proposal-view'
 import type { MapStop } from '@/components/quote/itinerary-map'
-import { overrideDescription, firstFilled } from '@/lib/quote-content'
 import { googleMapsLinkFor, haversineKm, type LatLng } from '@/lib/geo'
 import { site } from '@/lib/site'
 import { getActiveProposalTemplate, pickLocalised, applyProposalPlaceholders } from '@/lib/proposal-template'
@@ -151,7 +150,7 @@ export default async function QuotePortalPage({
         .order('sort_order')
     : { data: [] as any[] }
 
-  type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean; dayOffset: number; transfer: boolean; descOverride: string | null }
+  type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean; dayOffset: number; transfer: boolean }
   const accomItemByDay: Record<string, any> = {}
   const actsByDay: Record<string, ActItem[]> = {}
   for (const item of dayItems ?? []) {
@@ -167,8 +166,6 @@ export default async function QuotePortalPage({
         dayOffset: Number(cs.day_offset ?? 0) || 0,
         // Auto-added road transfer (builder) — labelled "A to B" below.
         transfer: !!cs.transfer,
-        // Text written for this proposal only, at the Preview content editor.
-        descOverride: overrideDescription(cs, isArabic),
       })
     }
   }
@@ -336,7 +333,7 @@ export default async function QuotePortalPage({
       const name = a.transfer && prevDestName && dest?.name
         ? (isArabic ? `${a.name}، ${prevDestName} إلى ${dest.name}` : `${a.name}, ${prevDestName} to ${dest.name}`)
         : a.name
-      return { name, moment: a.moment ? momentLbl(a.moment) : null, optional: a.optional, description: firstFilled(a.descOverride, am ? (isArabic ? (am.ar || am.en) : am.en) : null) }
+      return { name, moment: a.moment ? momentLbl(a.moment) : null, optional: a.optional, description: am ? (isArabic ? (am.ar || am.en) : am.en) : null }
     }
     // Multi-night stop → split activities into per-sub-day tabs.
     const span = d.day_number_end && d.day_number_end > d.day_number ? d.day_number_end - d.day_number + 1 : 1
@@ -357,15 +354,9 @@ export default async function QuotePortalPage({
       // twin is blank; this one did not, so an Arabic proposal with an
       // untranslated day rendered that day with no description at all — which
       // is what made filling both languages feel compulsory.
-      // Original order, unchanged: the destination's text when there is one,
-      // else whatever was written for this day. The only addition is a
-      // description written for this proposal only, which outranks the shared
-      // Content library entry it stands in for.
-      description: firstFilled(
-        overrideDescription(d.destination_snapshot, isArabic),
-        dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : null,
-        isArabic ? (d.description_ar || d.description_en) : d.description_en,
-      ),
+      description: dd
+        ? (isArabic ? (dd.ar || dd.en) : dd.en)
+        : (isArabic ? (d.description_ar || d.description_en) : d.description_en),
       heroPhoto: photos[0] ?? acc?.cover ?? null,
       activities: acts.map(mapAct),
       activityGroups,
@@ -373,7 +364,7 @@ export default async function QuotePortalPage({
         name: item.title_snapshot,
         type: acc?.type ? acc.type.replace(/_/g, ' ') : null,
         room: item.room_category ? item.room_category.replace(/_/g, ' ') : null,
-        description: firstFilled(overrideDescription(item.content_snapshot, isArabic), acc ? (isArabic ? (acc.ar || acc.en) : acc.en) : null),
+        description: acc ? (isArabic ? (acc.ar || acc.en) : acc.en) : null,
         mapsUrl: acc?.mapsUrl ?? null,
         // Left column = the accommodation's own gallery (cover as fallback).
         photos: accPhotos.slice(0, 3),
