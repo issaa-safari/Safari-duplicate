@@ -2,7 +2,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import PrintToolbar from './print-toolbar'
 import ItineraryMap, { type MapStop } from '@/components/quote/itinerary-map'
-import { overrideDescription, firstFilled } from '@/lib/quote-content'
 import { googleMapsLinkFor, haversineKm, type LatLng } from '@/lib/geo'
 
 const MEAL_LABELS: Record<string, string> = { B: 'Breakfast', L: 'Lunch', D: 'Dinner' }
@@ -213,18 +212,15 @@ export default async function QuotePrintPage({
         .order('sort_order')
     : { data: [] as any[] }
 
-  type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean; transfer: boolean; descSnapshot: unknown }
+  type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean; transfer: boolean }
   const accomByDay: Record<string, string[]> = {}
   const accomIdByDay: Record<string, string> = {}
-  // Snapshot of the day's accommodation item — carries per-proposal copy.
-  const accomSnapByDay: Record<string, unknown> = {}
   const actsByDay: Record<string, ActItem[]> = {}
   for (const item of dayItems ?? []) {
     if (item.item_type === 'accommodation') {
       if (!accomByDay[item.quote_day_id]) accomByDay[item.quote_day_id] = []
       if (item.title_snapshot) accomByDay[item.quote_day_id].push(item.title_snapshot)
       if (item.accommodation_id && !accomIdByDay[item.quote_day_id]) accomIdByDay[item.quote_day_id] = item.accommodation_id
-      if (!(item.quote_day_id in accomSnapByDay)) accomSnapByDay[item.quote_day_id] = item.content_snapshot
     } else if (item.item_type === 'activity') {
       if (!actsByDay[item.quote_day_id]) actsByDay[item.quote_day_id] = []
       const cs = (item.content_snapshot ?? {}) as any
@@ -232,7 +228,6 @@ export default async function QuotePrintPage({
         name: item.title_snapshot, activity_id: item.activity_id ?? null,
         moment: cs.moment ?? '', optional: !!cs.optional,
         transfer: !!cs.transfer,
-        descSnapshot: cs,
       })
     }
   }
@@ -481,10 +476,7 @@ export default async function QuotePrintPage({
   const dayAccDesc = (dayId: string) => {
     const id = accomIdByDay[dayId]
     const d = id ? accDescMapById[id] : null
-    return firstFilled(
-      overrideDescription(accomSnapByDay[dayId], isArabic),
-      d ? (isArabic ? (d.ar || d.en) : d.en) : null,
-    )
+    return d ? (isArabic ? (d.ar || d.en) : d.en) : null
   }
   const refNum = String(quote.quote_number)
   const refWithHash = refNum.startsWith('#') ? refNum : `#${refNum}`
@@ -739,14 +731,13 @@ export default async function QuotePrintPage({
           const title = (isArabic && day.title_ar ? day.title_ar : day.title)
             || (isLast ? (isArabic ? 'اليوم الأخير معنا' : 'The last day with us') : (dest || `Day ${day.day_number}`))
           const dd = destId ? destDescMap[destId] : null
-          // Same order as the web proposal: a description written for this
-          // proposal only, then the destination's Content library text, then
-          // whatever was written for this day.
-          const intro = firstFilled(
-            overrideDescription(day.destination_snapshot, isArabic),
-            dd ? (isArabic ? (dd.ar || dd.en) : dd.en) : null,
-            isArabic ? (day.description_ar || day.description_en) : day.description_en,
-          )
+          // Same order as the web proposal: the destination's stock text when
+          // there is one, else whatever was written for this day. Print used to
+          // stop at the destination, so a day with only its own description
+          // printed blank.
+          const intro = dd
+            ? (isArabic ? (dd.ar || dd.en) : dd.en)
+            : (isArabic ? (day.description_ar || day.description_en) : day.description_en)
           const notes = isArabic && day.client_notes_ar ? day.client_notes_ar : day.client_notes
 
           const accName = accomByDay[day.id]?.[0] ?? null
@@ -764,7 +755,7 @@ export default async function QuotePrintPage({
               : a.name
           const actDesc = (a: ActItem) => {
             const d = a.activity_id ? actDescMap[a.activity_id] : null
-            return firstFilled(overrideDescription(a.descSnapshot, isArabic), d ? (isArabic ? (d.ar || d.en) : d.en) : null)
+            return d ? (isArabic ? (d.ar || d.en) : d.en) : null
           }
           const buckets = MOMENTS.map((m) => ({ m, items: acts.filter((a) => a.moment === m) })).filter((b) => b.items.length)
           const noMoment = acts.filter((a) => !a.moment || !MOMENTS.includes(a.moment))
