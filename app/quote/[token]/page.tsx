@@ -476,6 +476,8 @@ export default async function QuotePortalPage({
       }}
       acceptSlot={acceptSlot}
       printHref={`/quote/${token}/print`}
+      // Absolute, so the link still resolves once it is pasted into WhatsApp.
+      shareUrl={`${site.url}/quote/${token}`}
     />
   )
 }

@@ -2,6 +2,8 @@ import type { ReactNode } from 'react'
 import { ProposalPhoto as Photo } from './proposal-photo'
 import { type ActivityGroup } from './activity-tabs'
 import ItineraryMap, { type MapStop } from './itinerary-map'
+import ProposalDisclosure from './proposal-disclosure'
+import ProposalActions, { ProposalShare } from './proposal-actions'
 
 // Client-facing tour proposal, styled to match the operator's PDF proposal.
 // Presentational only — all data arrives as props so it can be rendered with
@@ -89,6 +91,8 @@ export type ProposalViewProps = {
   status: { accepted: boolean; acceptedBy?: string | null; acceptedOn?: string | null; declined: boolean }
   acceptSlot?: ReactNode
   printHref: string
+  /** Absolute URL of this proposal — what the share buttons hand out. */
+  shareUrl?: string | null
 }
 
 const T = (ar: boolean, en: string, arabic: string) => (ar ? arabic : en)
@@ -152,9 +156,91 @@ export default function ProposalView(p: ProposalViewProps) {
   const ar = p.isArabic
   const font = { fontFamily: 'var(--font-body, sans-serif)' }
   const display = { fontFamily: 'var(--font-display, sans-serif)' }
+  const shareUrl = p.shareUrl?.trim() || null
+
+  // The pricing body, rendered once and used twice: inline under the
+  // Pricing heading and inside the sticky bar's Price Details panel.
+  const pricePanel = (
+    <>
+            <div className="mt-5 grid gap-4 rounded-xl border p-5 sm:grid-cols-2" style={{ borderColor: `${OLIVE}44` }}>
+              <div>
+                <p className="mb-2 flex items-center gap-1.5 text-sm font-bold" style={{ color: INK, ...display }}>
+                  <span style={{ color: OLIVE }}>⊕</span> {T(ar, 'Included', 'مشمول')}
+                </p>
+                <ul className="space-y-1 text-sm text-gray-600">
+                  {p.included.map((x, i) => <li key={i} className="flex gap-2"><span style={{ color: OLIVE }}>·</span>{x}</li>)}
+                </ul>
+              </div>
+              <div>
+                <p className="mb-2 flex items-center gap-1.5 text-sm font-bold" style={{ color: INK, ...display }}>
+                  <span className="text-red-500">⊖</span> {T(ar, 'Excluded', 'غير مشمول')}
+                </p>
+                <ul className="space-y-1 text-sm text-gray-600">
+                  {p.excluded.map((x, i) => <li key={i} className="flex gap-2"><span className="text-red-400">·</span>{x}</li>)}
+                </ul>
+              </div>
+            </div>
+
+            {p.travellerGroups.length > 0 && (
+              <>
+                <h3 className="mt-6 text-lg font-semibold" style={{ color: INK, ...display }}>{T(ar, 'Breakdown of Costs', 'تفصيل التكاليف')}</h3>
+                <div className="mt-3 overflow-hidden rounded-xl border" style={{ borderColor: `${OLIVE}44` }}>
+                  <table className="stack-table w-full text-sm">
+                    <tbody>
+                      {p.travellerGroups.map((g, i) => (
+                        <tr key={i} style={{ background: i % 2 ? '#fff' : '#F7FAEE', borderTop: i ? `1px solid ${OLIVE}22` : undefined }}>
+                          <td className="px-4 py-3 font-medium" style={{ color: INK }}>{g.count}× {g.name}</td>
+                          <td data-label={T(ar, 'Per person', 'للشخص')} className="px-4 py-3 text-right text-gray-600">{g.perPerson > 0 ? `$${g.perPerson.toLocaleString()}` : '—'}</td>
+                          <td data-label={T(ar, 'Total', 'الإجمالي')} className="px-4 py-3 text-right font-semibold" style={{ color: INK }}>{g.total > 0 ? `$${g.total.toLocaleString()}` : '—'}</td>
+                        </tr>
+                      ))}
+                      <tr style={{ background: '#F1F6E3', borderTop: `2px solid ${OLIVE}` }}>
+                        <td className="px-4 py-3 text-base font-bold" style={{ color: INK }} colSpan={2}>{T(ar, 'Total in USD', 'الإجمالي بالدولار')}</td>
+                        <td className="px-4 py-3 text-right text-base font-bold" style={{ color: INK }}>{p.grandTotalLabel}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {p.optional.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{T(ar, 'Optional add-ons', 'إضافات اختيارية')}</p>
+                <div className="rounded-xl border" style={{ borderColor: `${OLIVE}33` }}>
+                  {p.optional.map((o, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-2.5 text-sm" style={{ borderTop: i ? `1px solid ${OLIVE}18` : undefined }}>
+                      <span className="text-gray-700">{o.description}</span>
+                      <span className="font-semibold" style={{ color: INK }}>{o.price}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+    </>
+  )
 
   return (
     <div dir={ar ? 'rtl' : 'ltr'} style={{ background: '#EDEBE4', ...font }} className="min-h-screen py-6 px-3 sm:px-4 text-[15px]" >
+      <ProposalActions
+        printHref={p.printHref}
+        totalLabel={`${T(ar, 'Total', 'الإجمالي')}: ${p.grandTotalLabel}`}
+        showConfirm={!!p.acceptSlot && !p.status.accepted && !p.status.declined}
+        isArabic={ar}
+        labels={{
+          priceDetails: T(ar, 'Price Details', 'تفاصيل السعر'),
+          downloadPdf: T(ar, 'Download PDF', 'تحميل PDF'),
+          confirmBooking: T(ar, 'Confirm Booking', 'تأكيد الحجز'),
+          share: T(ar, 'Share', 'مشاركة'),
+          shareWhatsApp: T(ar, 'WhatsApp', 'واتساب'),
+          copyLink: T(ar, 'Copy link', 'نسخ الرابط'),
+          copied: T(ar, 'Link copied', 'تم نسخ الرابط'),
+          close: T(ar, 'Close', 'إغلاق'),
+        }}
+        pricePanel={pricePanel}
+      />
+
       <div className="mx-auto max-w-[820px] space-y-5">
 
         {/* ── Cover ─────────────────────────────────────────────── */}
@@ -383,7 +469,7 @@ export default function ProposalView(p: ProposalViewProps) {
         )}
 
         {/* ── Day by day — magazine layout, one card per day ────── */}
-        {p.itinerary.map((d) => {
+        {p.itinerary.map((d, di) => {
           const groups = groupByMoment(d.activities)
           const hotelPhotos = d.accommodation?.photos ?? []
           const scenic = d.scenicPhotos ?? []
@@ -396,18 +482,24 @@ export default function ProposalView(p: ProposalViewProps) {
 
           return (
             <section key={d.key} className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">
-              {/* header: Day pill + location */}
-              <div className="flex items-center justify-between gap-3 rounded-full border py-1 pl-1 pr-4" style={{ borderColor: `${OLIVE}55` }}>
-                <span className="inline-flex items-center rounded-full px-5 py-1.5 text-sm font-bold text-white" style={{ background: `linear-gradient(90deg, ${OLIVE}, ${GOLD})`, ...display }}>
-                  {d.label}
-                </span>
-                {d.destination && (
-                  <span className="flex items-center gap-1.5 text-sm font-bold" style={{ color: INK, ...display }}>
-                    <PinIcon /> {d.destination}
-                    {d.destinationMapsUrl && <MapsLink href={d.destinationMapsUrl} ar={ar} />}
-                  </span>
-                )}
-              </div>
+              <ProposalDisclosure
+                defaultOpen={di === 0}
+                openLabel={T(ar, 'Show this day', 'إظهار هذا اليوم')}
+                closeLabel={T(ar, 'Hide this day', 'إخفاء هذا اليوم')}
+                header={
+                  /* header: Day pill + location */
+                  <div className="flex items-center justify-between gap-3 rounded-full border py-1 pl-1 pr-4" style={{ borderColor: `${OLIVE}55` }}>
+                    <span className="inline-flex items-center rounded-full px-5 py-1.5 text-sm font-bold text-white" style={{ background: `linear-gradient(90deg, ${OLIVE}, ${GOLD})`, ...display }}>
+                      {d.label}
+                    </span>
+                    {d.destination && (
+                      <span className="flex items-center gap-1.5 text-sm font-bold" style={{ color: INK, ...display }}>
+                        <PinIcon /> {d.destination}
+                      </span>
+                    )}
+                  </div>
+                }
+              >
 
               <h2 className="mt-5 text-3xl font-bold sm:text-4xl" style={{ color: INK, ...display, textWrap: 'balance' } as React.CSSProperties}>
                 {d.destination ?? d.title}
@@ -505,6 +597,7 @@ export default function ProposalView(p: ProposalViewProps) {
               </div>
 
               {d.notes && <p className="mt-4 text-sm italic leading-relaxed text-gray-500">{d.notes}</p>}
+              </ProposalDisclosure>
             </section>
           )
         })}
@@ -513,64 +606,30 @@ export default function ProposalView(p: ProposalViewProps) {
         <section className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">
           <Pill>{T(ar, 'Pricing', 'التسعير')}</Pill>
 
-          <div className="mt-5 grid gap-4 rounded-xl border p-5 sm:grid-cols-2" style={{ borderColor: `${OLIVE}44` }}>
-            <div>
-              <p className="mb-2 flex items-center gap-1.5 text-sm font-bold" style={{ color: INK, ...display }}>
-                <span style={{ color: OLIVE }}>⊕</span> {T(ar, 'Included', 'مشمول')}
-              </p>
-              <ul className="space-y-1 text-sm text-gray-600">
-                {p.included.map((x, i) => <li key={i} className="flex gap-2"><span style={{ color: OLIVE }}>·</span>{x}</li>)}
-              </ul>
-            </div>
-            <div>
-              <p className="mb-2 flex items-center gap-1.5 text-sm font-bold" style={{ color: INK, ...display }}>
-                <span className="text-red-500">⊖</span> {T(ar, 'Excluded', 'غير مشمول')}
-              </p>
-              <ul className="space-y-1 text-sm text-gray-600">
-                {p.excluded.map((x, i) => <li key={i} className="flex gap-2"><span className="text-red-400">·</span>{x}</li>)}
-              </ul>
-            </div>
-          </div>
+          {pricePanel}
 
-          {p.travellerGroups.length > 0 && (
-            <>
-              <h3 className="mt-6 text-lg font-semibold" style={{ color: INK, ...display }}>{T(ar, 'Breakdown of Costs', 'تفصيل التكاليف')}</h3>
-              <div className="mt-3 overflow-hidden rounded-xl border" style={{ borderColor: `${OLIVE}44` }}>
-                <table className="stack-table w-full text-sm">
-                  <tbody>
-                    {p.travellerGroups.map((g, i) => (
-                      <tr key={i} style={{ background: i % 2 ? '#fff' : '#F7FAEE', borderTop: i ? `1px solid ${OLIVE}22` : undefined }}>
-                        <td className="px-4 py-3 font-medium" style={{ color: INK }}>{g.count}× {g.name}</td>
-                        <td data-label={T(ar, 'Per person', 'للشخص')} className="px-4 py-3 text-right text-gray-600">{g.perPerson > 0 ? `$${g.perPerson.toLocaleString()}` : '—'}</td>
-                        <td data-label={T(ar, 'Total', 'الإجمالي')} className="px-4 py-3 text-right font-semibold" style={{ color: INK }}>{g.total > 0 ? `$${g.total.toLocaleString()}` : '—'}</td>
-                      </tr>
-                    ))}
-                    <tr style={{ background: '#F1F6E3', borderTop: `2px solid ${OLIVE}` }}>
-                      <td className="px-4 py-3 text-base font-bold" style={{ color: INK }} colSpan={2}>{T(ar, 'Total in USD', 'الإجمالي بالدولار')}</td>
-                      <td className="px-4 py-3 text-right text-base font-bold" style={{ color: INK }}>{p.grandTotalLabel}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-
-          {p.optional.length > 0 && (
-            <div className="mt-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{T(ar, 'Optional add-ons', 'إضافات اختيارية')}</p>
-              <div className="rounded-xl border" style={{ borderColor: `${OLIVE}33` }}>
-                {p.optional.map((o, i) => (
-                  <div key={i} className="flex items-center justify-between px-4 py-2.5 text-sm" style={{ borderTop: i ? `1px solid ${OLIVE}18` : undefined }}>
-                    <span className="text-gray-700">{o.description}</span>
-                    <span className="font-semibold" style={{ color: INK }}>{o.price}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {p.acceptSlot && <div className="mt-6">{p.acceptSlot}</div>}
+          {p.acceptSlot && <div id="proposal-accept" className="mt-6">{p.acceptSlot}</div>}
         </section>
+
+        {/* ── Share ─────────────────────────────────────────────── */}
+        {shareUrl && (
+          <section className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">
+            <Pill>{T(ar, 'Share with Family and Friends', 'شارك مع العائلة والأصدقاء')}</Pill>
+            <div className="mt-5">
+              <ProposalShare
+                shareUrl={shareUrl}
+                shareText={p.title}
+                labels={{
+                  share: T(ar, 'Share', 'مشاركة'),
+                  shareWhatsApp: T(ar, 'WhatsApp', 'واتساب'),
+                  copyLink: T(ar, 'Copy link', 'نسخ الرابط'),
+                  copied: T(ar, 'Link copied', 'تم نسخ الرابط'),
+                }}
+              />
+            </div>
+          </section>
+        )}
+
 
         {/* ── Payment details ───────────────────────────────────── */}
         {p.bank && (p.bank.accountNumber || p.bank.bankName) && (
