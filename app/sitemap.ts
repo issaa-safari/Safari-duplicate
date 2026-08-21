@@ -24,6 +24,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: Entry[] = [
     { path: '/', changeFrequency: 'weekly', priority: 1 },
     { path: '/kenya-safari', changeFrequency: 'weekly', priority: 0.95 },
+    { path: '/maasai-mara-safari', changeFrequency: 'weekly', priority: 0.9 },
+    { path: '/amboseli-safari', changeFrequency: 'weekly', priority: 0.9 },
+    { path: '/family-safari-kenya', changeFrequency: 'weekly', priority: 0.9 },
+    { path: '/luxury-kenya-safari', changeFrequency: 'weekly', priority: 0.9 },
+    { path: '/kenya-motorcycle-safari', changeFrequency: 'weekly', priority: 0.9 },
+    { path: '/kenya-tanzania-safari', changeFrequency: 'weekly', priority: 0.9 },
     { path: '/tours', changeFrequency: 'weekly', priority: 0.9 },
     { path: '/departures', changeFrequency: 'daily', priority: 0.9 },
     { path: '/gallery', changeFrequency: 'monthly', priority: 0.5 },
