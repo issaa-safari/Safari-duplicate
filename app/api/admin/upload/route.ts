@@ -4,7 +4,12 @@ import { NextResponse } from 'next/server'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 
 const BUCKET = 'tour-media'
-const MAX_BYTES = 8 * 1024 * 1024 // 8MB
+// Vercel Serverless Functions hard-cap the request body around 4.5MB — a larger
+// upload is rejected by the platform before this handler runs, returning an HTML
+// error page instead of JSON. Stay safely under that so failures are ones we can
+// report cleanly, and so admins get a client-side warning instead of a mystery
+// upload failure on phone-camera photos.
+const MAX_BYTES = 4 * 1024 * 1024 // 4MB
 const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'])
 
 export async function POST(request: Request) {
@@ -30,7 +35,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unsupported image type.' }, { status: 400 })
   }
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'Image is larger than 8MB.' }, { status: 400 })
+    return NextResponse.json({ error: 'Image is larger than 4MB. Please resize or compress it and try again.' }, { status: 400 })
   }
 
   const ext = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
