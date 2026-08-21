@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
-import Testimonials from '@/components/public/testimonials'
 import WhatsAppButton from '@/components/public/whatsapp-button'
 import { getServerLocale } from '@/lib/i18n'
 import { STOCK_HERO_IMAGE } from '@/lib/stock-images'
@@ -42,8 +41,8 @@ export default async function AboutPage({
     title: 'عن سفاري أدفنتشر رايدرز',
     subtitle: 'اكتشف قصتنا ورسالتنا في صنع تجارب أفريقية لا تُنسى.',
     ourStory: 'قصتنا',
-    story1: 'تأسست سفاري أدفنتشر رايدرز عام 2009 من شغف بالحياة البرية والمناظر الطبيعية المذهلة في أفريقيا. ما بدأ كعملية صغيرة مع حفنة من خبراء الطبيعة نما ليصبح أحد أكثر منظمي رحلات السفاري الموثوقين في شرق أفريقيا.',
-    story2: 'على مدى السنوات الخمس عشرة الماضية، حظينا بشرف مشاركة البرية الأفريقية مع أكثر من 500 مسافر من جميع أنحاء العالم. كل رحلة سفاري هي أكثر من مجرد عطلة — إنها تجربة تحويلية تربطك بالطبيعة والثقافات بطرق لن تنساها أبداً.',
+    story1: 'تأسست سفاري أدفنتشر رايدرز من شغف بالحياة البرية والمناظر الطبيعية المذهلة في أفريقيا. ما بدأ كعملية صغيرة مع حفنة من خبراء الطبيعة نما ليصبح أحد أكثر منظمي رحلات السفاري الموثوقين في شرق أفريقيا.',
+    story2: 'حظينا بشرف مشاركة البرية الأفريقية مع مسافرين من جميع أنحاء العالم. كل رحلة سفاري هي أكثر من مجرد عطلة — إنها تجربة تحويلية تربطك بالطبيعة والثقافات بطرق لن تنساها أبداً.',
     story3: 'التزامنا بالسياحة المسؤولة والحفاظ على البيئة والخدمة الاستثنائية يميزنا. نؤمن بأن أفضل رحلات السفاري هي تلك التي يتم فيها التخطيط لكل تفصيلة وتنفيذها بعناية.',
     missionValues: 'رسالتنا وقيمنا',
     ourMission: 'رسالتنا',
@@ -64,8 +63,8 @@ export default async function AboutPage({
     title: 'About Safari Adventure Riders',
     subtitle: 'Discover our story and mission to create unforgettable African experiences.',
     ourStory: 'Our Story',
-    story1: "Founded in 2009, Safari Adventure Riders was born from a passion for Africa's incredible wildlife and landscapes. What started as a small operation with just a handful of expert naturalists has grown into one of East Africa's most trusted safari operators.",
-    story2: "Over the past 15 years, we've had the privilege of sharing the African bush with over 500 travelers from around the world. Each safari is more than just a vacation—it's a transformative experience that connects you with nature and cultures in ways you'll never forget.",
+    story1: "Safari Adventure Riders was born from a passion for Africa's incredible wildlife and landscapes. What started as a small operation with just a handful of expert naturalists has grown into one of East Africa's most trusted safari operators.",
+    story2: "We've had the privilege of sharing the African bush with travelers from around the world. Each safari is more than just a vacation—it's a transformative experience that connects you with nature and cultures in ways you'll never forget.",
     story3: 'Our commitment to responsible tourism, conservation, and exceptional service sets us apart. We believe that the best safaris are those where every detail is thoughtfully planned and executed.',
     missionValues: 'Our Mission & Values',
     ourMission: 'Our Mission',
@@ -174,8 +173,6 @@ export default async function AboutPage({
             </Link>
           </div>
         </section>
-        {/* Testimonials */}
-        <Testimonials lang={locale} />
       </main>
       <PublicFooter />
       <WhatsAppButton lang={locale} />

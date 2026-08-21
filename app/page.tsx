@@ -5,7 +5,6 @@ import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import WhatsAppButton from '@/components/public/whatsapp-button'
 import FeaturedDepartures from '@/components/public/featured-departures'
-import Testimonials from '@/components/public/testimonials'
 import HomeHero from '@/components/public/home-hero'
 import ChooseYourTrail from '@/components/public/choose-your-trail'
 import HomeWhyDirect from '@/components/public/home-why-direct'
@@ -165,9 +164,6 @@ export default async function HomePage({
 
         {/* 5. Why Book Direct */}
         <HomeWhyDirect isAr={isAr} />
-
-        {/* 6. Testimonials */}
-        <Testimonials lang={locale} />
 
         {/* 7. Final CTA */}
         <section style={{ background: BUSH, padding: '80px 24px' }}>
