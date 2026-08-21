@@ -15,8 +15,9 @@ export async function POST(
     const { id } = await params
     // Pricing is resolved server-side from the departure record — see the note
     // in lib/server/create-booking.ts. Anything the client sends about price is
-    // ignored rather than trusted.
-    const { travellers } = await request.json()
+    // ignored rather than trusted; roomType only selects which of the
+    // departure's own prices applies.
+    const { travellers, roomType } = await request.json()
 
     const admin = createAdminClient()
 
@@ -32,6 +33,7 @@ export async function POST(
       travellers,
       userId,
       source: 'website',
+      roomType: roomType === 'single' ? 'single' : 'sharing',
     })
 
     if (!result.ok) {

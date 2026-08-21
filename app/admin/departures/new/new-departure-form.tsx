@@ -16,6 +16,7 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
   const [endDate, setEndDate] = useState('')
   const [maxSeats, setMaxSeats] = useState(12)
   const [priceUsd, setPriceUsd] = useState('')
+  const [priceSingleUsd, setPriceSingleUsd] = useState('')
   const [status, setStatus] = useState('available')
   const [notes, setNotes] = useState('')
 
@@ -59,6 +60,7 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
           end_date: endDate,
           max_seats: maxSeats,
           price_usd: parseFloat(priceUsd),
+          price_single_usd: priceSingleUsd ? parseFloat(priceSingleUsd) : null,
           status,
           internal_notes: notes || null,
           booked_seats: 0,
@@ -116,12 +118,21 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
               className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50" />
           </div>
           <div>
-            <label htmlFor="price-per-person-usd" className="block text-sm font-medium text-foreground mb-1">Price Per Person (USD) *</label>
+            <label htmlFor="price-per-person-usd" className="block text-sm font-medium text-foreground mb-1">Price Per Person, Sharing (USD) *</label>
             <input id="price-per-person-usd" type="number" required min={0} value={priceUsd}
               onChange={e => setPriceUsd(e.target.value)}
-              placeholder="e.g. 1350"
+              placeholder="e.g. 1890"
               className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50" />
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="price-single-usd" className="block text-sm font-medium text-foreground mb-1">Price Per Person, Single Room (USD)</label>
+          <input id="price-single-usd" type="number" min={0} value={priceSingleUsd}
+            onChange={e => setPriceSingleUsd(e.target.value)}
+            placeholder="Leave blank to not offer a single room option"
+            className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50" />
+          <p className="text-xs text-muted-foreground mt-1">When set, customers can choose sharing or single room at booking.</p>
         </div>
 
         <div>

@@ -160,7 +160,7 @@ export default async function DepartureDetailPage({
     .from('departures')
     .select(`
       id, tour_id, start_date, end_date,
-      max_seats, booked_seats, price_usd, security_deposit_usd, status, is_active,
+      max_seats, booked_seats, price_usd, price_single_usd, security_deposit_usd, status, is_active,
       tours (
         id, slug, title_en, title_ar, subtitle_en, subtitle_ar,
         overview_en, overview_ar, type,
@@ -264,7 +264,8 @@ export default async function DepartureDetailPage({
   })
 
   const depositUsd = Number(departure.security_deposit_usd) || 0
-  const bookHref = `${localePath(`/departures/${id}/book`, locale)}?price=${departure.price_usd}&deposit=${depositUsd}&tour=${encodeURIComponent(title ?? '')}`
+  const singleUsd = departure.price_single_usd != null ? Number(departure.price_single_usd) : null
+  const bookHref = `${localePath(`/departures/${id}/book`, locale)}?price=${departure.price_usd}${singleUsd != null ? `&priceSingle=${singleUsd}` : ''}&deposit=${depositUsd}&tour=${encodeURIComponent(title ?? '')}`
   const waHref = whatsappLink(`Hi, I'm interested in the ${title} departure on ${formatDate(departure.start_date, 'en')}`)
 
   const t = isAr ? {
@@ -300,6 +301,7 @@ export default async function DepartureDetailPage({
     guaranteed: 'مضمون',
     securityDeposit: 'تأمين قابل للاسترداد',
     perRider: 'لكل سائق دراجة، يُعاد عند نهاية الرحلة',
+    singleRoom: 'غرفة خاصة',
   } : {
     backToTour: 'Back to Tour',
     departure: 'Departure',
@@ -333,6 +335,7 @@ export default async function DepartureDetailPage({
     guaranteed: 'Guaranteed',
     securityDeposit: 'Refundable security deposit',
     perRider: 'per rider, returned at the end of the trip',
+    singleRoom: 'Single room',
   }
 
   const statusLabel = departure.status === 'guaranteed' ? t.guaranteed
@@ -378,6 +381,8 @@ export default async function DepartureDetailPage({
           statusColor={statusColor}
           priceUsd={departure.price_usd}
           perPersonLabel={t.perPerson}
+          singleRoomUsd={singleUsd}
+          singleRoomLabel={t.singleRoom}
           depositUsd={depositUsd > 0 ? depositUsd : null}
           depositLabel={t.securityDeposit}
           depositSubLabel={t.perRider}

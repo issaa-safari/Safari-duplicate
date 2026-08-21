@@ -16,6 +16,9 @@ interface DepartureHeroProps {
   statusColor: string
   priceUsd: number | null
   perPersonLabel: string
+  /** Per-person single-room price, when the departure offers one — null hides the line. */
+  singleRoomUsd?: number | null
+  singleRoomLabel?: string
   /** Refundable, held against damage — null hides the line entirely. */
   depositUsd?: number | null
   depositLabel?: string
@@ -42,6 +45,8 @@ export default function DepartureHero({
   statusColor,
   priceUsd,
   perPersonLabel,
+  singleRoomUsd,
+  singleRoomLabel,
   depositUsd,
   depositLabel,
   depositSubLabel,
@@ -174,6 +179,14 @@ export default function DepartureHero({
               }}>
                 ${priceUsd.toLocaleString()}
               </span>
+              {singleRoomUsd != null && singleRoomUsd > 0 && (
+                <span style={{
+                  display: 'block', marginTop: 4, fontSize: 13,
+                  color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--font-body, sans-serif)',
+                }}>
+                  {singleRoomLabel}: ${singleRoomUsd.toLocaleString()}
+                </span>
+              )}
               {depositUsd != null && depositUsd > 0 && (
                 <span style={{
                   display: 'block', marginTop: 4, fontSize: 13,

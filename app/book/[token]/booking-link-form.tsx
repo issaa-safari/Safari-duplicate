@@ -23,11 +23,13 @@ export default function BookingLinkForm({
   token,
   locale,
   pricePerPerson,
+  singlePricePerPerson,
   seatsLeft,
 }: {
   token: string
   locale: 'en' | 'ar'
   pricePerPerson: number
+  singlePricePerPerson: number | null
   seatsLeft: number
 }) {
   const ar = locale === 'ar'
@@ -35,14 +37,20 @@ export default function BookingLinkForm({
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
   const [groupSize, setGroupSize] = useState(1)
+  const [roomType, setRoomType] = useState<'sharing' | 'single'>('sharing')
+  const effectivePricePerPerson = roomType === 'single' && singlePricePerPerson != null ? singlePricePerPerson : pricePerPerson
   const [createAccount, setCreateAccount] = useState(false)
   const [accountNote, setAccountNote] = useState('')
   const [travellers, setTravellers] = useState<Traveller[]>([emptyTraveller()])
 
   const maxGroup = Math.min(8, Math.max(1, seatsLeft))
-  const totalPrice = pricePerPerson * groupSize
+  const totalPrice = effectivePricePerPerson * groupSize
 
   const t = ar ? {
+    roomType: 'نوع الغرفة',
+    sharingRoom: 'غرفة مزدوجة (مشتركة)',
+    singleRoom: 'غرفة خاصة',
+    perPerson: 'للفرد',
     groupSize: 'عدد المسافرين',
     travellersInfo: 'معلومات المسافرين',
     traveller: 'المسافر',
@@ -63,6 +71,10 @@ export default function BookingLinkForm({
     accountCreated: 'تم إرسال رابط لتفعيل حسابك إلى بريدك الإلكتروني.',
     seatsLeft: (n: number) => `${n} مقعد متبقٍ`,
   } : {
+    roomType: 'Room Type',
+    sharingRoom: 'Twin/double room (sharing)',
+    singleRoom: 'Single room',
+    perPerson: 'per person',
     groupSize: 'Number of Travellers',
     travellersInfo: 'Traveller Information',
     traveller: 'Traveller',
@@ -103,7 +115,7 @@ export default function BookingLinkForm({
         const res = await fetch(`/api/book/${token}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ travellers, totalPrice, currency: 'USD' }),
+          body: JSON.stringify({ travellers, roomType, currency: 'USD' }),
         })
         const data = await res.json().catch(() => ({}))
         if (!res.ok) throw new Error(data?.error || 'Failed to complete booking. Please try again.')
@@ -151,6 +163,33 @@ export default function BookingLinkForm({
 
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 sm:p-8 border border-gray-200 shadow-sm">
+      {singlePricePerPerson != null && (
+        <div className="mb-8">
+          <label className="block text-sm font-semibold text-gray-900 mb-4">{t.roomType} *</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {([
+              { value: 'sharing' as const, label: t.sharingRoom, price: pricePerPerson },
+              { value: 'single' as const, label: t.singleRoom, price: singlePricePerPerson },
+            ]).map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setRoomType(opt.value)}
+                className={`p-4 rounded-lg text-left transition ${
+                  roomType === opt.value ? 'text-white' : 'bg-white border-2 border-gray-300 text-gray-900 hover:border-gray-400'
+                }`}
+                style={{ backgroundColor: roomType === opt.value ? G : undefined }}
+              >
+                <span className="block font-semibold">{opt.label}</span>
+                <span className={`block text-sm mt-1 ${roomType === opt.value ? 'text-white/80' : 'text-gray-500'}`}>
+                  ${opt.price.toLocaleString()} {t.perPerson}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <label className="block text-sm font-semibold text-gray-900">{t.groupSize} *</label>
@@ -200,7 +239,7 @@ export default function BookingLinkForm({
       <div className="mb-6 p-6 rounded-lg bg-gray-50 border border-gray-200">
         <div className="flex justify-between items-center mb-3">
           <span className="text-gray-600">{t.pricePerPerson}:</span>
-          <span className="text-xl font-bold" style={{ color: G }}>${pricePerPerson.toLocaleString()}</span>
+          <span className="text-xl font-bold" style={{ color: G }}>${effectivePricePerPerson.toLocaleString()}</span>
         </div>
         <div className="border-t border-gray-300 pt-3 flex justify-between items-center">
           <span className="text-lg font-bold text-gray-900">{t.totalPrice}:</span>

@@ -13,10 +13,11 @@
 -- departures.security_deposit_usd (group_82).
 --
 -- Run in Supabase SQL Editor after all migration groups are applied
--- (needs tours/tour_days from group_00 and departures.security_deposit_usd
--- from group_82). Idempotent: tour upserts on slug; tour_days are replaced
--- for this tour_id; departures are only inserted if a departure with the
--- same tour_id + start_date doesn't already exist (never deleted, so
+-- (needs tours/tour_days from group_00, departures.security_deposit_usd
+-- from group_82, and departures.price_single_usd from group_87).
+-- Idempotent: tour upserts on slug; tour_days are replaced for this
+-- tour_id; departures are only inserted if a departure with the same
+-- tour_id + start_date doesn't already exist (never deleted, so
 -- re-running never touches real bookings).
 
 DO $$
@@ -186,11 +187,11 @@ BEGIN
   --    same start_date (never deletes, so re-running never touches bookings)
   INSERT INTO departures (
     tour_id, start_date, end_date, max_seats, booked_seats,
-    price_usd, security_deposit_usd, status, internal_notes, is_active
+    price_usd, price_single_usd, security_deposit_usd, status, internal_notes, is_active
   )
   SELECT v_tour_id, d.start_date, d.end_date, 12, 0,
-         1890, 300, 'available',
-         'Price shown is per person sharing a twin/double room ($1,890). Single room: $2,150 pp. $300 motorbike security deposit is refundable at end of tour. Visa assistance available for $50 (not included).',
+         1890, 2150, 300, 'available',
+         'Price shown is per person sharing a twin/double room ($1,890). Single room: $2,150 pp — selectable at booking (price_single_usd). $300 motorbike security deposit is refundable at end of tour. Visa assistance available for $50 (not included).',
          true
   FROM (VALUES
     ('2026-09-19'::date, '2026-09-26'::date),
