@@ -8,6 +8,9 @@ import WhatsAppButton from '@/components/public/whatsapp-button'
 import SafariImage from '@/components/public/safari-image'
 import ItineraryRouteLine from '@/components/public/itinerary-route-line'
 import type { ItineraryDay } from '@/components/public/itinerary-route-line'
+import ItineraryMap from '@/components/quote/itinerary-map'
+import { buildTourMap } from '@/lib/tour-map'
+import type { LatLng } from '@/lib/geo'
 import GalleryGrid from '@/components/public/gallery-grid'
 import TourEnquiryForm from '@/components/public/tour-enquiry-form'
 import SectionReveal from '@/components/public/section-reveal'
@@ -205,19 +208,38 @@ export default async function DepartureDetailPage({
   // ── Tour days ──────────────────────────────────────────────────────────────
   const { data: rawDays } = await supabase
     .from('tour_days')
-    .select('id, day_number, day_number_end, title_en, title_ar, destination_id, accommodation_id, meal_breakfast, meal_lunch, meal_dinner, distance_km, image_url, activities')
+    .select('id, day_number, day_number_end, title_en, title_ar, destination_id, accommodation_id, meal_breakfast, meal_lunch, meal_dinner, distance_km, road_distance_km, image_url, activities')
     .eq('tour_id', departure.tour_id)
     .order('day_number')
 
   const tourDays = rawDays ?? []
 
-  // Resolve destination descriptions
+  // Resolve destination descriptions + coordinates
   const destIds = [...new Set(tourDays.map(d => d.destination_id).filter(Boolean))] as string[]
   const destMap: Record<string, { en: string | null; ar: string | null }> = {}
+  const destCoordMap: Record<string, LatLng> = {}
+  const destNameMap: Record<string, string> = {}
   if (destIds.length > 0) {
-    const { data: dests } = await supabase.from('destinations').select('id, description_en, description_ar').in('id', destIds)
-    for (const d of dests ?? []) destMap[d.id] = { en: d.description_en, ar: d.description_ar }
+    const { data: dests } = await supabase.from('destinations').select('id, name, description_en, description_ar, latitude, longitude').in('id', destIds)
+    for (const d of dests ?? []) {
+      destMap[d.id] = { en: d.description_en, ar: d.description_ar }
+      destNameMap[d.id] = d.name
+      if (typeof d.latitude === 'number' && typeof d.longitude === 'number') {
+        destCoordMap[d.id] = { lat: d.latitude, lng: d.longitude }
+      }
+    }
   }
+
+  // Generated route map + per-day distance — same logic as the client
+  // proposal's tour map (app/quote/[token]/page.tsx).
+  const { mapStops, distanceByDayId } = buildTourMap(
+    tourDays.map(d => ({
+      id: d.id, day_number: d.day_number, destination_id: d.destination_id,
+      distance_km: d.distance_km, road_distance_km: (d as any).road_distance_km ?? null,
+    })),
+    destCoordMap,
+    destNameMap,
+  )
 
   // Resolve accommodation names
   const accomIds = [...new Set(tourDays.map(d => d.accommodation_id).filter(Boolean))] as string[]
@@ -250,7 +272,7 @@ export default async function DepartureDetailPage({
       mealBreakfast: d.meal_breakfast ?? false,
       mealLunch: d.meal_lunch ?? false,
       mealDinner: d.meal_dinner ?? false,
-      distanceKm: d.distance_km ?? null,
+      distanceKm: distanceByDayId[d.id] ?? null,
       accommodation: d.accommodation_id ? accomMap[d.accommodation_id] ?? null : null,
       activities: (Array.isArray(d.activities) ? d.activities : []).map((a: any) => ({
         name: activityMap[a.activity_id]?.name ?? '',
@@ -289,6 +311,7 @@ export default async function DepartureDetailPage({
     difficulty: 'الصعوبة',
     groupSize: 'حجم المجموعة',
     overview: 'نظرة عامة',
+    routeMap: 'خريطة المسار',
     highlights: 'أبرز ما في الرحلة',
     itinerary: 'برنامج الرحلة',
     included: 'ما يشمله السعر',
@@ -323,6 +346,7 @@ export default async function DepartureDetailPage({
     difficulty: 'Difficulty',
     groupSize: 'Group Size',
     overview: 'Tour Overview',
+    routeMap: 'Route Map',
     highlights: 'Tour Highlights',
     itinerary: 'Day-by-Day Itinerary',
     included: "What's Included",
@@ -461,6 +485,19 @@ export default async function DepartureDetailPage({
                 }}>
                   {overview}
                 </p>
+              </SectionReveal>
+            </div>
+          </section>
+        )}
+
+        {/* ── Route map — generated from the itinerary's own destinations,
+            same as the client proposal's tour map (no manual upload). ──── */}
+        {mapStops.length >= 2 && (
+          <section style={{ padding: '0 24px 72px', background: '#fff' }}>
+            <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+              <SectionReveal>
+                <SectionHeading accent={accent}>{t.routeMap}</SectionHeading>
+                <ItineraryMap stops={mapStops} width={1120} height={480} />
               </SectionReveal>
             </div>
           </section>

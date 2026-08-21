@@ -9,6 +9,9 @@ import SafariImage from '@/components/public/safari-image'
 import TourHero from '@/components/public/tour-hero'
 import ItineraryRouteLine from '@/components/public/itinerary-route-line'
 import type { ItineraryDay } from '@/components/public/itinerary-route-line'
+import ItineraryMap from '@/components/quote/itinerary-map'
+import { buildTourMap } from '@/lib/tour-map'
+import type { LatLng } from '@/lib/geo'
 import DepartureCards from '@/components/public/departure-cards'
 import type { DepartureCardData } from '@/components/public/departure-cards'
 import GalleryGrid from '@/components/public/gallery-grid'
@@ -178,7 +181,7 @@ export default async function TourDetailPage({
   // ── Tour days ─────────────────────────────────────────────────────────────
   const { data: rawDays } = await supabase
     .from('tour_days')
-    .select('id, day_number, day_number_end, title_en, title_ar, destination_id, accommodation_id, meal_breakfast, meal_lunch, meal_dinner, distance_km, image_url, activities')
+    .select('id, day_number, day_number_end, title_en, title_ar, destination_id, accommodation_id, meal_breakfast, meal_lunch, meal_dinner, distance_km, road_distance_km, image_url, activities')
     .eq('tour_id', id)
     .order('day_number')
 
@@ -194,19 +197,39 @@ export default async function TourDetailPage({
   )] as string[]
 
   const [destRes, accomRes, actRes] = await Promise.all([
-    destIds.length ? supabase.from('destinations').select('id, description_en, description_ar').in('id', destIds) : { data: [] },
+    destIds.length ? supabase.from('destinations').select('id, name, description_en, description_ar, latitude, longitude').in('id', destIds) : { data: [] },
     accomIds.length ? supabase.from('accommodations').select('id, name').in('id', accomIds) : { data: [] },
     activityIds.length ? supabase.from('activities').select('id, name, description_en, description_ar').in('id', activityIds) : { data: [] },
   ])
 
   const destMap: Record<string, { en: string | null; ar: string | null }> = {}
-  for (const d of destRes.data ?? []) destMap[d.id] = { en: d.description_en, ar: d.description_ar }
+  const destCoordMap: Record<string, LatLng> = {}
+  const destNameMap: Record<string, string> = {}
+  for (const d of destRes.data ?? []) {
+    destMap[d.id] = { en: d.description_en, ar: d.description_ar }
+    destNameMap[d.id] = d.name
+    if (typeof d.latitude === 'number' && typeof d.longitude === 'number') {
+      destCoordMap[d.id] = { lat: d.latitude, lng: d.longitude }
+    }
+  }
 
   const accomMap: Record<string, string> = {}
   for (const a of accomRes.data ?? []) accomMap[a.id] = a.name
 
   const actMap: Record<string, { name: string; en: string | null; ar: string | null }> = {}
   for (const a of actRes.data ?? []) actMap[a.id] = { name: a.name, en: a.description_en, ar: a.description_ar }
+
+  // Generated route map + per-day distance — same logic as the client
+  // proposal's tour map (app/quote/[token]/page.tsx), built from tour_days'
+  // own destinations rather than a quote's destination snapshots.
+  const { mapStops, distanceByDayId } = buildTourMap(
+    (rawDays ?? []).map(d => ({
+      id: d.id, day_number: d.day_number, destination_id: d.destination_id,
+      distance_km: d.distance_km, road_distance_km: d.road_distance_km,
+    })),
+    destCoordMap,
+    destNameMap,
+  )
 
   const days: ItineraryDay[] = (rawDays ?? []).map(d => {
     const dest = d.destination_id ? destMap[d.destination_id] : null
@@ -218,7 +241,7 @@ export default async function TourDetailPage({
       title: (isAr ? (d.title_ar || d.title_en) : d.title_en) ?? '',
       description: dest ? (isAr ? (dest.ar || dest.en) : dest.en) : null,
       imageUrl: (d as { image_url?: string | null }).image_url ?? null,
-      distanceKm: d.distance_km ?? null,
+      distanceKm: distanceByDayId[d.id] ?? null,
       mealBreakfast: d.meal_breakfast ?? false,
       mealLunch: d.meal_lunch ?? false,
       mealDinner: d.meal_dinner ?? false,
@@ -409,14 +432,14 @@ export default async function TourDetailPage({
         </section>
       )}
 
-      {/* 4. Route map */}
-      {tour.route_map_url && (
+      {/* 4. Route map — generated from the itinerary's own destinations,
+          same as the client proposal's tour map (no manual upload). */}
+      {mapStops.length >= 2 && (
         <section style={{ padding: '0 24px 72px', background: '#fff' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <SectionReveal>
               <SectionHeading accent={accent}>{t.routeMap}</SectionHeading>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={tour.route_map_url} alt={t.routeMap} style={{ width: '100%', borderRadius: 12, border: '1px solid #E5E0D8' }} />
+              <ItineraryMap stops={mapStops} width={1100} height={480} />
             </SectionReveal>
           </div>
         </section>
