@@ -232,7 +232,7 @@ export default async function DepartureDetailPage({
 
   // Generated route map + per-day distance — same logic as the client
   // proposal's tour map (app/quote/[token]/page.tsx).
-  const { mapStops, distanceByDayId } = buildTourMap(
+  const { mapStops, distanceByDayId, totalDistanceKm } = buildTourMap(
     tourDays.map(d => ({
       id: d.id, day_number: d.day_number, destination_id: d.destination_id,
       distance_km: d.distance_km, road_distance_km: (d as any).road_distance_km ?? null,
@@ -240,6 +240,10 @@ export default async function DepartureDetailPage({
     destCoordMap,
     destNameMap,
   )
+  // A manually-entered tour-level total (Tour Edit form) always wins over
+  // the sum of computed per-day legs — same "admin input wins" rule as the
+  // per-day distance itself.
+  const displayTotalDistanceKm = tour?.total_distance_km ?? totalDistanceKm
 
   // Resolve accommodation names
   const accomIds = [...new Set(tourDays.map(d => d.accommodation_id).filter(Boolean))] as string[]
@@ -455,6 +459,7 @@ export default async function DepartureDetailPage({
                   { label: t.duration, value: `${daysCount} ${t.days}` },
                   { label: t.spots, value: `${availableSpots} / ${departure.max_seats}` },
                   { label: t.status, value: statusLabel, color: statusColor },
+                  ...(displayTotalDistanceKm ? [{ label: t.totalDistance, value: `${displayTotalDistanceKm.toLocaleString()} km` }] : []),
                   ...(tour?.terrain ? [{ label: t.terrain, value: tour.terrain as string }] : []),
                   ...(tour?.difficulty_rating ? [{ label: t.difficulty, value: `${tour.difficulty_rating}/10` }] : []),
                   ...(tour?.max_group_size ? [{ label: t.groupSize, value: `Max ${tour.max_group_size}` }] : []),
@@ -581,7 +586,7 @@ export default async function DepartureDetailPage({
               <SectionReveal>
                 <SectionHeading accent={accent}>{t.gallery}</SectionHeading>
               </SectionReveal>
-              <GalleryGrid urls={gallery} tourId={departure.tour_id} alt={title ?? ''} />
+              <GalleryGrid urls={gallery} tourId={departure.tour_id} alt={title ?? ''} isAr={isAr} />
             </div>
           </section>
         )}
