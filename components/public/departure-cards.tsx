@@ -11,6 +11,7 @@ export interface DepartureCardData {
   maxSeats: number
   bookedSeats: number
   priceUsd: number | null
+  priceSingleUsd: number | null
   status: string
 }
 
@@ -90,7 +91,7 @@ export default function DepartureCards({ departures, accentColor, isAr, tourTitl
         const seats = dep.maxSeats - dep.bookedSeats
         const available = seats > 0 && dep.status !== 'cancelled' && dep.status !== 'full'
         const pct = Math.min(100, Math.round((dep.bookedSeats / dep.maxSeats) * 100))
-        const bookHref = `${localePath(`/departures/${dep.id}/book`, locale)}?price=${dep.priceUsd}&tour=${encodeURIComponent(tourTitle)}`
+        const bookHref = `${localePath(`/departures/${dep.id}/book`, locale)}?price=${dep.priceUsd}${dep.priceSingleUsd != null ? `&priceSingle=${dep.priceSingleUsd}` : ''}&tour=${encodeURIComponent(tourTitle)}`
         const detailHref = localePath(`/departures/${dep.id}`, locale)
 
         return (
