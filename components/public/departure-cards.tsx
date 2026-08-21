@@ -66,16 +66,35 @@ export default function DepartureCards({ departures, accentColor, isAr, tourTitl
         const seats = dep.maxSeats - dep.bookedSeats
         const available = seats > 0 && dep.status !== 'cancelled' && dep.status !== 'full'
         const pct = Math.min(100, Math.round((dep.bookedSeats / dep.maxSeats) * 100))
-        const bookHref = `${localePath(`/departures/${dep.id}/book`, locale)}?price=${dep.priceUsd}${dep.priceSingleUsd != null ? `&priceSingle=${dep.priceSingleUsd}` : ''}&tour=${encodeURIComponent(tourTitle)}`
+        // Either room-type price can be unset on a departure, meaning that
+        // category isn't offered — only carry the ones that actually exist.
+        const bookHref = `${localePath(`/departures/${dep.id}/book`, locale)}?${[
+          dep.priceUsd != null ? `price=${dep.priceUsd}` : null,
+          dep.priceSingleUsd != null ? `priceSingle=${dep.priceSingleUsd}` : null,
+          `tour=${encodeURIComponent(tourTitle)}`,
+        ].filter(Boolean).join('&')}`
         const detailHref = localePath(`/departures/${dep.id}`, locale)
-        const ctx = { ...pageContext(locale), tour_name: tourTitle, departure_id: dep.id, value: dep.priceUsd ?? undefined, currency: dep.priceUsd != null ? 'USD' : undefined }
+        const ctx = { ...pageContext(locale), tour_name: tourTitle, departure_id: dep.id, value: dep.priceUsd ?? dep.priceSingleUsd ?? undefined, currency: (dep.priceUsd ?? dep.priceSingleUsd) != null ? 'USD' : undefined }
 
         return (
           <motion.div key={dep.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} whileHover={reduced || !available ? {} : { y: -3, boxShadow: `0 12px 32px ${accentColor}26` }} transition={{ duration: reduced ? 0 : 0.4, delay: reduced ? 0 : i * 0.06 }} viewport={{ once: true, margin: '-40px' }} style={{ background: available ? '#fff' : '#f9f9f7', borderRadius: 14, border: `1px solid ${available ? '#E5E0D8' : '#EDEAE4'}`, borderInlineStart: available ? `4px solid ${accentColor}` : '4px solid #EDEAE4', padding: '20px 24px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 20, opacity: available ? 1 : 0.7, boxShadow: '0 2px 12px rgba(32,39,26,0.05)' }}>
             <div style={{ flex: '1 1 200px' }}><div style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: '1.05rem', fontWeight: 600, color: '#20271A', marginBottom: 4 }}>{formatDate(dep.startDate, locale)}<span style={{ color: STONE, margin: '0 8px' }}>{isAr ? '←' : '→'}</span>{formatDate(dep.endDate, locale)}</div><div style={{ fontSize: 13, color: STONE, fontFamily: 'var(--font-body, sans-serif)' }}>{daysCount(dep.startDate, dep.endDate)} {isAr ? 'أيام' : 'days'}</div></div>
             <div style={{ flex: '1 1 160px' }}><div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><StatusBadge seats={seats} status={dep.status} isAr={isAr} /></div><div style={{ height: 4, borderRadius: 99, background: '#EAE3D2', overflow: 'hidden' }}><motion.div initial={{ width: 0 }} whileInView={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.2 + i * 0.06 }} viewport={{ once: true }} style={{ height: '100%', background: pct >= 80 ? '#B0492B' : OLIVE, borderRadius: 99 }} /></div><div style={{ fontSize: 11, color: STONE, marginTop: 4, fontFamily: 'var(--font-body, sans-serif)' }}>{dep.bookedSeats}/{dep.maxSeats} {isAr ? 'محجوز' : 'booked'}</div></div>
             <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-              {dep.priceUsd != null && <div style={{ textAlign: isAr ? 'right' : 'left' }}><div style={{ fontSize: 11, color: STONE }}>{isAr ? 'للفرد' : 'per person'}</div><div style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: '1.35rem', fontWeight: 700, color: '#20271A' }}>${dep.priceUsd.toLocaleString()}</div></div>}
+              {(dep.priceUsd ?? dep.priceSingleUsd) != null && (
+                <div style={{ textAlign: isAr ? 'right' : 'left' }}>
+                  <div style={{ fontSize: 11, color: STONE }}>
+                    {isAr ? 'للفرد' : 'per person'}
+                    {dep.priceUsd == null && dep.priceSingleUsd != null && (isAr ? ' (غرفة خاصة)' : ' (single room)')}
+                  </div>
+                  <div style={{
+                    fontFamily: 'var(--font-display, sans-serif)',
+                    fontSize: '1.35rem', fontWeight: 700, color: '#20271A',
+                  }}>
+                    ${(dep.priceUsd ?? dep.priceSingleUsd)!.toLocaleString()}
+                  </div>
+                </div>
+              )}
               <div style={{ display: 'flex', gap: 8 }}>
                 <Link href={detailHref} onClick={() => trackEvent('view_departure', { ...ctx, cta_location: 'departure_card' })} style={{ padding: '9px 16px', borderRadius: 7, border: `1.5px solid ${OLIVE}`, color: OLIVE, fontWeight: 600, fontSize: 13, textDecoration: 'none', fontFamily: 'var(--font-body, sans-serif)' }}>{isAr ? 'التفاصيل' : 'Details'}</Link>
                 {available && <Link href={bookHref} onClick={() => trackEvent('booking_start', { ...ctx, cta_location: 'departure_card' })} style={{ padding: '9px 16px', borderRadius: 7, background: accentColor, color: '#fff', fontWeight: 700, fontSize: 13, textDecoration: 'none', fontFamily: 'var(--font-body, sans-serif)' }}>{isAr ? 'احجز' : 'Book'}</Link>}

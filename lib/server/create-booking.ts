@@ -29,7 +29,7 @@ export interface CreateBookingInput {
   travellers: IncomingTraveller[]
   userId?: string | null
   source?: string
-  /** 'single' only takes effect when the departure has a price_single_usd; otherwise falls back to the sharing price. */
+  /** Falls back to whichever room type the departure actually prices when the requested one isn't offered. */
   roomType?: 'sharing' | 'single'
 }
 
@@ -64,14 +64,22 @@ export async function createDepartureBooking(
     return { ok: false, status: 404, error: 'Departure not found' }
   }
 
-  // A single-room price only applies if the departure actually offers one;
-  // otherwise every booking is priced at the sharing rate regardless of what
-  // room type was requested.
-  const usingSingle = roomType === 'single' && departure.price_single_usd != null
-  const pricePerPerson = usingSingle ? Number(departure.price_single_usd) : Number(departure.price_usd)
-  const bookedRoomType: 'sharing' | 'single' | null = departure.price_single_usd != null
-    ? (usingSingle ? 'single' : 'sharing')
-    : null
+  // Either room-type price can be unset on a departure (meaning that category
+  // isn't offered) — resolve to whichever the request asked for if it's on
+  // sale, falling back to the other one if only it is. Both null is rejected
+  // below; the DB also guarantees at least one is set (group_89).
+  const sharingUsd = departure.price_usd != null ? Number(departure.price_usd) : null
+  const singleUsd = departure.price_single_usd != null ? Number(departure.price_single_usd) : null
+
+  let usingSingle: boolean
+  if (roomType === 'single' && singleUsd != null) usingSingle = true
+  else if (roomType !== 'single' && sharingUsd != null) usingSingle = false
+  else if (singleUsd != null) usingSingle = true
+  else if (sharingUsd != null) usingSingle = false
+  else return { ok: false, status: 400, error: 'This departure has no price configured.' }
+
+  const pricePerPerson = usingSingle ? singleUsd! : sharingUsd!
+  const bookedRoomType: 'sharing' | 'single' = usingSingle ? 'single' : 'sharing'
 
   const groupSize = travellers.length
   const totalPrice = pricePerPerson * groupSize

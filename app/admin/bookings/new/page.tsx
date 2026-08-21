@@ -23,7 +23,7 @@ export default async function NewBookingPage({
   const [{ data: departures }, { data: requests }, { data: clients }] = await Promise.all([
     admin
       .from('departures')
-      .select('id, start_date, end_date, max_seats, booked_seats, price_usd, status, tours ( title_en )')
+      .select('id, start_date, end_date, max_seats, booked_seats, price_usd, price_single_usd, status, tours ( title_en )')
       .eq('is_active', true)
       .order('start_date', { ascending: true }),
     // Live enquiries only — an archived request is not something you would book
@@ -48,7 +48,7 @@ export default async function NewBookingPage({
     startDate: d.start_date,
     endDate: d.end_date,
     seatsLeft: Math.max(0, d.max_seats - d.booked_seats),
-    price: Number(d.price_usd),
+    price: Number(d.price_usd ?? d.price_single_usd ?? 0),
     status: d.status,
   }))
 

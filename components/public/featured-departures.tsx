@@ -100,7 +100,7 @@ export default function FeaturedDepartures({ lang }: { lang: Locale }) {
                   </p>
                   <div className="flex items-center justify-between">
                     <span className="text-xl font-bold" style={{ color: G }}>
-                      ${dep.price_usd?.toLocaleString()}
+                      ${(dep.price_usd ?? dep.price_single_usd)?.toLocaleString()}
                       <span className="text-xs font-normal text-gray-500 ml-1">{t.perPerson}</span>
                     </span>
                     <span className={`text-xs font-medium ${isAvailable ? 'text-green-600' : 'text-red-600'}`}>

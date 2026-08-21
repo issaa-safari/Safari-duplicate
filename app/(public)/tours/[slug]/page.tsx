@@ -288,10 +288,12 @@ export default async function TourDetailPage({
     status: d.status,
   }))
 
-  // Lowest price for hero
+  // Lowest price for hero — a departure with no sharing price still has a
+  // single-room price to consider, and vice versa.
   const lowestPrice = departures.reduce<number | null>((min, d) => {
-    if (d.priceUsd == null) return min
-    return min == null || d.priceUsd < min ? d.priceUsd : min
+    const price = d.priceUsd ?? d.priceSingleUsd
+    if (price == null) return min
+    return min == null || price < min ? price : min
   }, null)
 
   const hasAvailable = departures.some(d => d.maxSeats - d.bookedSeats > 0 && d.status !== 'cancelled')

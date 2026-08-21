@@ -45,7 +45,9 @@ function BookingFormContent() {
   // booking form — which has a complete Arabic dictionary below — rendered in
   // English at /ar/departures/<id>/book.
   const locale = useLocale()
-  const sharingPrice = searchParams.get('price') ? parseFloat(searchParams.get('price')!) : 0
+  // Either room-type price can be absent — that means this departure doesn't
+  // offer that category (e.g. sharing-only or single-only trips).
+  const sharingPrice = searchParams.get('price') ? parseFloat(searchParams.get('price')!) : null
   const singlePrice = searchParams.get('priceSingle') ? parseFloat(searchParams.get('priceSingle')!) : null
   const depositPerPerson = searchParams.get('deposit') ? parseFloat(searchParams.get('deposit')!) : 0
   const tourTitle = searchParams.get('tour') || ''
@@ -54,8 +56,10 @@ function BookingFormContent() {
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
   const [groupSize, setGroupSize] = useState(1)
-  const [roomType, setRoomType] = useState<'sharing' | 'single'>('sharing')
-  const pricePerPerson = roomType === 'single' && singlePrice != null ? singlePrice : sharingPrice
+  const [roomType, setRoomType] = useState<'sharing' | 'single'>(sharingPrice != null ? 'sharing' : 'single')
+  const pricePerPerson = (roomType === 'single' && singlePrice != null)
+    ? singlePrice
+    : (sharingPrice ?? singlePrice ?? 0)
   const [signedIn, setSignedIn] = useState<boolean | null>(null)
   const [travellers, setTravellers] = useState<Traveller[]>([emptyTraveller()])
 
@@ -236,8 +240,9 @@ function BookingFormContent() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="bg-gray-50 rounded-xl p-8 border border-gray-200">
-              {/* Room Type Selection */}
-              {singlePrice != null && (
+              {/* Room Type Selection — only when both categories are actually on sale;
+                  a departure offering just one room type has nothing to choose. */}
+              {sharingPrice != null && singlePrice != null && (
                 <div className="mb-8">
                   <label className="block text-sm font-semibold text-gray-900 mb-4">{t.roomType} *</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

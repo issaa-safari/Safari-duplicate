@@ -90,9 +90,9 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="priceUsd" className="block text-sm font-medium text-foreground mb-1">Price per Seat, Sharing (USD)</label>
-              <input id="priceUsd" type="number" name="priceUsd" min={0} step="0.01" required placeholder="e.g. 4500"
+              <input id="priceUsd" type="number" name="priceUsd" min={0} step="0.01" placeholder="e.g. 4500"
                 value={price} onChange={(e) => setPrice(e.target.value)} className={inputCls} />
-              <p className="text-[11px] text-muted-foreground mt-1">Shown on the website &amp; charged at booking. Pre-filled from the template, editable per departure.</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Shown on the website &amp; charged at booking. Pre-filled from the template, editable per departure. Leave blank to not offer a sharing room option.</p>
             </div>
             <div>
               <label htmlFor="status" className="block text-sm font-medium text-foreground mb-1">Status</label>

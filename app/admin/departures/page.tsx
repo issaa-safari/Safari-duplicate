@@ -105,7 +105,11 @@ export default async function DeparturesPage({
                       <span className="text-xs text-muted-foreground block">{dep.booked_seats} booked</span>
                     </td>
                     <td data-label="Price" className="px-4 py-3 text-muted-foreground hidden md:table-cell">
-                      ${Number(dep.price_usd).toLocaleString()}
+                      {dep.price_usd != null
+                        ? `$${Number(dep.price_usd).toLocaleString()}`
+                        : dep.price_single_usd != null
+                          ? `$${Number(dep.price_single_usd).toLocaleString()} (single only)`
+                          : '—'}
                     </td>
                     <td data-label="Status" className="px-4 py-3">
                       <StatusBadge status={dep.status} />

@@ -168,7 +168,7 @@ export default function DepartureHero({
 
         {/* Price + CTAs */}
         <motion.div {...fadeUp(0.44)} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16 }}>
-          {priceUsd != null && (
+          {(priceUsd ?? singleRoomUsd) != null && (
             <div>
               <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-body, sans-serif)', display: 'block', marginBottom: 2 }}>
                 {perPersonLabel}
@@ -177,9 +177,9 @@ export default function DepartureHero({
                 fontFamily: 'var(--font-display, "Readex Pro", sans-serif)',
                 fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 700, color: '#fff',
               }}>
-                ${priceUsd.toLocaleString()}
+                ${(priceUsd ?? singleRoomUsd)!.toLocaleString()}
               </span>
-              {singleRoomUsd != null && singleRoomUsd > 0 && (
+              {priceUsd != null && singleRoomUsd != null && singleRoomUsd > 0 && (
                 <span style={{
                   display: 'block', marginTop: 4, fontSize: 13,
                   color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--font-body, sans-serif)',
