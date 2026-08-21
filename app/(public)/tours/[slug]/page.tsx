@@ -14,7 +14,6 @@ import type { DepartureCardData } from '@/components/public/departure-cards'
 import GalleryGrid from '@/components/public/gallery-grid'
 import TrustStrip from '@/components/public/trust-strip'
 import type { StaffMember } from '@/components/public/trust-strip'
-import TourEnquiryForm from '@/components/public/tour-enquiry-form'
 import SectionReveal from '@/components/public/section-reveal'
 import StickyEnquiryBar from '@/components/public/sticky-enquiry-bar'
 import { getServerLocale } from '@/lib/i18n'
@@ -289,15 +288,19 @@ export default async function TourDetailPage({
     itinerary: 'البرنامج اليومي', included: 'ما يشمله السعر',
     excluded: 'ما لا يشمله السعر', gallery: 'معرض الصور',
     departures: 'المواعيد المتاحة', trust: 'لماذا نحن؟',
-    reviews: 'آراء المسافرين', enquiry: 'تواصل معنا',
     routeMap: 'خريطة المسار', faqs: 'الأسئلة الشائعة',
+    ctaTitle: 'هل أنت مستعد لهذه المغامرة؟',
+    ctaText: 'احجز مقعدك مباشرة، أو تواصل معنا وسنساعدك في التخطيط.',
+    bookNow: 'احجز الآن', sendInquiry: 'أرسل استفساراً', whatsapp: 'واتساب',
   } : {
     overview: 'Tour Overview', highlights: 'Tour Highlights',
     itinerary: 'Day-by-Day Itinerary', included: "What's Included",
     excluded: "What's Excluded", gallery: 'Photo Gallery',
     departures: 'Dates & Availability', trust: 'Why Us',
-    reviews: 'Traveller Reviews', enquiry: 'Send an Enquiry',
     routeMap: 'Route Map', faqs: 'FAQs',
+    ctaTitle: 'Ready for this adventure?',
+    ctaText: "Book your spot directly, or reach out and we'll help you plan it.",
+    bookNow: 'Book Now', sendInquiry: 'Send an Enquiry', whatsapp: 'WhatsApp',
   }
 
   return (
@@ -556,25 +559,53 @@ export default async function TourDetailPage({
         </section>
       )}
 
-      {/* 11. Final enquiry form */}
+      {/* 11. Final CTA — book first, enquiry and WhatsApp as fallbacks */}
       <section style={{ padding: '80px 24px', background: '#fff' }}>
-        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+        <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center' }}>
           <SectionReveal>
-            <SectionHeading accent={accent}>{t.enquiry}</SectionHeading>
+            <h2 style={{
+              fontFamily: 'var(--font-display, "Readex Pro", sans-serif)',
+              fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', fontWeight: 700, color: BUSH, margin: '0 0 12px',
+            }}>
+              {t.ctaTitle}
+            </h2>
             <p style={{ color: STONE, marginBottom: 32, fontFamily: 'var(--font-body, sans-serif)', fontSize: '1rem' }}>
-              {isAr
-                ? 'أخبرنا عن رحلة أحلامك وسنبدأ في إعداد عرض مخصص لك.'
-                : "Tell us about your dream trip and we’ll start building a personalised proposal."}
+              {t.ctaText}
             </p>
           </SectionReveal>
           <SectionReveal delay={0.1}>
-            <TourEnquiryForm
-              tourId={id}
-              tourTitleEn={tour.title_en ?? ''}
-              accentColor={accent}
-              isAr={isAr}
-              locale={locale}
-            />
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12 }}>
+              {hasAvailable && (
+                <a href={bookHref} style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '14px 28px', borderRadius: 8,
+                  background: accent, color: '#fff',
+                  fontWeight: 700, fontSize: 15, textDecoration: 'none',
+                  fontFamily: 'var(--font-body, sans-serif)',
+                }}>
+                  {t.bookNow}
+                </a>
+              )}
+              <a href={enquireHref} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '14px 28px', borderRadius: 8,
+                background: OLIVE, color: '#fff',
+                fontWeight: 600, fontSize: 15, textDecoration: 'none',
+                fontFamily: 'var(--font-body, sans-serif)',
+              }}>
+                {t.sendInquiry}
+              </a>
+              <a href={waHref} target="_blank" rel="noopener noreferrer" style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '14px 28px', borderRadius: 8,
+                background: '#25D366', color: '#fff',
+                fontWeight: 600, fontSize: 15, textDecoration: 'none',
+                fontFamily: 'var(--font-body, sans-serif)',
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                {t.whatsapp}
+              </a>
+            </div>
           </SectionReveal>
         </div>
       </section>
