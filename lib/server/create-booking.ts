@@ -29,6 +29,8 @@ export interface CreateBookingInput {
   travellers: IncomingTraveller[]
   userId?: string | null
   source?: string
+  /** 'single' only takes effect when the departure has a price_single_usd; otherwise falls back to the sharing price. */
+  roomType?: 'sharing' | 'single'
 }
 
 export type CreateBookingResult =
@@ -40,20 +42,21 @@ export async function createDepartureBooking(
   departureId: string,
   input: CreateBookingInput,
 ): Promise<CreateBookingResult> {
-  const { travellers, userId, source } = input
+  const { travellers, userId, source, roomType } = input
 
   if (!departureId || !travellers || travellers.length === 0) {
     return { ok: false, status: 400, error: 'Missing required fields' }
   }
 
   // 1. Resolve the departure — fetch tour_id up front (required for request
-  // attribution), and price_usd / security_deposit_usd so the money is priced
-  // from what is actually on sale rather than trusted from the request body.
-  // A prior version took `totalPrice` straight off the client, which made the
-  // amount charged for a website booking whatever the visitor's browser sent.
+  // attribution), and price_usd / price_single_usd / security_deposit_usd so
+  // the money is priced from what is actually on sale rather than trusted
+  // from the request body. A prior version took `totalPrice` straight off
+  // the client, which made the amount charged for a website booking whatever
+  // the visitor's browser sent.
   const { data: departure, error: fetchError } = await admin
     .from('departures')
-    .select('id, tour_id, max_seats, booked_seats, price_usd, security_deposit_usd')
+    .select('id, tour_id, max_seats, booked_seats, price_usd, price_single_usd, security_deposit_usd')
     .eq('id', departureId)
     .single()
 
@@ -61,8 +64,17 @@ export async function createDepartureBooking(
     return { ok: false, status: 404, error: 'Departure not found' }
   }
 
+  // A single-room price only applies if the departure actually offers one;
+  // otherwise every booking is priced at the sharing rate regardless of what
+  // room type was requested.
+  const usingSingle = roomType === 'single' && departure.price_single_usd != null
+  const pricePerPerson = usingSingle ? Number(departure.price_single_usd) : Number(departure.price_usd)
+  const bookedRoomType: 'sharing' | 'single' | null = departure.price_single_usd != null
+    ? (usingSingle ? 'single' : 'sharing')
+    : null
+
   const groupSize = travellers.length
-  const totalPrice = Number(departure.price_usd) * groupSize
+  const totalPrice = pricePerPerson * groupSize
   const depositDue = Number(departure.security_deposit_usd ?? 0) * groupSize
   const availableSpots = departure.max_seats - departure.booked_seats
 
@@ -160,6 +172,7 @@ export async function createDepartureBooking(
       number_of_travellers: groupSize,
       total_price_usd: totalPrice,
       deposit_due_usd: depositDue,
+      room_type: bookedRoomType,
       status: 'confirmed',
       created_at: new Date().toISOString(),
     })

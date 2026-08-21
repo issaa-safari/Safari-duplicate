@@ -15,6 +15,7 @@ interface Departure {
   max_seats: number
   booked_seats: number
   price_usd: number
+  price_single_usd: number | null
   security_deposit_usd: number
   status: string
   is_active: boolean
@@ -137,7 +138,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="priceUsd" className="block text-sm font-medium text-foreground mb-1">Price per Seat (USD)</label>
+              <label htmlFor="priceUsd" className="block text-sm font-medium text-foreground mb-1">Price per Seat, Sharing (USD)</label>
               <input id="priceUsd"
                 type="number"
                 name="priceUsd"
@@ -157,6 +158,24 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="priceSingleUsd" className="block text-sm font-medium text-foreground mb-1">
+              Price per Seat, Single Room (USD)
+            </label>
+            <input id="priceSingleUsd"
+              type="number"
+              name="priceSingleUsd"
+              min={0}
+              step="0.01"
+              defaultValue={departure.price_single_usd ?? ''}
+              placeholder="Leave blank to not offer a single room option"
+              className={inputCls}
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              When set, customers can choose sharing or single room at booking. Leave blank to hide the choice.
+            </p>
           </div>
 
           <div>

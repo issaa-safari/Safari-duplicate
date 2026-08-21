@@ -16,8 +16,9 @@ export async function POST(
   try {
     const { token } = await params
     // Pricing is resolved server-side from the departure record — see the note
-    // in lib/server/create-booking.ts.
-    const { travellers } = await request.json()
+    // in lib/server/create-booking.ts. roomType only selects which of the
+    // departure's own prices applies.
+    const { travellers, roomType } = await request.json()
 
     const admin = createAdminClient()
 
@@ -39,6 +40,7 @@ export async function POST(
     const result = await createDepartureBooking(admin, link.departure_id, {
       travellers,
       source: 'booking_link',
+      roomType: roomType === 'single' ? 'single' : 'sharing',
     })
 
     if (!result.ok) {

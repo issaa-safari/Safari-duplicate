@@ -28,6 +28,14 @@
 -- database exactly on tables, columns, indexes, constraints, policies,
 -- functions and triggers. See docs/current/schema-drift.md.
 
+--
+-- PostgreSQL database dump
+--
+
+
+-- Dumped from database version 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+-- Dumped by pg_dump version 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1)
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -1646,51 +1654,20 @@ CREATE TABLE public.bookings (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     user_id uuid,
-    client_id uuid,
-    quote_id uuid,
     request_id uuid,
     start_date date,
     end_date date,
+    deposit_due_usd numeric(12,2) DEFAULT 0 NOT NULL,
+    room_type text,
+    client_id uuid,
+    quote_id uuid,
     CONSTRAINT bookings_date_order_chk CHECK (((start_date IS NULL) OR (end_date IS NULL) OR (end_date >= start_date))),
+    CONSTRAINT bookings_deposit_due_usd_chk CHECK ((deposit_due_usd >= (0)::numeric)),
     CONSTRAINT bookings_number_of_travellers_check CHECK ((number_of_travellers > 0)),
+    CONSTRAINT bookings_room_type_chk CHECK (((room_type IS NULL) OR (room_type = ANY (ARRAY['sharing'::text, 'single'::text])))),
     CONSTRAINT bookings_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'cancelled'::text, 'completed'::text]))),
     CONSTRAINT bookings_total_price_usd_check CHECK ((total_price_usd >= (0)::numeric))
 );
-
-
---
--- Name: COLUMN bookings.departure_id; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.bookings.departure_id IS 'Null for a booking that is not a seat on a scheduled departure — a private trip, or one taken before anything is scheduled. Seat accounting only applies when this is set.';
-
-
---
--- Name: COLUMN bookings.client_id; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.bookings.client_id IS 'Null only for a booking recorded before the client is known. Normally resolved from the request, the chosen client, or the lead traveller''s email.';
-
-
---
--- Name: COLUMN bookings.request_id; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.bookings.request_id IS 'The enquiry this booking came from, when there was one. Set null on delete so losing a request never loses the booking.';
-
-
---
--- Name: COLUMN bookings.start_date; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.bookings.start_date IS 'The booking''s own start date, for a trip that is not on a scheduled departure. When departure_id is set the departure''s dates win — resolveTripDates in lib/trip-dates.ts is the one place that decides.';
-
-
---
--- Name: COLUMN bookings.end_date; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.bookings.end_date IS 'See start_date. Nullable: dates not yet agreed is a real state.';
 
 
 --
@@ -1762,26 +1739,19 @@ CREATE TABLE public.company_settings (
     logo_url text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    usd_to_kes_rate numeric(10,4) DEFAULT 129 NOT NULL,
     auto_complete_on_end_date boolean DEFAULT false NOT NULL,
     auto_archive_enabled boolean DEFAULT false NOT NULL,
     auto_archive_days integer DEFAULT 30 NOT NULL,
     auto_archive_stages text[] DEFAULT ARRAY['not_booked'::text, 'completed'::text] NOT NULL,
     auto_delete_enabled boolean DEFAULT false NOT NULL,
     auto_delete_days integer DEFAULT 90 NOT NULL,
-    usd_to_kes_rate numeric(10,4) DEFAULT 129 NOT NULL,
     prebooked_enabled boolean DEFAULT false NOT NULL,
     auto_expire_quotes boolean DEFAULT true NOT NULL,
     CONSTRAINT company_settings_auto_archive_days_check CHECK ((auto_archive_days >= 0)),
     CONSTRAINT company_settings_auto_delete_days_check CHECK ((auto_delete_days >= 0)),
     CONSTRAINT company_settings_usd_to_kes_rate_check CHECK ((usd_to_kes_rate > (0)::numeric))
 );
-
-
---
--- Name: COLUMN company_settings.auto_expire_quotes; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.company_settings.auto_expire_quotes IS 'Daily cron marks sent/viewed quote versions expired once valid_until has passed. See shouldExpireQuote in lib/automation.ts.';
 
 
 --
@@ -1843,9 +1813,13 @@ CREATE TABLE public.departures (
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    security_deposit_usd numeric(12,2) DEFAULT 0 NOT NULL,
+    price_single_usd numeric(14,2),
     CONSTRAINT departures_booked_seats_check CHECK ((booked_seats >= 0)),
     CONSTRAINT departures_max_seats_check CHECK ((max_seats > 0)),
+    CONSTRAINT departures_price_single_usd_chk CHECK (((price_single_usd IS NULL) OR (price_single_usd >= (0)::numeric))),
     CONSTRAINT departures_price_usd_check CHECK ((price_usd >= (0)::numeric)),
+    CONSTRAINT departures_security_deposit_usd_chk CHECK ((security_deposit_usd >= (0)::numeric)),
     CONSTRAINT departures_status_check CHECK ((status = ANY (ARRAY['available'::text, 'full'::text, 'closed'::text, 'cancelled'::text])))
 );
 
@@ -2007,7 +1981,6 @@ CREATE SEQUENCE public.invoice_number_seq
 CREATE TABLE public.invoices (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    quote_id uuid,
     booking_id uuid,
     invoice_number text,
     status text DEFAULT 'draft'::text NOT NULL,
@@ -2026,9 +1999,10 @@ CREATE TABLE public.invoices (
     void_reason text,
     created_by uuid,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    quote_id uuid,
     CONSTRAINT invoices_issued_shape_chk CHECK ((((status = 'draft'::text) AND (invoice_number IS NULL)) OR ((status = ANY (ARRAY['issued'::text, 'void'::text])) AND (invoice_number IS NOT NULL) AND (issue_date IS NOT NULL)))),
     CONSTRAINT invoices_status_chk CHECK ((status = ANY (ARRAY['draft'::text, 'issued'::text, 'void'::text]))),
-    CONSTRAINT invoices_trip_ref_chk CHECK (((quote_id IS NOT NULL) OR (booking_id IS NOT NULL)))
+    CONSTRAINT invoices_trip_ref_chk CHECK (((quote_id IS NOT NULL) OR (booking_id IS NOT NULL) OR (client_id IS NOT NULL) OR (client_name IS NOT NULL)))
 );
 
 
@@ -2599,6 +2573,34 @@ CREATE TABLE public.rooms (
 
 
 --
+-- Name: security_deposits; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.security_deposits (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    booking_id uuid NOT NULL,
+    booking_traveller_id uuid,
+    motorbike_id uuid,
+    rider_name text,
+    amount_usd numeric(12,2) NOT NULL,
+    method text,
+    reference text,
+    notes text,
+    taken_at date DEFAULT CURRENT_DATE NOT NULL,
+    returned_amount_usd numeric(12,2) DEFAULT 0 NOT NULL,
+    returned_at date,
+    retained_reason text,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT security_deposits_amount_chk CHECK ((amount_usd > (0)::numeric)),
+    CONSTRAINT security_deposits_retained_reason_chk CHECK (((returned_at IS NULL) OR (returned_amount_usd = amount_usd) OR ((retained_reason IS NOT NULL) AND (btrim(retained_reason) <> ''::text)))),
+    CONSTRAINT security_deposits_returned_amount_chk CHECK (((returned_amount_usd >= (0)::numeric) AND (returned_amount_usd <= amount_usd))),
+    CONSTRAINT security_deposits_returned_shape_chk CHECK (((returned_at IS NOT NULL) OR (returned_amount_usd = (0)::numeric)))
+);
+
+
+--
 -- Name: services; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2924,7 +2926,7 @@ CREATE TABLE public.trip_payments (
     CONSTRAINT trip_payments_method_check CHECK ((method = ANY (ARRAY['bank_transfer'::text, 'card'::text, 'cash'::text, 'mpesa'::text, 'cheque'::text, 'other'::text]))),
     CONSTRAINT trip_payments_payment_type_check CHECK ((payment_type = ANY (ARRAY['deposit'::text, 'balance'::text, 'full'::text, 'partial'::text, 'refund'::text]))),
     CONSTRAINT trip_payments_source_table_check CHECK ((source_table = ANY (ARRAY['quote_payments'::text, 'booking_payments'::text]))),
-    CONSTRAINT trip_payments_trip_ref_chk CHECK (((quote_id IS NOT NULL) OR (booking_id IS NOT NULL)))
+    CONSTRAINT trip_payments_trip_ref_chk CHECK (((quote_id IS NOT NULL) OR (booking_id IS NOT NULL) OR (invoice_id IS NOT NULL)))
 );
 
 
@@ -3502,6 +3504,14 @@ ALTER TABLE ONLY public.reviews
 
 ALTER TABLE ONLY public.rooms
     ADD CONSTRAINT rooms_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: security_deposits security_deposits_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.security_deposits
+    ADD CONSTRAINT security_deposits_pkey PRIMARY KEY (id);
 
 
 --
@@ -4419,6 +4429,27 @@ CREATE INDEX rooms_accommodation_idx ON public.rooms USING btree (accommodation_
 
 
 --
+-- Name: security_deposits_booking_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX security_deposits_booking_idx ON public.security_deposits USING btree (booking_id);
+
+
+--
+-- Name: security_deposits_held_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX security_deposits_held_idx ON public.security_deposits USING btree (booking_id) WHERE (returned_at IS NULL);
+
+
+--
+-- Name: security_deposits_traveller_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX security_deposits_traveller_idx ON public.security_deposits USING btree (booking_traveller_id);
+
+
+--
 -- Name: services_active_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4920,6 +4951,13 @@ CREATE TRIGGER update_motorbikes_updated_at BEFORE UPDATE ON public.motorbikes F
 --
 
 CREATE TRIGGER update_proposal_templates_updated_at BEFORE UPDATE ON public.proposal_templates FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: security_deposits update_security_deposits_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_security_deposits_updated_at BEFORE UPDATE ON public.security_deposits FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
 --
@@ -5450,6 +5488,30 @@ ALTER TABLE ONLY public.requests
 
 ALTER TABLE ONLY public.rooms
     ADD CONSTRAINT rooms_accommodation_id_fkey FOREIGN KEY (accommodation_id) REFERENCES public.accommodations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: security_deposits security_deposits_booking_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.security_deposits
+    ADD CONSTRAINT security_deposits_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: security_deposits security_deposits_booking_traveller_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.security_deposits
+    ADD CONSTRAINT security_deposits_booking_traveller_id_fkey FOREIGN KEY (booking_traveller_id) REFERENCES public.booking_travellers(id) ON DELETE SET NULL;
+
+
+--
+-- Name: security_deposits security_deposits_motorbike_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.security_deposits
+    ADD CONSTRAINT security_deposits_motorbike_id_fkey FOREIGN KEY (motorbike_id) REFERENCES public.motorbikes(id) ON DELETE SET NULL;
 
 
 --
@@ -6012,6 +6074,12 @@ ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: security_deposits; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.security_deposits ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: services; Type: ROW SECURITY; Schema: public; Owner: -

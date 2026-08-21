@@ -15,6 +15,8 @@ export async function POST(request: Request) {
   const maxSeats = Number(body.max_seats)
   const bookedSeats = Number(body.booked_seats ?? 0)
   const priceUsd = Number(body.price_usd)
+  const priceSingleRaw = body.price_single_usd
+  const priceSingleUsd = priceSingleRaw === '' || priceSingleRaw == null ? null : Number(priceSingleRaw)
   const status = typeof body.status === 'string' ? body.status : 'available'
   const allowedStatuses = new Set(['available', 'limited', 'full', 'closed', 'cancelled'])
 
@@ -29,6 +31,9 @@ export async function POST(request: Request) {
   }
   if (!Number.isFinite(priceUsd) || priceUsd < 0 || !allowedStatuses.has(status)) {
     return NextResponse.json({ error: 'Price or status is invalid.' }, { status: 400 })
+  }
+  if (priceSingleUsd != null && (!Number.isFinite(priceSingleUsd) || priceSingleUsd < 0)) {
+    return NextResponse.json({ error: 'Single room price is invalid.' }, { status: 400 })
   }
 
   const admin = createAdminClient()
@@ -50,6 +55,7 @@ export async function POST(request: Request) {
       max_seats: maxSeats,
       booked_seats: bookedSeats,
       price_usd: priceUsd,
+      price_single_usd: priceSingleUsd,
       status,
       internal_notes: typeof body.internal_notes === 'string' ? body.internal_notes.trim() || null : null,
       is_active: body.is_active !== false,
