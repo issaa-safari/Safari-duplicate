@@ -159,16 +159,19 @@ function DayCard({
         transition={{ duration: reduced ? 0 : 0.3, ease: [0.22, 1, 0.36, 1] as const }}
         style={{ overflow: 'hidden' }}
       >
-        {/* Day image */}
+        {/* Day image — SafariImage renders its <Image> with `fill`, which needs
+            a positioned ancestor with real height; aspectRatio gives it one. */}
         {day.imageUrl && (
-          <SafariImage
-            src={day.imageUrl}
-            seed={day.id}
-            alt={day.title}
-            className="w-full"
-            sizes="(max-width: 768px) 100vw, 700px"
-            useStockFallback={false}
-          />
+          <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9' }}>
+            <SafariImage
+              src={day.imageUrl}
+              seed={day.id}
+              alt={day.title}
+              className="w-full h-full"
+              sizes="(max-width: 768px) 100vw, 700px"
+              useStockFallback={false}
+            />
+          </div>
         )}
 
         <div style={{ padding: '20px 24px 24px' }}>
