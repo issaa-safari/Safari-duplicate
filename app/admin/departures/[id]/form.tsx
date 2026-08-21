@@ -14,7 +14,7 @@ interface Departure {
   end_date: string
   max_seats: number
   booked_seats: number
-  price_usd: number
+  price_usd: number | null
   price_single_usd: number | null
   security_deposit_usd: number
   status: string
@@ -144,8 +144,8 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
                 name="priceUsd"
                 min={0}
                 step="0.01"
-                required
-                defaultValue={departure.price_usd}
+                defaultValue={departure.price_usd ?? ''}
+                placeholder="Leave blank to not offer a sharing room option"
                 className={inputCls}
               />
             </div>

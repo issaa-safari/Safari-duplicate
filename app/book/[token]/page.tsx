@@ -37,7 +37,7 @@ export default async function BookingLinkPage({
 
   const { data: departure } = await admin
     .from('departures')
-    .select('id, start_date, end_date, price_usd, price_single_usd, max_seats, booked_seats, status, tours ( title_en, title_ar )')
+    .select('id, start_date, end_date, price_usd, price_single_usd, security_deposit_usd, max_seats, booked_seats, status, tours ( title_en, title_ar )')
     .eq('id', link.departure_id)
     .maybeSingle()
 
@@ -88,8 +88,9 @@ export default async function BookingLinkPage({
             <BookingLinkForm
               token={token}
               locale={locale}
-              pricePerPerson={Number(departure.price_usd) || 0}
+              pricePerPerson={departure.price_usd != null ? Number(departure.price_usd) : null}
               singlePricePerPerson={departure.price_single_usd != null ? Number(departure.price_single_usd) : null}
+              depositPerPerson={Number(departure.security_deposit_usd) || 0}
               seatsLeft={seatsLeft}
             />
           )}

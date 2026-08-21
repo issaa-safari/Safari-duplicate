@@ -15,7 +15,8 @@ export async function createDeparture(formData: FormData) {
   const endDate = formData.get('endDate') as string
   const maxSeats = parseInt(formData.get('maxSeats') as string) || 12
   const bookedSeats = parseInt(formData.get('bookedSeats') as string) || 0
-  const priceUsd = parseFloat(formData.get('priceUsd') as string)
+  const priceRaw = (formData.get('priceUsd') as string)?.trim()
+  const priceUsd = priceRaw ? parseFloat(priceRaw) : null
   const priceSingleRaw = (formData.get('priceSingleUsd') as string)?.trim()
   const priceSingleUsd = priceSingleRaw ? parseFloat(priceSingleRaw) : null
   const depositRaw = (formData.get('securityDepositUsd') as string)?.trim()
@@ -26,8 +27,9 @@ export async function createDeparture(formData: FormData) {
   if (!tourId) throw new Error('Please select a tour.')
   if (!startDate || !endDate) throw new Error('Start and end dates are required.')
   if (new Date(endDate) < new Date(startDate)) throw new Error('End date cannot be before start date.')
-  if (isNaN(priceUsd)) throw new Error('Price is required.')
+  if (priceUsd != null && (isNaN(priceUsd) || priceUsd < 0)) throw new Error('Sharing price is invalid.')
   if (priceSingleUsd != null && (isNaN(priceSingleUsd) || priceSingleUsd < 0)) throw new Error('Single room price is invalid.')
+  if (priceUsd == null && priceSingleUsd == null) throw new Error('Set at least one price — sharing, single room, or both.')
   if (isNaN(securityDepositUsd) || securityDepositUsd < 0) throw new Error('Security deposit cannot be negative.')
   if (bookedSeats > maxSeats) throw new Error('Booked seats cannot exceed max seats.')
 

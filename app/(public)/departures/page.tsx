@@ -42,7 +42,8 @@ interface Departure {
   end_date: string
   max_seats: number
   booked_seats: number
-  price_usd: number
+  price_usd: number | null
+  price_single_usd: number | null
   status: string
   tour?: { title_en: string; title_ar: string; description_en: string; destination_id: string }
 }
@@ -79,7 +80,7 @@ export default async function DeparturesPage({
   const { data: departures } = await admin
     .from('departures')
     .select(
-      `id, tour_id, start_date, end_date, max_seats, booked_seats, price_usd, status,
+      `id, tour_id, start_date, end_date, max_seats, booked_seats, price_usd, price_single_usd, status,
        tour:tours(title_en, title_ar, subtitle_en, type, hero_image_url, gallery_urls)`
     )
     .eq('is_active', true)
@@ -248,7 +249,7 @@ export default async function DeparturesPage({
                         <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: `${G}15` }}>
                           <div className="text-sm text-gray-600">{t.price}</div>
                           <div className="text-2xl font-bold" style={{ color: G }}>
-                            ${dep.price_usd?.toLocaleString() || '—'}
+                            ${(dep.price_usd ?? dep.price_single_usd)?.toLocaleString() ?? '—'}
                           </div>
                         </div>
 

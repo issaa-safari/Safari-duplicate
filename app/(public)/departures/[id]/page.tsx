@@ -290,8 +290,17 @@ export default async function DepartureDetailPage({
   })
 
   const depositUsd = Number(departure.security_deposit_usd) || 0
+  // Either room-type price can be unset on a departure, meaning that category
+  // isn't offered — build the booking link with whichever prices actually exist.
+  const sharingUsd = departure.price_usd != null ? Number(departure.price_usd) : null
   const singleUsd = departure.price_single_usd != null ? Number(departure.price_single_usd) : null
-  const bookHref = `${localePath(`/departures/${id}/book`, locale)}?price=${departure.price_usd}${singleUsd != null ? `&priceSingle=${singleUsd}` : ''}&deposit=${depositUsd}&tour=${encodeURIComponent(title ?? '')}`
+  const displayUsd = sharingUsd ?? singleUsd
+  const bookHref = `${localePath(`/departures/${id}/book`, locale)}?${[
+    sharingUsd != null ? `price=${sharingUsd}` : null,
+    singleUsd != null ? `priceSingle=${singleUsd}` : null,
+    `deposit=${depositUsd}`,
+    `tour=${encodeURIComponent(title ?? '')}`,
+  ].filter(Boolean).join('&')}`
   const waHref = whatsappLink(`Hi, I'm interested in the ${title} departure on ${formatDate(departure.start_date, 'en')}`)
   const enquireHref = `${localePath('/quote-request', locale)}?tour=${departure.tour_id}`
 
@@ -388,7 +397,7 @@ export default async function DepartureDetailPage({
           description: overview,
           image: tour?.hero_image_url,
           durationDays: daysCount,
-          priceUsd: departure.price_usd,
+          priceUsd: displayUsd,
           startDate: departure.start_date,
           endDate: departure.end_date,
           available: isAvailable,
@@ -412,7 +421,7 @@ export default async function DepartureDetailPage({
           daysLabel={t.days}
           statusLabel={statusLabel}
           statusColor={statusColor}
-          priceUsd={departure.price_usd}
+          priceUsd={sharingUsd}
           perPersonLabel={t.perPerson}
           singleRoomUsd={singleUsd}
           singleRoomLabel={t.singleRoom}
@@ -439,7 +448,7 @@ export default async function DepartureDetailPage({
         />
 
         <StickyEnquiryBar
-          price={departure.price_usd}
+          price={displayUsd}
           accentColor={accent}
           enquireHref={enquireHref}
           whatsappHref={waHref}

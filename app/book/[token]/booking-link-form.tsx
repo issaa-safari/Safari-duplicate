@@ -26,12 +26,15 @@ export default function BookingLinkForm({
   locale,
   pricePerPerson,
   singlePricePerPerson,
+  depositPerPerson = 0,
   seatsLeft,
 }: {
   token: string
   locale: 'en' | 'ar'
-  pricePerPerson: number
+  /** Sharing/double-room price, or null if this departure doesn't offer that category. */
+  pricePerPerson: number | null
   singlePricePerPerson: number | null
+  depositPerPerson?: number
   seatsLeft: number
 }) {
   const ar = locale === 'ar'
@@ -39,14 +42,18 @@ export default function BookingLinkForm({
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
   const [groupSize, setGroupSize] = useState(1)
-  const [roomType, setRoomType] = useState<'sharing' | 'single'>('sharing')
-  const effectivePricePerPerson = roomType === 'single' && singlePricePerPerson != null ? singlePricePerPerson : pricePerPerson
+  const [roomType, setRoomType] = useState<'sharing' | 'single'>(pricePerPerson != null ? 'sharing' : 'single')
+  const effectivePricePerPerson = (roomType === 'single' && singlePricePerPerson != null)
+    ? singlePricePerPerson
+    : (pricePerPerson ?? singlePricePerPerson ?? 0)
   const [createAccount, setCreateAccount] = useState(false)
   const [accountNote, setAccountNote] = useState('')
   const [travellers, setTravellers] = useState<Traveller[]>([emptyTraveller()])
 
   const maxGroup = Math.min(8, Math.max(1, seatsLeft))
   const totalPrice = effectivePricePerPerson * groupSize
+  const totalDeposit = depositPerPerson * groupSize
+  const totalDue = totalPrice + totalDeposit
 
   const t = ar ? {
     roomType: 'نوع الغرفة',
@@ -66,6 +73,9 @@ export default function BookingLinkForm({
     passportNumber: 'رقم جواز السفر',
     pricePerPerson: 'السعر للفرد',
     totalPrice: 'السعر الإجمالي',
+    securityDeposit: 'تأمين قابل للاسترداد',
+    depositNote: 'يُدفع قبل بدء الرحلة ويُعاد كاملاً في حال عدم وجود أضرار بالدراجة.',
+    totalDue: 'الإجمالي المطلوب',
     confirmBooking: 'تأكيد الحجز',
     processing: 'جاري المعالجة...',
     bookingConfirmed: 'تم تأكيد الحجز!',
@@ -91,6 +101,9 @@ export default function BookingLinkForm({
     passportNumber: 'Passport Number',
     pricePerPerson: 'Price per Person',
     totalPrice: 'Total Price',
+    securityDeposit: 'Refundable security deposit',
+    depositNote: 'Paid before the trip starts, returned in full if the bike is undamaged.',
+    totalDue: 'Total due',
     confirmBooking: 'Confirm Booking',
     processing: 'Processing...',
     bookingConfirmed: 'Booking Confirmed!',
@@ -174,7 +187,9 @@ export default function BookingLinkForm({
 
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 sm:p-8 border border-gray-200 shadow-sm">
-      {singlePricePerPerson != null && (
+      {/* Only when both categories are actually on sale — a departure offering
+          just one room type has nothing to choose. */}
+      {pricePerPerson != null && singlePricePerPerson != null && (
         <div className="mb-8">
           <label className="block text-sm font-semibold text-gray-900 mb-4">{t.roomType} *</label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -274,8 +289,21 @@ export default function BookingLinkForm({
           <span className="text-xl font-bold" style={{ color: G }}>${effectivePricePerPerson.toLocaleString()}</span>
         </div>
         <div className="border-t border-gray-300 pt-3 flex justify-between items-center">
-          <span className="text-lg font-bold text-gray-900">{t.totalPrice}:</span>
-          <span className="text-3xl font-bold" style={{ color: G }}>${totalPrice.toLocaleString()}</span>
+          <span className="text-gray-600">{t.totalPrice}:</span>
+          <span className="text-xl font-bold text-gray-900">${totalPrice.toLocaleString()}</span>
+        </div>
+        {totalDeposit > 0 && (
+          <>
+            <div className="pt-3 flex justify-between items-center">
+              <span className="text-gray-600">{t.securityDeposit}:</span>
+              <span className="text-xl font-bold text-gray-900">${totalDeposit.toLocaleString()}</span>
+            </div>
+            <p className="mt-1 text-xs text-gray-500">{t.depositNote}</p>
+          </>
+        )}
+        <div className="border-t border-gray-300 mt-4 pt-4 flex justify-between items-center">
+          <span className="text-lg font-bold text-gray-900">{t.totalDue}:</span>
+          <span className="text-3xl font-bold" style={{ color: G }}>${totalDue.toLocaleString()}</span>
         </div>
       </div>
 
