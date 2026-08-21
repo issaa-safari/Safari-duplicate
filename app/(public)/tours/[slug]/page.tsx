@@ -11,7 +11,7 @@ import ItineraryRouteLine from '@/components/public/itinerary-route-line'
 import type { ItineraryDay } from '@/components/public/itinerary-route-line'
 import ItineraryMap from '@/components/quote/itinerary-map'
 import { buildTourMap } from '@/lib/tour-map'
-import type { LatLng } from '@/lib/geo'
+import { googleMapsLinkFor, type LatLng } from '@/lib/geo'
 import DepartureCards from '@/components/public/departure-cards'
 import type { DepartureCardData } from '@/components/public/departure-cards'
 import GalleryGrid from '@/components/public/gallery-grid'
@@ -198,7 +198,7 @@ export default async function TourDetailPage({
 
   const [destRes, accomRes, actRes] = await Promise.all([
     destIds.length ? supabase.from('destinations').select('id, name, description_en, description_ar, latitude, longitude').in('id', destIds) : { data: [] },
-    accomIds.length ? supabase.from('accommodations').select('id, name').in('id', accomIds) : { data: [] },
+    accomIds.length ? supabase.from('accommodations').select('id, name, google_maps_url, google_place_id, latitude, longitude').in('id', accomIds) : { data: [] },
     activityIds.length ? supabase.from('activities').select('id, name, description_en, description_ar').in('id', activityIds) : { data: [] },
   ])
 
@@ -214,7 +214,11 @@ export default async function TourDetailPage({
   }
 
   const accomMap: Record<string, string> = {}
-  for (const a of accomRes.data ?? []) accomMap[a.id] = a.name
+  const accomMapsUrlMap: Record<string, string | null> = {}
+  for (const a of accomRes.data ?? []) {
+    accomMap[a.id] = a.name
+    accomMapsUrlMap[a.id] = googleMapsLinkFor(a)
+  }
 
   const actMap: Record<string, { name: string; en: string | null; ar: string | null }> = {}
   for (const a of actRes.data ?? []) actMap[a.id] = { name: a.name, en: a.description_en, ar: a.description_ar }
@@ -250,6 +254,7 @@ export default async function TourDetailPage({
       mealLunch: d.meal_lunch ?? false,
       mealDinner: d.meal_dinner ?? false,
       accommodation: d.accommodation_id ? (accomMap[d.accommodation_id] ?? null) : null,
+      accommodationMapsUrl: d.accommodation_id ? (accomMapsUrlMap[d.accommodation_id] ?? null) : null,
       activities: rawActivities
         .map(a => {
           if (!a.activity_id) return null

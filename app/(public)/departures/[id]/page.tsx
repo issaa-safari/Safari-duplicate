@@ -11,7 +11,7 @@ import ItineraryRouteLine from '@/components/public/itinerary-route-line'
 import type { ItineraryDay } from '@/components/public/itinerary-route-line'
 import ItineraryMap from '@/components/quote/itinerary-map'
 import { buildTourMap } from '@/lib/tour-map'
-import type { LatLng } from '@/lib/geo'
+import { googleMapsLinkFor, type LatLng } from '@/lib/geo'
 import GalleryGrid from '@/components/public/gallery-grid'
 import SectionReveal from '@/components/public/section-reveal'
 import DepartureHero from '@/components/public/departure-hero'
@@ -248,9 +248,13 @@ export default async function DepartureDetailPage({
   // Resolve accommodation names
   const accomIds = [...new Set(tourDays.map(d => d.accommodation_id).filter(Boolean))] as string[]
   const accomMap: Record<string, string> = {}
+  const accomMapsUrlMap: Record<string, string | null> = {}
   if (accomIds.length > 0) {
-    const { data: accoms } = await supabase.from('accommodations').select('id, name').in('id', accomIds)
-    for (const a of accoms ?? []) accomMap[a.id] = a.name
+    const { data: accoms } = await supabase.from('accommodations').select('id, name, google_maps_url, google_place_id, latitude, longitude').in('id', accomIds)
+    for (const a of accoms ?? []) {
+      accomMap[a.id] = a.name
+      accomMapsUrlMap[a.id] = googleMapsLinkFor(a)
+    }
   }
 
   // Resolve activity names
@@ -278,6 +282,7 @@ export default async function DepartureDetailPage({
       mealDinner: d.meal_dinner ?? false,
       distanceKm: distanceByDayId[d.id] ?? null,
       accommodation: d.accommodation_id ? accomMap[d.accommodation_id] ?? null : null,
+      accommodationMapsUrl: d.accommodation_id ? accomMapsUrlMap[d.accommodation_id] ?? null : null,
       activities: (Array.isArray(d.activities) ? d.activities : []).map((a: any) => ({
         name: activityMap[a.activity_id]?.name ?? '',
         description: isAr
