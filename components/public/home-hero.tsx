@@ -20,7 +20,7 @@ export default function HomeHero({ heroImageUrl, heroTourId, isAr, locale }: Hom
   const dir = isAr ? 'rtl' : 'ltr'
 
   const t = isAr ? {
-    headline: 'اركب البرية. اقتحم المجهول.',
+    headline: 'عِش المغامرة',
     sub: 'جولات دراجات جماعية وسفاري خاصة في كينيا وشرق أفريقيا — مُصممة لمن يطلب أكثر من مجرد رحلة سياحية.',
     cta: 'اختر مسارك',
     quote: 'طلب عرض سعر',

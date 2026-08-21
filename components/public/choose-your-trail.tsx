@@ -144,11 +144,13 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
           <ForkSVG inView={inView} reduced={reduced} isAr={isAr} />
         </div>
 
-        {/* Cards */}
+        {/* Cards — always 2 columns, sized fluidly via clamp() so they stay
+            legible from a narrow phone up to desktop rather than switching
+            to a single stacked column below ~600px. */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: 24,
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gap: 'clamp(10px, 3vw, 24px)',
         }}>
           {cards.map((card, i) => (
             <motion.div
@@ -157,7 +159,7 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
               animate={inView ? { opacity: 1, y: 0, x: 0 } : {}}
               transition={{ duration: 0.55, delay: i * 0.1 + 0.5, ease: EASE }}
               whileHover={reduced ? {} : { y: -6 }}
-              style={{ borderRadius: 16, overflow: 'hidden', position: 'relative', minHeight: 400 }}
+              style={{ borderRadius: 16, overflow: 'hidden', position: 'relative', minHeight: 'clamp(230px, 48vw, 400px)' }}
             >
               <Link href={card.href} style={{ display: 'block', height: '100%', textDecoration: 'none' }}>
                 {/* Image */}
@@ -167,7 +169,7 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
                     seed={card.seed}
                     alt={card.heading}
                     className="w-full h-full"
-                    sizes="(max-width: 768px) 100vw, 50vw"
+                    sizes="(max-width: 768px) 50vw, 50vw"
                   />
                   {/* Dark + colour tint overlay */}
                   <div style={{
@@ -180,8 +182,8 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
                 <div style={{
                   position: 'relative', zIndex: 1,
                   display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-                  height: '100%', minHeight: 400,
-                  padding: '32px 28px',
+                  height: '100%', minHeight: 'clamp(230px, 48vw, 400px)',
+                  padding: 'clamp(14px, 4vw, 32px) clamp(12px, 3.5vw, 28px)',
                 }}>
                   {/* Badge */}
                   <div style={{
@@ -190,15 +192,15 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
                     border: '1px solid rgba(255,255,255,0.3)',
                     backdropFilter: 'blur(4px)',
                     borderRadius: 99,
-                    padding: '4px 14px',
-                    fontSize: '0.72rem',
+                    padding: 'clamp(3px, 1vw, 4px) clamp(8px, 2.5vw, 14px)',
+                    fontSize: 'clamp(0.62rem, 2vw, 0.72rem)',
                     fontWeight: 700,
                     // Letter-spacing breaks Arabic joining; uppercase is Latin-only
                     letterSpacing: isAr ? undefined : '0.1em',
                     textTransform: isAr ? undefined : ('uppercase' as const),
                     color: '#fff',
                     fontFamily: 'var(--font-body, sans-serif)',
-                    marginBottom: 14,
+                    marginBottom: 'clamp(8px, 2vw, 14px)',
                     alignSelf: 'flex-start',
                   }}>
                     {card.badge}
@@ -206,10 +208,10 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
 
                   <h3 style={{
                     fontFamily: 'var(--font-display, "Readex Pro", sans-serif)',
-                    fontSize: 'clamp(1.6rem, 3vw, 2.1rem)',
+                    fontSize: 'clamp(1.05rem, 4.2vw, 2.1rem)',
                     fontWeight: 700,
                     color: '#fff',
-                    margin: '0 0 12px',
+                    margin: '0 0 10px',
                     lineHeight: 1.15,
                     textShadow: '0 2px 12px rgba(20,25,15,0.55)',
                   }}>
@@ -219,10 +221,14 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
                   <p style={{
                     color: 'rgba(255,255,255,0.88)',
                     fontFamily: 'var(--font-body, sans-serif)',
-                    fontSize: '0.92rem',
-                    lineHeight: 1.6,
-                    margin: '0 0 24px',
+                    fontSize: 'clamp(0.7rem, 2vw, 0.92rem)',
+                    lineHeight: 1.5,
+                    margin: '0 0 clamp(12px, 3vw, 24px)',
                     textShadow: '0 1px 8px rgba(20,25,15,0.5)',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical' as const,
+                    overflow: 'hidden',
                   }}>
                     {card.body}
                   </p>
@@ -230,18 +236,19 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
                   <div style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 8,
+                    gap: 'clamp(4px, 1.5vw, 8px)',
                     background: '#fff',
                     color: card.accent,
                     fontFamily: 'var(--font-body, sans-serif)',
                     fontWeight: 700,
-                    fontSize: '0.88rem',
-                    padding: '10px 20px',
+                    fontSize: 'clamp(0.68rem, 2vw, 0.88rem)',
+                    padding: 'clamp(6px, 2vw, 10px) clamp(10px, 3.5vw, 20px)',
                     borderRadius: 8,
                     alignSelf: 'flex-start',
+                    maxWidth: '100%',
                   }}>
-                    {card.cta}
-                    <span aria-hidden="true" style={{ fontSize: '1rem' }}>{isAr ? '←' : '→'}</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.cta}</span>
+                    <span aria-hidden="true" style={{ fontSize: '1rem', flexShrink: 0 }}>{isAr ? '←' : '→'}</span>
                   </div>
                 </div>
               </Link>
