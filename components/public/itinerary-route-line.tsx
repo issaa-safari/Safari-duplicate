@@ -17,6 +17,8 @@ export interface ItineraryDay {
   mealLunch: boolean
   mealDinner: boolean
   accommodation: string | null
+  /** Google Maps link for the night's accommodation, when its location is known. */
+  accommodationMapsUrl: string | null
   activities: { name: string; description: string | null; moment: string | null; optional: boolean }[]
 }
 
@@ -50,6 +52,22 @@ function MealsLine({ day, isAr }: { day: ItineraryDay; isAr: boolean }) {
     if (day.mealDinner) parts.push('Dinner')
   }
   return <>{parts.length ? parts.join(' · ') : (isAr ? 'لا توجد وجبات' : 'No meals included')}</>
+}
+
+// Subtle "open in Google Maps" link, same pattern as the client proposal.
+function MapsLink({ href, isAr, accentColor }: { href: string; isAr: boolean; accentColor: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener"
+      className="inline-flex items-center gap-0.5 hover:underline"
+      style={{ color: accentColor, fontSize: '0.8rem', fontWeight: 600 }}
+      title={isAr ? 'عرض على خرائط جوجل' : 'View on Google Maps'}
+    >
+      <span aria-hidden="true">📍</span> {isAr ? 'الخريطة' : 'Map'}
+    </a>
+  )
 }
 
 function MomentLabel(m: string, isAr: boolean) {
@@ -269,7 +287,10 @@ function DayCard({
                 <div style={{ fontSize: 10, fontWeight: 700, color: STONE, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
                   🏨 {isAr ? 'الإقامة' : 'Stay'}
                 </div>
-                <div style={{ fontSize: '0.875rem', color: BUSH }}>{day.accommodation}</div>
+                <div style={{ fontSize: '0.875rem', color: BUSH, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {day.accommodation}
+                  {day.accommodationMapsUrl && <MapsLink href={day.accommodationMapsUrl} isAr={isAr} accentColor={accentColor} />}
+                </div>
               </div>
             )}
             {day.distanceKm && (
