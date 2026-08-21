@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { COUNTRIES_SORTED, dialCodeFor } from '@/lib/countries'
 
 const G = '#7A9A4A'
 
@@ -10,13 +11,14 @@ interface Traveller {
   lastName: string
   email: string
   phone: string
+  phoneCountryCode: string
   dateOfBirth: string
   nationality: string
   passportNumber: string
 }
 
 function emptyTraveller(): Traveller {
-  return { firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '', nationality: '', passportNumber: '' }
+  return { firstName: '', lastName: '', email: '', phone: '', phoneCountryCode: 'KE', dateOfBirth: '', nationality: '', passportNumber: '' }
 }
 
 export default function BookingLinkForm({
@@ -58,6 +60,7 @@ export default function BookingLinkForm({
     lastName: 'الاسم الأخير',
     email: 'البريد الإلكتروني',
     phone: 'رقم الهاتف',
+    phoneCode: 'رمز الدولة',
     dateOfBirth: 'تاريخ الميلاد',
     nationality: 'الجنسية',
     passportNumber: 'رقم جواز السفر',
@@ -82,6 +85,7 @@ export default function BookingLinkForm({
     lastName: 'Last Name',
     email: 'Email',
     phone: 'Phone',
+    phoneCode: 'Country code',
     dateOfBirth: 'Date of Birth',
     nationality: 'Nationality',
     passportNumber: 'Passport Number',
@@ -112,28 +116,35 @@ export default function BookingLinkForm({
     setError('')
     startTransition(async () => {
       try {
+        // Combine each traveller's country-code selection with the digits they
+        // typed only at submit time, so the two stay independently editable
+        // right up until the request goes out.
+        const withDialCodes = travellers.map(t => {
+          const dial = dialCodeFor(t.phoneCountryCode)
+          return { ...t, phone: dial ? `+${dial}${t.phone.trim()}` : t.phone.trim() }
+        })
         const res = await fetch(`/api/book/${token}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ travellers, roomType, currency: 'USD' }),
+          body: JSON.stringify({ travellers: withDialCodes, roomType, currency: 'USD' }),
         })
         const data = await res.json().catch(() => ({}))
         if (!res.ok) throw new Error(data?.error || 'Failed to complete booking. Please try again.')
 
         // Optional: create a portal account for the lead traveller (best-effort).
-        if (createAccount && travellers[0]?.email) {
+        if (createAccount && withDialCodes[0]?.email) {
           try {
             const supabase = createClient()
             const origin = typeof window !== 'undefined' ? window.location.origin : ''
             const { error: signUpError } = await supabase.auth.signUp({
-              email: travellers[0].email,
+              email: withDialCodes[0].email,
               password: crypto.randomUUID(),
               options: {
                 emailRedirectTo: `${origin}/auth/callback`,
                 data: {
-                  first_name: travellers[0].firstName,
-                  last_name: travellers[0].lastName,
-                  phone: travellers[0].phone,
+                  first_name: withDialCodes[0].firstName,
+                  last_name: withDialCodes[0].lastName,
+                  phone: withDialCodes[0].phone,
                 },
               },
             })
@@ -224,7 +235,28 @@ export default function BookingLinkForm({
               </div>
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <Field type="email" label={`${t.email} *`} value={traveller.email} onChange={v => handleTravellerChange(index, 'email', v)} required />
-                <Field type="tel" label={`${t.phone} *`} value={traveller.phone} onChange={v => handleTravellerChange(index, 'phone', v)} required />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">{t.phone} *</label>
+                  <div className="flex gap-2">
+                    <select
+                      value={traveller.phoneCountryCode}
+                      onChange={e => handleTravellerChange(index, 'phoneCountryCode', e.target.value)}
+                      aria-label={t.phoneCode}
+                      className="w-24 shrink-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      {COUNTRIES_SORTED.map((c) => (
+                        <option key={c.code} value={c.code}>+{c.dial}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="tel"
+                      value={traveller.phone}
+                      onChange={e => handleTravellerChange(index, 'phone', e.target.value)}
+                      required
+                      className="flex-1 min-w-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                </div>
               </div>
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <Field type="date" label={t.dateOfBirth} value={traveller.dateOfBirth} onChange={v => handleTravellerChange(index, 'dateOfBirth', v)} />

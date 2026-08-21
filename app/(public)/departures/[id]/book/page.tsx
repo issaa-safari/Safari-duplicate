@@ -8,6 +8,7 @@ import PublicFooter from '@/components/public/footer'
 import { createClient } from '@/lib/supabase/client'
 import { localePath } from '@/lib/locale'
 import { useLocale } from '@/lib/use-locale'
+import { COUNTRIES_SORTED, dialCodeFor } from '@/lib/countries'
 
 const G = '#7A9A4A'
 
@@ -16,9 +17,14 @@ interface Traveller {
   lastName: string
   email: string
   phone: string
+  phoneCountryCode: string
   dateOfBirth: string
   nationality: string
   passportNumber: string
+}
+
+function emptyTraveller(): Traveller {
+  return { firstName: '', lastName: '', email: '', phone: '', phoneCountryCode: 'KE', dateOfBirth: '', nationality: '', passportNumber: '' }
 }
 
 async function submitBooking(departureId: string, formData: { travellers: Traveller[]; roomType: 'sharing' | 'single' }) {
@@ -51,9 +57,7 @@ function BookingFormContent() {
   const [roomType, setRoomType] = useState<'sharing' | 'single'>('sharing')
   const pricePerPerson = roomType === 'single' && singlePrice != null ? singlePrice : sharingPrice
   const [signedIn, setSignedIn] = useState<boolean | null>(null)
-  const [travellers, setTravellers] = useState<Traveller[]>([
-    { firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '', nationality: '', passportNumber: '' }
-  ])
+  const [travellers, setTravellers] = useState<Traveller[]>([emptyTraveller()])
 
   // Auto-fill the first traveller from the signed-in account; otherwise flag that
   // the visitor can sign in to book faster.
@@ -91,6 +95,7 @@ function BookingFormContent() {
     lastName: 'الاسم الأخير',
     email: 'البريد الإلكتروني',
     phone: 'رقم الهاتف',
+    phoneCode: 'رمز الدولة',
     dateOfBirth: 'تاريخ الميلاد',
     nationality: 'الجنسية',
     passportNumber: 'رقم جواز السفر',
@@ -116,6 +121,7 @@ function BookingFormContent() {
     lastName: 'Last Name',
     email: 'Email',
     phone: 'Phone',
+    phoneCode: 'Country code',
     dateOfBirth: 'Date of Birth',
     nationality: 'Nationality',
     passportNumber: 'Passport Number',
@@ -137,9 +143,7 @@ function BookingFormContent() {
 
   const handleGroupSizeChange = (size: number) => {
     setGroupSize(size)
-    const newTravellers = Array.from({ length: size }, (_, i) =>
-      travellers[i] || { firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '', nationality: '', passportNumber: '' }
-    )
+    const newTravellers = Array.from({ length: size }, (_, i) => travellers[i] || emptyTraveller())
     setTravellers(newTravellers)
   }
 
@@ -154,7 +158,14 @@ function BookingFormContent() {
     setError('')
     startTransition(async () => {
       try {
-        await submitBooking(departureId, { travellers, roomType })
+        // Combine each traveller's country-code selection with the digits they
+        // typed only at submit time, so the two stay independently editable
+        // right up until the request goes out.
+        const withDialCodes = travellers.map(t => {
+          const dial = dialCodeFor(t.phoneCountryCode)
+          return { ...t, phone: dial ? `+${dial}${t.phone.trim()}` : t.phone.trim() }
+        })
+        await submitBooking(departureId, { travellers: withDialCodes, roomType })
         setSubmitted(true)
       } catch (err: any) {
         setError(err.message || 'Failed to complete booking. Please try again.')
@@ -323,13 +334,25 @@ function BookingFormContent() {
                         </div>
                         <div>
                           <label className="block text-sm font-semibold text-gray-900 mb-2">{t.phone} *</label>
-                          <input
-                            type="tel"
-                            value={traveller.phone}
-                            onChange={(e) => handleTravellerChange(index, 'phone', e.target.value)}
-                            required
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                          />
+                          <div className="flex gap-2">
+                            <select
+                              value={traveller.phoneCountryCode}
+                              onChange={(e) => handleTravellerChange(index, 'phoneCountryCode', e.target.value)}
+                              aria-label={t.phoneCode}
+                              className="w-24 shrink-0 px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            >
+                              {COUNTRIES_SORTED.map((c) => (
+                                <option key={c.code} value={c.code}>+{c.dial}</option>
+                              ))}
+                            </select>
+                            <input
+                              type="tel"
+                              value={traveller.phone}
+                              onChange={(e) => handleTravellerChange(index, 'phone', e.target.value)}
+                              required
+                              className="flex-1 min-w-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            />
+                          </div>
                         </div>
                       </div>
 
