@@ -270,7 +270,7 @@ export default async function TourDetailPage({
   const today = new Date().toISOString().split('T')[0]
   const { data: rawDepartures } = await supabase
     .from('departures')
-    .select('id, start_date, end_date, max_seats, booked_seats, price_usd, status')
+    .select('id, start_date, end_date, max_seats, booked_seats, price_usd, price_single_usd, status')
     .eq('tour_id', id)
     .eq('is_active', true)
     .gte('start_date', today)
@@ -284,6 +284,7 @@ export default async function TourDetailPage({
     maxSeats: d.max_seats,
     bookedSeats: d.booked_seats,
     priceUsd: d.price_usd,
+    priceSingleUsd: d.price_single_usd,
     status: d.status,
   }))
 
@@ -305,9 +306,9 @@ export default async function TourDetailPage({
   const staff: StaffMember[] = (rawStaff ?? []).map(s => ({ id: s.id, name: s.name, role: s.role }))
 
   const enquireHref = `${localePath('/quote-request', locale)}?tour=${id}`
-  const bookHref = departures[0]
-    ? `${localePath(`/departures/${departures[0].id}/book`, locale)}?price=${departures[0].priceUsd}&tour=${encodeURIComponent(title ?? '')}`
-    : enquireHref
+  // Book Now scrolls to the Dates & Availability section — the traveller picks a specific
+  // departure there, and that date's own "Book" button carries it to the booking form.
+  const bookHref = departures.length > 0 ? '#departures' : enquireHref
   const waHref = whatsappLink(isAr ? `مرحباً، أريد الاستفسار عن جولة: ${title}` : `Hi, I'd like to enquire about: ${title}`)
 
   const t = isAr ? {
@@ -535,7 +536,7 @@ export default async function TourDetailPage({
       )}
 
       {/* 8. Departures */}
-      <section style={{ padding: '72px 24px', background: BUSH, color: '#fff' }}>
+      <section id="departures" style={{ padding: '72px 24px', background: BUSH, color: '#fff', scrollMarginTop: 80 }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <SectionReveal>
             <SectionHeading accent={accent}>

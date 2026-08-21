@@ -16,6 +16,8 @@ export async function createDeparture(formData: FormData) {
   const maxSeats = parseInt(formData.get('maxSeats') as string) || 12
   const bookedSeats = parseInt(formData.get('bookedSeats') as string) || 0
   const priceUsd = parseFloat(formData.get('priceUsd') as string)
+  const priceSingleRaw = (formData.get('priceSingleUsd') as string)?.trim()
+  const priceSingleUsd = priceSingleRaw ? parseFloat(priceSingleRaw) : null
   const depositRaw = (formData.get('securityDepositUsd') as string)?.trim()
   const securityDepositUsd = depositRaw ? parseFloat(depositRaw) : 0
   const status = (formData.get('status') as string) || 'available'
@@ -25,6 +27,7 @@ export async function createDeparture(formData: FormData) {
   if (!startDate || !endDate) throw new Error('Start and end dates are required.')
   if (new Date(endDate) < new Date(startDate)) throw new Error('End date cannot be before start date.')
   if (isNaN(priceUsd)) throw new Error('Price is required.')
+  if (priceSingleUsd != null && (isNaN(priceSingleUsd) || priceSingleUsd < 0)) throw new Error('Single room price is invalid.')
   if (isNaN(securityDepositUsd) || securityDepositUsd < 0) throw new Error('Security deposit cannot be negative.')
   if (bookedSeats > maxSeats) throw new Error('Booked seats cannot exceed max seats.')
 
@@ -39,6 +42,7 @@ export async function createDeparture(formData: FormData) {
       max_seats: maxSeats,
       booked_seats: bookedSeats,
       price_usd: priceUsd,
+      price_single_usd: priceSingleUsd,
       security_deposit_usd: securityDepositUsd,
       status,
       internal_notes: internalNotes || null,
