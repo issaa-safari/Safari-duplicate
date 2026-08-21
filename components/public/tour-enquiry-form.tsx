@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
+import { pageContext, trackEvent } from '@/lib/analytics'
 
 interface TourEnquiryFormProps {
   tourId: string
@@ -120,6 +121,13 @@ export default function TourEnquiryForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    trackEvent('enquiry_start', {
+      ...pageContext(locale),
+      tour_id: tourId,
+      tour_name: tourTitleEn,
+      departure_id: departureId ?? null,
+      lead_type: 'tour_enquiry',
+    })
     startTransition(async () => {
       try {
         const res = await fetch('/api/quote-request', {
@@ -139,8 +147,30 @@ export default function TourEnquiryForm({
           }),
         })
         if (!res.ok) throw new Error('failed')
+        trackEvent('generate_lead', {
+          ...pageContext(locale),
+          tour_id: tourId,
+          tour_name: tourTitleEn,
+          departure_id: departureId ?? null,
+          lead_type: 'tour_enquiry',
+          country_entered: form.country || null,
+          group_size: Number(form.groupSize) || null,
+          heard_about_us: form.heardAboutUs || null,
+        })
+        trackEvent('quote_request', {
+          ...pageContext(locale),
+          tour_id: tourId,
+          tour_name: tourTitleEn,
+          departure_id: departureId ?? null,
+        })
         setSubmitted(true)
       } catch {
+        trackEvent('enquiry_error', {
+          ...pageContext(locale),
+          tour_id: tourId,
+          tour_name: tourTitleEn,
+          departure_id: departureId ?? null,
+        })
         setError(t.failed)
       }
     })
@@ -182,71 +212,18 @@ export default function TourEnquiryForm({
       }}
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label style={labelStyle}>{t.firstName}</label>
-          <input name="firstName" value={form.firstName} onChange={handleChange} required className="enquiry-field" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>{t.lastName}</label>
-          <input name="lastName" value={form.lastName} onChange={handleChange} required className="enquiry-field" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>{t.email}</label>
-          <input type="email" name="email" value={form.email} onChange={handleChange} required className="enquiry-field" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>{t.phone}</label>
-          <input type="tel" name="phone" value={form.phone} onChange={handleChange} required className="enquiry-field" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>{t.country}</label>
-          <input name="country" value={form.country} onChange={handleChange} className="enquiry-field" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>{t.groupSize}</label>
-          <input type="number" name="groupSize" value={form.groupSize} onChange={handleChange} min="1" required className="enquiry-field" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>{t.startDate}</label>
-          <input type="date" name="startDate" value={form.startDate} onChange={handleChange} className="enquiry-field" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>{t.heardAbout}</label>
-          <select name="heardAboutUs" value={form.heardAboutUs} onChange={handleChange} className="enquiry-field" style={inputStyle}>
-            {heardOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </div>
-        <div className="sm:col-span-2">
-          <label style={labelStyle}>{t.preferences}</label>
-          <textarea name="preferences" value={form.preferences} onChange={handleChange} rows={4} className="enquiry-field" style={{ ...inputStyle, resize: 'vertical' }} />
-        </div>
+        <div><label style={labelStyle}>{t.firstName}</label><input name="firstName" value={form.firstName} onChange={handleChange} required className="enquiry-field" style={inputStyle} /></div>
+        <div><label style={labelStyle}>{t.lastName}</label><input name="lastName" value={form.lastName} onChange={handleChange} required className="enquiry-field" style={inputStyle} /></div>
+        <div><label style={labelStyle}>{t.email}</label><input type="email" name="email" value={form.email} onChange={handleChange} required className="enquiry-field" style={inputStyle} /></div>
+        <div><label style={labelStyle}>{t.phone}</label><input type="tel" name="phone" value={form.phone} onChange={handleChange} required className="enquiry-field" style={inputStyle} /></div>
+        <div><label style={labelStyle}>{t.country}</label><input name="country" value={form.country} onChange={handleChange} className="enquiry-field" style={inputStyle} /></div>
+        <div><label style={labelStyle}>{t.groupSize}</label><input type="number" name="groupSize" value={form.groupSize} onChange={handleChange} min="1" required className="enquiry-field" style={inputStyle} /></div>
+        <div><label style={labelStyle}>{t.startDate}</label><input type="date" name="startDate" value={form.startDate} onChange={handleChange} className="enquiry-field" style={inputStyle} /></div>
+        <div><label style={labelStyle}>{t.heardAbout}</label><select name="heardAboutUs" value={form.heardAboutUs} onChange={handleChange} className="enquiry-field" style={inputStyle}>{heardOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
+        <div className="sm:col-span-2"><label style={labelStyle}>{t.preferences}</label><textarea name="preferences" value={form.preferences} onChange={handleChange} rows={4} className="enquiry-field" style={{ ...inputStyle, resize: 'vertical' }} /></div>
       </div>
-
-      {error && (
-        <div style={{ marginTop: 12, padding: '12px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#b91c1c', fontSize: 14, fontFamily: 'var(--font-body, sans-serif)' }}>
-          {error}
-        </div>
-      )}
-
-      <div style={{ marginTop: 24 }}>
-        <motion.button
-          type="submit"
-          disabled={isPending}
-          className="enquiry-field"
-          whileHover={reduced || isPending ? {} : { scale: 1.01, boxShadow: `0 8px 24px ${accentColor}44` }}
-          whileTap={reduced || isPending ? {} : { scale: 0.99 }}
-          style={{
-            width: '100%', padding: '14px 24px', borderRadius: 8,
-            background: isPending ? '#a0a0a0' : accentColor,
-            color: '#fff', fontWeight: 700, fontSize: '1rem',
-            border: 'none', cursor: isPending ? 'not-allowed' : 'pointer',
-            fontFamily: 'var(--font-body, sans-serif)',
-            transition: 'background 0.2s',
-          }}
-        >
-          {isPending ? t.sending : t.submit}
-        </motion.button>
-      </div>
+      {error && <div style={{ marginTop: 12, padding: '12px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#b91c1c', fontSize: 14, fontFamily: 'var(--font-body, sans-serif)' }}>{error}</div>}
+      <div style={{ marginTop: 24 }}><motion.button type="submit" disabled={isPending} className="enquiry-field" whileHover={reduced || isPending ? {} : { scale: 1.01, boxShadow: `0 8px 24px ${accentColor}44` }} whileTap={reduced || isPending ? {} : { scale: 0.99 }} style={{ width: '100%', padding: '14px 24px', borderRadius: 8, background: isPending ? '#a0a0a0' : accentColor, color: '#fff', fontWeight: 700, fontSize: '1rem', border: 'none', cursor: isPending ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body, sans-serif)', transition: 'background 0.2s' }}>{isPending ? t.sending : t.submit}</motion.button></div>
     </form>
   )
 }
