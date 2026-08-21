@@ -4,12 +4,27 @@ import { useRef, useState } from 'react'
 
 const G = '#7A9A4A'
 
+// Kept in sync with MAX_BYTES in app/api/admin/upload/route.ts — checking here
+// gives an immediate, clear message instead of letting an oversized file hit
+// the platform's request-body limit and come back as an unparseable error page.
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024
+
 async function uploadFile(file: File, folder: string): Promise<string> {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error('Image is larger than 4MB. Please resize or compress it and try again.')
+  }
+
   const fd = new FormData()
   fd.set('file', file)
   fd.set('folder', folder)
   const res = await fetch('/api/admin/upload', { method: 'POST', body: fd })
-  const json = await res.json()
+
+  let json: { url?: string; error?: string }
+  try {
+    json = await res.json()
+  } catch {
+    throw new Error(`Upload failed (server returned an unexpected response, status ${res.status}).`)
+  }
   if (!res.ok) throw new Error(json.error || 'Upload failed')
   return json.url as string
 }
@@ -118,13 +133,15 @@ export function GalleryUpload({
 
   async function handle(files: File[]) {
     setError(''); setBusy(true)
+    const urls: string[] = []
     try {
-      const urls: string[] = []
       for (const f of files) urls.push(await uploadFile(f, folder))
-      onChange([...value, ...urls])
     } catch (e: any) {
       setError(e.message)
     } finally {
+      // Keep whatever uploaded successfully before the failure — a bad photo
+      // in a multi-file drop shouldn't cost the ones that already made it.
+      if (urls.length > 0) onChange([...value, ...urls])
       setBusy(false)
     }
   }
