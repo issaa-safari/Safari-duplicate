@@ -275,7 +275,7 @@ export default async function TourDetailPage({
   const today = new Date().toISOString().split('T')[0]
   const { data: rawDepartures } = await supabase
     .from('departures')
-    .select('id, start_date, end_date, max_seats, booked_seats, price_usd, price_single_usd, status')
+    .select('id, start_date, end_date, max_seats, booked_seats, price_usd, price_single_usd, security_deposit_usd, status')
     .eq('tour_id', id)
     .eq('is_active', true)
     .gte('start_date', today)
@@ -290,6 +290,7 @@ export default async function TourDetailPage({
     bookedSeats: d.booked_seats,
     priceUsd: d.price_usd,
     priceSingleUsd: d.price_single_usd,
+    securityDepositUsd: d.security_deposit_usd,
     status: d.status,
   }))
 

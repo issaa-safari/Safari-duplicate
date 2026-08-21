@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import Link from 'next/link'
 import { localePath, type Locale } from '@/lib/locale'
 import { pageContext, trackEvent } from '@/lib/analytics'
+import { departureBookHref } from '@/lib/departure-booking-link'
 
 export interface DepartureCardData {
   id: string
@@ -13,6 +14,7 @@ export interface DepartureCardData {
   bookedSeats: number
   priceUsd: number | null
   priceSingleUsd: number | null
+  securityDepositUsd: number | null
   status: string
 }
 
@@ -66,13 +68,14 @@ export default function DepartureCards({ departures, accentColor, isAr, tourTitl
         const seats = dep.maxSeats - dep.bookedSeats
         const available = seats > 0 && dep.status !== 'cancelled' && dep.status !== 'full'
         const pct = Math.min(100, Math.round((dep.bookedSeats / dep.maxSeats) * 100))
-        // Either room-type price can be unset on a departure, meaning that
-        // category isn't offered — only carry the ones that actually exist.
-        const bookHref = `${localePath(`/departures/${dep.id}/book`, locale)}?${[
-          dep.priceUsd != null ? `price=${dep.priceUsd}` : null,
-          dep.priceSingleUsd != null ? `priceSingle=${dep.priceSingleUsd}` : null,
-          `tour=${encodeURIComponent(tourTitle)}`,
-        ].filter(Boolean).join('&')}`
+        const bookHref = departureBookHref({
+          departureId: dep.id,
+          locale,
+          tourTitle,
+          priceUsd: dep.priceUsd,
+          priceSingleUsd: dep.priceSingleUsd,
+          depositUsd: dep.securityDepositUsd,
+        })
         const detailHref = localePath(`/departures/${dep.id}`, locale)
         const ctx = { ...pageContext(locale), tour_name: tourTitle, departure_id: dep.id, value: dep.priceUsd ?? dep.priceSingleUsd ?? undefined, currency: (dep.priceUsd ?? dep.priceSingleUsd) != null ? 'USD' : undefined }
 
