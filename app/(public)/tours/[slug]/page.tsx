@@ -15,7 +15,6 @@ import GalleryGrid from '@/components/public/gallery-grid'
 import TrustStrip from '@/components/public/trust-strip'
 import type { StaffMember } from '@/components/public/trust-strip'
 import TourEnquiryForm from '@/components/public/tour-enquiry-form'
-import Testimonials from '@/components/public/testimonials'
 import SectionReveal from '@/components/public/section-reveal'
 import StickyEnquiryBar from '@/components/public/sticky-enquiry-bar'
 import { getServerLocale } from '@/lib/i18n'
@@ -532,9 +531,6 @@ export default async function TourDetailPage({
           <TrustStrip staff={staff} isAr={isAr} accentColor={accent} />
         </div>
       </section>
-
-      {/* 10. Reviews */}
-      <Testimonials lang={locale} />
 
       {/* FAQs */}
       {faqs.length > 0 && (
