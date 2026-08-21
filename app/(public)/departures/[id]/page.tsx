@@ -21,6 +21,7 @@ import { site, whatsappLink } from '@/lib/site'
 import StructuredData, { touristTripJsonLd } from '@/components/public/structured-data'
 import { hasArabicContent, languageAlternates, noindexIfUntranslated } from '@/lib/seo'
 import { localePath } from '@/lib/locale'
+import { departureBookHref } from '@/lib/departure-booking-link'
 
 export const dynamic = 'force-dynamic'
 
@@ -300,12 +301,14 @@ export default async function DepartureDetailPage({
   const sharingUsd = departure.price_usd != null ? Number(departure.price_usd) : null
   const singleUsd = departure.price_single_usd != null ? Number(departure.price_single_usd) : null
   const displayUsd = sharingUsd ?? singleUsd
-  const bookHref = `${localePath(`/departures/${id}/book`, locale)}?${[
-    sharingUsd != null ? `price=${sharingUsd}` : null,
-    singleUsd != null ? `priceSingle=${singleUsd}` : null,
-    `deposit=${depositUsd}`,
-    `tour=${encodeURIComponent(title ?? '')}`,
-  ].filter(Boolean).join('&')}`
+  const bookHref = departureBookHref({
+    departureId: id,
+    locale,
+    tourTitle: title ?? '',
+    priceUsd: sharingUsd,
+    priceSingleUsd: singleUsd,
+    depositUsd,
+  })
   const waHref = whatsappLink(`Hi, I'm interested in the ${title} departure on ${formatDate(departure.start_date, 'en')}`)
   const enquireHref = `${localePath('/quote-request', locale)}?tour=${departure.tour_id}`
 
