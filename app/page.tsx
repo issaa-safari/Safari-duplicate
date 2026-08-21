@@ -9,6 +9,7 @@ import HomeHero from '@/components/public/home-hero'
 import ChooseYourTrail from '@/components/public/choose-your-trail'
 import HomeWhyDirect from '@/components/public/home-why-direct'
 import SectionReveal from '@/components/public/section-reveal'
+import SafariImage from '@/components/public/safari-image'
 import { getServerLocale } from '@/lib/i18n'
 import { whatsappLink } from '@/lib/site'
 import type { Metadata } from 'next'
@@ -18,6 +19,7 @@ import { localePath } from '@/lib/locale'
 
 const BUSH = '#20271A'
 const OLIVE = '#7A9A4A'
+const SAND = '#EAE3D2'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,6 +91,24 @@ export default async function HomePage({
     ctaSub: 'تواصل معنا لتحصل على عرض مخصص، أو ابدأ محادثة على واتساب.',
     ctaQuote: 'طلب عرض سعر',
     ctaWhatsapp: 'تحدث معنا على واتساب',
+    storyHeading: 'كينيا وطننا… والمغامرة تخصصنا',
+    storyLines: [
+      'نعمل من قلب نيروبي — هذا بيتنا، مو مجرد مكتب.',
+      'نركب الطرق ونقود المسارات اللي نبيعها بأنفسنا.',
+      'ما نبيعك رحلة جاهزة. كل رحلة نبنيها حسب أسلوبك.',
+    ],
+    emotionalHeading: 'لا تزور أفريقيا… عِشها',
+    emotionalLines: [
+      'اصحَ على صوت البرية.',
+      'اركب وادي الصدع مع أول خيوط الفجر.',
+      'اسلك طرقاً ما تجدها في أي دليل سياحي.',
+      'شاهد الشمس تختفي خلف المرتفعات.',
+    ],
+    emotionalClose: 'هذه مو إجازة جاهزة. هذه أفريقيا، على طريقتك.',
+    emotionalCta: 'ابدأ مغامرتك',
+    kenyaHeading: 'كينيا أكثر من مجرد سفاري',
+    kenyaBody: 'مساراتنا تمر بمناظر تجعل كينيا أكثر من مجرد وجهة سفاري — وادي الصدع العظيم، بحيرات المرتفعات، غابات جبل كينيا، ومحميات الحياة البرية بينها.',
+    kenyaChips: ['الصدع العظيم', 'بحيرة نيفاشا', 'جبل كينيا', 'مرتفعات الشاي', 'محمية أول بيجيتا'],
   } : {
     credibility1: 'Based in Nairobi, Kenya',
     credibility2: 'English · Arabic · Swahili',
@@ -96,6 +116,24 @@ export default async function HomePage({
     ctaSub: 'Get in touch for a personalised quote, or start a conversation on WhatsApp.',
     ctaQuote: 'Request a Quote',
     ctaWhatsapp: 'Chat on WhatsApp',
+    storyHeading: 'Africa is our home. Adventure is our business.',
+    storyLines: [
+      "We're based in Nairobi — this is where we live, not just where we work.",
+      'We ride the trails and drive the routes we sell.',
+      "No packaged holiday. Every trip is built around how you want to travel.",
+    ],
+    emotionalHeading: "Don't just visit Africa. Experience it.",
+    emotionalLines: [
+      'Wake up to the sound of the bush.',
+      'Ride the Rift Valley at first light.',
+      "Follow roads that don't make it into the guidebooks.",
+      'Watch the sun drop behind the highlands.',
+    ],
+    emotionalClose: "This isn't a package holiday. It's Africa, on your terms.",
+    emotionalCta: 'Start Your Adventure',
+    kenyaHeading: 'Kenya is more than a safari',
+    kenyaBody: "Our routes run through the landscapes that make Kenya more than its safari reputation — the Great Rift Valley, the lakes of the highlands, Mount Kenya's forests, and the wildlife reserves in between.",
+    kenyaChips: ['Great Rift Valley', 'Lake Naivasha', 'Mount Kenya', 'Highland Tea Country', 'Ol Pejeta Conservancy'],
   }
 
   return (
@@ -122,12 +160,42 @@ export default async function HomePage({
           locale={locale}
         />
 
-        {/* 3. Featured Departures */}
+        {/* 3. Brand story */}
+        <SectionReveal>
+          <section style={{ background: '#fff', padding: '80px 24px' }}>
+            <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
+              <h2 style={{
+                fontFamily: 'var(--font-display, "Readex Pro", sans-serif)',
+                fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)',
+                fontWeight: 700,
+                color: BUSH,
+                margin: '0 0 28px',
+              }}>
+                {t.storyHeading}
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {t.storyLines.map((line, i) => (
+                  <p key={i} style={{
+                    color: '#3D3D35',
+                    fontFamily: 'var(--font-body, sans-serif)',
+                    fontSize: 'clamp(1rem, 2vw, 1.15rem)',
+                    lineHeight: 1.6,
+                    margin: 0,
+                  }}>
+                    {line}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </section>
+        </SectionReveal>
+
+        {/* 4. Featured Departures */}
         <div style={{ background: '#fff' }}>
           <FeaturedDepartures lang={locale} />
         </div>
 
-        {/* 4. Credibility bar — true claims only, no fabricated metrics */}
+        {/* 5. Credibility bar — true claims only, no fabricated metrics */}
         <SectionReveal>
           <section style={{
             background: BUSH,
@@ -162,10 +230,129 @@ export default async function HomePage({
           </section>
         </SectionReveal>
 
-        {/* 5. Why Book Direct */}
+        {/* 6. Why Book Direct */}
         <HomeWhyDirect isAr={isAr} />
 
-        {/* 7. Final CTA */}
+        {/* 7. Emotional editorial — cinematic pause before the final push */}
+        <SectionReveal>
+          <section
+            style={{
+              position: 'relative',
+              padding: '100px 24px',
+              background: BUSH,
+              overflow: 'hidden',
+            }}
+          >
+            {heroImageUrl && (
+              <div style={{ position: 'absolute', inset: 0 }}>
+                <SafariImage
+                  src={heroImageUrl}
+                  seed={heroTour?.id ?? 'emotional'}
+                  alt=""
+                  className="w-full h-full"
+                  sizes="100vw"
+                />
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'linear-gradient(rgba(20,25,15,0.88), rgba(20,25,15,0.88))',
+                }} />
+              </div>
+            )}
+            <div style={{ position: 'relative', zIndex: 1, maxWidth: 640, margin: '0 auto', textAlign: 'center' }}>
+              <h2 style={{
+                fontFamily: 'var(--font-display, "Readex Pro", sans-serif)',
+                fontSize: 'clamp(1.8rem, 4vw, 2.6rem)',
+                fontWeight: 700,
+                color: '#fff',
+                margin: '0 0 32px',
+              }}>
+                {t.emotionalHeading}
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 32 }}>
+                {t.emotionalLines.map((line, i) => (
+                  <p key={i} style={{
+                    color: 'rgba(234,227,210,0.85)',
+                    fontFamily: 'var(--font-body, sans-serif)',
+                    fontSize: 'clamp(1rem, 2vw, 1.15rem)',
+                    lineHeight: 1.6,
+                    margin: 0,
+                  }}>
+                    {line}
+                  </p>
+                ))}
+              </div>
+              <p style={{
+                color: '#fff',
+                fontFamily: 'var(--font-body, sans-serif)',
+                fontWeight: 600,
+                fontSize: '1.05rem',
+                margin: '0 0 36px',
+              }}>
+                {t.emotionalClose}
+              </p>
+              <Link
+                href={localePath('/quote-request', locale)}
+                style={{
+                  display: 'inline-block',
+                  background: OLIVE,
+                  color: '#fff',
+                  fontFamily: 'var(--font-body, sans-serif)',
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  padding: '14px 28px',
+                  borderRadius: 8,
+                  textDecoration: 'none',
+                }}
+              >
+                {t.emotionalCta}
+              </Link>
+            </div>
+          </section>
+        </SectionReveal>
+
+        {/* 8. Kenya — grounded in the destinations our routes actually visit */}
+        <SectionReveal>
+          <section style={{ background: SAND, padding: '80px 24px' }}>
+            <div style={{ maxWidth: 760, margin: '0 auto', textAlign: 'center' }}>
+              <h2 style={{
+                fontFamily: 'var(--font-display, "Readex Pro", sans-serif)',
+                fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)',
+                fontWeight: 700,
+                color: BUSH,
+                margin: '0 0 20px',
+              }}>
+                {t.kenyaHeading}
+              </h2>
+              <p style={{
+                color: '#3D3D35',
+                fontFamily: 'var(--font-body, sans-serif)',
+                fontSize: '1.05rem',
+                lineHeight: 1.7,
+                margin: '0 0 32px',
+              }}>
+                {t.kenyaBody}
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }}>
+                {t.kenyaChips.map((chip) => (
+                  <span key={chip} style={{
+                    background: '#fff',
+                    border: '1px solid #DDD8CC',
+                    borderRadius: 99,
+                    padding: '8px 18px',
+                    color: '#3D5229',
+                    fontFamily: 'var(--font-body, sans-serif)',
+                    fontWeight: 600,
+                    fontSize: '0.88rem',
+                  }}>
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </section>
+        </SectionReveal>
+
+        {/* 9. Final CTA */}
         <section style={{ background: BUSH, padding: '80px 24px' }}>
           <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center' }}>
             <SectionReveal>
