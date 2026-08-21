@@ -21,6 +21,10 @@ export interface TourMapResult {
   mapStops: MapStop[]
   /** Leg distance into each day, keyed by tour_days.id. */
   distanceByDayId: Record<string, number | null>
+  /** Sum of every known leg distance. Null when no leg could be computed
+   * (e.g. no destination has coordinates yet) — callers should fall back to
+   * a manually-entered tour-level total in that case, never show "0 km". */
+  totalDistanceKm: number | null
 }
 
 export function buildTourMap(
@@ -53,5 +57,10 @@ export function buildTourMap(
     if (destId) prevDestId = destId
   }
 
-  return { mapStops, distanceByDayId }
+  const knownDistances = Object.values(distanceByDayId).filter((km): km is number => km != null)
+  const totalDistanceKm = knownDistances.length > 0
+    ? Math.round(knownDistances.reduce((sum, km) => sum + km, 0) * 10) / 10
+    : null
+
+  return { mapStops, distanceByDayId, totalDistanceKm }
 }

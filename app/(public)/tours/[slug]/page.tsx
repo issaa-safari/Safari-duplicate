@@ -222,7 +222,7 @@ export default async function TourDetailPage({
   // Generated route map + per-day distance — same logic as the client
   // proposal's tour map (app/quote/[token]/page.tsx), built from tour_days'
   // own destinations rather than a quote's destination snapshots.
-  const { mapStops, distanceByDayId } = buildTourMap(
+  const { mapStops, distanceByDayId, totalDistanceKm } = buildTourMap(
     (rawDays ?? []).map(d => ({
       id: d.id, day_number: d.day_number, destination_id: d.destination_id,
       distance_km: d.distance_km, road_distance_km: d.road_distance_km,
@@ -230,6 +230,10 @@ export default async function TourDetailPage({
     destCoordMap,
     destNameMap,
   )
+  // A manually-entered tour-level total (Tour Edit form) always wins over
+  // the sum of computed per-day legs — same "admin input wins" rule as the
+  // per-day distance itself.
+  const displayTotalDistanceKm = tour.total_distance_km ?? totalDistanceKm
 
   const days: ItineraryDay[] = (rawDays ?? []).map(d => {
     const dest = d.destination_id ? destMap[d.destination_id] : null
@@ -350,7 +354,7 @@ export default async function TourDetailPage({
         subtitle={subtitle}
         routeText={routeText}
         durationDays={tour.duration_days}
-        distanceKm={tour.total_distance_km}
+        distanceKm={displayTotalDistanceKm}
         groupSize={tour.max_group_size}
         terrain={tour.terrain}
         accentColor={accent}
@@ -410,7 +414,7 @@ export default async function TourDetailPage({
               }}>
                 {[
                   tour.duration_days && { label: isAr ? 'المدة' : 'Duration', value: `${tour.duration_days} ${isAr ? 'يوم' : 'days'}` },
-                  tour.total_distance_km && { label: isAr ? 'المسافة الكلية' : 'Total Distance', value: `${tour.total_distance_km.toLocaleString()} km` },
+                  displayTotalDistanceKm && { label: isAr ? 'المسافة الكلية' : 'Total Distance', value: `${displayTotalDistanceKm.toLocaleString()} km` },
                   tour.difficulty_rating && { label: isAr ? 'الصعوبة' : 'Difficulty', value: `${tour.difficulty_rating}/10` },
                   tour.max_group_size && { label: isAr ? 'حجم المجموعة' : 'Group Size', value: `Max ${tour.max_group_size}` },
                   tour.terrain && { label: isAr ? 'التضاريس' : 'Terrain', value: tour.terrain },
@@ -525,7 +529,7 @@ export default async function TourDetailPage({
             <SectionReveal>
               <SectionHeading accent={accent}>{t.gallery}</SectionHeading>
             </SectionReveal>
-            <GalleryGrid urls={gallery} tourId={id} alt={title ?? ''} />
+            <GalleryGrid urls={gallery} tourId={id} alt={title ?? ''} isAr={isAr} />
           </div>
         </section>
       )}

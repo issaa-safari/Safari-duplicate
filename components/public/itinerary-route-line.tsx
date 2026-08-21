@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { motion, useInView, useReducedMotion } from 'framer-motion'
 import SafariImage from '@/components/public/safari-image'
+import Lightbox from '@/components/public/lightbox'
 
 export interface ItineraryDay {
   id: string
@@ -69,6 +70,7 @@ function DayCard({
   isOpen,
   onToggle,
   headerRef,
+  onImageClick,
 }: {
   day: ItineraryDay
   index: number
@@ -77,6 +79,7 @@ function DayCard({
   isOpen: boolean
   onToggle: () => void
   headerRef: (el: HTMLButtonElement | null) => void
+  onImageClick: () => void
 }) {
   const reduced = useReducedMotion()
   const ref = useRef<HTMLDivElement>(null)
@@ -160,9 +163,19 @@ function DayCard({
         style={{ overflow: 'hidden' }}
       >
         {/* Day image — SafariImage renders its <Image> with `fill`, which needs
-            a positioned ancestor with real height; aspectRatio gives it one. */}
+            a positioned ancestor with real height; aspectRatio gives it one.
+            Click opens the uncropped original in the lightbox — the inline
+            crop can hide detail on a photo whose native ratio isn't 16:9. */}
         {day.imageUrl && (
-          <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9' }}>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={onImageClick}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onImageClick() } }}
+            aria-label={isAr ? 'عرض الصورة بالحجم الكامل' : 'View full-size photo'}
+            style={{ position: 'relative', width: '100%', aspectRatio: '16/9', cursor: 'pointer' }}
+            className="group"
+          >
             <SafariImage
               src={day.imageUrl}
               seed={day.id}
@@ -171,6 +184,20 @@ function DayCard({
               sizes="(max-width: 768px) 100vw, 700px"
               useStockFallback={false}
             />
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              style={{ background: 'linear-gradient(to top, rgba(32,39,26,0.3) 0%, transparent 50%)' }}
+            />
+            <span aria-hidden="true" style={{
+              position: 'absolute', top: 10, insetInlineEnd: 10,
+              width: 30, height: 30, borderRadius: '50%',
+              background: 'rgba(20,25,15,0.55)', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14,
+            }}>
+              ⤢
+            </span>
           </div>
         )}
 
@@ -262,7 +289,19 @@ function DayCard({
 
 export default function ItineraryRouteLine({ days, accentColor, isAr }: ItineraryRouteLineProps) {
   const [openIndex, setOpenIndex] = useState(0)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const reduced = useReducedMotion()
+
+  // Every day photo across the itinerary, so the lightbox can page through
+  // all of them — not just the one the client clicked.
+  const dayImages = days.map((d) => d.imageUrl).filter((url): url is string => !!url)
+  const imageIndexByDayId: Record<string, number> = {}
+  {
+    let n = 0
+    for (const d of days) {
+      if (d.imageUrl) imageIndexByDayId[d.id] = n++
+    }
+  }
   const sectionRef = useRef<HTMLDivElement>(null)
   const cardsColRef = useRef<HTMLDivElement>(null)
   const headerRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -373,9 +412,20 @@ export default function ItineraryRouteLine({ days, accentColor, isAr }: Itinerar
             isOpen={openIndex === i}
             onToggle={() => setOpenIndex(openIndex === i ? -1 : i)}
             headerRef={(el) => { headerRefs.current[i] = el }}
+            onImageClick={() => setLightboxIndex(imageIndexByDayId[day.id] ?? null)}
           />
         ))}
       </div>
+
+      {lightboxIndex !== null && (
+        <Lightbox
+          images={dayImages}
+          index={lightboxIndex}
+          isAr={isAr}
+          onClose={() => setLightboxIndex(null)}
+          onNavigate={setLightboxIndex}
+        />
+      )}
     </div>
   )
 }
