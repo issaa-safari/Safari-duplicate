@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import Link from 'next/link'
 import VouchersClient from './vouchers-client'
 import type { HotelVoucher } from '@/lib/types'
+import DepartureOperationsNav from '@/app/admin/departures/[id]/operations-nav'
 
 async function requestBaseUrl() {
   const host = (await headers()).get('host') ?? 'localhost:3000'
@@ -111,6 +112,11 @@ export default async function VouchersPage({
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
       <div className="mb-6">
+        {departure && (
+          <Link href={`/admin/departures/${departure}`} className="mb-3 inline-block text-sm text-muted-foreground hover:text-foreground">
+            ← Departure overview
+          </Link>
+        )}
         <h1 className="text-xl font-semibold text-foreground">Hotel Vouchers</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Every accommodation booking voucher across all departures, bookings and accepted quotes. Generate
@@ -125,6 +131,12 @@ export default async function VouchersPage({
           </p>
         )}
       </div>
+
+      {departure && (
+        <div className="mb-6">
+          <DepartureOperationsNav departureId={departure} activeOverride="vouchers" />
+        </div>
+      )}
 
       <VouchersClient
         vouchers={(vouchers as VoucherWithContext[]) ?? []}

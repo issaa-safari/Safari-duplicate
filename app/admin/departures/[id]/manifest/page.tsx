@@ -3,8 +3,52 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { site } from '@/lib/site'
-import ManifestClient, { type RosterTraveller } from './manifest-client'
+import ManifestClient, { type RosterFlight, type RosterTraveller } from './manifest-client'
 import type { Motorbike } from '@/lib/types'
+import DepartureOperationsNav from '../operations-nav'
+
+type ManifestAgreement = {
+  status: string
+  access_token: string
+  signed_name: string | null
+  signed_at: string | null
+}
+
+type ManifestFlight = {
+  id: string
+  direction: string
+  flight_number: string | null
+  airline: string | null
+  scheduled_at: string | null
+  airport: string | null
+  notes: string | null
+}
+
+type ManifestTraveller = {
+  id: string
+  first_name: string | null
+  last_name: string | null
+  email: string | null
+  phone: string | null
+  nationality: string | null
+  passport_number: string | null
+  motorbike_id: string | null
+  is_rider: boolean | null
+  dietary_requirements: string | null
+  allergies: string | null
+  emergency_contact: string | null
+  room_label: string | null
+  room_type: string | null
+  motorbikes: { name: string | null } | null
+  booking_traveller_flights: ManifestFlight[] | null
+  traveller_agreements: ManifestAgreement | ManifestAgreement[] | null
+}
+
+type ManifestBooking = {
+  id: string
+  clients: { first_name: string | null; last_name: string | null } | Array<{ first_name: string | null; last_name: string | null }> | null
+  booking_travellers: ManifestTraveller[] | null
+}
 
 export default async function DepartureManifestPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -52,11 +96,22 @@ export default async function DepartureManifestPage({ params }: { params: Promis
   // Flatten bookings → a flat roster, tagging each traveller with the lead
   // client / party they belong to.
   const roster: RosterTraveller[] = []
-  for (const b of (bookings ?? []) as any[]) {
-    const client = b.clients as any
+  for (const b of (bookings ?? []) as unknown as ManifestBooking[]) {
+    const client = Array.isArray(b.clients) ? b.clients[0] : b.clients
     const partyName = client ? `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim() : null
-    for (const t of (b.booking_travellers ?? []) as any[]) {
+    for (const t of b.booking_travellers ?? []) {
       const agreement = Array.isArray(t.traveller_agreements) ? t.traveller_agreements[0] : t.traveller_agreements
+      const flights: RosterFlight[] = (t.booking_traveller_flights ?? [])
+        .map(flight => ({
+          id: flight.id,
+          direction: flight.direction,
+          flightNumber: flight.flight_number,
+          airline: flight.airline,
+          scheduledAt: flight.scheduled_at,
+          airport: flight.airport,
+          notes: flight.notes,
+        }))
+        .sort((a, b2) => (a.scheduledAt ?? '').localeCompare(b2.scheduledAt ?? ''))
       roster.push({
         id: t.id,
         bookingId: b.id,
@@ -75,17 +130,7 @@ export default async function DepartureManifestPage({ params }: { params: Promis
         roomType: t.room_type,
         motorbikeId: t.motorbike_id ?? null,
         motorbikeName: t.motorbikes?.name ?? null,
-        flights: (t.booking_traveller_flights ?? [])
-          .map((f: any) => ({
-            id: f.id,
-            direction: f.direction,
-            flightNumber: f.flight_number,
-            airline: f.airline,
-            scheduledAt: f.scheduled_at,
-            airport: f.airport,
-            notes: f.notes,
-          }))
-          .sort((a: any, b2: any) => (a.scheduledAt ?? '').localeCompare(b2.scheduledAt ?? '')),
+        flights,
         agreement: agreement
           ? {
               status: agreement.status,
@@ -98,6 +143,8 @@ export default async function DepartureManifestPage({ params }: { params: Promis
     }
   }
 
+  const tour = Array.isArray(departure.tours) ? departure.tours[0] : departure.tours
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
       <div className="mb-2 flex items-center gap-4">
@@ -106,17 +153,21 @@ export default async function DepartureManifestPage({ params }: { params: Promis
         </Link>
       </div>
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-foreground">Departure Manifest</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Manifest &amp; logistics</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          {(departure as any).tours?.title_en ?? 'Tour'} ·{' '}
+          {tour?.title_en ?? 'Tour'} ·{' '}
           {new Date(departure.start_date).toLocaleDateString('en-GB')} →{' '}
           {new Date(departure.end_date).toLocaleDateString('en-GB')}
         </p>
       </div>
 
+      <div className="mb-6">
+        <DepartureOperationsNav departureId={id} />
+      </div>
+
       <ManifestClient
         departureId={id}
-        departureLabel={`${(departure as any).tours?.title_en ?? 'Tour'} — ${new Date(departure.start_date).toLocaleDateString('en-GB')}`}
+        departureLabel={`${tour?.title_en ?? 'Tour'} — ${new Date(departure.start_date).toLocaleDateString('en-GB')}`}
         roster={roster}
         motorbikes={(bikes as Motorbike[]) ?? []}
         hasTemplate={(templateCount ?? 0) > 0}

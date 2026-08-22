@@ -2,9 +2,31 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ButtonLink, Button } from '@/components/ui/button'
+import { ButtonLink } from '@/components/ui/button'
 import { toggleDeparturePublished } from './[id]/actions'
 import StatusBadge from '@/components/admin/status-badge'
+
+type ReadinessTraveller = {
+  is_rider: boolean | null
+  motorbike_id: string | null
+  passport_number: string | null
+  booking_traveller_flights: Array<{ direction: string; scheduled_at: string | null }> | null
+  traveller_agreements: Array<{ status: string }> | null
+}
+
+type OperationsDeparture = {
+  id: string
+  start_date: string
+  end_date: string
+  max_seats: number
+  booked_seats: number
+  price_usd: number | null
+  price_single_usd: number | null
+  status: string
+  is_active: boolean
+  tours: { title_en: string | null; type: string | null } | Array<{ title_en: string | null; type: string | null }> | null
+  bookings: Array<{ status: string; booking_travellers: ReadinessTraveller[] | null }> | null
+}
 
 export default async function DeparturesPage({
   searchParams,
@@ -21,7 +43,18 @@ export default async function DeparturesPage({
   const admin = createAdminClient()
   const { data: departures } = await admin
     .from('departures')
-    .select('*, tours (title_en, type)')
+    .select(`
+      *,
+      tours (title_en, type),
+      bookings (
+        id, status,
+        booking_travellers (
+          id, is_rider, motorbike_id, passport_number,
+          booking_traveller_flights ( direction, scheduled_at ),
+          traveller_agreements ( status )
+        )
+      )
+    `)
     .eq('is_active', showArchived ? false : true)
     .order('start_date', { ascending: true })
 
@@ -29,8 +62,8 @@ export default async function DeparturesPage({
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-foreground">Departures</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Scheduled fixed-date trips and seat inventory</p>
+          <h1 className="text-xl font-semibold text-foreground">Trip Operations</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Readiness, manifests and logistics for every scheduled departure</p>
         </div>
         <ButtonLink href="/admin/departures/new" size="sm">+ New Departure</ButtonLink>
       </div>
@@ -44,7 +77,7 @@ export default async function DeparturesPage({
               ? 'border-primary-strong text-brand-text'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}>
-          Published
+          Active trips
         </Link>
         <Link
           href="/admin/departures?show=archived"
@@ -53,7 +86,7 @@ export default async function DeparturesPage({
               ? 'border-primary-strong text-brand-text'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}>
-          Archived
+          Archived trips
         </Link>
       </div>
 
@@ -77,6 +110,7 @@ export default async function DeparturesPage({
                 <th className="px-4 py-3 font-medium">Tour</th>
                 <th className="px-4 py-3 font-medium">Dates</th>
                 <th className="px-4 py-3 font-medium">Seats</th>
+                <th className="px-4 py-3 font-medium">Readiness</th>
                 <th className="px-4 py-3 font-medium hidden md:table-cell">Price</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Website</th>
@@ -84,9 +118,23 @@ export default async function DeparturesPage({
               </tr>
             </thead>
             <tbody>
-              {departures.map((dep: any) => {
-                const tour = dep.tours as any
+              {((departures ?? []) as unknown as OperationsDeparture[]).map(dep => {
+                const tour = Array.isArray(dep.tours) ? dep.tours[0] : dep.tours
                 const available = dep.max_seats - dep.booked_seats
+                const bookings = (dep.bookings ?? []).filter(booking => booking.status !== 'cancelled')
+                const travellers = bookings.flatMap(booking => booking.booking_travellers ?? [])
+                const riders = travellers.filter(traveller => traveller.is_rider !== false)
+                const missingArrivals = travellers.filter(traveller =>
+                  !(traveller.booking_traveller_flights ?? []).some(flight =>
+                    flight.direction === 'arrival' && flight.scheduled_at,
+                  ),
+                ).length
+                const missingBikes = riders.filter(traveller => !traveller.motorbike_id).length
+                const missingPassports = travellers.filter(traveller => !traveller.passport_number).length
+                const unsigned = travellers.filter(traveller =>
+                  !(traveller.traveller_agreements ?? []).some(agreement => agreement.status === 'signed'),
+                ).length
+                const readinessIssues = missingArrivals + missingBikes + missingPassports + unsigned
                 return (
                   <tr key={dep.id} className="border-b border-border/70 hover:bg-muted">
                     <td data-label="Tour" className="px-4 py-3">
@@ -103,6 +151,17 @@ export default async function DeparturesPage({
                         {available} / {dep.max_seats}
                       </span>
                       <span className="text-xs text-muted-foreground block">{dep.booked_seats} booked</span>
+                    </td>
+                    <td data-label="Readiness" className="px-4 py-3">
+                      {travellers.length === 0 ? (
+                        <span className="text-xs text-muted-foreground">No travellers</span>
+                      ) : readinessIssues === 0 ? (
+                        <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-800">Ready</span>
+                      ) : (
+                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
+                          {readinessIssues} check{readinessIssues === 1 ? '' : 's'}
+                        </span>
+                      )}
                     </td>
                     <td data-label="Price" className="px-4 py-3 text-muted-foreground hidden md:table-cell">
                       {dep.price_usd != null
@@ -134,7 +193,7 @@ export default async function DeparturesPage({
                     <td className="px-4 py-3 text-right">
                       <Link href={"/admin/departures/" + dep.id}
                         className="text-xs text-brand-text hover:underline">
-                        Edit
+                        Open workspace
                       </Link>
                     </td>
                   </tr>

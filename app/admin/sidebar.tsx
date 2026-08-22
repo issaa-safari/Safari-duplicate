@@ -7,7 +7,7 @@ import { useState, useEffect, useTransition, useRef } from 'react'
 import {
   Search, MoreHorizontal, LayoutDashboard, Inbox, FileText, Route, CalendarCheck,
   Users, Wallet, Package, Boxes, MapPin, Truck, BarChart3, Settings, LogOut, X,
-  Copy, ArrowLeft, FileSignature, BedDouble, UserPlus,
+  Copy, ArrowLeft, FileSignature, BedDouble, UserPlus, ClipboardCheck,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { SearchResults, SearchQuote, SearchClient, SearchRequest } from '@/lib/types'
@@ -23,15 +23,14 @@ const DASHBOARD: NavItem = { label: 'Dashboard', href: '/admin/dashboard', icon:
 const NAV_GROUPS: NavGroup[] = [
   { label: 'Sales', items: [
     { label: 'Leads',        href: '/admin/leads',        icon: UserPlus },
-    { label: 'Requests',     href: '/admin/requests',     icon: Inbox },
+    { label: 'Inbox',        href: '/admin/requests',     icon: Inbox },
     { label: 'Quotes',       href: '/admin/quotes',       icon: FileText },
     { label: 'Trip Builder', href: '/admin/trip-builder', icon: Route },
     { label: 'Bookings',     href: '/admin/bookings',     icon: CalendarCheck },
   ] },
   { label: 'Operations', items: [
-    { label: 'Departures', href: '/admin/departures', icon: MapPin },
+    { label: 'Operations', href: '/admin/departures', icon: MapPin },
     { label: 'Vouchers',   href: '/admin/vouchers',   icon: BedDouble },
-    { label: 'Agreements', href: '/admin/agreements', icon: FileSignature },
   ] },
   { label: 'People', items: [
     { label: 'Clients',   href: '/admin/clients',   icon: Users },
@@ -46,6 +45,10 @@ const NAV_GROUPS: NavGroup[] = [
     { label: 'Finance',  href: '/admin/finance',  icon: Wallet },
     { label: 'Insights', href: '/admin/insights', icon: BarChart3 },
   ] },
+  { label: 'Configuration', items: [
+    { label: 'Agreement Template', href: '/admin/agreements', icon: FileSignature },
+    { label: 'Default Tasks', href: '/admin/settings/default-tasks', icon: ClipboardCheck },
+  ] },
 ]
 
 const GROUP_ITEMS: NavItem[] = NAV_GROUPS.flatMap(g => g.items)
@@ -57,9 +60,8 @@ const PRIMARY_NAV: NavItem[] = [
   DASHBOARD,
   byHref('/admin/requests'),
   byHref('/admin/quotes'),
-  byHref('/admin/trip-builder'),
   byHref('/admin/bookings'),
-  byHref('/admin/clients'),
+  byHref('/admin/departures'),
   byHref('/admin/finance'),
 ]
 
@@ -68,8 +70,8 @@ const PRIMARY_NAV: NavItem[] = [
 const BOTTOM_NAV: NavItem[] = [
   DASHBOARD,
   byHref('/admin/requests'),
-  byHref('/admin/quotes'),
   byHref('/admin/bookings'),
+  byHref('/admin/departures'),
 ]
 
 const PRIMARY_HREFS = new Set(PRIMARY_NAV.map(n => n.href))
@@ -121,7 +123,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     const q = query.trim()
-    if (q.length < 2) { setResults(null); return }
+    if (q.length < 2) return
     const timer = setTimeout(() => {
       startSearch(async () => {
         const res = await fetch(`/api/admin/search?q=${encodeURIComponent(q)}`)
@@ -153,7 +155,11 @@ function SearchModal({ onClose }: { onClose: () => void }) {
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             placeholder="Search quotes, clients, requests…"
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => {
+              const value = e.target.value
+              setQuery(value)
+              if (value.trim().length < 2) setResults(null)
+            }}
             onKeyDown={e => e.key === 'Escape' && onClose()}
           />
           {searching && <span className="text-xs text-muted-foreground animate-pulse">…</span>}
