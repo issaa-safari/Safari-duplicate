@@ -143,7 +143,12 @@ export default function TourSeoEditor({
   const updateSeo = (key: string, value: string) => setSeo(current => ({ ...current, [key]: value }))
   const updateSection = (key: string, patch: Partial<Section>) => setSections(current => ({
     ...current,
-    [key]: { section_key: key, is_enabled: true, ...current[key], ...patch },
+    [key]: {
+      ...current[key],
+      ...patch,
+      section_key: key,
+      is_enabled: patch.is_enabled ?? current[key]?.is_enabled ?? true,
+    },
   }))
 
   async function save() {
