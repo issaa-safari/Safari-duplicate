@@ -126,7 +126,14 @@ h2 { font-size: 22px; font-weight: 800; margin: 0 0 14px; line-height: 1.2; }
 h3 { font-size: 15px; font-weight: 700; margin: 0 0 12px; }
 @media print {
   .no-print { display: none !important; }
-  @page { margin: 1.5cm 2cm; size: A4 portrait; }
+  /* iOS/WebKit's print engine largely ignores a non-zero @page margin and
+     substitutes its own (much larger) default, which starves .page of
+     width and forces tables/cards to wrap taller than they need to —
+     spilling a stray row or two onto an otherwise-blank extra sheet.
+     margin: 0 is the one value WebKit reliably honors, so the gutter is
+     done with .page's own padding instead, which always applies. */
+  @page { margin: 0; size: A4 portrait; }
+  .page { max-width: none; width: 100%; margin: 0; padding: 14mm 16mm; }
   .pb { break-after: page; page-break-after: always; }
   .nb { break-inside: avoid; page-break-inside: avoid; }
   /* Never split a table row across a page — the whole label+description
