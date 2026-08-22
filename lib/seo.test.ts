@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasArabicContent, languageAlternates, noindexIfUntranslated } from './seo'
+import { breadcrumbJsonLd, hasArabicContent, languageAlternates, noindexIfUntranslated } from './seo'
 
 describe('hasArabicContent', () => {
   it('requires both title and overview', () => {
@@ -10,13 +10,10 @@ describe('hasArabicContent', () => {
   })
 
   it('treats whitespace as empty', () => {
-    // A field containing only spaces renders as nothing, so it must not count
-    // as a translation.
     expect(hasArabicContent({ title_ar: '   ', overview_ar: 'رحلة' })).toBe(false)
   })
 
   it('does not require the day-by-day itinerary', () => {
-    // Deliberate: the page is coherent with title + overview alone.
     expect(hasArabicContent({ title_ar: 'مستكشف', overview_ar: 'رحلة' })).toBe(true)
   })
 })
@@ -31,8 +28,6 @@ describe('languageAlternates', () => {
   })
 
   it('drops the ar entry when there is no Arabic', () => {
-    // Claiming an Arabic translation that is really the English text would be a
-    // false hreflang pair.
     expect(languageAlternates('/tours/x', false)).toEqual({
       en: '/tours/x',
       'x-default': '/tours/x',
@@ -54,5 +49,25 @@ describe('noindexIfUntranslated', () => {
   it('keeps following links so the page still passes equity', () => {
     const { robots } = noindexIfUntranslated('ar', false) as { robots: { follow: boolean } }
     expect(robots.follow).toBe(true)
+  })
+})
+
+describe('breadcrumbJsonLd', () => {
+  const items = [
+    { label: 'Home', href: '/' },
+    { label: 'Kenya Safaris', href: '/kenya-safari' },
+    { label: 'Maasai Mara', href: '/maasai-mara-safari' },
+  ]
+
+  it('builds ordered absolute English breadcrumb URLs', () => {
+    const data = breadcrumbJsonLd(items, 'en') as { itemListElement: { position: number; item: string }[] }
+    expect(data.itemListElement.map((item) => item.position)).toEqual([1, 2, 3])
+    expect(data.itemListElement[2].item).toContain('/maasai-mara-safari')
+  })
+
+  it('localises Arabic breadcrumb URLs', () => {
+    const data = breadcrumbJsonLd(items, 'ar') as { itemListElement: { item: string }[] }
+    expect(data.itemListElement[1].item).toContain('/ar/kenya-safari')
+    expect(data.itemListElement[2].item).toContain('/ar/maasai-mara-safari')
   })
 })
