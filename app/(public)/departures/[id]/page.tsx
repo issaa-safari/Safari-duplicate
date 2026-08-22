@@ -112,8 +112,10 @@ export async function generateMetadata({
   const supabase = await createClient()
   const { data: dep } = await supabase
     .from('departures')
-    .select('start_date, end_date, tours(title_en, title_ar, overview_ar, hero_image_url)')
+    .select('start_date, end_date, tours!inner(title_en, title_ar, overview_ar, hero_image_url)')
     .eq('id', id)
+    .eq('tours.status', 'active')
+    .eq('tours.show_on_website', true)
     .maybeSingle()
   if (!dep) return {}
   const tour = dep.tours as any
@@ -165,7 +167,7 @@ export default async function DepartureDetailPage({
     .select(`
       id, tour_id, start_date, end_date,
       max_seats, booked_seats, price_usd, price_single_usd, security_deposit_usd, status, is_active,
-      tours (
+      tours!inner (
         id, slug, title_en, title_ar, subtitle_en, subtitle_ar,
         overview_en, overview_ar, type,
         countries_visited, start_destination, end_destination,
@@ -178,6 +180,8 @@ export default async function DepartureDetailPage({
       )
     `)
     .eq('id', id)
+    .eq('tours.status', 'active')
+    .eq('tours.show_on_website', true)
     .single()
 
   if (!departure) notFound()

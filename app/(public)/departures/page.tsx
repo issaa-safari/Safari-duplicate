@@ -81,9 +81,11 @@ export default async function DeparturesPage({
     .from('departures')
     .select(
       `id, tour_id, start_date, end_date, max_seats, booked_seats, price_usd, price_single_usd, status,
-       tour:tours(title_en, title_ar, subtitle_en, type, hero_image_url, gallery_urls)`
+       tour:tours!inner(title_en, title_ar, subtitle_en, type, hero_image_url, gallery_urls)`
     )
     .eq('is_active', true)
+    .eq('tour.status', 'active')
+    .eq('tour.show_on_website', true)
     .gte('end_date', new Date().toISOString().split('T')[0])
     .order('start_date')
 
