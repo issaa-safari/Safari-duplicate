@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { site } from '@/lib/site'
@@ -5,6 +6,10 @@ import type { HotelVoucher } from '@/lib/types'
 import PrintToolbar from './print-toolbar'
 
 export const dynamic = 'force-dynamic'
+
+// Token-scoped client document — robots.ts disallows crawling it, and this is
+// the fallback in case a link is ever shared/indexed anyway.
+export const metadata: Metadata = { robots: { index: false, follow: false } }
 
 const G = '#7A9A4A'
 

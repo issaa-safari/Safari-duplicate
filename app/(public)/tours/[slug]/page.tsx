@@ -76,6 +76,7 @@ export async function generateMetadata({
     .select('id, slug, title_en, title_ar, overview_en, overview_ar, hero_image_url')
     .eq(isUuid(slug) ? 'id' : 'slug', slug)
     .eq('status', 'active')
+    .eq('show_on_website', true)
     .maybeSingle()
   if (!tour) return {}
   // Always advertise the slug URL, even when reached by UUID, so the two forms
@@ -136,6 +137,7 @@ export default async function TourDetailPage({
     `)
     .eq(isUuid(slug) ? 'id' : 'slug', slug)
     .eq('status', 'active')
+    .eq('show_on_website', true)
     .maybeSingle()
 
   if (!tour) notFound()

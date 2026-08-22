@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import AcceptForm from './accept-form'
@@ -12,6 +13,10 @@ import {
   INCLUDED_DEFAULT_EN, INCLUDED_DEFAULT_AR,
   EXCLUDED_DEFAULT_EN, EXCLUDED_DEFAULT_AR,
 } from '@/lib/quote-defaults'
+
+// Token-scoped client document — robots.ts disallows crawling it, and this is
+// the fallback in case a link is ever shared/indexed anyway.
+export const metadata: Metadata = { robots: { index: false, follow: false } }
 
 const MEAL_LABELS: Record<string, string> = { B: 'Breakfast', L: 'Lunch', D: 'Dinner' }
 const MEAL_LABELS_AR: Record<string, string> = { B: 'إفطار', L: 'غداء', D: 'عشاء' }

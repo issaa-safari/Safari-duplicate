@@ -91,7 +91,14 @@ export function pageMetadata({
     title: absoluteTitle ? { absolute: t } : t,
     description: d,
     alternates: { canonical: self, languages: languageAlternates(path) },
-    openGraph: { title: t, description: d, url: self, locale },
+    openGraph: {
+      title: t,
+      description: d,
+      url: self,
+      siteName: site.name,
+      locale,
+      alternateLocale: locale === 'ar' ? 'en' : 'ar',
+    },
     twitter: { title: t, description: d },
   }
 }

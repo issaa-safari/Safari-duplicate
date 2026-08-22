@@ -53,6 +53,7 @@ export default async function ToursPage({
     .from('tours')
     .select('id, slug, title_en, title_ar, subtitle_en, subtitle_ar, overview_en, overview_ar, type, duration_days, duration_nights, countries_visited, status, hero_image_url, gallery_urls')
     .eq('status', 'active')
+    .eq('show_on_website', true)
   if (typeFilter) query = query.eq('type', typeFilter)
   const { data: tours } = await query.order('title_en')
 
