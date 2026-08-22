@@ -5,12 +5,20 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useTransition, useRef } from 'react'
 import {
-  Search, MoreHorizontal, LayoutDashboard, Inbox, FileText, Route, CalendarCheck,
+  Search, MoreHorizontal, LayoutDashboard, Inbox, FileText, CalendarCheck,
   Users, Wallet, Package, Boxes, MapPin, Truck, BarChart3, Settings, LogOut, X,
-  Copy, ArrowLeft, FileSignature, BedDouble, UserPlus, ClipboardCheck,
+  Copy, ArrowLeft, FileSignature, BedDouble, ClipboardCheck, BriefcaseBusiness,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import type { SearchResults, SearchQuote, SearchClient, SearchRequest } from '@/lib/types'
+import type {
+  SearchBooking,
+  SearchClient,
+  SearchDeparture,
+  SearchEntity,
+  SearchQuote,
+  SearchRequest,
+  SearchResults,
+} from '@/lib/types'
 
 type NavItem = { label: string; href: string; icon: LucideIcon }
 type NavGroup = { label: string; items: NavItem[] }
@@ -22,15 +30,14 @@ const DASHBOARD: NavItem = { label: 'Dashboard', href: '/admin/dashboard', icon:
 // this — filtered so a module never appears twice (once in a bar, once here).
 const NAV_GROUPS: NavGroup[] = [
   { label: 'Sales', items: [
-    { label: 'Leads',        href: '/admin/leads',        icon: UserPlus },
-    { label: 'Inbox',        href: '/admin/requests',     icon: Inbox },
-    { label: 'Quotes',       href: '/admin/quotes',       icon: FileText },
-    { label: 'Trip Builder', href: '/admin/trip-builder', icon: Route },
-    { label: 'Bookings',     href: '/admin/bookings',     icon: CalendarCheck },
+    { label: 'Sales Desk', href: '/admin/sales',    icon: BriefcaseBusiness },
+    { label: 'Inbox',      href: '/admin/requests', icon: Inbox },
+    { label: 'Proposals',  href: '/admin/quotes',   icon: FileText },
+    { label: 'Bookings',   href: '/admin/bookings', icon: CalendarCheck },
   ] },
   { label: 'Operations', items: [
-    { label: 'Operations', href: '/admin/departures', icon: MapPin },
-    { label: 'Vouchers',   href: '/admin/vouchers',   icon: BedDouble },
+    { label: 'Trip Operations', href: '/admin/departures', icon: MapPin },
+    { label: 'Hotel Vouchers',  href: '/admin/vouchers',   icon: BedDouble },
   ] },
   { label: 'People', items: [
     { label: 'Clients',   href: '/admin/clients',   icon: Users },
@@ -39,7 +46,7 @@ const NAV_GROUPS: NavGroup[] = [
   { label: 'Catalog', items: [
     { label: 'Content',           href: '/admin/content',        icon: Boxes },
     { label: 'Itinerary Library', href: '/admin/tours',          icon: Package },
-    { label: 'Saved Quotes',      href: '/admin/tour-templates', icon: Copy },
+    { label: 'Quote Templates',   href: '/admin/tour-templates', icon: Copy },
   ] },
   { label: 'Business', items: [
     { label: 'Finance',  href: '/admin/finance',  icon: Wallet },
@@ -58,18 +65,17 @@ const byHref = (href: string) => GROUP_ITEMS.find(i => i.href === href)!
 // dropdown, grouped.
 const PRIMARY_NAV: NavItem[] = [
   DASHBOARD,
-  byHref('/admin/requests'),
-  byHref('/admin/quotes'),
-  byHref('/admin/bookings'),
+  byHref('/admin/sales'),
   byHref('/admin/departures'),
   byHref('/admin/finance'),
+  byHref('/admin/insights'),
 ]
 
 // The four destinations promoted to the mobile bottom tab bar; every other
 // module lives behind the "More" tab so the bar stays app-clean.
 const BOTTOM_NAV: NavItem[] = [
   DASHBOARD,
-  byHref('/admin/requests'),
+  byHref('/admin/sales'),
   byHref('/admin/bookings'),
   byHref('/admin/departures'),
 ]
@@ -137,6 +143,8 @@ function SearchModal({ onClose }: { onClose: () => void }) {
 
   const hasResults = results && (
     results.quotes?.length || results.clients?.length || results.requests?.length
+    || results.bookings?.length || results.departures?.length || results.tours?.length
+    || results.suppliers?.length || results.accommodations?.length
   )
 
   return (
@@ -153,7 +161,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
           <input
             ref={inputRef}
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            placeholder="Search quotes, clients, requests…"
+            placeholder="Search sales, trips, tours, lodges, suppliers…"
             value={query}
             onChange={e => {
               const value = e.target.value
@@ -231,6 +239,76 @@ function SearchModal({ onClose }: { onClose: () => void }) {
                   <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
                     {r.stage?.replace('_', ' ')}
                   </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(results?.bookings?.length ?? 0) > 0 && (
+            <div>
+              <p className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
+                style={{ backgroundColor: 'var(--admin-bg)' }}>Bookings</p>
+              {results?.bookings.map((booking: SearchBooking) => (
+                <button key={booking.id} onClick={() => go(`/admin/bookings/${booking.id}`)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition hover:bg-muted">
+                  <span className="font-medium text-foreground">{booking.client_name ?? 'Booking'}</span>
+                  <span className="text-xs text-muted-foreground capitalize">{booking.status}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(results?.departures?.length ?? 0) > 0 && (
+            <div>
+              <p className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
+                style={{ backgroundColor: 'var(--admin-bg)' }}>Trip Operations</p>
+              {results?.departures.map((trip: SearchDeparture) => (
+                <button key={trip.id} onClick={() => go(`/admin/departures/${trip.id}`)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition hover:bg-muted">
+                  <span className="font-medium text-foreground">{trip.title}</span>
+                  <span className="text-xs text-muted-foreground">{new Date(trip.start_date).toLocaleDateString('en-GB')}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(results?.tours?.length ?? 0) > 0 && (
+            <div>
+              <p className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
+                style={{ backgroundColor: 'var(--admin-bg)' }}>Itinerary Library</p>
+              {results?.tours.map((tour: SearchEntity) => (
+                <button key={tour.id} onClick={() => go(`/admin/tours/${tour.id}`)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition hover:bg-muted">
+                  <span className="font-medium text-foreground">{tour.name}</span>
+                  <span className="text-xs text-muted-foreground capitalize">{tour.detail}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(results?.accommodations?.length ?? 0) > 0 && (
+            <div>
+              <p className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
+                style={{ backgroundColor: 'var(--admin-bg)' }}>Accommodations</p>
+              {results?.accommodations.map((accommodation: SearchEntity) => (
+                <button key={accommodation.id} onClick={() => go(`/admin/content/accommodations/${accommodation.id}`)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition hover:bg-muted">
+                  <span className="font-medium text-foreground">{accommodation.name}</span>
+                  <span className="text-xs text-muted-foreground capitalize">{accommodation.detail}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(results?.suppliers?.length ?? 0) > 0 && (
+            <div>
+              <p className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
+                style={{ backgroundColor: 'var(--admin-bg)' }}>Suppliers</p>
+              {results?.suppliers.map((supplier: SearchEntity) => (
+                <button key={supplier.id} onClick={() => go('/admin/suppliers')}
+                  className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition hover:bg-muted">
+                  <span className="font-medium text-foreground">{supplier.name}</span>
+                  <span className="text-xs text-muted-foreground capitalize">{supplier.detail}</span>
                 </button>
               ))}
             </div>
@@ -432,7 +510,7 @@ export default function AdminSidebar({
                 className="hidden items-center gap-2 rounded-lg border border-border bg-muted px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:border-ring/50 sm:flex sm:w-48 lg:w-64"
               >
                 <Search size={14} className="shrink-0" />
-                <span className="flex-1 truncate">Search requests, clients, lodges…</span>
+                <span className="flex-1 truncate">Search sales, trips, lodges…</span>
                 <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] font-medium">⌘K</kbd>
               </button>
               <button

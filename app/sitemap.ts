@@ -41,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const admin = createAdminClient()
     const [{ data: tours }, { data: departures }] = await Promise.all([
       admin.from('tours').select('id, slug, title_ar, overview_ar, updated_at').eq('status', 'active').eq('show_on_website', true),
-      admin.from('departures').select('id, start_date, tours!inner(title_ar, overview_ar, status, show_on_website)').eq('is_active', true).eq('tours.status', 'active').eq('tours.show_on_website', true).gte('start_date', new Date().toISOString().split('T')[0]),
+      admin.from('departures').select('id, start_date, tours!inner(title_ar, overview_ar, status, show_on_website)').eq('is_active', true).eq('is_public', true).eq('tours.status', 'active').eq('tours.show_on_website', true).gte('start_date', new Date().toISOString().split('T')[0]),
     ])
     const tourEntries: Entry[] = (tours ?? []).map((t) => ({ path: `/tours/${tourSegment(t)}`, lastModified: t.updated_at ? new Date(t.updated_at) : undefined, changeFrequency: 'weekly', priority: 0.8, translated: hasArabicContent(t) }))
     const departureEntries: Entry[] = (departures ?? []).map((d) => ({ path: `/departures/${d.id}`, changeFrequency: 'daily', priority: 0.7, translated: hasArabicContent((d as { tours?: { title_ar?: string | null; overview_ar?: string | null } }).tours ?? {}) }))

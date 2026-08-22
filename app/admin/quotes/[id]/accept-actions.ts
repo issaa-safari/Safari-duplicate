@@ -72,4 +72,6 @@ export async function acceptQuoteOnBehalf(quoteId: string) {
   revalidatePath(`/admin/quotes/${quoteId}`)
   revalidatePath('/admin/bookings')
   revalidatePath('/admin/quotes')
+  revalidatePath('/admin/departures')
+  revalidatePath(`/admin/departures/${accepted.departureId}`)
 }

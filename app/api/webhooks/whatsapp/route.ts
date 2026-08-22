@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isValidEmail } from '@/lib/server/validate-client'
+import { ingestEnquiry } from '@/lib/server/enquiry-intake'
 
 function isValidSignature(rawBody: string, signatureHeader: string | null): boolean {
   const appSecret = process.env.WHATSAPP_APP_SECRET
@@ -90,20 +91,30 @@ export async function POST(request: NextRequest) {
             const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null)
             const lang = flow.preferred_language === 'ar' ? 'ar' : 'en'
 
-            await admin.from('leads').insert({
-              phone_number: waId,
-              full_name: str(flow.full_name),
-              email: str(flow.email)?.toLowerCase() ?? null,
-              preferred_language: lang,
-              tour_type: str(flow.tour_type),
-              travel_dates: str(flow.travel_dates),
-              group_size: str(flow.group_size),
-              budget_range: str(flow.budget_range),
-              special_requests: str(flow.special_requests),
+            const fullName = str(flow.full_name) ?? ''
+            const nameParts = fullName.split(/\s+/).filter(Boolean)
+            const groupSize = Number.parseInt(str(flow.group_size) ?? '', 10)
+            const travelDates = str(flow.travel_dates)
+            const intake = await ingestEnquiry(admin, {
+              channel: 'whatsapp_flow',
+              externalEventId: String(msg.id || flow.flow_token || crypto.randomUUID()),
               source: 'whatsapp_flow',
+              firstName: nameParts[0] || 'WhatsApp',
+              lastName: nameParts.slice(1).join(' '),
+              email: str(flow.email)?.toLowerCase() ?? null,
+              whatsapp: waId,
+              language: lang,
+              question: [
+                str(flow.special_requests),
+                travelDates ? `Travel dates: ${travelDates}` : null,
+                str(flow.budget_range) ? `Budget: ${str(flow.budget_range)}` : null,
+                str(flow.tour_type) ? `Tour type: ${str(flow.tour_type)}` : null,
+              ].filter(Boolean).join('\n'),
+              quoteIntent: true,
+              adults: Number.isFinite(groupSize) ? groupSize : 1,
             })
 
-            await sendWhatsAppMessage(
+            if (!intake.duplicate) await sendWhatsAppMessage(
               waId,
               "Thank you! 🦁 We've received your safari enquiry and our team will get back to you within 24 hours."
             )
@@ -157,7 +168,8 @@ export async function POST(request: NextRequest) {
 
             await sendWhatsAppMessage(waId, 'Thanks! Which country are you from?')
           } else if (convo.step === 'awaiting_country') {
-            // All info collected — create client + request
+            // All info collected — create the same canonical request used by
+            // the website and Flow channels.
             const fullName: string = convo.collected_name || profileName || ''
             const np = fullName.split(' ').filter(Boolean)
             // clients.first_name/last_name are NOT NULL — fall back to '' (never null).
@@ -165,50 +177,18 @@ export async function POST(request: NextRequest) {
             const ln = np.slice(1).join(' ') || lastName || ''
             const collectedEmail = convo.collected_email || null
 
-            let clientId: string
-
-            const { data: existingByWhatsapp } = await admin
-              .from('clients')
-              .select('id')
-              .eq('whatsapp', waId)
-              .maybeSingle()
-
-            // Also check by email — the same person may have already contacted
-            // via the website form, and we don't want a second duplicate client.
-            const { data: existingByEmail } = collectedEmail
-              ? await admin.from('clients').select('id').ilike('email', collectedEmail).maybeSingle()
-              : { data: null }
-
-            const existingClient = existingByWhatsapp ?? existingByEmail
-
-            if (existingClient) {
-              clientId = existingClient.id
-              await admin
-                .from('clients')
-                .update({
-                  first_name: fn || undefined,
-                  last_name: ln || undefined,
-                  email: collectedEmail ?? undefined,
-                  whatsapp: waId,
-                  country: messageText,
-                })
-                .eq('id', clientId)
-            } else {
-              const { data: newClient, error } = await admin
-                .from('clients')
-                .insert({ whatsapp: waId, first_name: fn, last_name: ln, email: collectedEmail, country: messageText })
-                .select('id')
-                .single()
-
-              if (error || !newClient) continue
-              clientId = newClient.id
-            }
-
-            await admin.from('requests').insert({
-              client_id: clientId,
+            const intake = await ingestEnquiry(admin, {
+              channel: 'whatsapp',
+              externalEventId: String(msg.id || crypto.randomUUID()),
               source: 'whatsapp',
-              client_question: convo.collected_question || messageText,
-              stage: 'new',
+              firstName: fn || 'WhatsApp',
+              lastName: ln,
+              email: collectedEmail,
+              whatsapp: waId,
+              country: messageText,
+              question: convo.collected_question || messageText,
+              quoteIntent: false,
+              adults: 1,
             })
 
             await admin
@@ -217,31 +197,28 @@ export async function POST(request: NextRequest) {
               .eq('wa_id', waId)
 
             const thankName = fn ? `, ${fn}` : ''
-            await sendWhatsAppMessage(
+            if (!intake.duplicate) await sendWhatsAppMessage(
               waId,
               `Thank you${thankName}! 🦁 Our team will review your enquiry and get back to you within 24 hours.`
             )
           } else {
             // Returning client — create a new request directly
-            const { data: existingClient } = await admin
-              .from('clients')
-              .select('id')
-              .eq('whatsapp', waId)
-              .maybeSingle()
-
-            if (existingClient) {
-              await admin.from('requests').insert({
-                client_id: existingClient.id,
+            const intake = await ingestEnquiry(admin, {
+                channel: 'whatsapp',
+                externalEventId: String(msg.id || crypto.randomUUID()),
                 source: 'whatsapp',
-                client_question: messageText,
-                stage: 'new',
+                firstName: firstName || 'WhatsApp',
+                lastName,
+                whatsapp: waId,
+                question: messageText,
+                quoteIntent: false,
+                adults: 1,
               })
 
-              await sendWhatsAppMessage(
+              if (!intake.duplicate) await sendWhatsAppMessage(
                 waId,
                 `Thanks for reaching out again! 🦁 Our team will get back to you within 24 hours.`
               )
-            }
           }
         }
       }

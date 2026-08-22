@@ -170,7 +170,7 @@ export default function VouchersClient({
         <ul className="space-y-3">
           {vouchers.map(v => {
             const isOpen = openId === v.id
-            const tourTitle = v.departures?.tours?.title_en ?? null
+            const tourTitle = v.departures?.tours?.title_en ?? v.departures?.operation_title ?? null
             const quoteNumber = v.quotes?.quote_number ?? null
             return (
               <li key={v.id} className="rounded-xl border border-border bg-card">

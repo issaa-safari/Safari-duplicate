@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { getServerLocale } from '@/lib/i18n'
-import BookingLinkForm from './booking-link-form'
+import DepartureBookingForm from '@/components/public/departure-booking-form'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,8 +42,10 @@ export default async function BookingLinkPage({
 
   const { data: departure } = await admin
     .from('departures')
-    .select('id, start_date, end_date, price_usd, price_single_usd, security_deposit_usd, max_seats, booked_seats, status, tours ( title_en, title_ar )')
+    .select('id, start_date, end_date, price_usd, price_single_usd, security_deposit_usd, max_seats, booked_seats, status, kind, is_public, tours ( title_en, title_ar )')
     .eq('id', link.departure_id)
+    .eq('kind', 'scheduled_group')
+    .eq('is_public', true)
     .maybeSingle()
 
   if (!departure) notFound()
@@ -90,8 +92,8 @@ export default async function BookingLinkPage({
               <p className="text-amber-800">{L.closedBody}</p>
             </div>
           ) : (
-            <BookingLinkForm
-              token={token}
+            <DepartureBookingForm
+              submitUrl={`/api/book/${token}`}
               locale={locale}
               pricePerPerson={departure.price_usd != null ? Number(departure.price_usd) : null}
               singlePricePerPerson={departure.price_single_usd != null ? Number(departure.price_single_usd) : null}

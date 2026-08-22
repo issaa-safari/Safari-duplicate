@@ -28,6 +28,18 @@ const QUOTE_ACCEPTANCE_ERRORS: Record<string, { status: number; message: string 
     status: 409,
     message: 'Build the day-by-day itinerary before accepting this quote.',
   },
+  QUOTE_DATES_REQUIRED: {
+    status: 409,
+    message: 'Add complete travel dates before accepting this custom proposal.',
+  },
+  QUOTE_DATES_INVALID: {
+    status: 409,
+    message: 'The proposal end date must not be before its start date.',
+  },
+  QUOTE_POSITIVE_PRICE_REQUIRED: {
+    status: 409,
+    message: 'Complete and approve a positive selling price before accepting this proposal.',
+  },
   QUOTE_BOOKING_ALREADY_EXISTS: {
     status: 409,
     message: 'This quote already has a booking and requires operator review.',
@@ -55,13 +67,20 @@ export function mapQuoteAcceptanceError(error: unknown): { status: number; error
 function parseResult(value: unknown): QuoteAcceptanceTransactionResult | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const row = value as Record<string, unknown>
-  if (typeof row.acceptanceId !== 'string' || typeof row.bookingId !== 'string') return null
+  if (
+    typeof row.acceptanceId !== 'string'
+    || typeof row.bookingId !== 'string'
+    || typeof row.departureId !== 'string'
+  ) return null
   return {
     acceptanceId: row.acceptanceId,
     bookingId: row.bookingId,
     clientId: String(row.clientId ?? ''),
+    departureId: row.departureId,
+    createdOperationalTrip: row.createdOperationalTrip === true,
     groupSize: Number(row.groupSize ?? 0),
     totalPriceUsd: Number(row.totalPriceUsd ?? 0),
+    depositDueUsd: Number(row.depositDueUsd ?? 0),
   }
 }
 

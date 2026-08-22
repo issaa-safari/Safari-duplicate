@@ -14,6 +14,7 @@ export async function GET() {
       tours ( title_en, title_ar, type, hero_image_url, gallery_urls )
     `)
     .eq('is_active', true)
+    .eq('is_public', true)
     .gte('end_date', today)
     .order('start_date', { ascending: true })
     .limit(6)

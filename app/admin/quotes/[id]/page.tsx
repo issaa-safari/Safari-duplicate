@@ -52,7 +52,7 @@ export default async function QuoteDetailPage({
       ? admin.from('tours').select('title_en, duration_days').eq('id', quote.tour_id).single()
       : Promise.resolve({ data: null }),
     quote.departure_id
-      ? admin.from('departures').select('start_date, end_date').eq('id', quote.departure_id).single()
+      ? admin.from('departures').select('id, start_date, end_date, kind, operation_title').eq('id', quote.departure_id).single()
       : Promise.resolve({ data: null }),
     admin.from('quote_versions')
       .select('id, version_number, status, title, travel_start_date, travel_end_date, valid_until, default_markup_percent, sharing_price_per_person_usd, single_price_per_person_usd, single_supplement_usd, total_cost_usd, total_selling_usd, gross_margin_percent, locked_at, sent_at, created_at, language')
@@ -196,6 +196,14 @@ export default async function QuoteDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {quote.status === 'accepted' && departureRow && !quote.is_template && (
+            <Link
+              href={`/admin/departures/${departureRow.id}`}
+              className="rounded-lg bg-primary-strong px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-strong-hover"
+            >
+              Open trip operations →
+            </Link>
+          )}
           {quote.status === 'accepted' && !quote.is_template && (
             <Link
               href={`/admin/vouchers?quote=${id}`}

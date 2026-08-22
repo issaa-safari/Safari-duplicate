@@ -25,6 +25,7 @@ export default async function NewBookingPage({
       .from('departures')
       .select('id, start_date, end_date, max_seats, booked_seats, price_usd, price_single_usd, status, tours ( title_en )')
       .eq('is_active', true)
+      .eq('kind', 'scheduled_group')
       .order('start_date', { ascending: true }),
     // Live enquiries only — an archived request is not something you would book
     // against, and the list is a picker, not an audit trail.

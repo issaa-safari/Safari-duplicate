@@ -351,6 +351,7 @@ export default async function TourDetailPage({
     .select('id, start_date, end_date, max_seats, booked_seats, price_usd, price_single_usd, security_deposit_usd, status')
     .eq('tour_id', id)
     .eq('is_active', true)
+    .eq('is_public', true)
     .gte('start_date', today)
     .order('start_date')
     .limit(12)

@@ -14,6 +14,14 @@ interface Task {
   sort_order?: number
 }
 
+type TaskManagerProps = {
+  requestId?: string
+  departureId?: string
+  bookingId?: string
+  tasks: Task[]
+  title?: string
+}
+
 const TYPE_CHIP: Record<string, string> = {
   payment: 'bg-emerald-100 text-emerald-700',
   accommodation: 'bg-blue-100 text-blue-700',
@@ -27,7 +35,13 @@ function orderTasks(list: Task[]) {
     a.created_at.localeCompare(b.created_at))
 }
 
-export default function TaskManager({ requestId, tasks: initial }: { requestId: string; tasks: Task[] }) {
+export default function TaskManager({
+  requestId,
+  departureId,
+  bookingId,
+  tasks: initial,
+  title: heading = 'Tasks',
+}: TaskManagerProps) {
   const [tasks, setTasks] = useState(initial)
   const [showAdd, setShowAdd] = useState(false)
   const [title, setTitle] = useState('')
@@ -35,12 +49,18 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
   const [error, setError] = useState('')
   const { pending, run } = useAction()
 
+  function appendContext(fd: FormData) {
+    if (requestId) fd.set('requestId', requestId)
+    if (departureId) fd.set('departureId', departureId)
+    if (bookingId) fd.set('bookingId', bookingId)
+  }
+
   function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim()) return
     setError('')
     const fd = new FormData()
-    fd.set('requestId', requestId)
+    appendContext(fd)
     fd.set('title', title)
     fd.set('type', type)
     run(async () => {
@@ -64,7 +84,7 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
   function handleToggle(task: Task) {
     const fd = new FormData()
     fd.set('taskId', task.id)
-    fd.set('requestId', requestId)
+    appendContext(fd)
     fd.set('isDone', String(!task.is_done))
     run(async () => {
       await toggleTask(fd)
@@ -75,7 +95,7 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
   function handleDelete(taskId: string) {
     const fd = new FormData()
     fd.set('taskId', taskId)
-    fd.set('requestId', requestId)
+    appendContext(fd)
     run(async () => {
       await deleteTask(fd)
       setTasks(ts => ts.filter(t => t.id !== taskId))
@@ -89,7 +109,7 @@ export default function TaskManager({ requestId, tasks: initial }: { requestId: 
     <div>
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-foreground">
-          Tasks
+          {heading}
           {open.length > 0 && (
             <span className="ml-2 text-xs bg-amber-100 text-warning-foreground px-2 py-0.5 rounded-full">
               {open.length} open

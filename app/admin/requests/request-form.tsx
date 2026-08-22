@@ -12,6 +12,19 @@ export interface ClientOption {
   email: string | null
 }
 
+export interface TourOption {
+  id: string
+  title: string
+  type: string | null
+}
+
+export interface DepartureOption {
+  id: string
+  title: string
+  startDate: string
+  endDate: string
+}
+
 export interface RequestFormInitial {
   source?: string
   clientQuestion?: string
@@ -32,11 +45,15 @@ export default function RequestForm({
   initialClientId,
   initial = {},
   requestId,
+  tours = [],
+  departures = [],
 }: {
   clients: ClientOption[]
   initialClientId?: string | null
   initial?: RequestFormInitial
   requestId?: string
+  tours?: TourOption[]
+  departures?: DepartureOption[]
 }) {
   const router = useRouter()
   const isEdit = !!requestId
@@ -51,6 +68,8 @@ export default function RequestForm({
   const [query, setQuery] = useState('')
 
   const [priority, setPriority] = useState(initial.priority ?? false)
+  const [createProposal, setCreateProposal] = useState(!isEdit)
+  const [quoteMode, setQuoteMode] = useState<'custom' | 'fixed_departure'>('custom')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   // Kenya, first in COUNTRIES_SORTED, is a sensible default dial code for a
@@ -82,6 +101,8 @@ export default function RequestForm({
     setLoading(true)
     const formData = new FormData(e.currentTarget)
     formData.set('priority', String(priority))
+    formData.set('createQuote', String(createProposal && !isEdit))
+    formData.set('quoteMode', quoteMode)
     if (clientMode === 'existing' && selectedClientId) {
       formData.set('clientId', selectedClientId)
     }
@@ -300,13 +321,108 @@ export default function RequestForm({
           </div>
         </div>
       </div>
+
+      {!isEdit && (
+        <div className="rounded-xl border border-primary/30 bg-accent/20 p-6 shadow-sm">
+          <div className="flex items-start gap-3">
+            <input
+              id="createProposal"
+              type="checkbox"
+              checked={createProposal}
+              onChange={event => setCreateProposal(event.target.checked)}
+              className="mt-1 rounded border-border"
+            />
+            <div className="flex-1">
+              <label htmlFor="createProposal" className="text-sm font-semibold text-foreground">
+                Create the proposal now
+              </label>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Creates the client, request, proposal version and traveller setup together, then opens the proposal workspace.
+              </p>
+            </div>
+          </div>
+
+          {createProposal && (
+            <div className="mt-5 space-y-4 border-t border-primary/20 pt-5">
+              <div>
+                <span className="mb-2 block text-sm font-medium text-foreground">Proposal type</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setQuoteMode('custom')}
+                    className={`rounded-lg border-2 p-3 text-left transition ${
+                      quoteMode === 'custom' ? 'border-primary-strong bg-surface' : 'border-border bg-surface/60 hover:border-primary/40'
+                    }`}
+                  >
+                    <span className="block text-sm font-medium text-foreground">Custom safari</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">Build and price a tailored itinerary</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuoteMode('fixed_departure')}
+                    className={`rounded-lg border-2 p-3 text-left transition ${
+                      quoteMode === 'fixed_departure' ? 'border-primary-strong bg-surface' : 'border-border bg-surface/60 hover:border-primary/40'
+                    }`}
+                  >
+                    <span className="block text-sm font-medium text-foreground">Scheduled trip</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">Quote an existing departure</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="quoteTitle" className="mb-1 block text-sm font-medium text-foreground">Proposal title</label>
+                <input
+                  id="quoteTitle"
+                  name="quoteTitle"
+                  placeholder="e.g. Maasai Mara & Samburu — 8 days"
+                  className={inputCls}
+                />
+              </div>
+
+              {quoteMode === 'custom' ? (
+                <div>
+                  <label htmlFor="tourId" className="mb-1 block text-sm font-medium text-foreground">
+                    Start from itinerary <span className="font-normal text-muted-foreground">(optional)</span>
+                  </label>
+                  <select id="tourId" name="tourId" defaultValue="" className={inputCls}>
+                    <option value="">Start with trip dates and blank days</option>
+                    {tours.map(tour => (
+                      <option key={tour.id} value={tour.id}>{tour.title}{tour.type ? ` · ${tour.type}` : ''}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="departureId" className="mb-1 block text-sm font-medium text-foreground">Departure</label>
+                  <select id="departureId" name="departureId" required={quoteMode === 'fixed_departure'} defaultValue="" className={inputCls}>
+                    <option value="" disabled>Choose a departure…</option>
+                    {departures.map(departure => (
+                      <option key={departure.id} value={departure.id}>
+                        {departure.title} · {new Date(departure.startDate).toLocaleDateString('en-GB')} → {new Date(departure.endDate).toLocaleDateString('en-GB')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {error && (
         <p className="text-sm text-destructive bg-destructive/10 rounded-md px-4 py-3">{error}</p>
       )}
       <div className="flex gap-3">
         <button type="submit" disabled={loading}
           className="rounded-md px-6 py-2.5 text-sm font-medium text-white disabled:opacity-60 bg-olive hover:bg-olive-dk">
-          {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Save Request'}
+          {loading
+            ? 'Saving...'
+            : isEdit
+              ? 'Save Changes'
+              : createProposal
+                ? 'Create Request & Proposal'
+                : 'Save Request'}
         </button>
         <Link href={backHref}
           className="rounded-md border border-border px-6 py-2.5 text-sm font-medium text-foreground hover:bg-muted">

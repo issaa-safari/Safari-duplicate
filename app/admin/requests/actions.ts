@@ -17,7 +17,7 @@ async function authGuard() {
   // Service-role client — all DB work goes through this. No cookies, bypasses RLS.
   const admin = createAdminClient()
   await assertAdminAccess(admin, user.email)
-  return admin
+  return { admin, userId: user.id }
 }
 
 // The form submits either an existing client (clientId) or the new-client
@@ -84,31 +84,78 @@ function requestFieldsFromForm(formData: FormData) {
 }
 
 export const createRequest = safeAction(async (formData: FormData) => {
-  const admin = await authGuard()
-  if (!admin) return { error: null, redirectTo: '/admin/login' }
+  const guard = await authGuard()
+  if (!guard) return { error: null, redirectTo: '/admin/login' }
+  const { admin, userId } = guard
 
-  const clientId = await resolveClientId(admin, formData)
+  const existingClientId = ((formData.get('clientId') as string | null) ?? '').trim() || null
+  const createQuote = formData.get('createQuote') === 'true'
+  const quoteMode = ((formData.get('quoteMode') as string | null) ?? '').trim() || 'custom'
+  const requestFields = requestFieldsFromForm(formData)
+  const { data, error } = await admin.rpc('create_sales_request_atomic', {
+    p_existing_client_id: existingClientId,
+    p_email: ((formData.get('email') as string | null) ?? '').trim() || null,
+    p_first_name: ((formData.get('firstName') as string | null) ?? '').trim() || null,
+    p_last_name: ((formData.get('lastName') as string | null) ?? '').trim() || null,
+    p_phone: ((formData.get('phone') as string | null) ?? '').trim() || null,
+    p_whatsapp: ((formData.get('whatsapp') as string | null) ?? '').trim() || null,
+    p_country: ((formData.get('country') as string | null) ?? '').trim() || null,
+    p_language: ((formData.get('language') as string | null) ?? '').trim() || 'en',
+    p_source: requestFields.source,
+    p_client_question: requestFields.client_question,
+    p_preferred_start_date: requestFields.preferred_start_date,
+    p_trip_length_nights: requestFields.trip_length_nights,
+    p_preferred_room_type: requestFields.preferred_room_type,
+    p_adults: requestFields.travelers_adults,
+    p_children_older: requestFields.travelers_children_older,
+    p_children_younger: requestFields.travelers_children_younger,
+    p_priority: requestFields.priority,
+    p_create_quote: createQuote,
+    p_quote_mode: quoteMode,
+    p_tour_id: ((formData.get('tourId') as string | null) ?? '').trim() || null,
+    p_departure_id: ((formData.get('departureId') as string | null) ?? '').trim() || null,
+    p_quote_title: ((formData.get('quoteTitle') as string | null) ?? '').trim() || null,
+    p_created_by: userId,
+  })
 
-  const { data: newRequest, error: requestError } = await admin
-    .from('requests')
-    .insert({
-      client_id: clientId,
-      stage: 'new',
-      ...requestFieldsFromForm(formData),
-    })
-    .select('id')
-    .single()
+  if (error) {
+    const messages: Record<string, string> = {
+      SALES_INVALID_TRAVELLERS: 'Enter between 1 and 50 travellers.',
+      SALES_INVALID_DURATION: 'Trip length must be between 1 and 90 nights.',
+      SALES_INVALID_ROOM_TYPE: 'Choose a valid room preference.',
+      SALES_CLIENT_NOT_FOUND: 'The selected client no longer exists.',
+      SALES_VALID_EMAIL_REQUIRED: 'Enter a valid email for the new client.',
+      SALES_CLIENT_NAME_REQUIRED: 'Enter the client’s first and last name.',
+      SALES_INVALID_QUOTE_MODE: 'Choose custom safari or fixed departure.',
+      SALES_DEPARTURE_UNAVAILABLE: 'The selected departure is no longer available.',
+    }
+    throw new Error(messages[error.message] ?? error.message)
+  }
 
-  if (requestError) throw new Error(requestError.message)
+  const result = data as {
+    clientId?: string
+    requestId?: string
+    quoteId?: string | null
+    quoteVersionId?: string | null
+  } | null
+  if (!result?.clientId || !result.requestId) throw new Error('The request was not created.')
 
   revalidatePath('/admin/requests')
-  revalidatePath(`/admin/clients/${clientId}`)
-  return { error: null, redirectTo: `/admin/requests/${newRequest.id}` }
+  revalidatePath('/admin/quotes')
+  revalidatePath('/admin/sales')
+  revalidatePath(`/admin/clients/${result.clientId}`)
+  return {
+    error: null,
+    redirectTo: result.quoteId
+      ? `/admin/quotes/${result.quoteId}?step=itinerary${result.quoteVersionId ? `&version=${result.quoteVersionId}` : ''}`
+      : `/admin/requests/${result.requestId}`,
+  }
 })
 
 export const updateRequest = safeAction(async (requestId: string, formData: FormData) => {
-  const admin = await authGuard()
-  if (!admin) return { error: null, redirectTo: '/admin/login' }
+  const guard = await authGuard()
+  if (!guard) return { error: null, redirectTo: '/admin/login' }
+  const { admin } = guard
 
   const { data: request } = await admin
     .from('requests').select('id, client_id').eq('id', requestId).maybeSingle()

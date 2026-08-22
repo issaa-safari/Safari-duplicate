@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, Suspense } from 'react'
+import { useState, useTransition, useId, Suspense } from 'react'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import { useLocale } from '@/lib/use-locale'
@@ -17,11 +17,11 @@ interface ContactFormData {
   message: string
 }
 
-async function submitContactForm(formData: ContactFormData) {
+async function submitContactForm(formData: ContactFormData, submissionId: string, language: 'en' | 'ar') {
   const response = await fetch('/api/contact', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(formData),
+    body: JSON.stringify({ ...formData, submissionId, language }),
   })
   if (!response.ok) throw new Error('Failed to send message')
   return response.json()
@@ -40,6 +40,7 @@ function ContactInner() {
   const isAr = locale === 'ar'
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const submissionId = `contact-${useId()}`
   const [isPending, startTransition] = useTransition()
   const [formData, setFormData] = useState<ContactFormData>({
     name: '',
@@ -81,10 +82,10 @@ function ContactInner() {
     setError('')
     startTransition(async () => {
       try {
-        await submitContactForm(formData)
+        await submitContactForm(formData, submissionId, isAr ? 'ar' : 'en')
         setSubmitted(true)
-      } catch (err: any) {
-        setError(err.message || t.failed)
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : t.failed)
       }
     })
   }
@@ -168,7 +169,9 @@ function ContactInner() {
                     <p className="text-green-700">{t.thanks}</p>
                   </div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="bg-gray-50 rounded-xl p-8 border border-gray-200">
+                  <form method="post" action="/api/contact" onSubmit={handleSubmit} className="bg-gray-50 rounded-xl p-8 border border-gray-200">
+                    <input type="hidden" name="submissionId" value={submissionId} />
+                    <input type="hidden" name="language" value={isAr ? 'ar' : 'en'} />
                     <div className="mb-6">
                       <label className="block text-sm font-semibold text-gray-900 mb-2">{t.name} *</label>
                       <input

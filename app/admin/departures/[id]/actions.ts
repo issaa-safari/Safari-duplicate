@@ -25,6 +25,7 @@ export async function updateDeparture(id: string, formData: FormData) {
 
   if (!startDate || !endDate) throw new Error('Start and end dates are required.')
   if (new Date(endDate) < new Date(startDate)) throw new Error('End date cannot be before start date.')
+  if (!Number.isInteger(maxSeats) || maxSeats < 1) throw new Error('Capacity must be at least one seat.')
   if (priceUsd != null && (isNaN(priceUsd) || priceUsd < 0)) throw new Error('Sharing price is invalid.')
   if (priceSingleUsd != null && (isNaN(priceSingleUsd) || priceSingleUsd < 0)) throw new Error('Single room price is invalid.')
   if (priceUsd == null && priceSingleUsd == null) throw new Error('Set at least one price — sharing, single room, or both.')
@@ -32,6 +33,18 @@ export async function updateDeparture(id: string, formData: FormData) {
 
   const admin = createAdminClient()
   await assertAdminAccess(admin, user.email)
+
+  const { data: existingDeparture, error: departureError } = await admin
+    .from('departures')
+    .select('booked_seats')
+    .eq('id', id)
+    .single()
+
+  if (departureError || !existingDeparture) throw new Error('Trip could not be found.')
+  if (maxSeats < existingDeparture.booked_seats) {
+    throw new Error(`Capacity cannot be lower than the ${existingDeparture.booked_seats} seats already booked.`)
+  }
+
   const { error } = await admin
     .from('departures')
     .update({
@@ -59,19 +72,18 @@ export async function toggleDeparturePublished(id: string) {
   const admin = createAdminClient()
   await assertAdminAccess(admin, user.email)
 
-  // Get current state
   const { data: departure } = await admin
     .from('departures')
-    .select('is_active')
+    .select('kind, is_public')
     .eq('id', id)
     .single()
 
   if (!departure) throw new Error('Departure not found.')
+  if (departure.kind === 'private_custom') throw new Error('Private custom trips cannot be published.')
 
-  // Toggle
   const { error } = await admin
     .from('departures')
-    .update({ is_active: !departure.is_active })
+    .update({ is_public: !departure.is_public })
     .eq('id', id)
 
   if (error) throw new Error(error.message)

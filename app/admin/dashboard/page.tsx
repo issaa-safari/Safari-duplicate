@@ -65,7 +65,7 @@ export default async function AdminDashboardPage() {
       .eq('stage', 'new'),
     admin.from('requests').select('stage'),
     admin.from('departures')
-      .select('id, start_date, booked_seats, max_seats, tours(title_en)')
+      .select('id, start_date, booked_seats, max_seats, operation_title, kind, tours(title_en)')
       .gte('start_date', now.toISOString().slice(0, 10))
       .eq('is_active', true)
       .order('start_date')
@@ -320,7 +320,7 @@ export default async function AdminDashboardPage() {
                       className="-mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-2 text-sm transition-colors duration-150 hover:bg-muted"
                     >
                       <div className="min-w-0">
-                        <p className="truncate font-medium text-foreground">{(d.tours as any)?.title_en ?? 'Departure'}</p>
+                        <p className="truncate font-medium text-foreground">{(d.tours as any)?.title_en ?? d.operation_title ?? 'Private trip'}</p>
                         <p className="text-xs text-muted-foreground">{new Date(d.start_date).toLocaleDateString('en-GB')}</p>
                       </div>
                       <span className="shrink-0 text-xs tabular-nums text-muted-foreground">

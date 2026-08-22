@@ -61,7 +61,7 @@ export default async function DepartureManifestPage({ params }: { params: Promis
 
   const { data: departure } = await admin
     .from('departures')
-    .select('id, start_date, end_date, max_seats, booked_seats, status, tours ( title_en )')
+    .select('id, start_date, end_date, max_seats, booked_seats, status, kind, operation_title, tours ( title_en )')
     .eq('id', id)
     .single()
   if (!departure) notFound()
@@ -144,6 +144,7 @@ export default async function DepartureManifestPage({ params }: { params: Promis
   }
 
   const tour = Array.isArray(departure.tours) ? departure.tours[0] : departure.tours
+  const tripTitle = tour?.title_en ?? departure.operation_title ?? 'Private trip'
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
@@ -155,7 +156,7 @@ export default async function DepartureManifestPage({ params }: { params: Promis
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-foreground">Manifest &amp; logistics</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          {tour?.title_en ?? 'Tour'} ·{' '}
+          {tripTitle} ·{' '}
           {new Date(departure.start_date).toLocaleDateString('en-GB')} →{' '}
           {new Date(departure.end_date).toLocaleDateString('en-GB')}
         </p>
@@ -167,7 +168,7 @@ export default async function DepartureManifestPage({ params }: { params: Promis
 
       <ManifestClient
         departureId={id}
-        departureLabel={`${tour?.title_en ?? 'Tour'} — ${new Date(departure.start_date).toLocaleDateString('en-GB')}`}
+        departureLabel={`${tripTitle} — ${new Date(departure.start_date).toLocaleDateString('en-GB')}`}
         roster={roster}
         motorbikes={(bikes as Motorbike[]) ?? []}
         hasTemplate={(templateCount ?? 0) > 0}

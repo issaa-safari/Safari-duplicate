@@ -7,7 +7,6 @@ import { revalidatePath } from 'next/cache'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { findOrCreateClientByEmail } from '@/lib/server/clients'
 import { calculateLineTotals } from '@/lib/pricing'
-import { syncQuoteStatus } from '@/lib/server/quote-status'
 import { aiConfigured, aiJson } from '@/lib/ai'
 import { loadBuilderLookups } from './load-lookups'
 import { hotelRowsFromItinerary } from './load-initial-state'
@@ -944,10 +943,17 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
     const childCount = guest.childAges.filter(a => a >= 4 && a <= 12).length
     const infantCount = guest.childAges.filter(a => a >= 0 && a <= 3).length
     const usesBandPricing = adultPp !== null || childPp !== null || infantPp !== null
+    if (usesBandPricing && adultCount > 0 && adultPp === null) {
+      throw new Error('Set a positive adult selling price before saving.')
+    }
+    if (usesBandPricing && childCount > 0 && childPp === null) {
+      throw new Error('Set a positive child selling price before saving.')
+    }
     const sale = usesBandPricing
       ? round2((adultPp ?? 0) * adultCount + (childPp ?? 0) * childCount + (infantPp ?? 0) * infantCount)
       : Number(state.salePrice)
     const hasSale = Number.isFinite(sale) && sale > 0
+    if (!hasSale) throw new Error('Set a positive selling price before saving the proposal.')
     const markupPct = hasSale && cost > 0 ? (sale / cost - 1) * 100 : 0
     const priceLines = lines.map(l => {
       const { totalCostUsd, totalSellingUsd } = calculateLineTotals(l.quantity, l.unitCostUsd, markupPct)
@@ -980,40 +986,22 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
       tracks: [trackPayload],
     }
 
-    const { data: result, error: rpcError } = await admin.rpc('save_trip', { p_payload: payload })
+    const bandPrices = Object.fromEntries(
+      [
+        ['adult', adultPp],
+        ['child', childPp],
+        ['infant', infantPp],
+      ].filter((entry): entry is [string, number] => entry[1] !== null),
+    )
+    const { data: result, error: rpcError } = await admin.rpc('save_proposal_pricing_atomic', {
+      p_payload: payload,
+      p_band_prices: bandPrices,
+      p_inclusions: state.inclusions ?? [],
+      p_exclusions: state.exclusions ?? [],
+    })
     if (rpcError) throw new Error(rpcError.message)
     const saved = result as { quoteId: string; versionId: string } | null
     if (!saved?.quoteId) throw new Error('Save failed — no quote returned.')
-
-    // Pricing is complete once it's saved — advance the draft straight to
-    // Ready so Preview/Send unlock without a separate manual step.
-    await admin.from('quote_versions').update({ status: 'ready' })
-      .eq('id', saved.versionId).eq('status', 'draft')
-    await syncQuoteStatus(admin, saved.quoteId)
-
-    // Per-band fixed prices → travellers (the proposal's per-traveller
-    // breakdown prefers these over the percentage-derived split), and the
-    // customised Included/Excluded lists → the version. save_trip rewrites
-    // travellers each save, so these follow every save.
-    const [{ error: adultPriceErr }, { error: childPriceErr }, { error: infantPriceErr }, { error: inclErr }] = await Promise.all([
-      admin.from('quote_travellers')
-        .update({ pricing_fixed_amount_usd: adultPp })
-        .eq('quote_version_id', saved.versionId).eq('traveller_category', 'adult'),
-      admin.from('quote_travellers')
-        .update({ pricing_fixed_amount_usd: childPp })
-        .eq('quote_version_id', saved.versionId).eq('traveller_category', 'child'),
-      admin.from('quote_travellers')
-        .update({ pricing_fixed_amount_usd: infantPp })
-        .eq('quote_version_id', saved.versionId).eq('traveller_category', 'infant'),
-      admin.from('quote_versions')
-        .update({
-          inclusions: state.inclusions && state.inclusions.length > 0 ? state.inclusions : null,
-          exclusions: state.exclusions && state.exclusions.length > 0 ? state.exclusions : null,
-        })
-        .eq('id', saved.versionId),
-    ])
-    const postSaveErr = adultPriceErr ?? childPriceErr ?? infantPriceErr ?? inclErr
-    if (postSaveErr) throw new Error(`Saved, but applying prices/inclusions failed: ${postSaveErr.message}`)
 
     const { data: quoteRow } = await admin
       .from('quotes').select('quote_number').eq('id', saved.quoteId).maybeSingle()
