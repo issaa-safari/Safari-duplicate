@@ -128,7 +128,8 @@ export default function RequestForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-xl border border-border bg-surface shadow-sm p-6">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h2 className="text-sm font-semibold text-foreground">Client Information</h2>
           <div className="flex rounded-md border border-border overflow-hidden text-xs font-medium">
@@ -247,11 +248,11 @@ export default function RequestForm({
             </div>
           </div>
         )}
-      </div>
+        </div>
 
-      <div className="rounded-xl border border-border bg-surface shadow-sm p-6">
-        <h2 className="text-sm font-semibold text-foreground mb-4">Request Details</h2>
-        <div className="space-y-4">
+        <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+          <h2 className="text-sm font-semibold text-foreground mb-4">Request Details</h2>
+          <div className="space-y-4">
           <div>
             <label htmlFor="clientQuestion" className="block text-sm font-medium text-foreground mb-1">Client Message</label>
             <textarea id="clientQuestion" name="clientQuestion" rows={3}
@@ -318,6 +319,7 @@ export default function RequestForm({
             <label htmlFor="priority" className="text-sm text-foreground">
               Mark as priority
             </label>
+          </div>
           </div>
         </div>
       </div>

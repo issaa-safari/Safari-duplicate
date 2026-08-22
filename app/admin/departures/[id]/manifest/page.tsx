@@ -50,8 +50,20 @@ type ManifestBooking = {
   booking_travellers: ManifestTraveller[] | null
 }
 
-export default async function DepartureManifestPage({ params }: { params: Promise<{ id: string }> }) {
+type WorkspaceView = 'travellers' | 'logistics' | 'agreements'
+
+export default async function DepartureManifestPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ view?: string }>
+}) {
   const { id } = await params
+  const requestedView = (await searchParams).view
+  const view: WorkspaceView = requestedView === 'logistics' || requestedView === 'agreements'
+    ? requestedView
+    : 'travellers'
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -145,6 +157,20 @@ export default async function DepartureManifestPage({ params }: { params: Promis
 
   const tour = Array.isArray(departure.tours) ? departure.tours[0] : departure.tours
   const tripTitle = tour?.title_en ?? departure.operation_title ?? 'Private trip'
+  const heading = {
+    travellers: {
+      title: 'Travellers',
+      description: 'Manage the trip roster, rider details, flights, rooms, bikes and document readiness.',
+    },
+    logistics: {
+      title: 'Logistics',
+      description: 'Coordinate airport transfers, rooming, flight times and motorbike allocation.',
+    },
+    agreements: {
+      title: 'Traveller agreements',
+      description: 'Issue, send and track each traveller agreement from one list.',
+    },
+  }[view]
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
@@ -154,12 +180,13 @@ export default async function DepartureManifestPage({ params }: { params: Promis
         </Link>
       </div>
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-foreground">Manifest &amp; logistics</h1>
+        <h1 className="text-2xl font-semibold text-foreground">{heading.title}</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           {tripTitle} ·{' '}
           {new Date(departure.start_date).toLocaleDateString('en-GB')} →{' '}
           {new Date(departure.end_date).toLocaleDateString('en-GB')}
         </p>
+        <p className="mt-1 text-sm text-muted-foreground">{heading.description}</p>
       </div>
 
       <div className="mb-6">
@@ -167,6 +194,7 @@ export default async function DepartureManifestPage({ params }: { params: Promis
       </div>
 
       <ManifestClient
+        view={view}
         departureId={id}
         departureLabel={`${tripTitle} — ${new Date(departure.start_date).toLocaleDateString('en-GB')}`}
         roster={roster}

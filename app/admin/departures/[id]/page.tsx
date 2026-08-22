@@ -207,7 +207,7 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <WorkspaceCard
-            href={`/admin/departures/${id}/manifest#manifest`}
+            href={`/admin/departures/${id}/manifest?view=travellers`}
             label="Manifest"
             value={`${travellers.length}`}
             detail={`${passports}/${travellers.length} passports on file`}
@@ -215,7 +215,7 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
             attention={passports < travellers.length}
           />
           <WorkspaceCard
-            href={`/admin/departures/${id}/manifest#logistics`}
+            href={`/admin/departures/${id}/manifest?view=logistics`}
             label="Logistics"
             value={`${arrivals}/${travellers.length}`}
             detail={`${bikes}/${riders.length} rider bikes assigned`}
@@ -231,7 +231,7 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
             attention={openTasks > 0}
           />
           <WorkspaceCard
-            href={`/admin/departures/${id}/manifest#manifest`}
+            href={`/admin/departures/${id}/manifest?view=agreements`}
             label="Agreements"
             value={`${agreements}/${travellers.length}`}
             detail="traveller agreements signed"
@@ -259,10 +259,10 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
           <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
             <h2 className="text-sm font-semibold text-foreground">Operational shortcuts</h2>
             <div className="mt-3 grid gap-2 text-sm">
-              <Link href={`/admin/departures/${id}/manifest#logistics`} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-muted">
+              <Link href={`/admin/departures/${id}/manifest?view=logistics`} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-muted">
                 <PlaneLanding size={16} className="text-brand-text" /> Plan transfers and rooms
               </Link>
-              <Link href={`/admin/departures/${id}/manifest#manifest`} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-muted">
+              <Link href={`/admin/departures/${id}/manifest?view=travellers`} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-muted">
                 <Bike size={16} className="text-brand-text" /> Assign bikes and issue agreements
               </Link>
               <Link href={`/admin/departures/${id}/tasks`} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-muted">
