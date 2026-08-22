@@ -33,7 +33,6 @@ function ForkSVG({ inView, reduced, isAr }: { inView: boolean; reduced: boolean 
       style={{ width: '100%', maxWidth: 320, display: 'block', margin: '0 auto' }}
       aria-hidden="true"
     >
-      {/* Stem */}
       <motion.line
         x1="100" y1="0" x2="100" y2="36"
         stroke={SAND} strokeWidth="2" strokeLinecap="round"
@@ -41,7 +40,6 @@ function ForkSVG({ inView, reduced, isAr }: { inView: boolean; reduced: boolean 
         animate={{ pathLength: reduced ? 1 : (inView ? 1 : 0) }}
         transition={{ duration: 0.4, ease: EASE }}
       />
-      {/* Left fork — bike / murram */}
       <motion.path
         d={isAr ? "M100,36 Q100,70 160,78" : "M100,36 Q100,70 40,78"}
         fill="none" stroke={MURRAM} strokeWidth="2.5" strokeLinecap="round"
@@ -49,7 +47,6 @@ function ForkSVG({ inView, reduced, isAr }: { inView: boolean; reduced: boolean 
         animate={{ pathLength: reduced ? 1 : (inView ? 1 : 0) }}
         transition={{ duration: 0.5, delay: 0.3, ease: EASE }}
       />
-      {/* Right fork — private / gold */}
       <motion.path
         d={isAr ? "M100,36 Q100,70 40,78" : "M100,36 Q100,70 160,78"}
         fill="none" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round"
@@ -57,7 +54,6 @@ function ForkSVG({ inView, reduced, isAr }: { inView: boolean; reduced: boolean 
         animate={{ pathLength: reduced ? 1 : (inView ? 1 : 0) }}
         transition={{ duration: 0.5, delay: 0.4, ease: EASE }}
       />
-      {/* End dots */}
       <motion.circle
         cx={isAr ? 160 : 40} cy="78" r="4" fill={MURRAM}
         initial={{ scale: 0 }} animate={{ scale: reduced ? 1 : (inView ? 1 : 0) }}
@@ -91,7 +87,7 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
         ? 'جولات دراجات جماعية بقيادة خبراء من نيروبي إلى الساحل. مدعومة بالكامل، ممتازة للمغامرين.'
         : 'Expert-led group rides from Nairobi to the coast. Fully supported, KTM-grade adventure for serious riders.',
       cta: isAr ? 'استكشف جولات الدراجات' : 'Explore Bike Tours',
-      href: `${localePath('/tours', locale)}?type=bike`,
+      href: localePath('/kenya-motorcycle-safari', locale),
     },
     {
       accent: GOLD,
@@ -107,11 +103,42 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
     },
   ]
 
+  const discover = [
+    {
+      href: '/kenya-safari',
+      title: isAr ? 'سفاري كينيا' : 'Kenya Safaris',
+      body: isAr ? 'ابدأ من الدليل الرئيسي لبرامج السفاري في كينيا.' : 'Start with our main guide to planning a Kenya safari.',
+    },
+    {
+      href: '/maasai-mara-safari',
+      title: isAr ? 'ماساي مارا' : 'Maasai Mara',
+      body: isAr ? 'الحياة البرية والسهول المفتوحة ورحلات السفاري في أشهر محميات كينيا.' : 'Wildlife, open plains and safari planning for Kenya’s best-known reserve.',
+    },
+    {
+      href: '/amboseli-safari',
+      title: isAr ? 'أمبوسيلي' : 'Amboseli',
+      body: isAr ? 'سفاري أمبوسيلي بإطلالات جبل كليمنجارو وقطعان الأفيال.' : 'Amboseli safaris with Kilimanjaro views and renowned elephant country.',
+    },
+    {
+      href: '/family-safari-kenya',
+      title: isAr ? 'سفاري للعوائل' : 'Family Safaris',
+      body: isAr ? 'خطط لبرنامج عائلي مرن يناسب وقتكم واهتماماتكم.' : 'Plan a flexible family safari around your group’s pace and interests.',
+    },
+    {
+      href: '/luxury-kenya-safari',
+      title: isAr ? 'سفاري فاخر' : 'Luxury Safaris',
+      body: isAr ? 'برامج خاصة بإقامات مميزة وتجربة مصممة حسب الطلب.' : 'Private itineraries with premium stays and tailored experiences.',
+    },
+    {
+      href: '/kenya-tanzania-safari',
+      title: isAr ? 'كينيا وتنزانيا' : 'Kenya + Tanzania',
+      body: isAr ? 'اجمع أبرز محميات البلدين في برنامج واحد مترابط.' : 'Combine signature parks across both countries in one connected itinerary.',
+    },
+  ]
+
   return (
     <section id="choose-trail" style={{ background: BUSH, padding: '80px 24px' }} dir={dir}>
       <div style={{ maxWidth: 1120, margin: '0 auto' }}>
-
-        {/* Heading */}
         <motion.div
           initial={reduced ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -139,14 +166,10 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
           </p>
         </motion.div>
 
-        {/* Fork SVG */}
         <div ref={ref} style={{ marginBottom: 32 }}>
           <ForkSVG inView={inView} reduced={reduced} isAr={isAr} />
         </div>
 
-        {/* Cards — always 2 columns, sized fluidly via clamp() so they stay
-            legible from a narrow phone up to desktop rather than switching
-            to a single stacked column below ~600px. */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
@@ -162,7 +185,6 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
               style={{ borderRadius: 16, overflow: 'hidden', position: 'relative', minHeight: 'clamp(230px, 48vw, 400px)' }}
             >
               <Link href={card.href} style={{ display: 'block', height: '100%', textDecoration: 'none' }}>
-                {/* Image */}
                 <div style={{ position: 'absolute', inset: 0 }}>
                   <SafariImage
                     src={card.imageUrl}
@@ -171,21 +193,18 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
                     className="w-full h-full"
                     sizes="(max-width: 768px) 50vw, 50vw"
                   />
-                  {/* Dark + colour tint overlay */}
                   <div style={{
                     position: 'absolute', inset: 0,
                     background: `linear-gradient(to top, ${card.accent}ee 0%, ${card.accent}77 45%, rgba(20,25,15,0.35) 100%)`,
                   }} />
                 </div>
 
-                {/* Content */}
                 <div style={{
                   position: 'relative', zIndex: 1,
                   display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
                   height: '100%', minHeight: 'clamp(230px, 48vw, 400px)',
                   padding: 'clamp(14px, 4vw, 32px) clamp(12px, 3.5vw, 28px)',
                 }}>
-                  {/* Badge */}
                   <div style={{
                     display: 'inline-block',
                     background: 'rgba(255,255,255,0.15)',
@@ -195,7 +214,6 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
                     padding: 'clamp(3px, 1vw, 4px) clamp(8px, 2.5vw, 14px)',
                     fontSize: 'clamp(0.62rem, 2vw, 0.72rem)',
                     fontWeight: 700,
-                    // Letter-spacing breaks Arabic joining; uppercase is Latin-only
                     letterSpacing: isAr ? undefined : '0.1em',
                     textTransform: isAr ? undefined : ('uppercase' as const),
                     color: '#fff',
@@ -254,6 +272,52 @@ export default function ChooseYourTrail({ bikeCard, privateCard, isAr, locale }:
               </Link>
             </motion.div>
           ))}
+        </div>
+
+        <div style={{ marginTop: 72 }}>
+          <div style={{ textAlign: 'center', maxWidth: 720, margin: '0 auto 28px' }}>
+            <h2 style={{
+              fontFamily: 'var(--font-display, "Readex Pro", sans-serif)',
+              fontSize: 'clamp(1.4rem, 3vw, 2rem)',
+              color: '#fff',
+              margin: '0 0 10px',
+            }}>
+              {isAr ? 'استكشف كينيا بطريقتك' : 'Explore Kenya Your Way'}
+            </h2>
+            <p style={{ color: 'rgba(234,227,210,0.72)', margin: 0, lineHeight: 1.7 }}>
+              {isAr
+                ? 'اختر الوجهة أو أسلوب السفر المناسب، ثم انتقل إلى الجولات المتاحة أو اطلب برنامجاً مخصصاً.'
+                : 'Choose a destination or travel style, then continue to available tours or request a custom itinerary.'}
+            </p>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: 12,
+          }}>
+            {discover.map((item) => (
+              <Link
+                key={item.href}
+                href={localePath(item.href, locale)}
+                style={{
+                  display: 'block',
+                  border: '1px solid rgba(234,227,210,0.18)',
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: 12,
+                  padding: '18px 18px 20px',
+                  textDecoration: 'none',
+                }}
+              >
+                <h3 style={{ color: '#fff', margin: '0 0 8px', fontSize: '1rem', fontFamily: 'var(--font-display, sans-serif)' }}>
+                  {item.title}
+                </h3>
+                <p style={{ color: 'rgba(234,227,210,0.72)', margin: 0, fontSize: '0.88rem', lineHeight: 1.6 }}>
+                  {item.body}
+                </p>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </section>
