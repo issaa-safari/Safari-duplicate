@@ -68,8 +68,8 @@ export function pageMetadata({
   }
 }
 
-export function travelAgencyJsonLd(): Record<string, unknown> {
-  return {
+export function travelAgencyJsonLd(sameAs: string[] = []): Record<string, unknown> {
+  const data: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'TravelAgency',
     '@id': `${site.url}/#organization`,
@@ -90,6 +90,8 @@ export function travelAgencyJsonLd(): Record<string, unknown> {
     ],
     knowsLanguage: ['en', 'ar'],
   }
+  if (sameAs.length > 0) data.sameAs = sameAs
+  return data
 }
 
 export function faqPageJsonLd(

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
 import SafariImage from '@/components/public/safari-image'
@@ -9,6 +9,8 @@ import { STOCK_HERO_IMAGE, STOCK_SAFARI_IMAGES } from '@/lib/stock-images'
 import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/seo'
 import { localePath } from '@/lib/locale'
+import SocialVideoGallery from '@/components/public/social-video-gallery'
+import type { SocialVideo } from '@/lib/social'
 
 const G = '#7A9A4A'
 
@@ -40,12 +42,20 @@ export default async function GalleryPage({
   const locale = await getServerLocale(sp)
   const isAr = locale === 'ar'
 
-  const admin = createAdminClient()
-  const { data: tours } = await admin
-    .from('tours')
-    .select('id, title_en, title_ar, hero_image_url, gallery_urls')
-    .eq('status', 'active')
-    .eq('show_on_website', true)
+  const supabase = await createClient()
+  const [{ data: tours }, { data: videos }] = await Promise.all([
+    supabase
+      .from('tours')
+      .select('id, title_en, title_ar, hero_image_url, gallery_urls')
+      .eq('status', 'active')
+      .eq('show_on_website', true),
+    supabase
+      .from('social_videos')
+      .select('*')
+      .eq('is_published', true)
+      .order('sort_order')
+      .limit(6),
+  ])
 
   // Collect every real image (hero + gallery) across active tours.
   type Shot = { src: string; caption: string }
@@ -130,6 +140,7 @@ export default async function GalleryPage({
             </div>
           </div>
         </section>
+        <SocialVideoGallery videos={(videos ?? []) as SocialVideo[]} locale={locale} heading={isAr ? 'فيديوهات من رحلاتنا' : 'Videos From Our Trips'} />
       </main>
       <PublicFooter />
       <WhatsAppButton lang={locale} />

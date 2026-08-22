@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { pageContext, trackEvent } from '@/lib/analytics'
 
 interface TourHeroProps {
   tourTitle: string
@@ -20,6 +21,10 @@ interface TourHeroProps {
   isAr: boolean
   imageSlot: ReactNode
   tripLabel: string | null
+  tourId: string
+  tourSlug: string
+  tourTemplate: string | null
+  locale: string
 }
 
 const chip = () => ({
@@ -55,6 +60,10 @@ export default function TourHero({
   isAr,
   imageSlot,
   tripLabel,
+  tourId,
+  tourSlug,
+  tourTemplate,
+  locale,
 }: TourHeroProps) {
   const reduced = useReducedMotion()
   const dir = isAr ? 'rtl' : 'ltr'
@@ -83,6 +92,7 @@ export default function TourHero({
     groupSize ? `${isAr ? 'حتى' : 'max'} ${groupSize}` : null,
     terrain ?? null,
   ].filter(Boolean) as string[]
+  const analytics = { ...pageContext(locale), tour_id: tourId, tour_slug: tourSlug, tour_template: tourTemplate, locale }
 
   return (
     <section
@@ -227,6 +237,7 @@ export default function TourHero({
               >
                 <Link
                   href={bookHref}
+                  onClick={() => trackEvent('booking_start', { ...analytics, cta_location: 'tour_hero' })}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 8,
                     padding: '14px 28px', borderRadius: 8,
@@ -242,6 +253,7 @@ export default function TourHero({
             <motion.div whileHover={reduced ? {} : { scale: 1.04 }} whileTap={reduced ? {} : { scale: 0.98 }}>
               <Link
                 href={enquireHref}
+                onClick={() => trackEvent('quote_request_click', { ...analytics, cta_location: 'tour_hero' })}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   padding: '14px 28px', borderRadius: 8,

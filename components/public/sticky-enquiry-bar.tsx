@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import Link from 'next/link'
+import { pageContext, trackEvent } from '@/lib/analytics'
 
 interface StickyEnquiryBarProps {
   price: number | null
@@ -13,6 +14,7 @@ interface StickyEnquiryBarProps {
   isAvailable: boolean
   bookHref: string
   heroElementId: string
+  analytics?: { tourId: string; tourSlug?: string | null; tourTemplate?: string | null; locale: string }
 }
 
 const OLIVE = '#7A9A4A'
@@ -26,10 +28,12 @@ export default function StickyEnquiryBar({
   isAvailable,
   bookHref,
   heroElementId,
+  analytics,
 }: StickyEnquiryBarProps) {
   const [visible, setVisible] = useState(false)
   const reduced = useReducedMotion()
   const barRef = useRef<HTMLDivElement>(null)
+  const eventContext = analytics ? { ...pageContext(analytics.locale), tour_id: analytics.tourId, tour_slug: analytics.tourSlug, tour_template: analytics.tourTemplate, locale: analytics.locale } : {}
 
   useEffect(() => {
     const el = document.getElementById(heroElementId)
@@ -102,6 +106,7 @@ export default function StickyEnquiryBar({
             {/* WhatsApp */}
             <a
               href={whatsappHref}
+              onClick={() => trackEvent('whatsapp_click', { ...eventContext, cta_location: 'sticky_tour_bar', contact_method: 'whatsapp' })}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -118,6 +123,7 @@ export default function StickyEnquiryBar({
             {/* Enquire */}
             <Link
               href={enquireHref}
+              onClick={() => trackEvent('quote_request_click', { ...eventContext, cta_location: 'sticky_tour_bar' })}
               style={{
                 display: 'inline-flex', alignItems: 'center',
                 padding: '10px 18px', borderRadius: 8,
@@ -132,6 +138,7 @@ export default function StickyEnquiryBar({
             {isAvailable && (
               <Link
                 href={bookHref}
+                onClick={() => trackEvent('booking_start', { ...eventContext, cta_location: 'sticky_tour_bar' })}
                 style={{
                   display: 'inline-flex', alignItems: 'center',
                   padding: '10px 18px', borderRadius: 8,

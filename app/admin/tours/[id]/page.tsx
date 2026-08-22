@@ -3,7 +3,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import TourEditForm from './tour-edit-form'
-import TourSeoEditor from './tour-seo-editor'
+import TourSeoEditor, { type InitialSeo, type Section, type Template, type TourSeoTour } from './tour-seo-editor'
+
+type ItineraryDay = {
+  id: string
+  day_number: number
+  day_number_end?: number | null
+  title_en?: string | null
+}
 
 export default async function TourDetailPage({
   params,
@@ -17,12 +24,13 @@ export default async function TourDetailPage({
   const { id } = await params
   const admin = createAdminClient()
 
-  const [{ data: tour }, { data: days }, { data: templates }, { data: seo }, { data: sections }] = await Promise.all([
+  const [{ data: tour }, { data: days }, { data: templates }, { data: seo }, { data: sections }, { data: existingSeo }] = await Promise.all([
     admin.from('tours').select('*').eq('id', id).single(),
     admin.from('tour_days').select('id, day_number, day_number_end, title_en, destination_id').eq('tour_id', id).order('day_number', { ascending: true }),
     admin.from('tour_templates').select('id, key, name_en, name_ar, config_json, sort_order').eq('is_active', true).order('sort_order', { ascending: true }),
     admin.from('tour_seo').select('*').eq('tour_id', id).maybeSingle(),
     admin.from('tour_content_sections').select('*').eq('tour_id', id).order('sort_order', { ascending: true }),
+    admin.from('tour_seo').select('seo_title_en, seo_title_ar, meta_description_en, meta_description_ar').neq('tour_id', id),
   ])
 
   if (!tour) notFound()
@@ -59,11 +67,12 @@ export default async function TourDetailPage({
 
         <div className="space-y-6 min-w-0 xl:sticky xl:top-20">
           <TourSeoEditor
-            tour={tour}
-            templates={(templates ?? []) as any}
-            initialSeo={seo}
-            initialSections={(sections ?? []) as any}
+            tour={tour as TourSeoTour}
+            templates={(templates ?? []) as Template[]}
+            initialSeo={seo as InitialSeo | null}
+            initialSections={(sections ?? []) as Section[]}
             itineraryCount={days?.length ?? 0}
+            existingSeo={existingSeo ?? []}
           />
 
           <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
@@ -82,7 +91,7 @@ export default async function TourDetailPage({
             <h2 className="text-sm font-semibold text-foreground mb-3">Itinerary Preview</h2>
             {days && days.length > 0 ? (
               <ul className="space-y-2">
-                {days.map((day: any) => (
+                {(days as ItineraryDay[]).map((day) => (
                   <li key={day.id} className="text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">Day {day.day_number}{day.day_number_end ? '-' + day.day_number_end : ''}</span>
                     {' — '}{day.title_en || 'No title set'}

@@ -2,78 +2,54 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { evaluateTourReadiness, SECTION_LABELS, type ReadinessInput, type TourContentSection, type TourTemplateConfig } from '@/lib/tour-seo-engine'
 
 const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
-const SECTION_LABELS: Record<string, { en: string; ar: string }> = {
-  why_choose: { en: 'Why Choose This Tour', ar: 'لماذا تختار هذه الرحلة' },
-  wildlife: { en: 'Wildlife', ar: 'الحياة البرية' },
-  safari_experience: { en: 'Safari Experience', ar: 'تجربة السفاري' },
-  game_drives: { en: 'Game Drives', ar: 'جولات السفاري' },
-  accommodation_experience: { en: 'Accommodation Experience', ar: 'تجربة الإقامة' },
-  best_time: { en: 'Best Time to Travel', ar: 'أفضل وقت للسفر' },
-  who_for: { en: 'Who This Tour Is For', ar: 'لمن تناسب هذه الرحلة' },
-  luxury_experience: { en: 'Luxury Experience', ar: 'التجربة الفاخرة' },
-  private_transfers: { en: 'Private Transfers', ar: 'التنقلات الخاصة' },
-  exclusive_experiences: { en: 'Exclusive Experiences', ar: 'التجارب الخاصة' },
-  dining: { en: 'Dining', ar: 'تجربة الطعام' },
-  personalization: { en: 'Personalization', ar: 'التخصيص' },
-  family_suitability: { en: 'Family Suitability', ar: 'ملاءمة الرحلة للعائلات' },
-  child_friendly: { en: 'Child-Friendly Experiences', ar: 'تجارب مناسبة للأطفال' },
-  travel_times: { en: 'Travel Times', ar: 'أوقات التنقل' },
-  family_accommodation: { en: 'Family Accommodation', ar: 'إقامة العائلات' },
-  meal_flexibility: { en: 'Meal Flexibility', ar: 'مرونة الوجبات' },
-  rest_time: { en: 'Rest / Free Time', ar: 'الراحة والوقت الحر' },
-  safety: { en: 'Safety', ar: 'السلامة' },
-  riding_experience: { en: 'Riding Experience', ar: 'تجربة القيادة' },
-  route_highlights: { en: 'Route Highlights', ar: 'أبرز محطات المسار' },
-  terrain: { en: 'Terrain', ar: 'طبيعة الطرق' },
-  road_surfaces: { en: 'Road Surfaces', ar: 'أسطح الطرق' },
-  rider_experience: { en: 'Required Riding Experience', ar: 'الخبرة المطلوبة للقيادة' },
-  support: { en: 'Tour Support', ar: 'دعم الرحلة' },
-  riding_gear: { en: 'Riding Gear', ar: 'معدات القيادة' },
-  fuel_information: { en: 'Fuel Information', ar: 'معلومات الوقود' },
-  photography: { en: 'Photography Opportunities', ar: 'فرص التصوير' },
-  landscape_photography: { en: 'Landscape Photography', ar: 'تصوير الطبيعة' },
-  lighting: { en: 'Light & Timing', ar: 'الإضاءة والتوقيت' },
-  vehicle_setup: { en: 'Vehicle Setup', ar: 'تجهيز المركبة' },
-  equipment_advice: { en: 'Equipment Advice', ar: 'نصائح المعدات' },
-  photography_guide: { en: 'Photography Guide', ar: 'إرشاد التصوير' },
-  kenya_highlights: { en: 'Kenya Highlights', ar: 'أبرز تجارب كينيا' },
-  tanzania_highlights: { en: 'Tanzania Highlights', ar: 'أبرز تجارب تنزانيا' },
-  border_logistics: { en: 'Border / Flight Logistics', ar: 'ترتيبات الحدود والطيران' },
-  entry_requirements: { en: 'Entry Requirements', ar: 'متطلبات الدخول' },
-  possible_destinations: { en: 'Possible Destinations', ar: 'الوجهات الممكنة' },
-  vehicle_experience: { en: 'Vehicle Options', ar: 'خيارات المركبات' },
-  customization: { en: 'Customization Options', ar: 'خيارات التخصيص' },
-  duration_flexibility: { en: 'Duration Flexibility', ar: 'مرونة مدة الرحلة' },
-  activities: { en: 'Activities', ar: 'الأنشطة' },
-  group_experience: { en: 'Group Experience', ar: 'تجربة المجموعة' },
-  tour_leader: { en: 'Tour Leader', ar: 'قائد الرحلة' },
-  booking_conditions: { en: 'Booking Conditions', ar: 'شروط الحجز' },
-}
-
-type Template = {
+export type Template = {
   id: string
   key: string
   name_en: string
   name_ar: string
-  config_json?: { sectionOrder?: string[]; requiredSections?: string[] }
+  config_json?: TourTemplateConfig
 }
 
-type Section = {
-  section_key: string
-  title_en?: string | null
+export type Section = TourContentSection
+
+export type TourSeoTour = ReadinessInput['tour'] & {
+  id: string
+  slug: string
+  template_id?: string | null
+  title_en: string
   title_ar?: string | null
-  content_en?: string | null
-  content_ar?: string | null
-  sort_order?: number
-  is_enabled?: boolean
+}
+
+export type InitialSeo = {
+  seo_title_en?: string | null
+  seo_title_ar?: string | null
+  meta_description_en?: string | null
+  meta_description_ar?: string | null
+  primary_keyword_en?: string | null
+  primary_keyword_ar?: string | null
+  secondary_keywords_en?: unknown
+  secondary_keywords_ar?: unknown
+  search_intent?: string | null
+  seo_intro_en?: string | null
+  seo_intro_ar?: string | null
+  hero_alt_en?: string | null
+  hero_alt_ar?: string | null
+}
+
+type ExistingSeo = {
+  seo_title_en?: string | null
+  seo_title_ar?: string | null
+  meta_description_en?: string | null
+  meta_description_ar?: string | null
 }
 
 const csvToArray = (value: string) => value.split(',').map(x => x.trim()).filter(Boolean)
 const arrayToCsv = (value: unknown) => Array.isArray(value) ? value.join(', ') : ''
-const filled = (value: unknown) => typeof value === 'string' && value.trim().length > 0
+const normalise = (value: unknown) => typeof value === 'string' ? value.trim().toLocaleLowerCase() : ''
 
 export default function TourSeoEditor({
   tour,
@@ -81,12 +57,14 @@ export default function TourSeoEditor({
   initialSeo,
   initialSections,
   itineraryCount,
+  existingSeo,
 }: {
-  tour: any
+  tour: TourSeoTour
   templates: Template[]
-  initialSeo: any
+  initialSeo: InitialSeo | null
   initialSections: Section[]
   itineraryCount: number
+  existingSeo: ExistingSeo[]
 }) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
@@ -109,36 +87,30 @@ export default function TourSeoEditor({
     hero_alt_ar: initialSeo?.hero_alt_ar ?? '',
   })
 
-  const selectedTemplate = templates.find(t => t.id === templateId)
+  const selectedTemplate = useMemo(() => templates.find(t => t.id === templateId), [templateId, templates])
   const sectionOrder = selectedTemplate?.config_json?.sectionOrder ?? []
-  const requiredSections = selectedTemplate?.config_json?.requiredSections ?? []
+  const requiredSections = useMemo(() => selectedTemplate?.config_json?.requiredSections ?? [], [selectedTemplate])
   const initialMap = Object.fromEntries(initialSections.map(section => [section.section_key, section]))
   const [sections, setSections] = useState<Record<string, Section>>(initialMap)
 
-  const completeness = useMemo(() => {
-    const basicChecks = [tour.title_en, tour.overview_en, tour.hero_image_url, itineraryCount > 0 ? 'yes' : '']
-    const content = Math.round((basicChecks.filter(Boolean).length / basicChecks.length) * 100)
-    const arChecks = [tour.title_ar, tour.overview_ar, seo.seo_title_ar, seo.meta_description_ar, seo.hero_alt_ar]
-    const arabic = Math.round((arChecks.filter(filled).length / arChecks.length) * 100)
-    const seoChecks = [seo.seo_title_en, seo.meta_description_en, seo.primary_keyword_en, seo.seo_intro_en, seo.hero_alt_en, templateId]
-    const technicalSeo = Math.round((seoChecks.filter(filled).length / seoChecks.length) * 100)
-    return { content, arabic, seo: technicalSeo }
-  }, [tour, itineraryCount, seo, templateId])
-
-  const warnings = useMemo(() => {
-    const list: string[] = []
-    if (!filled(seo.seo_title_en)) list.push('English SEO title is missing')
-    if (!filled(seo.meta_description_en)) list.push('English meta description is missing')
-    if (!filled(seo.seo_title_ar)) list.push('Arabic SEO title is missing')
-    if (!filled(seo.meta_description_ar)) list.push('Arabic meta description is missing')
-    if (!filled(seo.hero_alt_en)) list.push('Hero image English alt text is missing')
-    if (!filled(seo.hero_alt_ar)) list.push('Hero image Arabic alt text is missing')
-    if (!templateId) list.push('Tour template is not selected')
-    for (const key of requiredSections) {
-      if (!filled(sections[key]?.content_en)) list.push(`${SECTION_LABELS[key]?.en ?? key} content is missing`)
+  const readiness = useMemo(() => {
+    const duplicate = (field: keyof ExistingSeo, value: string) => {
+      const target = normalise(value)
+      return target.length > 0 && existingSeo.some((record) => normalise(record[field]) === target)
     }
-    return list
-  }, [seo, templateId, requiredSections, sections])
+    return evaluateTourReadiness({
+      tour,
+      seo,
+      templateId,
+      requiredSections,
+      sections,
+      itineraryCount,
+      duplicateTitleEn: duplicate('seo_title_en', seo.seo_title_en),
+      duplicateTitleAr: duplicate('seo_title_ar', seo.seo_title_ar),
+      duplicateMetaEn: duplicate('meta_description_en', seo.meta_description_en),
+      duplicateMetaAr: duplicate('meta_description_ar', seo.meta_description_ar),
+    })
+  }, [tour, itineraryCount, seo, templateId, requiredSections, sections, existingSeo])
 
   const updateSeo = (key: string, value: string) => setSeo(current => ({ ...current, [key]: value }))
   const updateSection = (key: string, patch: Partial<Section>) => setSections(current => ({
@@ -181,8 +153,8 @@ export default function TourSeoEditor({
       if (!res.ok) throw new Error(json.error || 'Failed to save SEO settings')
       setSaved(true)
       router.refresh()
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save SEO settings')
     } finally {
       setSaving(false)
     }
@@ -203,9 +175,9 @@ export default function TourSeoEditor({
 
         <div className="grid grid-cols-3 gap-3 mb-5">
           {[
-            ['Content', completeness.content],
-            ['Arabic', completeness.arabic],
-            ['SEO', completeness.seo],
+            ['Content', readiness.scores.content],
+            ['Arabic', readiness.scores.arabic],
+            ['SEO', readiness.scores.seo],
           ].map(([label, value]) => (
             <div key={String(label)} className="rounded-lg border border-border p-3">
               <div className="text-xs text-muted-foreground">{label}</div>
@@ -221,10 +193,18 @@ export default function TourSeoEditor({
           {templates.map(template => <option key={template.id} value={template.id}>{template.name_en} — {template.name_ar}</option>)}
         </select>
 
-        {warnings.length > 0 && (
+        <div className={`mt-4 rounded-lg border p-3 ${readiness.status === 'ready' ? 'border-green-200 bg-green-50 text-green-800' : readiness.status === 'not-public' ? 'border-border bg-muted text-muted-foreground' : 'border-red-200 bg-red-50 text-red-800'}`}>
+          <div className="text-xs font-semibold">
+            {readiness.status === 'ready' ? 'Publishing readiness: Ready' : readiness.status === 'not-public' ? 'Publishing readiness: Not public' : 'Publishing readiness: Important information missing'}
+          </div>
+          {readiness.status === 'not-public' && <p className="mt-1 text-xs">This tour remains unavailable at its public URL until it is active and shown on the website.</p>}
+          {readiness.blockers.length > 0 && <ul className="mt-2 space-y-1 text-xs">{readiness.blockers.map(item => <li key={item}>• {item}</li>)}</ul>}
+        </div>
+
+        {readiness.warnings.length > 0 && (
           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-            <div className="text-xs font-semibold text-amber-900 mb-2">Needs attention</div>
-            <ul className="space-y-1 text-xs text-amber-800">{warnings.map(item => <li key={item}>• {item}</li>)}</ul>
+            <div className="text-xs font-semibold text-amber-900 mb-2">Recommended improvements</div>
+            <ul className="space-y-1 text-xs text-amber-800">{readiness.warnings.map(item => <li key={item}>• {item}</li>)}</ul>
           </div>
         )}
         {saved && <p className="text-sm text-green-700 mt-3">SEO settings saved.</p>}
@@ -234,10 +214,10 @@ export default function TourSeoEditor({
       <div className="rounded-xl border border-border bg-surface shadow-sm p-5 space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Search Metadata</h2>
         <div className="grid sm:grid-cols-2 gap-3">
-          <div><label className="text-sm font-medium">SEO Title (English)</label><input value={seo.seo_title_en} onChange={e => updateSeo('seo_title_en', e.target.value)} className={inputCls} /></div>
-          <div><label className="text-sm font-medium">SEO Title (Arabic)</label><input dir="rtl" value={seo.seo_title_ar} onChange={e => updateSeo('seo_title_ar', e.target.value)} className={inputCls} /></div>
-          <div><label className="text-sm font-medium">Meta Description (English)</label><textarea rows={3} value={seo.meta_description_en} onChange={e => updateSeo('meta_description_en', e.target.value)} className={inputCls} /></div>
-          <div><label className="text-sm font-medium">Meta Description (Arabic)</label><textarea rows={3} dir="rtl" value={seo.meta_description_ar} onChange={e => updateSeo('meta_description_ar', e.target.value)} className={inputCls} /></div>
+          <div><label className="text-sm font-medium">SEO Title (English)</label><input value={seo.seo_title_en} onChange={e => updateSeo('seo_title_en', e.target.value)} className={inputCls} /><p className="mt-1 text-[11px] text-muted-foreground">{seo.seo_title_en.length}/65 · guidance 30–65</p></div>
+          <div><label className="text-sm font-medium">SEO Title (Arabic)</label><input dir="rtl" value={seo.seo_title_ar} onChange={e => updateSeo('seo_title_ar', e.target.value)} className={inputCls} /><p className="mt-1 text-[11px] text-muted-foreground" dir="rtl">{seo.seo_title_ar.length}/70 · المفضل 25–70</p></div>
+          <div><label className="text-sm font-medium">Meta Description (English)</label><textarea rows={3} value={seo.meta_description_en} onChange={e => updateSeo('meta_description_en', e.target.value)} className={inputCls} /><p className="mt-1 text-[11px] text-muted-foreground">{seo.meta_description_en.length}/170 · guidance 120–170</p></div>
+          <div><label className="text-sm font-medium">Meta Description (Arabic)</label><textarea rows={3} dir="rtl" value={seo.meta_description_ar} onChange={e => updateSeo('meta_description_ar', e.target.value)} className={inputCls} /><p className="mt-1 text-[11px] text-muted-foreground" dir="rtl">{seo.meta_description_ar.length}/180 · المفضل 90–180</p></div>
           <div><label className="text-sm font-medium">Primary Search Topic (English)</label><input value={seo.primary_keyword_en} onChange={e => updateSeo('primary_keyword_en', e.target.value)} className={inputCls} /></div>
           <div><label className="text-sm font-medium">Primary Search Topic (Arabic)</label><input dir="rtl" value={seo.primary_keyword_ar} onChange={e => updateSeo('primary_keyword_ar', e.target.value)} className={inputCls} /></div>
           <div><label className="text-sm font-medium">Supporting Topics (comma-separated)</label><input value={seo.secondary_keywords_en} onChange={e => updateSeo('secondary_keywords_en', e.target.value)} className={inputCls} /></div>

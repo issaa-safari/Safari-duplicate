@@ -24,6 +24,9 @@ interface DepartureCardsProps {
   isAr: boolean
   tourTitle: string
   locale: Locale
+  tourId?: string
+  tourSlug?: string | null
+  tourTemplate?: string | null
 }
 
 const OLIVE = '#7A9A4A'
@@ -48,7 +51,7 @@ function StatusBadge({ seats, status, isAr }: { seats: number; status: string; i
   return <span style={{ padding: '3px 10px', borderRadius: 99, background: '#dcfce7', color: '#166534', fontSize: 12, fontWeight: 600 }}>{isAr ? `${seats} متاح` : `${seats} available`}</span>
 }
 
-export default function DepartureCards({ departures, accentColor, isAr, tourTitle, locale }: DepartureCardsProps) {
+export default function DepartureCards({ departures, accentColor, isAr, tourTitle, locale, tourId, tourSlug, tourTemplate }: DepartureCardsProps) {
   const reduced = useReducedMotion()
   const dir = isAr ? 'rtl' : 'ltr'
 
@@ -77,7 +80,7 @@ export default function DepartureCards({ departures, accentColor, isAr, tourTitl
           depositUsd: dep.securityDepositUsd,
         })
         const detailHref = localePath(`/departures/${dep.id}`, locale)
-        const ctx = { ...pageContext(locale), tour_name: tourTitle, departure_id: dep.id, value: dep.priceUsd ?? dep.priceSingleUsd ?? undefined, currency: (dep.priceUsd ?? dep.priceSingleUsd) != null ? 'USD' : undefined }
+        const ctx = { ...pageContext(locale), tour_id: tourId, tour_slug: tourSlug, tour_template: tourTemplate, locale, tour_name: tourTitle, departure_id: dep.id, value: dep.priceUsd ?? dep.priceSingleUsd ?? undefined, currency: (dep.priceUsd ?? dep.priceSingleUsd) != null ? 'USD' : undefined }
 
         return (
           <motion.div key={dep.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} whileHover={reduced || !available ? {} : { y: -3, boxShadow: `0 12px 32px ${accentColor}26` }} transition={{ duration: reduced ? 0 : 0.4, delay: reduced ? 0 : i * 0.06 }} viewport={{ once: true, margin: '-40px' }} style={{ background: available ? '#fff' : '#f9f9f7', borderRadius: 14, border: `1px solid ${available ? '#E5E0D8' : '#EDEAE4'}`, borderInlineStart: available ? `4px solid ${accentColor}` : '4px solid #EDEAE4', padding: '20px 24px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 20, opacity: available ? 1 : 0.7, boxShadow: '0 2px 12px rgba(32,39,26,0.05)' }}>
