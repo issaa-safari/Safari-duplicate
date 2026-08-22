@@ -133,7 +133,7 @@ export default async function QuoteDetailPage({
   const [{ data: dayItemsAll }, { data: travellersAll }] = await Promise.all([
     dayIds.length
       ? admin.from('quote_day_items')
-          .select('id, quote_day_id, item_type, accommodation_id, activity_id, vehicle_id, staff_id, title_snapshot, content_snapshot, sort_order')
+          .select('id, quote_day_id, item_type, accommodation_id, activity_id, vehicle_id, staff_id, title_snapshot, content_snapshot, additional_price_usd, sort_order')
           .in('quote_day_id', dayIds).order('sort_order')
       : Promise.resolve({ data: [] as any[] }),
     versionIds.length

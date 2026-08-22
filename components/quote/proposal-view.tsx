@@ -51,6 +51,19 @@ export type SummaryRow = {
 export type RouteRow = { dayLabel: string; destination: string; destinationMapsUrl?: string | null; accommodation: string | null; accommodationMapsUrl?: string | null; distanceKm: number | null }
 export type TourMapData = { stops: MapStop[]; rows: RouteRow[]; startPoint: string | null; endPoint: string | null }
 export type TravellerGroup = { name: string; count: number; perPerson: number; total: number }
+// One row per day where the admin picked an alternative (upgrade)
+// accommodation — a lodging swap for that same day, priced as a manual add-on.
+export type AltAccommodationRow = {
+  dayLabel: string
+  destination: string
+  primaryName: string | null
+  alternativeName: string
+  tier: string | null
+  tierLabel: string | null
+  photo: string | null
+  mealsLabel: string
+  priceUsd: number | null
+}
 
 export type ProposalViewProps = {
   isArabic: boolean
@@ -82,6 +95,8 @@ export type ProposalViewProps = {
   arrivalNote?: string | null
   startDestination?: string | null
   itinerary: ProposalDay[]
+  /** Days where an alternative (upgrade) accommodation was picked and priced. */
+  altAccommodations: AltAccommodationRow[]
   included: string[]
   excluded: string[]
   optional: { description: string; price: string }[]
@@ -214,6 +229,27 @@ export default function ProposalView(p: ProposalViewProps) {
                       <span className="font-semibold" style={{ color: INK }}>{o.price}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {p.altAccommodations.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{T(ar, 'Alternative Accommodations', 'إقامات بديلة')}</p>
+                <div className="overflow-hidden rounded-xl border" style={{ borderColor: `${OLIVE}33` }}>
+                  <table className="stack-table w-full text-sm">
+                    <tbody>
+                      {p.altAccommodations.map((row, i) => (
+                        <tr key={i} style={{ background: i % 2 ? '#fff' : '#F7FAEE', borderTop: i ? `1px solid ${OLIVE}18` : undefined }}>
+                          <td data-label={T(ar, 'Day', 'اليوم')} className="px-4 py-2.5 font-medium" style={{ color: INK }}>{row.dayLabel}</td>
+                          <td data-label={T(ar, 'Accommodation', 'الإقامة')} className="px-4 py-2.5 text-gray-700">{row.alternativeName}</td>
+                          <td data-label={T(ar, 'Additional Price', 'السعر الإضافي')} className="px-4 py-2.5 text-right font-semibold" style={{ color: INK }}>
+                            {row.priceUsd != null ? `+$${row.priceUsd.toLocaleString()}` : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
@@ -610,6 +646,46 @@ export default function ProposalView(p: ProposalViewProps) {
 
           {p.acceptSlot && <div id="proposal-accept" className="mt-6">{p.acceptSlot}</div>}
         </section>
+
+        {/* ── Alternative Accommodations ───────────────────────── */}
+        {p.altAccommodations.length > 0 && (
+          <section className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">
+            <Pill>{T(ar, 'Alternative Accommodations', 'إقامات بديلة')}</Pill>
+            <div className="mt-5 space-y-4">
+              {p.altAccommodations.map((row, i) => (
+                <div key={i} className="rounded-xl border p-4" style={{ borderColor: `${OLIVE}33` }}>
+                  <p className="mb-3 text-sm font-bold" style={{ color: INK, ...display }}>{row.dayLabel} · {row.destination}</p>
+                  <div className="grid gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+                    <div>
+                      <p className="text-xs text-gray-400">{T(ar, 'Included', 'مشمول')}</p>
+                      <p className="text-sm font-semibold" style={{ color: INK }}>{row.primaryName ?? T(ar, 'No accommodation', 'بدون إقامة')}</p>
+                    </div>
+                    <span className="hidden text-xl sm:block" style={{ color: OLIVE }} aria-hidden="true">{ar ? '←' : '→'}</span>
+                    <div className="rounded-xl border p-3" style={{ borderColor: '#e2e2e2' }}>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-bold" style={{ color: INK }}>{row.alternativeName}</p>
+                        {row.tierLabel && (
+                          <span className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ background: `${OLIVE}1a`, color: OLIVE }}>
+                            {row.tierLabel}
+                          </span>
+                        )}
+                      </div>
+                      {row.photo && (
+                        <div className="mt-2 overflow-hidden rounded-lg">
+                          <Photo src={row.photo} alt={row.alternativeName} className="h-32 w-full" />
+                        </div>
+                      )}
+                      <p className="mt-2 text-xs text-gray-500">{T(ar, 'Meal Plan', 'خطة الوجبات')}: {row.mealsLabel}</p>
+                      <p className="mt-1 text-right text-base font-bold" style={{ color: INK }}>
+                        {row.priceUsd != null ? `+$${row.priceUsd.toLocaleString()}` : '—'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* ── Share ─────────────────────────────────────────────── */}
         {shareUrl && (

@@ -2,11 +2,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import AcceptForm from './accept-form'
 import { syncQuoteStatus } from '@/lib/server/quote-status'
-import ProposalView, { type ProposalDay, type SummaryRow, type TravellerGroup, type RouteRow, type TourMapData } from '@/components/quote/proposal-view'
+import ProposalView, { type ProposalDay, type SummaryRow, type TravellerGroup, type RouteRow, type TourMapData, type AltAccommodationRow } from '@/components/quote/proposal-view'
 import type { MapStop } from '@/components/quote/itinerary-map'
 import { googleMapsLinkFor, haversineKm, type LatLng } from '@/lib/geo'
 import { site } from '@/lib/site'
 import { getActiveProposalTemplate, pickLocalised, applyProposalPlaceholders } from '@/lib/proposal-template'
+import { accommodationTierLabel } from '@/lib/accommodation-tiers'
 
 import {
   INCLUDED_DEFAULT_EN, INCLUDED_DEFAULT_AR,
@@ -144,7 +145,7 @@ export default async function QuotePortalPage({
   const dayIds = (quoteDays ?? []).map((d: any) => d.id)
   const { data: dayItems } = dayIds.length
     ? await admin.from('quote_day_items')
-        .select('quote_day_id, item_type, accommodation_id, activity_id, room_category, title_snapshot, content_snapshot')
+        .select('quote_day_id, item_type, accommodation_id, activity_id, room_category, title_snapshot, content_snapshot, additional_price_usd')
         .in('quote_day_id', dayIds)
         .in('item_type', ['accommodation', 'activity'])
         .order('sort_order')
@@ -152,10 +153,15 @@ export default async function QuotePortalPage({
 
   type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean; dayOffset: number; transfer: boolean }
   const accomItemByDay: Record<string, any> = {}
+  // Alternative (upgrade) accommodation pick per day, kept separate so it
+  // never leaks in as "the" displayed accommodation for a day.
+  const altAccomItemByDay: Record<string, any> = {}
   const actsByDay: Record<string, ActItem[]> = {}
   for (const item of dayItems ?? []) {
     if (item.item_type === 'accommodation') {
-      if (!accomItemByDay[item.quote_day_id] && item.title_snapshot) accomItemByDay[item.quote_day_id] = item
+      const isAlt = (item.content_snapshot as any)?.alternative === true
+      const bucket = isAlt ? altAccomItemByDay : accomItemByDay
+      if (!bucket[item.quote_day_id] && item.title_snapshot) bucket[item.quote_day_id] = item
     } else if (item.item_type === 'activity') {
       if (!actsByDay[item.quote_day_id]) actsByDay[item.quote_day_id] = []
       const cs = (item.content_snapshot ?? {}) as any
@@ -171,12 +177,15 @@ export default async function QuotePortalPage({
   }
 
   // Accommodation records (type, photos, description) for the day pages.
-  const accIds = [...new Set(Object.values(accomItemByDay).map((i: any) => i.accommodation_id).filter(Boolean))] as string[]
-  const accMap: Record<string, { type: string | null; cover: string | null; gallery: string[]; en: string | null; ar: string | null; mapsUrl: string | null }> = {}
+  const accIds = [...new Set([
+    ...Object.values(accomItemByDay).map((i: any) => i.accommodation_id),
+    ...Object.values(altAccomItemByDay).map((i: any) => i.accommodation_id),
+  ].filter(Boolean))] as string[]
+  const accMap: Record<string, { type: string | null; tier: string | null; cover: string | null; gallery: string[]; en: string | null; ar: string | null; mapsUrl: string | null }> = {}
   if (accIds.length > 0) {
-    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, gallery_urls, description_en, description_ar, google_maps_url, google_place_id, latitude, longitude').in('id', accIds)
+    const { data: accs } = await admin.from('accommodations').select('id, type, budget_tier, cover_image_url, gallery_urls, description_en, description_ar, google_maps_url, google_place_id, latitude, longitude').in('id', accIds)
     for (const a of accs ?? []) accMap[a.id] = {
-      type: a.type, cover: a.cover_image_url,
+      type: a.type, tier: a.budget_tier ?? null, cover: a.cover_image_url,
       gallery: Array.isArray(a.gallery_urls) ? (a.gallery_urls as string[]).filter(Boolean) : [],
       en: a.description_en, ar: a.description_ar,
       mapsUrl: googleMapsLinkFor(a),
@@ -269,6 +278,30 @@ export default async function QuotePortalPage({
       meals: meals.map((m) => mealLabels[m] ?? m).join(', ') || '—',
     }
   })
+
+  // ── Alternative (upgrade) accommodations ──
+  // Only days where the admin picked an alternative appear here; the
+  // day's own meal plan carries over (the alternative is a lodging swap
+  // for the same day, not a different meal arrangement).
+  const altAccommodations: AltAccommodationRow[] = (quoteDays ?? [])
+    .filter((d: any) => altAccomItemByDay[d.id])
+    .map((d: any) => {
+      const altItem = altAccomItemByDay[d.id]
+      const primaryItem = accomItemByDay[d.id]
+      const altAcc = altItem.accommodation_id ? accMap[altItem.accommodation_id] : null
+      const meals: string[] = d.meals ?? []
+      return {
+        dayLabel: dayLabel(d),
+        destination: (d.destination_snapshot as any)?.name ?? '—',
+        primaryName: primaryItem?.title_snapshot ?? null,
+        alternativeName: altItem.title_snapshot,
+        tier: altAcc?.tier ?? null,
+        tierLabel: accommodationTierLabel(altAcc?.tier, isArabic),
+        photo: altAcc ? (altAcc.gallery[0] ?? altAcc.cover ?? null) : null,
+        mealsLabel: meals.map((m) => mealLabels[m] ?? m).join(', ') || '—',
+        priceUsd: altItem.additional_price_usd != null ? Number(altItem.additional_price_usd) : null,
+      }
+    })
 
   // ── Tour itinerary map ──
   // One pin per stop with known coordinates (consecutive same-destination
@@ -460,6 +493,7 @@ export default async function QuotePortalPage({
       summaryRows={summaryRows}
       tourMap={tourMap}
       itinerary={itinerary}
+      altAccommodations={altAccommodations}
       included={included}
       excluded={excluded}
       optional={optional}

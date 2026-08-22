@@ -206,18 +206,33 @@ export default async function QuotePrintPage({
   const dayIds = (quoteDays ?? []).map((d: any) => d.id)
   const { data: dayItems } = dayIds.length
     ? await admin.from('quote_day_items')
-        .select('quote_day_id, item_type, accommodation_id, activity_id, title_snapshot, content_snapshot, sort_order')
+        .select('quote_day_id, item_type, accommodation_id, activity_id, title_snapshot, content_snapshot, additional_price_usd, sort_order')
         .in('quote_day_id', dayIds)
         .in('item_type', ['accommodation', 'activity'])
         .order('sort_order')
     : { data: [] as any[] }
 
   type ActItem = { name: string; activity_id: string | null; moment: string; optional: boolean; transfer: boolean }
+  type AltAccom = { name: string; accommodationId: string | null; priceUsd: number | null }
   const accomByDay: Record<string, string[]> = {}
   const accomIdByDay: Record<string, string> = {}
+  // Alternative (upgrade) accommodation pick per day, kept separate so it
+  // never leaks in as "the" displayed accommodation for a day.
+  const altAccomByDay: Record<string, AltAccom> = {}
   const actsByDay: Record<string, ActItem[]> = {}
   for (const item of dayItems ?? []) {
     if (item.item_type === 'accommodation') {
+      const isAlt = (item.content_snapshot as any)?.alternative === true
+      if (isAlt) {
+        if (!altAccomByDay[item.quote_day_id] && item.title_snapshot) {
+          altAccomByDay[item.quote_day_id] = {
+            name: item.title_snapshot,
+            accommodationId: item.accommodation_id ?? null,
+            priceUsd: item.additional_price_usd != null ? Number(item.additional_price_usd) : null,
+          }
+        }
+        continue
+      }
       if (!accomByDay[item.quote_day_id]) accomByDay[item.quote_day_id] = []
       if (item.title_snapshot) accomByDay[item.quote_day_id].push(item.title_snapshot)
       if (item.accommodation_id && !accomIdByDay[item.quote_day_id]) accomIdByDay[item.quote_day_id] = item.accommodation_id
@@ -235,17 +250,22 @@ export default async function QuotePrintPage({
   // Accommodation gallery photos + type + description — for the per-day
   // magazine pages. Descriptions come from the live Content library (the
   // quote item's content_snapshot is not a description string).
-  const accIds = [...new Set(Object.values(accomIdByDay))]
+  const accIds = [...new Set([
+    ...Object.values(accomIdByDay),
+    ...Object.values(altAccomByDay).map(a => a.accommodationId).filter(Boolean) as string[],
+  ])]
   const accGalleryMap: Record<string, string[]> = {}
   const accTypeMap: Record<string, string | null> = {}
+  const accTierMap: Record<string, string | null> = {}
   const accDescMapById: Record<string, { en: string | null; ar: string | null }> = {}
   const accLinkMap: Record<string, string | null> = {}
   if (accIds.length > 0) {
-    const { data: accs } = await admin.from('accommodations').select('id, type, cover_image_url, gallery_urls, description_en, description_ar, google_maps_url, google_place_id, latitude, longitude').in('id', accIds)
+    const { data: accs } = await admin.from('accommodations').select('id, type, budget_tier, cover_image_url, gallery_urls, description_en, description_ar, google_maps_url, google_place_id, latitude, longitude').in('id', accIds)
     for (const a of accs ?? []) {
       const gallery = Array.isArray(a.gallery_urls) ? (a.gallery_urls as string[]).filter(Boolean) : []
       accGalleryMap[a.id] = gallery.length > 0 ? gallery : a.cover_image_url ? [a.cover_image_url] : []
       accTypeMap[a.id] = a.type ?? null
+      accTierMap[a.id] = a.budget_tier ?? null
       accDescMapById[a.id] = { en: a.description_en, ar: a.description_ar }
       accLinkMap[a.id] = googleMapsLinkFor(a)
     }
@@ -389,6 +409,7 @@ export default async function QuotePrintPage({
     }
   }
   const hasMapPage = mapStops.length >= 2
+  const hasAltPage = Object.keys(altAccomByDay).length > 0
 
   const ml = isArabic ? MEAL_LABELS_AR : MEAL_LABELS
 
@@ -415,6 +436,8 @@ export default async function QuotePrintPage({
     noAccom: 'بدون إقامة', confirmBooking: 'تأكيد الحجز',
     accomPackages: 'باقات الإقامة', accomPackagesNote: 'يمكن إضافتها بسعر إضافي',
     colPackage: 'الباقة', colAddPrice: 'السعر الإضافي',
+    altAccomSummary: 'إقامات بديلة', altAccomTitle: 'إقامات بديلة',
+    mealPlanLbl: 'خطة الوجبات',
     seeItinerary: (a: number, b: number) => `انظر البرنامج التفصيلي في صفحة ${a}–${b}`,
     arrivalLine: (dest: string) => `✈ الوصول: ${dest}، النقل من المطار مشمول`,
     endDestLine: (dest: string) => `✈ نقطة النهاية: ${dest}`,
@@ -447,6 +470,8 @@ export default async function QuotePrintPage({
     noAccom: 'No accommodation', confirmBooking: 'Confirm Booking',
     accomPackages: 'Accommodation Packages', accomPackagesNote: `For more details see from page ${3 + days.length}`,
     colPackage: 'Package', colAddPrice: 'Additional Price',
+    altAccomSummary: 'Alternative Accommodations', altAccomTitle: 'Alternative Accommodations',
+    mealPlanLbl: 'Meal Plan',
     seeItinerary: (a: number, b: number) => `See your full itinerary on Page ${a}–${b}`,
     arrivalLine: (dest: string) => `✈ Arrival: ${dest}, Airport transfer included`,
     endDestLine: (dest: string) => `✈ End Destination: ${dest}`,
@@ -996,6 +1021,35 @@ export default async function QuotePrintPage({
             </div>
           )}
 
+          {/* Alternative Accommodations summary — structured per-day picks
+              from the itinerary builder, separate from the manually-typed
+              Accommodation Packages table above. */}
+          {hasAltPage && (
+            <div style={{ marginTop: 28 }}>
+              <h3 style={{ fontSize: 15 }}>{T.altAccomSummary}</h3>
+              <table className="cost-tbl nb">
+                <thead>
+                  <tr>
+                    <th>{T.day}</th>
+                    <th>{T.colPackage}</th>
+                    <th className="r">{T.colAddPrice}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {days.filter((d: any) => altAccomByDay[d.id]).map((d: any) => (
+                    <tr key={d.id}>
+                      <td>{dayLabel(d)}</td>
+                      <td>{altAccomByDay[d.id].name}</td>
+                      <td className="r" style={{ fontWeight: 600 }}>
+                        {altAccomByDay[d.id].priceUsd != null ? `+$${fmt(altAccomByDay[d.id].priceUsd!)}` : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
           {/* Other optional add-ons */}
           {otherOptionalLines.length > 0 && (
             <div style={{ marginTop: 24 }}>
@@ -1047,6 +1101,59 @@ export default async function QuotePrintPage({
           </div>
         </div>
 
+        {/* ── ALTERNATIVE ACCOMMODATIONS PAGE ── */}
+        {hasAltPage && (
+          <div className="page pb">
+            <div className="sec-bar">
+              <div className="sec-pill">{T.altAccomTitle}</div>
+              <div className="sec-line" />
+            </div>
+
+            {days.filter((d: any) => altAccomByDay[d.id]).map((d: any) => {
+              const alt = altAccomByDay[d.id]
+              const primaryName = accomByDay[d.id]?.[0] ?? T.noAccom
+              const altId = alt.accommodationId
+              const tier = altId ? accTierMap[altId] : null
+              const photo = altId ? (accGalleryMap[altId] ?? [])[0] ?? null : null
+              const dest = (d.destination_snapshot as any)?.name ?? '—'
+              return (
+                <div key={d.id} className="nb" style={{ marginBottom: 18 }}>
+                  <p style={{ fontWeight: 700, marginBottom: 8 }}>{T.day} {dayLabel(d)} · {dest}</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 12, alignItems: 'center' }}>
+                    <div className="accom-card">
+                      <div>
+                        <div className="accom-meta">{T.included}</div>
+                        <div className="accom-name">{primaryName}</div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 20, color: G }} aria-hidden="true">{isArabic ? '←' : '→'}</span>
+                    <div className="accom-card">
+                      {photo && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={photo} alt={alt.name} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />
+                      )}
+                      <div>
+                        {tier && <div className="accom-meta">{cap(tier)}</div>}
+                        <div className="accom-name">{alt.name}</div>
+                        <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>{T.mealPlanLbl}: {mealPlan(d.meals ?? [])}</div>
+                        <div style={{ fontWeight: 700, textAlign: 'right', marginTop: 4 }}>
+                          {alt.priceUsd != null ? `+$${fmt(alt.priceUsd)}` : '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+
+            <div className="ft">
+              <span>Page {pricingPageNum + 1}</span>
+              <span>{quote.quote_number}</span>
+              <span>{companyName}</span>
+            </div>
+          </div>
+        )}
+
         {/* ── ABOUT / CONTACT PAGE ── */}
         <div className="page">
           <div className="sec-bar">
@@ -1086,7 +1193,7 @@ export default async function QuotePrintPage({
           </div>
 
           <div className="ft">
-            <span>Page {pricingPageNum + 1}</span>
+            <span>Page {pricingPageNum + (hasAltPage ? 2 : 1)}</span>
             <span>{quote.quote_number}</span>
             <span>{companyName}</span>
           </div>

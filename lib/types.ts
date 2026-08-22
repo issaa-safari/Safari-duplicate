@@ -437,3 +437,32 @@ export interface InvoiceLine {
   created_at: string
   updated_at: string
 }
+
+// --- Accommodation tiers (accommodations.budget_tier) ---
+export type AccommodationTier = 'budget' | 'midrange' | 'luxury' | 'ultra'
+
+// --- Quote day items (migrations/group_90_alternative_accommodation_price.sql
+// adds additional_price_usd). The primary/alternative signal is
+// content_snapshot.alternative — is_alternative and room_id are dead columns,
+// captured from production drift (group_72) but never read or written by the
+// app; do not use them. ---
+export interface QuoteDayItem {
+  id: string
+  quote_day_id: string
+  item_type: 'accommodation' | 'activity' | 'vehicle' | 'staff' | 'meal' | 'flight' | 'transfer' | 'note' | 'other'
+  accommodation_id: string | null
+  activity_id: string | null
+  vehicle_id: string | null
+  staff_id: string | null
+  title_snapshot: string
+  /** Always includes `alternative: boolean` for item_type 'accommodation'. */
+  content_snapshot: Record<string, unknown>
+  room_category: string | null
+  client_notes: string | null
+  internal_notes: string | null
+  sort_order: number
+  /** Manual upgrade price; only meaningful when content_snapshot.alternative === true. */
+  additional_price_usd: number | null
+  created_at: string
+  updated_at: string
+}
