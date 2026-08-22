@@ -16,6 +16,9 @@ import type { Metadata } from 'next'
 import StructuredData from '@/components/public/structured-data'
 import { pageMetadata, travelAgencyJsonLd } from '@/lib/seo'
 import { localePath } from '@/lib/locale'
+import { getPublicSocialProfiles } from '@/lib/social-server'
+import { enabledProfileUrls, type SocialVideo } from '@/lib/social'
+import SocialVideoGallery from '@/components/public/social-video-gallery'
 
 const BUSH = '#20271A'
 const OLIVE = '#7A9A4A'
@@ -57,13 +60,23 @@ export default async function HomePage({
   const supabase = await createClient()
 
   // Fetch one active tour per type to power the trail cards and hero
-  const { data: tours } = await supabase
-    .from('tours')
-    .select('id, type, hero_image_url, gallery_urls')
-    .eq('status', 'active')
-    .eq('show_on_website', true)
-    .in('type', ['bike', 'private'])
-    .limit(10)
+  const [{ data: tours }, { data: featuredVideos }, socialProfiles] = await Promise.all([
+    supabase
+      .from('tours')
+      .select('id, type, hero_image_url, gallery_urls')
+      .eq('status', 'active')
+      .eq('show_on_website', true)
+      .in('type', ['bike', 'private'])
+      .limit(10),
+    supabase
+      .from('social_videos')
+      .select('*')
+      .eq('is_published', true)
+      .eq('is_featured', true)
+      .order('sort_order')
+      .limit(3),
+    getPublicSocialProfiles(),
+  ])
 
   const bikeTour = (tours ?? []).find(t => t.type === 'bike') ?? null
   const privateTour = (tours ?? []).find(t => t.type === 'private') ?? null
@@ -139,7 +152,7 @@ export default async function HomePage({
 
   return (
     <div dir={dir}>
-      <StructuredData data={travelAgencyJsonLd()} />
+      <StructuredData data={travelAgencyJsonLd(enabledProfileUrls(socialProfiles))} />
       <Suspense>
         <PublicHeader initialLang={locale} />
       </Suspense>
@@ -352,6 +365,8 @@ export default async function HomePage({
             </div>
           </section>
         </SectionReveal>
+
+        <SocialVideoGallery videos={(featuredVideos ?? []) as SocialVideo[]} locale={locale} />
 
         {/* 9. Final CTA */}
         <section style={{ background: BUSH, padding: '80px 24px' }}>

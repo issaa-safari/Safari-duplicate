@@ -1,6 +1,7 @@
 import { notFound, permanentRedirect } from 'next/navigation'
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import PublicHeader from '@/components/public/header'
 import PublicFooter from '@/components/public/footer'
@@ -22,9 +23,14 @@ import StickyEnquiryBar from '@/components/public/sticky-enquiry-bar'
 import { getServerLocale } from '@/lib/i18n'
 import { site, whatsappLink } from '@/lib/site'
 import StructuredData, { touristTripJsonLd } from '@/components/public/structured-data'
-import { faqPageJsonLd, hasArabicContent, languageAlternates, noindexIfUntranslated } from '@/lib/seo'
+import { breadcrumbJsonLd, faqPageJsonLd, hasArabicContent, languageAlternates, noindexIfUntranslated } from '@/lib/seo'
 import { localePath } from '@/lib/locale'
 import { isUuid } from '@/lib/slug'
+import Breadcrumbs from '@/components/public/breadcrumbs'
+import RelatedTours from '@/components/public/related-tours'
+import SocialVideoGallery from '@/components/public/social-video-gallery'
+import { contextualTourLinks, localisedSection, rankRelatedTours, type RelatedTourCandidate, type TourContentSection } from '@/lib/tour-seo-engine'
+import type { SocialVideo } from '@/lib/social'
 
 export const dynamic = 'force-dynamic'
 
@@ -79,6 +85,11 @@ export async function generateMetadata({
     .eq('show_on_website', true)
     .maybeSingle()
   if (!tour) return {}
+  const { data: seo } = await supabase
+    .from('tour_seo')
+    .select('seo_title_en, seo_title_ar, meta_description_en, meta_description_ar, og_title_en, og_title_ar, og_description_en, og_description_ar')
+    .eq('tour_id', tour.id)
+    .maybeSingle()
   // Always advertise the slug URL, even when reached by UUID, so the two forms
   // never compete for the same content in the index.
   const path = `/tours/${tour.slug ?? tour.id}`
@@ -86,9 +97,15 @@ export async function generateMetadata({
   // be advertised or indexed as the Arabic edition.
   const translated = hasArabicContent(tour)
   const isAr = locale === 'ar'
-  const title = isAr ? (tour.title_ar || tour.title_en) : tour.title_en
+  const title = isAr
+    ? (seo?.seo_title_ar || tour.title_ar || tour.title_en)
+    : (seo?.seo_title_en || tour.title_en)
   // Fall back to English so a tour with no Arabic overview still gets a snippet.
-  const overview = isAr ? (tour.overview_ar || tour.overview_en) : tour.overview_en
+  const overview = isAr
+    ? (seo?.meta_description_ar || tour.overview_ar || tour.overview_en)
+    : (seo?.meta_description_en || tour.overview_en)
+  const ogTitle = isAr ? (seo?.og_title_ar || title) : (seo?.og_title_en || title)
+  const ogDescription = isAr ? (seo?.og_description_ar || overview) : (seo?.og_description_en || overview)
   return {
     ...noindexIfUntranslated(locale, translated),
     title: title ?? undefined,
@@ -98,10 +115,15 @@ export async function generateMetadata({
       languages: languageAlternates(path, translated),
     },
     openGraph: {
-      title: title ?? undefined,
-      description: overview?.slice(0, 160) ?? undefined,
+      title: ogTitle ?? undefined,
+      description: ogDescription?.slice(0, 160) ?? undefined,
       url: localePath(path, locale),
       locale,
+      images: tour.hero_image_url ? [tour.hero_image_url] : [],
+    },
+    twitter: {
+      title: ogTitle ?? undefined,
+      description: ogDescription?.slice(0, 160) ?? undefined,
       images: tour.hero_image_url ? [tour.hero_image_url] : [],
     },
   }
@@ -133,7 +155,7 @@ export default async function TourDetailPage({
       included_en, included_ar, excluded_en, excluded_ar,
       terrain, vehicle, accommodation_level,
       total_distance_km, difficulty_rating, max_group_size,
-      faqs, status
+      faqs, status, template_id
     `)
     .eq(isUuid(slug) ? 'id' : 'slug', slug)
     .eq('status', 'active')
@@ -149,10 +171,23 @@ export default async function TourDetailPage({
   }
   const id = tour.id
 
+  const [{ data: seo }, { data: template }, { data: rawSections }] = await Promise.all([
+    supabase.from('tour_seo').select('*').eq('tour_id', id).maybeSingle(),
+    tour.template_id
+      ? supabase.from('tour_templates').select('id, key, name_en, name_ar, config_json').eq('id', tour.template_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase.from('tour_content_sections').select('section_key, title_en, title_ar, content_en, content_ar, sort_order, is_enabled').eq('tour_id', id).eq('is_enabled', true).order('sort_order'),
+  ])
+
   const accent = accentFor(tour.type)
   const title = isAr ? (tour.title_ar || tour.title_en) : tour.title_en
   const subtitle = isAr ? (tour.subtitle_ar || tour.subtitle_en) : tour.subtitle_en
   const overview = isAr ? (tour.overview_ar || tour.overview_en) : tour.overview_en
+  const seoIntro = isAr ? (seo?.seo_intro_ar || null) : (seo?.seo_intro_en || null)
+  const heroAlt = isAr ? (seo?.hero_alt_ar || title || '') : (seo?.hero_alt_en || title || '')
+  const templateSections = ((rawSections ?? []) as TourContentSection[])
+    .map((section) => localisedSection(section, locale))
+    .filter((section): section is NonNullable<typeof section> => section !== null)
   const highlights: string[] = isAr
     ? ((tour.highlights_ar as string[] | null)?.filter(Boolean) ?? (tour.highlights_en as string[] | null)?.filter(Boolean) ?? [])
     : ((tour.highlights_en as string[] | null)?.filter(Boolean) ?? [])
@@ -214,6 +249,42 @@ export default async function TourDetailPage({
       destCoordMap[d.id] = { lat: d.latitude, lng: d.longitude }
     }
   }
+
+  const contextualLinks = contextualTourLinks(template?.key, Object.values(destNameMap), tour.countries_visited)
+
+  const [{ data: directVideos }, destinationVideoResult, { data: relatedCandidates }] = await Promise.all([
+    supabase.from('social_videos').select('*').eq('is_published', true).eq('tour_id', id).order('sort_order').limit(6),
+    destIds.length
+      ? supabase.from('social_videos').select('*').eq('is_published', true).in('destination_id', destIds).order('sort_order').limit(6)
+      : Promise.resolve({ data: [] }),
+    supabase
+      .from('tours')
+      .select('id, slug, title_en, title_ar, overview_en, overview_ar, hero_image_url, duration_days, type, template_id')
+      .eq('status', 'active')
+      .eq('show_on_website', true)
+      .neq('id', id)
+      .limit(16),
+  ])
+
+  const socialVideos = [...new Map(
+    ([...(directVideos ?? []), ...(destinationVideoResult.data ?? [])] as SocialVideo[]).map((video) => [video.id, video]),
+  ).values()]
+
+  const candidateIds = (relatedCandidates ?? []).map((candidate) => candidate.id)
+  const { data: relatedDays } = candidateIds.length
+    ? await supabase.from('tour_days').select('tour_id, destination_id').in('tour_id', candidateIds)
+    : { data: [] }
+  const candidateDestinations = new Map<string, string[]>()
+  for (const day of relatedDays ?? []) {
+    if (!day.destination_id) continue
+    const ids = candidateDestinations.get(day.tour_id) ?? []
+    if (!ids.includes(day.destination_id)) ids.push(day.destination_id)
+    candidateDestinations.set(day.tour_id, ids)
+  }
+  const relatedTours = rankRelatedTours(
+    { id, template_id: tour.template_id, type: tour.type, duration_days: tour.duration_days, destination_ids: destIds },
+    (relatedCandidates ?? []).map((candidate) => ({ ...candidate, destination_ids: candidateDestinations.get(candidate.id) ?? [] })) as RelatedTourCandidate[],
+  )
 
   const accomMap: Record<string, string> = {}
   const accomMapsUrlMap: Record<string, string | null> = {}
@@ -330,6 +401,7 @@ export default async function TourDetailPage({
     ctaTitle: 'هل أنت مستعد لهذه المغامرة؟',
     ctaText: 'احجز مقعدك مباشرة، أو تواصل معنا وسنساعدك في التخطيط.',
     bookNow: 'احجز الآن', sendInquiry: 'أرسل استفساراً', whatsapp: 'واتساب',
+    more: 'استكشف المزيد', home: 'الرئيسية', tours: 'الرحلات',
   } : {
     overview: 'Tour Overview', highlights: 'Tour Highlights',
     itinerary: 'Day-by-Day Itinerary', included: "What's Included",
@@ -339,7 +411,15 @@ export default async function TourDetailPage({
     ctaTitle: 'Ready for this adventure?',
     ctaText: "Book your spot directly, or reach out and we'll help you plan it.",
     bookNow: 'Book Now', sendInquiry: 'Send an Enquiry', whatsapp: 'WhatsApp',
+    more: 'Explore More', home: 'Home', tours: 'Tours',
   }
+
+  const tourPath = `/tours/${tour.slug ?? id}`
+  const breadcrumbItems = [
+    { label: t.home, href: '/' },
+    { label: t.tours, href: '/tours' },
+    { label: title ?? '', href: tourPath },
+  ]
 
   return (
     <div dir={isAr ? 'rtl' : 'ltr'} style={{ background: '#fff' }}>
@@ -357,7 +437,12 @@ export default async function TourDetailPage({
         })}
       />
       {faqEntries.length > 0 && <StructuredData data={faqPageJsonLd(faqEntries)} />}
+      <StructuredData data={breadcrumbJsonLd(breadcrumbItems.map((item) => ({ label: item.label, href: item.href })), locale)} />
       <Suspense><PublicHeader initialLang={locale} /></Suspense>
+
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '18px 24px' }}>
+        <Breadcrumbs items={breadcrumbItems} locale={locale} />
+      </div>
 
       {/* 1. Hero */}
       <TourHero
@@ -375,11 +460,15 @@ export default async function TourDetailPage({
         enquireHref={enquireHref}
         isAr={isAr}
         tripLabel={tripLabel(tour.type, isAr)}
+        tourId={id}
+        tourSlug={tour.slug ?? id}
+        tourTemplate={template?.key ?? null}
+        locale={locale}
         imageSlot={
           <SafariImage
             src={tour.hero_image_url}
             seed={id}
-            alt={title ?? ''}
+            alt={heroAlt}
             className="w-full h-full"
             sizes="100vw"
             priority
@@ -397,20 +486,26 @@ export default async function TourDetailPage({
         isAvailable={hasAvailable}
         bookHref={bookHref}
         heroElementId="tour-hero"
+        analytics={{ tourId: id, tourSlug: tour.slug ?? id, tourTemplate: template?.key ?? null, locale }}
       />
 
       {/* 3. Overview + quick facts */}
-      {(overview || tour.difficulty_rating || tour.vehicle || tour.accommodation_level) && (
+      {(seoIntro || overview || tour.difficulty_rating || tour.vehicle || tour.accommodation_level) && (
         <section style={{ padding: '72px 24px', background: '#fff' }}>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-12 items-start" style={{ maxWidth: 1100, margin: '0 auto' }}>
             <SectionReveal>
               <SectionHeading accent={accent}>{t.overview}</SectionHeading>
-              {overview && (
+              {seoIntro && (
                 <p style={{
                   fontSize: '1.05rem', lineHeight: 1.8, color: '#3D3D35',
                   fontFamily: isAr ? 'var(--font-body-ar, var(--font-body, sans-serif))' : 'var(--font-body, sans-serif)',
                   whiteSpace: 'pre-line', maxWidth: 680,
                 }}>
+                  {seoIntro}
+                </p>
+              )}
+              {overview && overview.trim() !== seoIntro?.trim() && (
+                <p style={{ fontSize: '1.05rem', lineHeight: 1.8, color: '#3D3D35', fontFamily: isAr ? 'var(--font-body-ar, var(--font-body, sans-serif))' : 'var(--font-body, sans-serif)', whiteSpace: 'pre-line', maxWidth: 680, marginTop: seoIntro ? 18 : 0 }}>
                   {overview}
                 </p>
               )}
@@ -497,6 +592,19 @@ export default async function TourDetailPage({
         </section>
       )}
 
+      {templateSections.length > 0 && (
+        <section style={{ padding: '72px 24px', background: SAND }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5" style={{ maxWidth: 1100, margin: '0 auto' }}>
+            {templateSections.map((section) => (
+              <article key={section.key} style={{ padding: '24px 22px', borderRadius: 12, background: '#fff', border: '1px solid #DDD8CC' }}>
+                <h2 style={{ color: BUSH, fontFamily: 'var(--font-display, sans-serif)', fontSize: '1.15rem', fontWeight: 700, margin: '0 0 10px' }}>{section.title}</h2>
+                <p style={{ color: '#3D3D35', fontFamily: 'var(--font-body, sans-serif)', lineHeight: 1.75, whiteSpace: 'pre-line', margin: 0 }}>{section.content}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* 6. Included / Excluded */}
       {(included.length > 0 || excluded.length > 0) && (
         <section style={{ padding: '72px 24px', background: SAND }}>
@@ -545,6 +653,8 @@ export default async function TourDetailPage({
         </section>
       )}
 
+      <SocialVideoGallery videos={socialVideos} locale={locale} />
+
       {/* 8. Departures */}
       <section id="departures" style={{ padding: '72px 24px', background: BUSH, color: '#fff', scrollMarginTop: 80 }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -559,6 +669,9 @@ export default async function TourDetailPage({
             isAr={isAr}
             tourTitle={title ?? ''}
             locale={locale}
+            tourId={id}
+            tourSlug={tour.slug ?? id}
+            tourTemplate={template?.key ?? null}
           />
         </div>
       </section>
@@ -596,6 +709,21 @@ export default async function TourDetailPage({
           </div>
         </section>
       )}
+
+      <section style={{ padding: '56px 24px', background: SAND }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <h2 style={{ color: BUSH, fontFamily: 'var(--font-display, sans-serif)', fontSize: '1.35rem', fontWeight: 700, margin: '0 0 18px' }}>{t.more}</h2>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+            {contextualLinks.map((item) => (
+              <Link key={item.href} href={localePath(item.href, locale)} style={{ border: `1px solid ${OLIVE}`, borderRadius: 99, padding: '10px 16px', color: '#3D5229', background: '#fff', fontWeight: 700, textDecoration: 'none' }}>
+                {isAr ? item.ar : item.en}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <RelatedTours tours={relatedTours} locale={locale} />
 
       {/* 11. Final CTA — book first, enquiry and WhatsApp as fallbacks */}
       <section style={{ padding: '80px 24px', background: '#fff' }}>

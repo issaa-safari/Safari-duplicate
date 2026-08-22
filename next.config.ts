@@ -26,6 +26,7 @@ const csp = [
   // some configurations, analytics.google.com; gtag.js also fetches its own
   // config from googletagmanager.com.
   `connect-src 'self' https://*.supabase.co https://*.supabase.in https://va.vercel-scripts.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com${__impeccableLiveDev}${__devBackend}`,
+  "frame-src 'self' https://www.instagram.com https://www.tiktok.com https://www.youtube.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
