@@ -41,19 +41,12 @@ export async function POST(
       travellers,
       source: 'booking_link',
       roomType: roomType === 'single' ? 'single' : 'sharing',
+      bookingLinkId: link.id,
     })
 
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status })
     }
-
-    // Best-effort: bump the link's use counter (optimistic — not fatal if it races).
-    try {
-      await admin
-        .from('booking_links')
-        .update({ use_count: link.use_count + 1 })
-        .eq('id', link.id)
-    } catch { /* counter is advisory */ }
 
     return NextResponse.json({
       success: true,
