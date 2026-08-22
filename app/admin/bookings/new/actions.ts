@@ -3,197 +3,79 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
-import { findOrCreateClientByEmail, refreshClientTotals } from '@/lib/server/clients'
-import { adjustDepartureSeats } from '@/lib/server/departures'
+import {
+  createManualBookingAtomically,
+  mapManualBookingError,
+  type ManualBookingTraveller,
+} from '@/lib/server/manual-booking'
 import { redirect } from 'next/navigation'
 
-type TravellerInput = {
-  firstName?: string
-  lastName?: string
-  email?: string
-  phone?: string
-  nationality?: string
-  passportNumber?: string
-  dateOfBirth?: string
-  isRider?: boolean
-  emergencyContact?: string
-}
-
-/**
- * Manually create a booking from the admin back office.
- *
- * A departure is optional (group_78). With one, this behaves as it always has —
- * the staff-side equivalent of /api/departures/[id]/book, with the same
- * optimistic seat reservation so it cannot oversell. Without one, there are no
- * seats to reserve and none of that runs: the booking is a private trip, or one
- * taken against an enquiry before anything is scheduled.
- *
- * The client is resolved in the order the operator's intent is most explicit:
- * a client they picked, then the request's client, then the lead traveller's
- * email. All three may be absent, and `bookings.client_id` is nullable, so a
- * booking can be recorded before anyone knows who it is for.
- */
 export async function createManualBooking(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/admin/login')
+
   const admin = createAdminClient()
   await assertAdminAccess(admin, user.email)
 
   const departureId = (formData.get('departureId') as string)?.trim() || null
   const requestId = (formData.get('requestId') as string)?.trim() || null
-  const pickedClientId = (formData.get('clientId') as string)?.trim() || null
+  const clientId = (formData.get('clientId') as string)?.trim() || null
   const status = (formData.get('status') as string) === 'pending' ? 'pending' : 'confirmed'
-  // Only meaningful without a departure — a seat runs when its departure runs
-  // (group_79, and resolveTripDates in lib/trip-dates.ts).
   const startDate = departureId ? null : ((formData.get('startDate') as string)?.trim() || null)
   const endDate = departureId ? null : ((formData.get('endDate') as string)?.trim() || null)
-  const totalPrice = parseFloat((formData.get('totalPrice') as string) ?? '')
-  const depositRaw = parseFloat((formData.get('deposit') as string) ?? '')
-  const deposit = !isNaN(depositRaw) && depositRaw > 0 ? depositRaw : 0
+  const totalPrice = Number.parseFloat((formData.get('totalPrice') as string) ?? '')
+  const depositRaw = Number.parseFloat((formData.get('deposit') as string) ?? '')
+  const deposit = Number.isFinite(depositRaw) && depositRaw > 0 ? depositRaw : 0
   const depositMethod = (formData.get('depositMethod') as string)?.trim() || null
   const depositReference = (formData.get('depositReference') as string)?.trim() || null
 
-  let travellers: TravellerInput[] = []
+  let travellers: ManualBookingTraveller[]
   try {
-    travellers = JSON.parse((formData.get('travellers') as string) || '[]')
+    const parsed = JSON.parse((formData.get('travellers') as string) || '[]')
+    if (!Array.isArray(parsed)) throw new Error('Traveller details must be an array.')
+    travellers = (parsed as unknown[]).filter((value): value is ManualBookingTraveller => {
+      if (!value || typeof value !== 'object') return false
+      const traveller = value as ManualBookingTraveller
+      return Boolean(traveller.firstName?.trim() || traveller.lastName?.trim() || traveller.email?.trim())
+    })
   } catch {
     throw new Error('Could not read traveller details.')
   }
-  travellers = travellers.filter(t => (t.firstName?.trim() || t.lastName?.trim() || t.email?.trim()))
 
-  // The head count stands on its own: a booking can be for four people whose
-  // names are not known yet. bookings_number_of_travellers_check demands > 0.
-  const declaredCount = parseInt((formData.get('travellerCount') as string) ?? '', 10)
-  const groupSize = Math.max(
+  const declaredCount = Number.parseInt((formData.get('travellerCount') as string) ?? '', 10)
+  const travellerCount = Math.max(
     travellers.length,
-    !isNaN(declaredCount) && declaredCount > 0 ? declaredCount : 1
+    Number.isFinite(declaredCount) && declaredCount > 0 ? declaredCount : 1,
   )
 
-  if (isNaN(totalPrice) || totalPrice < 0) throw new Error('Enter a valid total price.')
+  if (!Number.isFinite(totalPrice) || totalPrice < 0) throw new Error('Enter a valid total price.')
   if (deposit > totalPrice) throw new Error('Deposit cannot exceed the total price.')
   if (startDate && endDate && endDate < startDate) {
     throw new Error('The end date is before the start date.')
   }
 
-  const lead = travellers[0]
-
-  // Something has to identify the booking. Without a departure, a client, a
-  // request or a named traveller there is nothing to find it by later.
-  if (!departureId && !requestId && !pickedClientId && !lead) {
-    throw new Error(
-      'Give the booking something to hang on: a departure, a request, a client, or at least one traveller.'
-    )
-  }
-
-  // 1. Resolve the departure and reserve seats — only when there is one.
-  let departure: { id: string; security_deposit_usd: number } | null = null
-  if (departureId) {
-    const { data } = await admin
-      .from('departures')
-      .select('id, security_deposit_usd')
-      .eq('id', departureId)
-      .single()
-    if (!data) throw new Error('Departure not found.')
-    departure = data
-
-    const { error: reserveError } = await adjustDepartureSeats(admin, departureId, groupSize)
-    if (reserveError) throw new Error(reserveError)
-  }
-
-  const releaseSeats = async () => {
-    if (!departureId) return
-    await adjustDepartureSeats(admin, departureId, -groupSize).catch(() => {})
-  }
-
-  // 2. Resolve the client, most explicit intent first.
-  let clientId: string | null = pickedClientId
-  if (!clientId && requestId) {
-    const { data: request } = await admin
-      .from('requests').select('client_id').eq('id', requestId).maybeSingle()
-    clientId = (request?.client_id as string | null) ?? null
-  }
-  if (!clientId && lead?.email?.trim()) {
-    try {
-      clientId = await findOrCreateClientByEmail(admin, {
-        email: lead.email, first_name: lead.firstName, last_name: lead.lastName, phone: lead.phone,
-      })
-    } catch (err) {
-      await releaseSeats()
-      throw new Error(err instanceof Error ? err.message : 'Could not resolve the client.')
-    }
-  }
-
-  // 3. Create the booking. deposit_due_usd is snapshotted the same way
-  // total_price_usd is — from the departure at booking time, per seat — so the
-  // security-deposit panel has something to show for a booking taken here
-  // rather than through the website (group_82's contract, previously only
-  // honoured by the website booking pipeline).
-  const depositDueUsd = departure ? Number(departure.security_deposit_usd ?? 0) * groupSize : 0
-
-  const { data: booking, error: bookingError } = await admin
-    .from('bookings')
-    .insert({
-      departure_id: departureId,
-      request_id: requestId,
-      client_id: clientId,
-      start_date: startDate,
-      end_date: endDate,
-      number_of_travellers: groupSize,
-      total_price_usd: totalPrice,
-      deposit_due_usd: depositDueUsd,
+  let bookingId: string
+  try {
+    const booking = await createManualBookingAtomically(admin, {
+      departureId,
+      requestId,
+      clientId,
+      startDate,
+      endDate,
+      travellerCount,
+      totalPriceUsd: totalPrice,
       status,
+      travellers,
+      depositUsd: deposit,
+      depositMethod,
+      depositReference,
+      createdBy: user.id,
     })
-    .select('id')
-    .single()
-  if (bookingError || !booking) {
-    await releaseSeats()
-    throw new Error(bookingError?.message ?? 'Failed to create the booking.')
+    bookingId = booking.bookingId
+  } catch (error) {
+    throw new Error(mapManualBookingError(error))
   }
 
-  // 4. Insert whatever traveller detail was given. None is allowed — the head
-  //    count above is what the booking is actually sized by.
-  if (travellers.length > 0) {
-    const rows = travellers.map(t => ({
-      booking_id: booking.id,
-      first_name: t.firstName?.trim() || null,
-      last_name: t.lastName?.trim() || null,
-      email: t.email?.trim() || null,
-      phone: t.phone?.trim() || null,
-      nationality: t.nationality?.trim() || null,
-      passport_number: t.passportNumber?.trim() || null,
-      date_of_birth: t.dateOfBirth?.trim() || null,
-      is_rider: t.isRider !== false,
-      emergency_contact: t.emergencyContact?.trim() || null,
-    }))
-    const { error: travellerError } = await admin.from('booking_travellers').insert(rows)
-    if (travellerError) {
-      await releaseSeats()
-      await admin.from('bookings').delete().eq('id', booking.id)
-      throw new Error('Failed to save traveller details.')
-    }
-  }
-
-  // Best-effort: record the deposit actually taken at booking time. Only that —
-  // the outstanding balance used to be written as a 'pending' row, which read
-  // like a payment in every total that summed the table. The balance is derived
-  // now (lib/server/accounting.ts), so the ledger holds receipts only.
-  if (deposit > 0) {
-    try {
-      await admin.from('trip_payments').insert({
-        booking_id: booking.id,
-        amount_usd: deposit,
-        payment_type: 'deposit',
-        method: depositMethod || null,
-        reference: depositReference || null,
-        notes: 'Deposit at booking (admin)',
-        created_by: user.id,
-      })
-    } catch { /* finance record is non-critical */ }
-  }
-  if (clientId) {
-    try { await refreshClientTotals(admin, clientId) } catch { /* totals are a cache */ }
-  }
-
-  redirect(`/admin/bookings/${booking.id}`)
+  redirect(`/admin/bookings/${bookingId}`)
 }

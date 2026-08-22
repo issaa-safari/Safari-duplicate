@@ -19,6 +19,32 @@ export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled'
 
 export type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'cancelled'
 
+// Atomic write results (migrations/group_95_transactional_booking_quote_acceptance.sql)
+export interface DepartureBookingTransactionResult {
+  bookingId: string
+  clientId: string
+  requestId: string
+  groupSize: number
+  totalPriceUsd: number
+  depositDueUsd: number
+  roomType: 'sharing' | 'single'
+}
+
+export interface QuoteAcceptanceTransactionResult {
+  acceptanceId: string
+  bookingId: string
+  clientId: string
+  groupSize: number
+  totalPriceUsd: number
+}
+
+export interface ManualBookingTransactionResult {
+  bookingId: string
+  clientId: string | null
+  groupSize: number
+  depositDueUsd: number
+}
+
 export type Moment = 'morning' | 'afternoon' | 'evening' | 'night' | ''
 
 // --- Admin global search (/api/admin/search) ---
