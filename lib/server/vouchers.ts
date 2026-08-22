@@ -147,6 +147,54 @@ async function staysForTour(admin: SupabaseClient, tourId: string): Promise<Stay
   return groupStays(nights)
 }
 
+// Resolve accommodation nights from the immutable itinerary snapshot accepted
+// by the client. This is the operational source of truth for a custom trip.
+async function staysForQuoteVersion(admin: SupabaseClient, versionId: string): Promise<Stay[]> {
+  const { data: days } = await admin
+    .from('quote_days')
+    .select('id, day_number')
+    .eq('quote_version_id', versionId)
+    .order('day_number', { ascending: true })
+  const dayIds = (days ?? []).map(day => day.id)
+  if (dayIds.length === 0) return []
+
+  const { data: items } = await admin
+    .from('quote_day_items')
+    .select('quote_day_id, accommodation_id, title_snapshot, sort_order')
+    .eq('item_type', 'accommodation')
+    .in('quote_day_id', dayIds)
+    .order('sort_order', { ascending: true })
+
+  const hotelByDay = new Map<string, { accommodationId: string | null; hotelName: string }>()
+  for (const item of (items ?? []) as Array<{
+    quote_day_id: string
+    accommodation_id: string | null
+    title_snapshot: string | null
+  }>) {
+    if (hotelByDay.has(item.quote_day_id)) continue
+    hotelByDay.set(item.quote_day_id, {
+      accommodationId: item.accommodation_id,
+      hotelName: item.title_snapshot?.trim() || 'Hotel',
+    })
+  }
+
+  const accommodationIds = [...new Set(
+    [...hotelByDay.values()].map(hotel => hotel.accommodationId).filter((id): id is string => !!id),
+  )]
+  if (accommodationIds.length > 0) {
+    const { data: accommodations } = await admin.from('accommodations').select('id, name').in('id', accommodationIds)
+    const names = new Map(((accommodations ?? []) as Array<{ id: string; name: string }>).map(row => [row.id, row.name]))
+    for (const hotel of hotelByDay.values()) {
+      if (hotel.accommodationId && names.has(hotel.accommodationId)) hotel.hotelName = names.get(hotel.accommodationId)!
+    }
+  }
+
+  return groupStays((days ?? []).flatMap(day => {
+    const hotel = hotelByDay.get(day.id)
+    return hotel ? [{ offset: day.day_number - 1, ...hotel }] : []
+  }))
+}
+
 // Turn a plain traveller list (first/last name + room hints) into guest names
 // plus room/room-type estimates.
 function summariseTravellers(
@@ -169,14 +217,18 @@ export async function buildVouchersForDeparture(
 ): Promise<VoucherGenerationResult> {
   const { data: departure } = await admin
     .from('departures')
-    .select('id, tour_id, start_date')
+    .select('id, tour_id, start_date, source_quote_version_id')
     .eq('id', departureId)
     .single()
   if (!departure || !departure.start_date) {
     throw new Error('Departure not found or has no start date.')
   }
 
-  const stays = await staysForTour(admin, departure.tour_id)
+  const stays = departure.source_quote_version_id
+    ? await staysForQuoteVersion(admin, departure.source_quote_version_id)
+    : departure.tour_id
+      ? await staysForTour(admin, departure.tour_id)
+      : []
 
   const { data: bookings } = await admin
     .from('bookings')
@@ -221,14 +273,18 @@ export async function buildVouchersForBooking(
 
   const { data: departure } = await admin
     .from('departures')
-    .select('id, tour_id, start_date')
+    .select('id, tour_id, start_date, source_quote_version_id')
     .eq('id', booking.departure_id)
     .single()
   if (!departure || !departure.start_date) {
     throw new Error('The booking’s departure has no start date.')
   }
 
-  const stays = await staysForTour(admin, departure.tour_id)
+  const stays = departure.source_quote_version_id
+    ? await staysForQuoteVersion(admin, departure.source_quote_version_id)
+    : departure.tour_id
+      ? await staysForTour(admin, departure.tour_id)
+      : []
   const travellers = (booking.booking_travellers ?? []) as Array<{
     first_name: string | null; last_name: string | null; room_label: string | null; room_type: string | null
   }>

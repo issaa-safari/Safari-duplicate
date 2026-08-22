@@ -16,7 +16,7 @@ async function requestBaseUrl() {
 // A voucher joined with just enough trip context to render the list and let the
 // admin jump back to the departure, booking or quote it belongs to.
 export type VoucherWithContext = HotelVoucher & {
-  departures: { id: string; start_date: string; end_date: string; tours: { title_en: string | null } | null } | null
+  departures: { id: string; start_date: string; end_date: string; operation_title: string | null; tours: { title_en: string | null } | null } | null
   quotes: { id: string; quote_number: string | null } | null
 }
 
@@ -43,7 +43,7 @@ export default async function VouchersPage({
 
   let query = admin
     .from('hotel_vouchers')
-    .select('*, departures ( id, start_date, end_date, tours ( title_en ) ), quotes ( id, quote_number )')
+    .select('*, departures ( id, start_date, end_date, operation_title, tours ( title_en ) ), quotes ( id, quote_number )')
     .order('check_in', { ascending: true })
 
   if (status && status !== 'all') query = query.eq('status', status)
@@ -58,7 +58,7 @@ export default async function VouchersPage({
   const [{ data: departures }, { data: acceptedQuotes }] = await Promise.all([
     admin
       .from('departures')
-      .select('id, start_date, end_date, tours ( title_en )')
+      .select('id, start_date, end_date, operation_title, tours ( title_en )')
       .order('start_date', { ascending: false })
       .limit(60),
     admin
@@ -74,12 +74,13 @@ export default async function VouchersPage({
     id: string
     start_date: string
     end_date: string
+    operation_title: string | null
     tours: { title_en: string | null } | { title_en: string | null }[] | null
   }>).map(d => {
     const tour = Array.isArray(d.tours) ? d.tours[0] : d.tours
     return {
       id: d.id,
-      label: `${tour?.title_en ?? 'Departure'} · ${d.start_date} → ${d.end_date}`,
+      label: `${tour?.title_en ?? d.operation_title ?? 'Private trip'} · ${d.start_date} → ${d.end_date}`,
     }
   })
 

@@ -7097,5 +7097,1328 @@ grant execute on function public.create_manual_booking_atomic(
 ) to service_role;
 
 --
+-- Admin V2 schema catch-up (groups 96-100)
+--
+-- Appended from the individually deployable migrations after the production
+-- release. Keeping these statements in the consolidated baseline ensures a
+-- fresh database reaches the same schema even when group files are not replayed.
+--
+
+-- BEGIN migrations/group_96_operational_custom_trips.sql
+-- Group 96: make every accepted quote an operational trip.
+--
+-- Scheduled departures continue to use the existing departures table. A
+-- tailor-made quote now creates a private operational departure in the same
+-- transaction as its acceptance and booking, which immediately makes it
+-- available to manifests, logistics, tasks, agreements and vouchers.
+--
+-- This migration also closes two commercial integrity gaps:
+--   * a custom quote cannot be accepted without dates and a positive price;
+--   * a fixed-departure quote with no explicit price snapshot derives its total
+--     from the locked departure prices instead of creating a zero-value booking.
+
+alter table public.departures
+  add column if not exists kind text not null default 'scheduled_group',
+  add column if not exists operation_title text,
+  add column if not exists is_public boolean not null default true,
+  add column if not exists source_quote_id uuid,
+  add column if not exists source_quote_version_id uuid;
+
+alter table public.tasks
+  add column if not exists departure_id uuid,
+  add column if not exists booking_id uuid;
+
+-- Private custom trips may be based on a library itinerary, but they do not
+-- require one. Scheduled operations keep their tour identity and cannot be
+-- deleted accidentally through a public-tour deletion.
+alter table public.departures drop constraint if exists departures_tour_id_fkey;
+alter table public.departures alter column tour_id drop not null;
+alter table public.departures
+  add constraint departures_tour_id_fkey
+  foreign key (tour_id) references public.tours(id) on delete restrict;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'departures_kind_check'
+      and conrelid = 'public.departures'::regclass
+  ) then
+    alter table public.departures
+      add constraint departures_kind_check
+      check (kind in ('scheduled_group', 'private_custom'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'departures_operational_identity_check'
+      and conrelid = 'public.departures'::regclass
+  ) then
+    alter table public.departures
+      add constraint departures_operational_identity_check
+      check (
+        (kind = 'scheduled_group' and tour_id is not null)
+        or
+        (
+          kind = 'private_custom'
+          and source_quote_id is not null
+          and source_quote_version_id is not null
+          and nullif(btrim(operation_title), '') is not null
+          and is_public = false
+        )
+      );
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'departures_source_quote_id_fkey'
+      and conrelid = 'public.departures'::regclass
+  ) then
+    alter table public.departures
+      add constraint departures_source_quote_id_fkey
+      foreign key (source_quote_id) references public.quotes(id) on delete restrict;
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'departures_source_quote_version_id_fkey'
+      and conrelid = 'public.departures'::regclass
+  ) then
+    alter table public.departures
+      add constraint departures_source_quote_version_id_fkey
+      foreign key (source_quote_version_id) references public.quote_versions(id) on delete restrict;
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'tasks_departure_id_fkey'
+      and conrelid = 'public.tasks'::regclass
+  ) then
+    alter table public.tasks
+      add constraint tasks_departure_id_fkey
+      foreign key (departure_id) references public.departures(id) on delete cascade;
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'tasks_booking_id_fkey'
+      and conrelid = 'public.tasks'::regclass
+  ) then
+    alter table public.tasks
+      add constraint tasks_booking_id_fkey
+      foreign key (booking_id) references public.bookings(id) on delete cascade;
+  end if;
+end $$;
+
+create unique index if not exists departures_source_quote_id_uidx
+  on public.departures (source_quote_id)
+  where source_quote_id is not null;
+
+create unique index if not exists departures_source_quote_version_id_uidx
+  on public.departures (source_quote_version_id)
+  where source_quote_version_id is not null;
+
+create index if not exists departures_kind_start_date_idx
+  on public.departures (kind, start_date);
+
+create index if not exists departures_public_start_date_idx
+  on public.departures (start_date)
+  where is_public = true and is_active = true;
+
+create index if not exists tasks_departure_id_idx
+  on public.tasks (departure_id)
+  where departure_id is not null;
+
+create index if not exists tasks_booking_id_idx
+  on public.tasks (booking_id)
+  where booking_id is not null;
+
+-- Bring historical accepted custom proposals into Operations without inventing
+-- commercial data. Zero-value legacy bookings remain unchanged and receive an
+-- explicit review task; all future acceptance is blocked until pricing is valid.
+do $$
+declare
+  v_record record;
+  v_departure_id uuid;
+  v_group_size integer;
+begin
+  for v_record in
+    select
+      q.id as quote_id,
+      q.quote_number,
+      q.request_id,
+      q.tour_id,
+      q.accepted_version_id as version_id,
+      qv.title,
+      qv.travel_start_date,
+      qv.travel_end_date,
+      b.id as booking_id,
+      b.number_of_travellers,
+      b.total_price_usd
+    from public.quotes q
+    join public.quote_versions qv on qv.id = q.accepted_version_id
+    join public.bookings b on b.quote_id = q.id
+    where q.status = 'accepted'
+      and q.mode = 'custom'
+      and q.departure_id is null
+      and b.departure_id is null
+      and qv.travel_start_date is not null
+      and qv.travel_end_date is not null
+      and not exists (
+        select 1 from public.departures d where d.source_quote_id = q.id
+      )
+    order by q.created_at, q.id
+  loop
+    v_group_size := greatest(1, coalesce(v_record.number_of_travellers, 1));
+
+    insert into public.departures (
+      tour_id, start_date, end_date, max_seats, booked_seats, price_usd,
+      status, internal_notes, is_active, security_deposit_usd, kind,
+      operation_title, is_public, source_quote_id, source_quote_version_id
+    ) values (
+      v_record.tour_id,
+      v_record.travel_start_date,
+      v_record.travel_end_date,
+      v_group_size,
+      v_group_size,
+      round(coalesce(v_record.total_price_usd, 0) / v_group_size, 2),
+      'full',
+      'Backfilled from accepted custom proposal ' || v_record.quote_number,
+      true,
+      0,
+      'private_custom',
+      left(coalesce(nullif(btrim(v_record.title), ''), v_record.quote_number, 'Private safari'), 200),
+      false,
+      v_record.quote_id,
+      v_record.version_id
+    ) returning id into v_departure_id;
+
+    update public.bookings
+    set departure_id = v_departure_id,
+        start_date = coalesce(start_date, v_record.travel_start_date),
+        end_date = coalesce(end_date, v_record.travel_end_date)
+    where id = v_record.booking_id;
+
+    update public.quotes set departure_id = v_departure_id where id = v_record.quote_id;
+
+    update public.tasks
+    set departure_id = v_departure_id,
+        booking_id = v_record.booking_id
+    where request_id = v_record.request_id
+      and v_record.request_id is not null
+      and departure_id is null;
+
+    if coalesce(v_record.total_price_usd, 0) <= 0 then
+      insert into public.tasks (
+        request_id, departure_id, booking_id, title, type, auto_generated, sort_order
+      ) values (
+        v_record.request_id,
+        v_departure_id,
+        v_record.booking_id,
+        'Urgent: confirm proposal price and payment schedule',
+        'payment',
+        true,
+        -100
+      );
+    end if;
+  end loop;
+end $$;
+
+create or replace function public.accept_quote_atomic(
+  p_quote_id uuid,
+  p_version_id uuid,
+  p_delivery_id uuid default null,
+  p_client_name text default null,
+  p_ip_address text default null,
+  p_user_agent text default null,
+  p_is_admin boolean default false
+)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_quote public.quotes%rowtype;
+  v_version public.quote_versions%rowtype;
+  v_delivery public.quote_deliveries%rowtype;
+  v_departure public.departures%rowtype;
+  v_client public.clients%rowtype;
+  v_group_size integer;
+  v_booking_id uuid;
+  v_acceptance_id uuid;
+  v_departure_id uuid;
+  v_client_name text;
+  v_operation_title text;
+  v_ip inet;
+  v_total_price numeric(14,2);
+  v_deposit_due numeric(12,2);
+  v_deposit_percent numeric(7,2);
+  v_created_operational_trip boolean := false;
+begin
+  if p_quote_id is null or p_version_id is null then
+    raise exception using errcode = 'P0001', message = 'QUOTE_REQUIRED_FIELDS';
+  end if;
+
+  -- Consistent lock order: quote -> version -> delivery -> departure -> client.
+  select * into v_quote
+  from public.quotes
+  where id = p_quote_id
+  for update;
+
+  if not found then
+    raise exception using errcode = 'P0001', message = 'QUOTE_NOT_FOUND';
+  end if;
+  if v_quote.status = 'accepted' then
+    raise exception using errcode = 'P0001', message = 'QUOTE_ALREADY_ACCEPTED';
+  end if;
+  if v_quote.client_id is null then
+    raise exception using errcode = 'P0001', message = 'QUOTE_CLIENT_REQUIRED';
+  end if;
+
+  select * into v_version
+  from public.quote_versions
+  where id = p_version_id and quote_id = p_quote_id
+  for update;
+
+  if not found then
+    raise exception using errcode = 'P0001', message = 'QUOTE_VERSION_NOT_FOUND';
+  end if;
+  if v_version.status = 'accepted' then
+    raise exception using errcode = 'P0001', message = 'QUOTE_ALREADY_ACCEPTED';
+  end if;
+
+  if p_is_admin then
+    if v_version.status in ('declined', 'expired', 'superseded') then
+      raise exception using errcode = 'P0001', message = 'QUOTE_CANNOT_ACCEPT';
+    end if;
+  else
+    if p_delivery_id is null then
+      raise exception using errcode = 'P0001', message = 'QUOTE_DELIVERY_REQUIRED';
+    end if;
+
+    select * into v_delivery
+    from public.quote_deliveries
+    where id = p_delivery_id
+    for update;
+
+    if not found
+       or v_delivery.quote_id <> p_quote_id
+       or v_delivery.quote_version_id <> p_version_id then
+      raise exception using errcode = 'P0001', message = 'QUOTE_LINK_INVALID';
+    end if;
+    if v_delivery.revoked_at is not null then
+      raise exception using errcode = 'P0001', message = 'QUOTE_LINK_REVOKED';
+    end if;
+    if v_delivery.expires_at is not null and v_delivery.expires_at < now() then
+      raise exception using errcode = 'P0001', message = 'QUOTE_LINK_EXPIRED';
+    end if;
+    if v_version.valid_until is not null and v_version.valid_until < current_date then
+      raise exception using errcode = 'P0001', message = 'QUOTE_EXPIRED';
+    end if;
+    if v_version.status not in ('ready', 'sent', 'viewed') then
+      raise exception using errcode = 'P0001', message = 'QUOTE_CANNOT_ACCEPT';
+    end if;
+  end if;
+
+  if exists (select 1 from public.quote_acceptances where quote_id = p_quote_id) then
+    raise exception using errcode = 'P0001', message = 'QUOTE_ALREADY_ACCEPTED';
+  end if;
+  if exists (select 1 from public.bookings where quote_id = p_quote_id) then
+    raise exception using errcode = 'P0001', message = 'QUOTE_BOOKING_ALREADY_EXISTS';
+  end if;
+  if not exists (select 1 from public.quote_days where quote_version_id = p_version_id) then
+    raise exception using errcode = 'P0001', message = 'QUOTE_ITINERARY_REQUIRED';
+  end if;
+
+  select greatest(1, count(*))::integer into v_group_size
+  from public.quote_travellers
+  where quote_version_id = p_version_id;
+
+  v_departure_id := v_quote.departure_id;
+  v_total_price := coalesce(v_version.total_selling_usd, 0);
+
+  if v_departure_id is not null then
+    select * into v_departure
+    from public.departures
+    where id = v_departure_id
+    for update;
+
+    if not found then
+      raise exception using errcode = 'P0001', message = 'QUOTE_DEPARTURE_NOT_FOUND';
+    end if;
+    if not v_departure.is_active or v_departure.status in ('full', 'closed', 'cancelled') then
+      raise exception using errcode = 'P0001', message = 'QUOTE_DEPARTURE_UNAVAILABLE';
+    end if;
+    if v_departure.booked_seats + v_group_size > v_departure.max_seats then
+      raise exception using errcode = 'P0001', message = 'QUOTE_NOT_ENOUGH_SEATS';
+    end if;
+
+    -- Fixed-departure quotes historically had no quote price lines. Honour an
+    -- explicit version total when present; otherwise derive a trustworthy total
+    -- from the locked departure and each traveller's room category.
+    if v_total_price <= 0 then
+      select coalesce(sum(
+        case
+          when qt.room_category = 'single'
+            then coalesce(v_departure.price_single_usd, v_departure.price_usd)
+          else coalesce(v_departure.price_usd, v_departure.price_single_usd)
+        end
+      ), 0)::numeric(14,2)
+      into v_total_price
+      from public.quote_travellers qt
+      where qt.quote_version_id = p_version_id;
+
+      if v_total_price <= 0 then
+        v_total_price := (
+          coalesce(v_departure.price_usd, v_departure.price_single_usd, 0) * v_group_size
+        )::numeric(14,2);
+      end if;
+    end if;
+
+    v_deposit_due := (v_departure.security_deposit_usd * v_group_size)::numeric(12,2);
+  else
+    if v_version.travel_start_date is null or v_version.travel_end_date is null then
+      raise exception using errcode = 'P0001', message = 'QUOTE_DATES_REQUIRED';
+    end if;
+    if v_version.travel_end_date < v_version.travel_start_date then
+      raise exception using errcode = 'P0001', message = 'QUOTE_DATES_INVALID';
+    end if;
+    if v_total_price <= 0 then
+      raise exception using errcode = 'P0001', message = 'QUOTE_POSITIVE_PRICE_REQUIRED';
+    end if;
+
+    v_operation_title := left(
+      coalesce(nullif(btrim(v_version.title), ''), v_quote.quote_number, 'Private safari'),
+      200
+    );
+
+    insert into public.departures (
+      tour_id,
+      start_date,
+      end_date,
+      max_seats,
+      booked_seats,
+      price_usd,
+      status,
+      internal_notes,
+      is_active,
+      security_deposit_usd,
+      kind,
+      operation_title,
+      is_public,
+      source_quote_id,
+      source_quote_version_id
+    ) values (
+      v_quote.tour_id,
+      v_version.travel_start_date,
+      v_version.travel_end_date,
+      v_group_size,
+      v_group_size,
+      round(v_total_price / v_group_size, 2),
+      'full',
+      'Created automatically from accepted custom proposal ' || v_quote.quote_number,
+      true,
+      0,
+      'private_custom',
+      v_operation_title,
+      false,
+      p_quote_id,
+      p_version_id
+    )
+    returning * into v_departure;
+
+    v_departure_id := v_departure.id;
+    v_created_operational_trip := true;
+
+    select coalesce(deposit_percent, 0) into v_deposit_percent
+    from public.company_settings
+    order by created_at
+    limit 1;
+    v_deposit_percent := coalesce(
+      nullif(v_version.policy_snapshot ->> 'deposit_percent', '')::numeric,
+      v_deposit_percent,
+      0
+    );
+    v_deposit_due := round(v_total_price * v_deposit_percent / 100, 2)::numeric(12,2);
+  end if;
+
+  if v_total_price <= 0 then
+    raise exception using errcode = 'P0001', message = 'QUOTE_POSITIVE_PRICE_REQUIRED';
+  end if;
+
+  select * into v_client
+  from public.clients
+  where id = v_quote.client_id
+  for update;
+
+  if not found then
+    raise exception using errcode = 'P0001', message = 'QUOTE_CLIENT_NOT_FOUND';
+  end if;
+
+  insert into public.bookings (
+    quote_id,
+    request_id,
+    client_id,
+    departure_id,
+    start_date,
+    end_date,
+    number_of_travellers,
+    total_price_usd,
+    deposit_due_usd,
+    status
+  ) values (
+    p_quote_id,
+    v_quote.request_id,
+    v_quote.client_id,
+    v_departure_id,
+    v_departure.start_date,
+    v_departure.end_date,
+    v_group_size,
+    v_total_price,
+    v_deposit_due,
+    'confirmed'
+  )
+  returning id into v_booking_id;
+
+  if exists (select 1 from public.quote_travellers where quote_version_id = p_version_id) then
+    insert into public.booking_travellers (
+      booking_id, first_name, last_name, email, phone, room_type,
+      dietary_requirements, allergies, is_rider
+    )
+    select
+      v_booking_id,
+      case
+        when btrim(coalesce(qt.display_name, '')) = '' and row_number() over w = 1
+          then nullif(btrim(v_client.first_name), '')
+        else nullif(split_part(btrim(qt.display_name), ' ', 1), '')
+      end,
+      case
+        when btrim(coalesce(qt.display_name, '')) = '' and row_number() over w = 1
+          then nullif(btrim(v_client.last_name), '')
+        when position(' ' in btrim(coalesce(qt.display_name, ''))) > 0
+          then nullif(btrim(substring(btrim(qt.display_name) from position(' ' in btrim(qt.display_name)) + 1)), '')
+        else null
+      end,
+      case when row_number() over w = 1 then v_client.email else null end,
+      case when row_number() over w = 1 then v_client.phone else null end,
+      qt.room_category,
+      qt.dietary_requirements,
+      qt.allergies,
+      true
+    from public.quote_travellers qt
+    where qt.quote_version_id = p_version_id
+    window w as (order by qt.sort_order, qt.id);
+  else
+    insert into public.booking_travellers (
+      booking_id, first_name, last_name, email, phone, is_rider
+    ) values (
+      v_booking_id,
+      nullif(btrim(v_client.first_name), ''),
+      nullif(btrim(v_client.last_name), ''),
+      v_client.email,
+      v_client.phone,
+      true
+    );
+  end if;
+
+  if not v_created_operational_trip then
+    update public.departures
+    set booked_seats = booked_seats + v_group_size
+    where id = v_departure_id;
+  end if;
+
+  v_client_name := nullif(btrim(coalesce(p_client_name, '')), '');
+  if v_client_name is null then
+    v_client_name := nullif(btrim(concat_ws(' ', v_client.first_name, v_client.last_name)), '');
+  end if;
+  v_client_name := left(coalesce(v_client_name, 'Accepted by operator'), 200);
+
+  begin
+    v_ip := nullif(btrim(coalesce(p_ip_address, '')), '')::inet;
+  exception when invalid_text_representation then
+    v_ip := null;
+  end;
+
+  insert into public.quote_acceptances (
+    quote_id, quote_version_id, delivery_id, client_name, client_email,
+    terms_accepted, ip_address, user_agent, provisional_booking_id
+  ) values (
+    p_quote_id,
+    p_version_id,
+    case when p_is_admin then null else p_delivery_id end,
+    v_client_name,
+    v_client.email,
+    true,
+    v_ip,
+    left(p_user_agent, 1000),
+    v_booking_id
+  )
+  returning id into v_acceptance_id;
+
+  update public.quote_versions
+  set status = 'accepted', accepted_at = now()
+  where id = p_version_id;
+
+  update public.quotes
+  set status = 'accepted',
+      accepted_version_id = p_version_id,
+      provisional_booking_id = v_booking_id,
+      departure_id = v_departure_id
+  where id = p_quote_id;
+
+  if v_quote.request_id is not null then
+    update public.requests set stage = 'booked' where id = v_quote.request_id;
+
+    -- The existing request-stage trigger creates the configured default tasks.
+    -- Attach them to the operational trip and booking so Operations no longer
+    -- depends on re-discovering them through the request relationship.
+    update public.tasks
+    set departure_id = v_departure_id,
+        booking_id = v_booking_id
+    where request_id = v_quote.request_id
+      and auto_generated = true
+      and departure_id is null;
+  else
+    insert into public.tasks (
+      departure_id, booking_id, title, type, auto_generated, sort_order
+    )
+    select v_departure_id, v_booking_id, dt.description, dt.type, true, dt.sort_order
+    from public.default_tasks dt
+    where dt.is_active = true and dt.stage = 'booked'
+      and not exists (
+        select 1 from public.tasks t
+        where t.booking_id = v_booking_id and t.auto_generated = true
+      );
+  end if;
+
+  update public.clients c
+  set total_bookings = totals.booking_count,
+      total_spent_usd = totals.total_spent
+  from (
+    select count(*)::integer as booking_count,
+           coalesce(sum(total_price_usd), 0)::numeric(14,2) as total_spent
+    from public.bookings
+    where client_id = v_quote.client_id and status <> 'cancelled'
+  ) totals
+  where c.id = v_quote.client_id;
+
+  return jsonb_build_object(
+    'acceptanceId', v_acceptance_id,
+    'bookingId', v_booking_id,
+    'clientId', v_quote.client_id,
+    'departureId', v_departure_id,
+    'createdOperationalTrip', v_created_operational_trip,
+    'groupSize', v_group_size,
+    'totalPriceUsd', v_total_price,
+    'depositDueUsd', v_deposit_due
+  );
+end;
+$$;
+
+revoke all on function public.accept_quote_atomic(uuid, uuid, uuid, text, text, text, boolean)
+  from public, anon, authenticated;
+grant execute on function public.accept_quote_atomic(uuid, uuid, uuid, text, text, text, boolean)
+  to service_role;
+
+-- The data API must never surface a private operation through an existing
+-- public-departure policy. Public queries also filter is_public in application
+-- code, while this policy is the database backstop.
+drop policy if exists "Public read active departures" on public.departures;
+create policy "Public read active departures"
+  on public.departures for select
+  using (is_active = true and is_public = true);
+
+-- group_30 uses a deliberate column allow-list. Public queries filter by this
+-- flag, so grant only the non-sensitive visibility column added above.
+grant select (is_public) on public.departures to anon, authenticated;
+
+-- END migrations/group_96_operational_custom_trips.sql
+
+-- BEGIN migrations/group_97_atomic_sales_intake.sql
+-- Group 97: one atomic sales-intake operation.
+--
+-- The common admin path previously performed client, request, quote version,
+-- language and traveller writes independently. This RPC creates the complete
+-- request and optional proposal shell in one transaction, so the operator can
+-- start pricing immediately without duplicate entry or partial records.
+
+create or replace function public.create_sales_request_atomic(
+  p_existing_client_id uuid default null,
+  p_email text default null,
+  p_first_name text default null,
+  p_last_name text default null,
+  p_phone text default null,
+  p_whatsapp text default null,
+  p_country text default null,
+  p_language text default 'en',
+  p_source text default null,
+  p_client_question text default null,
+  p_preferred_start_date date default null,
+  p_trip_length_nights integer default null,
+  p_preferred_room_type text default null,
+  p_adults integer default 2,
+  p_children_older integer default 0,
+  p_children_younger integer default 0,
+  p_priority boolean default false,
+  p_create_quote boolean default true,
+  p_quote_mode text default 'custom',
+  p_tour_id uuid default null,
+  p_departure_id uuid default null,
+  p_quote_title text default null,
+  p_created_by uuid default null
+)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_client public.clients%rowtype;
+  v_client_id uuid;
+  v_request_id uuid;
+  v_quote_id uuid;
+  v_version_id uuid;
+  v_email text := lower(btrim(coalesce(p_email, '')));
+  v_language text := case when p_language = 'ar' then 'ar' else 'en' end;
+  v_group_size integer;
+  v_band record;
+  v_count integer;
+  v_label text;
+  v_sort integer := 0;
+  v_i integer;
+begin
+  if p_adults < 1 or p_adults > 50
+     or p_children_older < 0 or p_children_younger < 0
+     or p_adults + p_children_older + p_children_younger > 50 then
+    raise exception using errcode = 'P0001', message = 'SALES_INVALID_TRAVELLERS';
+  end if;
+  if p_trip_length_nights is not null and (p_trip_length_nights < 1 or p_trip_length_nights > 90) then
+    raise exception using errcode = 'P0001', message = 'SALES_INVALID_DURATION';
+  end if;
+  if p_preferred_room_type is not null
+     and p_preferred_room_type not in ('sharing', 'single', 'family') then
+    raise exception using errcode = 'P0001', message = 'SALES_INVALID_ROOM_TYPE';
+  end if;
+
+  if p_existing_client_id is not null then
+    select * into v_client
+    from public.clients
+    where id = p_existing_client_id
+    for update;
+    if not found then
+      raise exception using errcode = 'P0001', message = 'SALES_CLIENT_NOT_FOUND';
+    end if;
+    v_client_id := v_client.id;
+    v_language := case when coalesce(v_client.preferred_language, v_client.language) = 'ar' then 'ar' else 'en' end;
+  else
+    if v_email = '' or v_email !~* '^[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}$' then
+      raise exception using errcode = 'P0001', message = 'SALES_VALID_EMAIL_REQUIRED';
+    end if;
+    if nullif(btrim(coalesce(p_first_name, '')), '') is null
+       or nullif(btrim(coalesce(p_last_name, '')), '') is null then
+      raise exception using errcode = 'P0001', message = 'SALES_CLIENT_NAME_REQUIRED';
+    end if;
+
+    select * into v_client
+    from public.clients
+    where lower(email) = v_email
+    limit 1
+    for update;
+
+    if found then
+      update public.clients
+      set first_name = btrim(p_first_name),
+          last_name = btrim(p_last_name),
+          phone = nullif(btrim(coalesce(p_phone, '')), ''),
+          whatsapp = nullif(btrim(coalesce(p_whatsapp, '')), ''),
+          country = nullif(btrim(coalesce(p_country, '')), ''),
+          language = v_language,
+          preferred_language = v_language
+      where id = v_client.id
+      returning * into v_client;
+      v_client_id := v_client.id;
+    else
+      begin
+        insert into public.clients (
+          email, first_name, last_name, phone, whatsapp, country,
+          language, preferred_language, source
+        ) values (
+          v_email,
+          btrim(p_first_name),
+          btrim(p_last_name),
+          nullif(btrim(coalesce(p_phone, '')), ''),
+          nullif(btrim(coalesce(p_whatsapp, '')), ''),
+          nullif(btrim(coalesce(p_country, '')), ''),
+          v_language,
+          v_language,
+          left(coalesce(nullif(btrim(p_source), ''), 'admin'), 100)
+        ) returning * into v_client;
+        v_client_id := v_client.id;
+      exception when unique_violation then
+        select * into v_client
+        from public.clients
+        where lower(email) = v_email
+        limit 1
+        for update;
+        v_client_id := v_client.id;
+      end;
+    end if;
+  end if;
+
+  v_group_size := p_adults + p_children_older + p_children_younger;
+
+  insert into public.requests (
+    client_id, stage, source, travelers_adults, travelers_children_older,
+    travelers_children_younger, group_size, preferred_start_date,
+    trip_length_nights, preferred_room_type, client_question, priority, tour_id
+  ) values (
+    v_client_id,
+    case when p_create_quote then 'working_on' else 'new' end,
+    nullif(btrim(coalesce(p_source, '')), ''),
+    p_adults,
+    p_children_older,
+    p_children_younger,
+    v_group_size,
+    p_preferred_start_date,
+    p_trip_length_nights,
+    nullif(btrim(coalesce(p_preferred_room_type, '')), ''),
+    nullif(btrim(coalesce(p_client_question, '')), ''),
+    p_priority,
+    p_tour_id
+  ) returning id into v_request_id;
+
+  if not p_create_quote then
+    return jsonb_build_object(
+      'clientId', v_client_id,
+      'requestId', v_request_id,
+      'quoteId', null,
+      'quoteVersionId', null
+    );
+  end if;
+
+  if p_quote_mode not in ('custom', 'fixed_departure') then
+    raise exception using errcode = 'P0001', message = 'SALES_INVALID_QUOTE_MODE';
+  end if;
+  if p_quote_mode = 'fixed_departure' then
+    if p_departure_id is null or not exists (
+      select 1 from public.departures
+      where id = p_departure_id
+        and kind = 'scheduled_group'
+        and is_active = true
+        and status = 'available'
+    ) then
+      raise exception using errcode = 'P0001', message = 'SALES_DEPARTURE_UNAVAILABLE';
+    end if;
+  end if;
+
+  v_quote_id := public.create_quote_with_version(
+    v_client_id,
+    v_request_id,
+    p_quote_mode,
+    p_tour_id,
+    p_departure_id,
+    nullif(btrim(coalesce(p_quote_title, '')), ''),
+    p_created_by
+  );
+
+  select id into v_version_id
+  from public.quote_versions
+  where quote_id = v_quote_id
+  order by version_number
+  limit 1;
+
+  update public.quote_versions
+  set language = v_language
+  where id = v_version_id;
+
+  for v_band in
+    select * from public.traveller_age_bands
+    where code in ('adult', 'child', 'infant') and is_active = true
+    order by sort_order, id
+  loop
+    if v_band.code = 'adult' then
+      v_count := p_adults;
+      v_label := 'Adult';
+    elsif v_band.code = 'child' then
+      v_count := p_children_older;
+      v_label := 'Child';
+    else
+      v_count := p_children_younger;
+      v_label := 'Infant';
+    end if;
+
+    for v_i in 1..v_count loop
+      insert into public.quote_travellers (
+        quote_version_id, display_name, age_band_id, age_band_snapshot,
+        traveller_category, room_category, is_paying, is_complimentary, sort_order
+      ) values (
+        v_version_id,
+        v_label || ' ' || v_i,
+        v_band.id,
+        jsonb_build_object(
+          'id', v_band.id,
+          'name', v_band.name,
+          'code', v_band.code,
+          'min_age', v_band.min_age,
+          'max_age', v_band.max_age,
+          'default_pricing_method', v_band.default_pricing_method,
+          'default_percentage', case when v_band.default_pricing_method = 'percentage' then v_band.default_percentage else null end,
+          'default_fixed_amount_usd', case when v_band.default_pricing_method = 'fixed' then v_band.default_fixed_amount_usd else null end
+        ),
+        v_band.code,
+        case when p_preferred_room_type = 'single' then 'single' else 'sharing' end,
+        v_band.default_pricing_method <> 'free',
+        false,
+        v_sort
+      );
+      v_sort := v_sort + 1;
+    end loop;
+  end loop;
+
+  return jsonb_build_object(
+    'clientId', v_client_id,
+    'requestId', v_request_id,
+    'quoteId', v_quote_id,
+    'quoteVersionId', v_version_id
+  );
+end;
+$$;
+
+revoke all on function public.create_sales_request_atomic(
+  uuid, text, text, text, text, text, text, text, text, text, date,
+  integer, text, integer, integer, integer, boolean, boolean, text, uuid,
+  uuid, text, uuid
+) from public, anon, authenticated;
+grant execute on function public.create_sales_request_atomic(
+  uuid, text, text, text, text, text, text, text, text, text, date,
+  integer, text, integer, integer, integer, boolean, boolean, text, uuid,
+  uuid, text, uuid
+) to service_role;
+
+-- END migrations/group_97_atomic_sales_intake.sql
+
+-- BEGIN migrations/group_98_atomic_proposal_pricing.sql
+-- Group 98: make the complete proposal pricing save atomic and enforce ready
+-- state invariants at the database boundary.
+--
+-- save_trip() already writes itinerary-derived pricing transactionally, but
+-- the application then wrote per-band prices, inclusions/exclusions and ready
+-- status separately. A failure in those follow-up writes left a partly-saved
+-- proposal. This wrapper keeps the whole commercial save in one transaction.
+
+create or replace function public.save_proposal_pricing_atomic(
+  p_payload jsonb,
+  p_band_prices jsonb default '{}'::jsonb,
+  p_inclusions text[] default null,
+  p_exclusions text[] default null
+)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_result jsonb;
+  v_quote_id uuid;
+  v_version_id uuid;
+  v_version public.quote_versions%rowtype;
+  v_best_status text;
+begin
+  v_result := public.save_trip(p_payload);
+  v_quote_id := nullif(v_result ->> 'quoteId', '')::uuid;
+  v_version_id := nullif(v_result ->> 'versionId', '')::uuid;
+
+  if v_quote_id is null or v_version_id is null then
+    raise exception using errcode = 'P0001', message = 'PRICING_SAVE_RESULT_INVALID';
+  end if;
+
+  select * into v_version
+  from public.quote_versions
+  where id = v_version_id and quote_id = v_quote_id
+  for update;
+
+  if not found then
+    raise exception using errcode = 'P0001', message = 'PRICING_VERSION_NOT_FOUND';
+  end if;
+  if v_version.status not in ('draft', 'ready') then
+    raise exception using errcode = 'P0001', message = 'PRICING_VERSION_LOCKED';
+  end if;
+  if v_version.travel_start_date is null or v_version.travel_end_date is null then
+    raise exception using errcode = 'P0001', message = 'PRICING_DATES_REQUIRED';
+  end if;
+  if v_version.total_selling_usd <= 0 then
+    raise exception using errcode = 'P0001', message = 'PRICING_POSITIVE_SALE_REQUIRED';
+  end if;
+  if not exists (select 1 from public.quote_days where quote_version_id = v_version_id) then
+    raise exception using errcode = 'P0001', message = 'PRICING_ITINERARY_REQUIRED';
+  end if;
+  if not exists (
+    select 1 from public.quote_travellers
+    where quote_version_id = v_version_id and is_paying = true
+  ) then
+    raise exception using errcode = 'P0001', message = 'PRICING_PAYING_TRAVELLER_REQUIRED';
+  end if;
+
+  update public.quote_travellers
+  set pricing_fixed_amount_usd = case
+    when p_band_prices ? traveller_category
+      then nullif(p_band_prices ->> traveller_category, '')::numeric
+    else null
+  end
+  where quote_version_id = v_version_id;
+
+  update public.quote_versions
+  set inclusions = case when cardinality(p_inclusions) > 0 then p_inclusions else null end,
+      exclusions = case when cardinality(p_exclusions) > 0 then p_exclusions else null end,
+      status = 'ready'
+  where id = v_version_id;
+
+  select qv.status into v_best_status
+  from public.quote_versions qv
+  where qv.quote_id = v_quote_id
+  order by
+    case qv.status
+      when 'accepted' then 6
+      when 'declined' then 5
+      when 'viewed' then 4
+      when 'expired' then 4
+      when 'sent' then 3
+      when 'ready' then 2
+      when 'draft' then 1
+      else 0
+    end desc,
+    qv.version_number desc
+  limit 1;
+
+  update public.quotes set status = coalesce(v_best_status, 'ready') where id = v_quote_id;
+
+  return v_result || jsonb_build_object('ready', true);
+end;
+$$;
+
+revoke all on function public.save_proposal_pricing_atomic(jsonb, jsonb, text[], text[])
+  from public, anon, authenticated;
+grant execute on function public.save_proposal_pricing_atomic(jsonb, jsonb, text[], text[])
+  to service_role;
+
+-- END migrations/group_98_atomic_proposal_pricing.sql
+
+-- BEGIN migrations/group_99_unified_enquiry_intake.sql
+-- Group 99: unified, idempotent enquiry intake.
+--
+-- All public channels now create the same canonical client + request records.
+-- Quote-intent channels additionally receive a valid quote/version workspace.
+-- The intake event is retained for replay diagnostics and prevents duplicate
+-- webhook/form deliveries from creating duplicate requests.
+
+create table if not exists public.intake_events (
+  id uuid primary key default gen_random_uuid(),
+  channel text not null,
+  external_event_id text not null,
+  status text not null default 'processing'
+    check (status in ('processing', 'processed', 'failed')),
+  attempts integer not null default 1 check (attempts > 0),
+  payload jsonb not null default '{}'::jsonb,
+  client_id uuid references public.clients(id) on delete set null,
+  request_id uuid references public.requests(id) on delete set null,
+  quote_id uuid references public.quotes(id) on delete set null,
+  error_message text,
+  received_at timestamptz not null default now(),
+  processing_started_at timestamptz not null default now(),
+  processed_at timestamptz,
+  updated_at timestamptz not null default now(),
+  unique (channel, external_event_id)
+);
+
+create index if not exists intake_events_status_received_idx
+  on public.intake_events (status, received_at desc);
+create index if not exists intake_events_request_id_idx
+  on public.intake_events (request_id)
+  where request_id is not null;
+
+alter table public.intake_events enable row level security;
+
+drop policy if exists "Admins manage intake events" on public.intake_events;
+create policy "Admins manage intake events"
+  on public.intake_events
+  for all
+  to authenticated
+  using (public.is_admin_user())
+  with check (public.is_admin_user());
+
+create or replace function public.ingest_enquiry_atomic(p_payload jsonb)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_channel text := lower(btrim(coalesce(p_payload ->> 'channel', '')));
+  v_external_id text := btrim(coalesce(p_payload ->> 'externalEventId', ''));
+  v_source text := lower(btrim(coalesce(p_payload ->> 'source', 'website')));
+  v_email text := lower(btrim(coalesce(p_payload ->> 'email', '')));
+  v_phone text := nullif(btrim(coalesce(p_payload ->> 'phone', '')), '');
+  v_whatsapp text := nullif(btrim(coalesce(p_payload ->> 'whatsapp', '')), '');
+  v_first_name text := btrim(coalesce(p_payload ->> 'firstName', ''));
+  v_last_name text := btrim(coalesce(p_payload ->> 'lastName', ''));
+  v_country text := nullif(btrim(coalesce(p_payload ->> 'country', '')), '');
+  v_language text := case when p_payload ->> 'language' = 'ar' then 'ar' else 'en' end;
+  v_question text := nullif(btrim(coalesce(p_payload ->> 'question', '')), '');
+  v_subject text := nullif(btrim(coalesce(p_payload ->> 'subject', '')), '');
+  v_heard text := nullif(btrim(coalesce(p_payload ->> 'heardAboutUs', '')), '');
+  v_quote_intent boolean := coalesce((p_payload ->> 'quoteIntent')::boolean, false);
+  v_adults integer := greatest(1, least(50, coalesce((p_payload ->> 'adults')::integer, 1)));
+  v_trip_length integer := nullif(p_payload ->> 'tripLengthNights', '')::integer;
+  v_start_date date := nullif(p_payload ->> 'preferredStartDate', '')::date;
+  v_tour_id uuid := nullif(p_payload ->> 'tourId', '')::uuid;
+  v_event public.intake_events%rowtype;
+  v_client public.clients%rowtype;
+  v_request_id uuid;
+  v_quote_id uuid;
+  v_version_id uuid;
+  v_band public.traveller_age_bands%rowtype;
+  v_i integer;
+begin
+  if v_channel not in ('website_quote', 'tour_enquiry', 'contact', 'whatsapp', 'whatsapp_flow') then
+    raise exception using errcode = 'P0001', message = 'INTAKE_INVALID_CHANNEL';
+  end if;
+  if v_external_id = '' then
+    raise exception using errcode = 'P0001', message = 'INTAKE_EVENT_ID_REQUIRED';
+  end if;
+  if v_email = '' and v_phone is null and v_whatsapp is null then
+    raise exception using errcode = 'P0001', message = 'INTAKE_CONTACT_REQUIRED';
+  end if;
+  if v_email <> '' and v_email !~* '^[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}$' then
+    raise exception using errcode = 'P0001', message = 'INTAKE_INVALID_EMAIL';
+  end if;
+  if v_trip_length is not null and (v_trip_length < 1 or v_trip_length > 90) then
+    raise exception using errcode = 'P0001', message = 'INTAKE_INVALID_DURATION';
+  end if;
+
+  insert into public.intake_events (
+    channel, external_event_id, status, payload, processing_started_at
+  ) values (
+    v_channel, v_external_id, 'processing', p_payload, now()
+  )
+  on conflict (channel, external_event_id) do update
+    set status = 'processing',
+        attempts = public.intake_events.attempts + 1,
+        payload = excluded.payload,
+        error_message = null,
+        processing_started_at = now(),
+        updated_at = now()
+    where public.intake_events.status = 'failed'
+       or (
+         public.intake_events.status = 'processing'
+         and public.intake_events.processing_started_at < now() - interval '5 minutes'
+       )
+  returning * into v_event;
+
+  if not found then
+    select * into v_event
+    from public.intake_events
+    where channel = v_channel and external_event_id = v_external_id;
+
+    return jsonb_build_object(
+      'status', v_event.status,
+      'duplicate', true,
+      'eventId', v_event.id,
+      'clientId', v_event.client_id,
+      'requestId', v_event.request_id,
+      'quoteId', v_event.quote_id
+    );
+  end if;
+
+  begin
+    if v_email <> '' then
+      select * into v_client
+      from public.clients
+      where lower(email) = v_email
+      order by created_at
+      limit 1
+      for update;
+    end if;
+
+    if v_client.id is null and v_whatsapp is not null then
+      select * into v_client
+      from public.clients
+      where whatsapp = v_whatsapp
+      order by created_at
+      limit 1
+      for update;
+    end if;
+
+    if v_client.id is null and v_phone is not null then
+      select * into v_client
+      from public.clients
+      where phone = v_phone
+      order by created_at
+      limit 1
+      for update;
+    end if;
+
+    if v_client.id is not null then
+      update public.clients
+      set first_name = coalesce(nullif(v_first_name, ''), first_name),
+          last_name = coalesce(nullif(v_last_name, ''), last_name),
+          email = coalesce(nullif(v_email, ''), email),
+          phone = coalesce(v_phone, phone),
+          whatsapp = coalesce(v_whatsapp, whatsapp),
+          country = coalesce(v_country, country),
+          language = v_language,
+          preferred_language = v_language,
+          updated_at = now()
+      where id = v_client.id
+      returning * into v_client;
+    else
+      insert into public.clients (
+        first_name, last_name, email, phone, whatsapp, country,
+        language, preferred_language, source
+      ) values (
+        coalesce(nullif(v_first_name, ''), 'Enquiry'),
+        v_last_name,
+        nullif(v_email, ''),
+        v_phone,
+        v_whatsapp,
+        v_country,
+        v_language,
+        v_language,
+        v_source
+      ) returning * into v_client;
+    end if;
+
+    insert into public.requests (
+      client_id, tour_id, stage, source, client_question,
+      travelers_adults, group_size, preferred_start_date, trip_length_nights,
+      heard_about_us
+    ) values (
+      v_client.id,
+      v_tour_id,
+      case when v_quote_intent then 'working_on' else 'new' end,
+      v_source,
+      concat_ws(E'\n\n', v_subject, v_question),
+      v_adults,
+      v_adults,
+      v_start_date,
+      v_trip_length,
+      v_heard
+    ) returning id into v_request_id;
+
+    if v_quote_intent then
+      v_quote_id := public.create_quote_with_version(
+        v_client.id,
+        v_request_id,
+        'custom',
+        v_tour_id,
+        null,
+        nullif(btrim(coalesce(p_payload ->> 'quoteTitle', '')), ''),
+        null
+      );
+
+      select id into v_version_id
+      from public.quote_versions
+      where quote_id = v_quote_id
+      order by version_number
+      limit 1;
+
+      update public.quote_versions
+      set language = v_language
+      where id = v_version_id;
+
+      select * into v_band
+      from public.traveller_age_bands
+      where code = 'adult' and is_active = true
+      order by sort_order, id
+      limit 1;
+
+      if found then
+        for v_i in 1..v_adults loop
+          insert into public.quote_travellers (
+            quote_version_id, display_name, age_band_id, age_band_snapshot,
+            traveller_category, room_category, is_paying, is_complimentary, sort_order
+          ) values (
+            v_version_id,
+            'Adult ' || v_i,
+            v_band.id,
+            jsonb_build_object(
+              'id', v_band.id,
+              'name', v_band.name,
+              'code', v_band.code,
+              'min_age', v_band.min_age,
+              'max_age', v_band.max_age,
+              'default_pricing_method', v_band.default_pricing_method,
+              'default_percentage', case when v_band.default_pricing_method = 'percentage' then v_band.default_percentage else null end,
+              'default_fixed_amount_usd', case when v_band.default_pricing_method = 'fixed' then v_band.default_fixed_amount_usd else null end
+            ),
+            'adult',
+            'sharing',
+            v_band.default_pricing_method <> 'free',
+            false,
+            v_i - 1
+          );
+        end loop;
+      end if;
+    end if;
+
+    update public.intake_events
+    set status = 'processed',
+        client_id = v_client.id,
+        request_id = v_request_id,
+        quote_id = v_quote_id,
+        processed_at = now(),
+        updated_at = now()
+    where id = v_event.id;
+
+    return jsonb_build_object(
+      'status', 'processed',
+      'duplicate', false,
+      'eventId', v_event.id,
+      'clientId', v_client.id,
+      'requestId', v_request_id,
+      'quoteId', v_quote_id,
+      'quoteVersionId', v_version_id
+    );
+  exception when others then
+    update public.intake_events
+    set status = 'failed',
+        error_message = left(sqlstate || ': ' || sqlerrm, 1000),
+        updated_at = now()
+    where id = v_event.id;
+
+    return jsonb_build_object(
+      'status', 'failed',
+      'duplicate', false,
+      'eventId', v_event.id,
+      'error', 'INTAKE_PROCESSING_FAILED'
+    );
+  end;
+end;
+$$;
+
+revoke all on function public.ingest_enquiry_atomic(jsonb)
+  from public, anon, authenticated;
+grant execute on function public.ingest_enquiry_atomic(jsonb)
+  to service_role;
+
+-- END migrations/group_99_unified_enquiry_intake.sql
+
+-- BEGIN migrations/group_100_database_hardening.sql
+-- Group 100: small database hardening items from the production advisor review.
+
+-- Covers the nullable foreign key used when returning or reconciling a bike
+-- security deposit. The FK itself does not create an index automatically.
+create index if not exists security_deposits_motorbike_id_idx
+  on public.security_deposits (motorbike_id)
+  where motorbike_id is not null;
+
+-- is_admin_user() intentionally remains SECURITY DEFINER. It exposes only a
+-- boolean membership check and is the gate used by existing RLS policies; an
+-- automatic revoke would break authenticated admin access. Its fixed body and
+-- search path were reviewed separately during this release.
+
+-- END migrations/group_100_database_hardening.sql
+
+--
 -- PostgreSQL database dump complete
 --

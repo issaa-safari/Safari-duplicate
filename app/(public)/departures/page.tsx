@@ -84,6 +84,7 @@ export default async function DeparturesPage({
        tour:tours!inner(title_en, title_ar, subtitle_en, type, hero_image_url, gallery_urls)`
     )
     .eq('is_active', true)
+    .eq('is_public', true)
     .eq('tour.status', 'active')
     .eq('tour.show_on_website', true)
     .gte('end_date', new Date().toISOString().split('T')[0])

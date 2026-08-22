@@ -39,6 +39,7 @@ export default async function NewQuotePage({
     admin
       .from('departures')
       .select('id, start_date, end_date, tours (title_en)')
+      .eq('kind', 'scheduled_group')
       .eq('status', 'available')
       .gte('start_date', new Date().toISOString().split('T')[0])
       .order('start_date', { ascending: true }),

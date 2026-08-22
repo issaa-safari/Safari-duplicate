@@ -24,13 +24,27 @@ describe('transactional booking RPC contracts', () => {
     })
   })
 
+  it('blocks acceptance until a custom proposal has dates and an approved price', () => {
+    expect(mapQuoteAcceptanceError({ message: 'QUOTE_DATES_REQUIRED' })).toEqual({
+      status: 409,
+      error: 'Add complete travel dates before accepting this custom proposal.',
+    })
+    expect(mapQuoteAcceptanceError({ message: 'QUOTE_POSITIVE_PRICE_REQUIRED' })).toEqual({
+      status: 409,
+      error: 'Complete and approve a positive selling price before accepting this proposal.',
+    })
+  })
+
   it('passes the complete public acceptance contract to one RPC', async () => {
     const { client, rpc } = clientWithRpc({
       acceptanceId: 'acceptance-id',
       bookingId: 'booking-id',
       clientId: 'client-id',
+      departureId: 'trip-id',
+      createdOperationalTrip: true,
       groupSize: 2,
       totalPriceUsd: 4200,
+      depositDueUsd: 1260,
     })
 
     const result = await acceptQuoteAtomically(client, {
@@ -53,6 +67,8 @@ describe('transactional booking RPC contracts', () => {
       p_is_admin: false,
     })
     expect(result.bookingId).toBe('booking-id')
+    expect(result.departureId).toBe('trip-id')
+    expect(result.createdOperationalTrip).toBe(true)
   })
 
   it('passes admin booking, traveller and payment data to one RPC', async () => {

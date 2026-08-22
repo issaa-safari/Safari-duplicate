@@ -16,6 +16,9 @@ type ReadinessTraveller = {
 
 type OperationsDeparture = {
   id: string
+  kind: 'scheduled_group' | 'private_custom'
+  operation_title: string | null
+  is_public: boolean
   start_date: string
   end_date: string
   max_seats: number
@@ -63,7 +66,7 @@ export default async function DeparturesPage({
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Trip Operations</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Readiness, manifests and logistics for every scheduled departure</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Readiness, manifests and logistics for scheduled and private trips</p>
         </div>
         <ButtonLink href="/admin/departures/new" size="sm">+ New Departure</ButtonLink>
       </div>
@@ -107,7 +110,7 @@ export default async function DeparturesPage({
           <table className="stack-table w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Tour</th>
+                <th className="px-4 py-3 font-medium">Trip</th>
                 <th className="px-4 py-3 font-medium">Dates</th>
                 <th className="px-4 py-3 font-medium">Seats</th>
                 <th className="px-4 py-3 font-medium">Readiness</th>
@@ -137,9 +140,11 @@ export default async function DeparturesPage({
                 const readinessIssues = missingArrivals + missingBikes + missingPassports + unsigned
                 return (
                   <tr key={dep.id} className="border-b border-border/70 hover:bg-muted">
-                    <td data-label="Tour" className="px-4 py-3">
-                      <p className="font-medium text-foreground">{tour?.title_en ?? 'Untitled tour'}</p>
-                      {tour?.type && <p className="text-xs text-muted-foreground capitalize">{tour.type}</p>}
+                    <td data-label="Trip" className="px-4 py-3">
+                      <p className="font-medium text-foreground">{tour?.title_en ?? dep.operation_title ?? 'Untitled trip'}</p>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {dep.kind === 'private_custom' ? 'Private custom' : (tour?.type ?? 'Scheduled group')}
+                      </p>
                     </td>
                     <td data-label="Dates" className="px-4 py-3 text-muted-foreground">
                       {new Date(dep.start_date).toLocaleDateString('en-GB')}
@@ -174,8 +179,13 @@ export default async function DeparturesPage({
                       <StatusBadge status={dep.status} />
                     </td>
                     <td data-label="Website" className="px-4 py-3">
-                      <form action={async () => { 'use server'; await toggleDeparturePublished(dep.id) }}>
-                        {dep.is_active ? (
+                      {dep.kind === 'private_custom' ? (
+                        <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-muted text-muted-foreground">
+                          Private
+                        </span>
+                      ) : (
+                        <form action={async () => { 'use server'; await toggleDeparturePublished(dep.id) }}>
+                        {dep.is_public ? (
                           <button type="submit"
                             className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-100 text-green-700 hover:bg-green-200"
                             title="Live on website — click to unpublish">
@@ -188,7 +198,8 @@ export default async function DeparturesPage({
                             ○ Publish
                           </button>
                         )}
-                      </form>
+                        </form>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link href={"/admin/departures/" + dep.id}

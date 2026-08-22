@@ -2,11 +2,9 @@ import { localePath, type Locale } from '@/lib/locale'
 
 // Every entry point that links a visitor into a departure's booking form —
 // the departure page itself, the tour page's date list, any future one —
-// must agree on what that link carries: whichever room-type price the
-// departure actually offers, and its security deposit. Building the URL by
-// hand in more than one place is exactly how the deposit went missing from
-// the tour page's booking links while the departure page's own link carried
-// it correctly. This is the one place that builds it.
+// carries only a departure identity and locale. The booking page resolves all
+// display and pricing data on the server, so stale or edited URL parameters can
+// never disagree with the booking that is actually created.
 export interface DepartureBookingLinkInput {
   departureId: string
   locale: Locale
@@ -22,17 +20,6 @@ export interface DepartureBookingLinkInput {
 export function departureBookHref({
   departureId,
   locale,
-  tourTitle,
-  priceUsd,
-  priceSingleUsd,
-  depositUsd,
 }: DepartureBookingLinkInput): string {
-  const params = [
-    priceUsd != null ? `price=${priceUsd}` : null,
-    priceSingleUsd != null ? `priceSingle=${priceSingleUsd}` : null,
-    depositUsd != null ? `deposit=${depositUsd}` : null,
-    `tour=${encodeURIComponent(tourTitle)}`,
-  ].filter(Boolean).join('&')
-
-  return `${localePath(`/departures/${departureId}/book`, locale)}?${params}`
+  return localePath(`/departures/${departureId}/book`, locale)
 }

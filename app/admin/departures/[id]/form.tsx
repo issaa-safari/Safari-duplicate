@@ -9,7 +9,10 @@ import { Alert } from '@/components/ui/alert'
 
 export interface Departure {
   id: string
-  tour_id: string
+  tour_id: string | null
+  kind: 'scheduled_group' | 'private_custom'
+  operation_title: string | null
+  is_public: boolean
   start_date: string
   end_date: string
   max_seats: number
@@ -40,7 +43,7 @@ export interface TourDay {
 export default function DepartureEditForm({ departure, departureId, tourDays }: { departure: Departure; departureId: string; tourDays: TourDay[] }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [isActive, setIsActive] = useState(departure.is_active)
+  const [isPublic, setIsPublic] = useState(departure.is_public)
   const { pending: publishLoading, run: runPublish } = useAction()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -61,8 +64,12 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
   return (
     <section aria-labelledby="departure-settings-heading" className="min-w-0">
       <div className="mb-4">
-        <h2 id="departure-settings-heading" className="text-lg font-semibold text-foreground">Departure settings</h2>
-        <p className="text-sm text-muted-foreground">Dates, pricing, capacity and website visibility.</p>
+        <h2 id="departure-settings-heading" className="text-lg font-semibold text-foreground">Trip settings</h2>
+        <p className="text-sm text-muted-foreground">
+          {departure.kind === 'private_custom'
+            ? 'Dates and operational capacity for this accepted private proposal.'
+            : 'Dates, pricing, capacity and website visibility.'}
+        </p>
       </div>
 
       {departure.tours && (
@@ -78,6 +85,13 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
               ✓ When published, clients will see the full itinerary with {tourDays.length} day{tourDays.length !== 1 ? 's' : ''}
             </p>
           </div>
+        </div>
+      )}
+
+      {departure.kind === 'private_custom' && !departure.tours && (
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-medium">Private custom itinerary</p>
+          <p className="mt-1 text-xs">{departure.operation_title ?? 'Accepted custom proposal'} is managed here without publishing a public tour.</p>
         </div>
       )}
 
@@ -199,8 +213,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
           </div>
         </div>
 
-        {/* Itinerary Status */}
-        <div className="rounded-xl border border-border bg-surface shadow-sm p-6">
+        {departure.tours && <div className="rounded-xl border border-border bg-surface shadow-sm p-6">
           <h3 className="font-semibold text-foreground mb-4">Itinerary Status</h3>
           {tourDays && tourDays.length > 0 ? (
             <div className="space-y-2">
@@ -236,7 +249,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
               </Link>
             </div>
           )}
-        </div>
+        </div>}
 
         {error && <Alert variant="error">{error}</Alert>}
 
@@ -244,24 +257,24 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
           <Button type="submit" loading={loading} loadingText="Saving…">Save Changes</Button>
           <ButtonLink href="/admin/departures">Cancel</ButtonLink>
           <div className="flex-1" />
-          <button
+          {departure.kind !== 'private_custom' && <button
             type="button"
             disabled={publishLoading}
             onClick={() => runPublish(async () => {
               try {
                 await toggleDeparturePublished(departureId)
-                setIsActive(!isActive)
+                setIsPublic(!isPublic)
               } catch (err: unknown) {
                 setError(err instanceof Error ? err.message : 'Failed to toggle published status')
               }
             })}
             className={`rounded-md px-6 py-2.5 text-sm font-medium disabled:opacity-60 ${
-              isActive
+              isPublic
                 ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
                 : 'bg-green-100 text-green-700 hover:bg-green-200'
             }`}>
-            {publishLoading ? 'Updating…' : isActive ? 'Unpublish' : 'Publish'}
-          </button>
+            {publishLoading ? 'Updating…' : isPublic ? 'Unpublish' : 'Publish'}
+          </button>}
         </div>
       </form>
     </section>

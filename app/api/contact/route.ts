@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notifyAdmin, emailShell, detailRows, escapeHtml } from '@/lib/email'
 import { enforceRateLimit } from '@/lib/rate-limit'
+import { ingestEnquiry } from '@/lib/server/enquiry-intake'
 
 export async function POST(request: NextRequest) {
   const limited = enforceRateLimit(request, 'contact', 5, 60_000)
   if (limited) return limited
 
   try {
-    const body = await request.json()
-    const { name, email, phone, subject, message } = body
+    const body = request.headers.get('content-type')?.includes('application/json')
+      ? await request.json()
+      : Object.fromEntries((await request.formData()).entries())
+    const { name, email, phone, subject, message, submissionId, language } = body
 
     if (!name || !email || !subject || !message) {
       return NextResponse.json(
@@ -20,25 +23,21 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient()
 
-    // Store contact message (for now, we'll store it in a simple table)
-    const { error } = await admin
-      .from('contact_messages')
-      .insert({
-        name,
-        email,
-        phone: phone || null,
-        subject,
-        message,
-        created_at: new Date().toISOString(),
-      })
-
-    if (error) {
-      console.error('Contact message error:', error)
-      return NextResponse.json(
-        { error: 'Failed to send message' },
-        { status: 500 }
-      )
-    }
+    const nameParts = String(name).trim().split(/\s+/).filter(Boolean)
+    const intake = await ingestEnquiry(admin, {
+      channel: 'contact',
+      externalEventId: String(submissionId || request.headers.get('idempotency-key') || crypto.randomUUID()),
+      source: 'website',
+      firstName: nameParts[0] || 'Contact',
+      lastName: nameParts.slice(1).join(' '),
+      email: String(email).trim().toLowerCase(),
+      phone: phone ? String(phone).trim() : null,
+      language: language === 'ar' ? 'ar' : 'en',
+      subject: String(subject).trim(),
+      question: String(message).trim(),
+      quoteIntent: false,
+      adults: 1,
+    })
 
     // Best-effort admin alert; never blocks the response.
     await notifyAdmin(
@@ -56,7 +55,7 @@ export async function POST(request: NextRequest) {
     )
 
     return NextResponse.json(
-      { success: true },
+      { success: true, requestId: intake.requestId, duplicate: intake.duplicate },
       { status: 201 }
     )
   } catch (error) {

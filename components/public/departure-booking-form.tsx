@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { COUNTRIES_SORTED, dialCodeFor } from '@/lib/countries'
 
@@ -21,15 +21,15 @@ function emptyTraveller(): Traveller {
   return { firstName: '', lastName: '', email: '', phone: '', phoneCountryCode: 'KE', dateOfBirth: '', nationality: '', passportNumber: '' }
 }
 
-export default function BookingLinkForm({
-  token,
+export default function DepartureBookingForm({
+  submitUrl,
   locale,
   pricePerPerson,
   singlePricePerPerson,
   depositPerPerson = 0,
   seatsLeft,
 }: {
-  token: string
+  submitUrl: string
   locale: 'en' | 'ar'
   /** Sharing/double-room price, or null if this departure doesn't offer that category. */
   pricePerPerson: number | null
@@ -49,6 +49,25 @@ export default function BookingLinkForm({
   const [createAccount, setCreateAccount] = useState(false)
   const [accountNote, setAccountNote] = useState('')
   const [travellers, setTravellers] = useState<Traveller[]>([emptyTraveller()])
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      const user = data.user
+      if (!user) return
+      setTravellers(current => {
+        const next = [...current]
+        next[0] = {
+          ...next[0],
+          firstName: next[0].firstName || user.user_metadata?.first_name || '',
+          lastName: next[0].lastName || user.user_metadata?.last_name || '',
+          email: next[0].email || user.email || '',
+          phone: next[0].phone || user.user_metadata?.phone || '',
+        }
+        return next
+      })
+    })
+  }, [])
 
   const maxGroup = Math.min(8, Math.max(1, seatsLeft))
   const totalPrice = effectivePricePerPerson * groupSize
@@ -136,7 +155,7 @@ export default function BookingLinkForm({
           const dial = dialCodeFor(t.phoneCountryCode)
           return { ...t, phone: dial ? `+${dial}${t.phone.trim()}` : t.phone.trim() }
         })
-        const res = await fetch(`/api/book/${token}`, {
+        const res = await fetch(submitUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ travellers: withDialCodes, roomType, currency: 'USD' }),

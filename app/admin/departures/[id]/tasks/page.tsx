@@ -14,7 +14,9 @@ type LinkedBooking = {
 
 type GroupTask = {
   id: string
-  request_id: string
+  request_id: string | null
+  departure_id: string | null
+  booking_id: string | null
   title: string
   is_done: boolean
   created_at: string
@@ -34,7 +36,7 @@ export default async function DepartureTasksPage({ params }: { params: Promise<{
   const [{ data: departure }, { data: bookings }] = await Promise.all([
     admin
       .from('departures')
-      .select('id, start_date, end_date, tours ( title_en )')
+      .select('id, start_date, end_date, kind, operation_title, tours ( title_en )')
       .eq('id', id)
       .single(),
     admin
@@ -52,18 +54,28 @@ export default async function DepartureTasksPage({ params }: { params: Promise<{
   }
   const requestIds = [...requestMap.keys()]
 
-  let tasks: GroupTask[] = []
-  if (requestIds.length > 0) {
-    const { data } = await admin
+  const [{ data: tripTaskRows }, legacyTaskResult] = await Promise.all([
+    admin
       .from('tasks')
-      .select('id, request_id, title, is_done, created_at, type, auto_generated, sort_order')
-      .in('request_id', requestIds)
-      .order('sort_order', { ascending: true })
-    tasks = (data ?? []) as GroupTask[]
-  }
+      .select('id, request_id, departure_id, booking_id, title, is_done, created_at, type, auto_generated, sort_order')
+      .eq('departure_id', id)
+      .order('sort_order', { ascending: true }),
+    requestIds.length > 0
+      ? admin
+          .from('tasks')
+          .select('id, request_id, departure_id, booking_id, title, is_done, created_at, type, auto_generated, sort_order')
+          .in('request_id', requestIds)
+          .order('sort_order', { ascending: true })
+      : Promise.resolve({ data: [] }),
+  ])
+  const tasks = [...new Map(
+    [...(tripTaskRows ?? []), ...(legacyTaskResult.data ?? [])]
+      .map(task => [task.id, task as GroupTask]),
+  ).values()]
 
   const tour = Array.isArray(departure.tours) ? departure.tours[0] : departure.tours
-  const bookingsWithoutRequest = bookingList.filter(booking => !booking.request_id).length
+  const tripTitle = tour?.title_en ?? departure.operation_title ?? 'Private trip'
+  const tripTasks = tasks.filter(task => !task.request_id)
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
@@ -73,21 +85,27 @@ export default async function DepartureTasksPage({ params }: { params: Promise<{
         </Link>
         <h1 className="mt-3 text-2xl font-semibold text-foreground">Group tasks</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {tour?.title_en ?? 'Departure'} · one operational checklist across every linked booking request.
+          {tripTitle} · one operational checklist for the trip, plus party-specific work.
         </p>
       </div>
 
       <DepartureOperationsNav departureId={id} />
 
-      {requestIds.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-surface p-8 text-center">
-          <p className="text-sm font-medium text-foreground">No request-linked tasks yet</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Tasks appear here when a departure booking is connected to a client request.
-          </p>
+      <section className="rounded-xl border border-border bg-surface p-5 shadow-sm">
+        <div className="mb-4 border-b border-border pb-3">
+          <h2 className="font-semibold text-foreground">Whole-trip checklist</h2>
+          <p className="text-xs text-muted-foreground">Logistics, suppliers and actions that apply to the complete group.</p>
         </div>
-      ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <TaskManager departureId={id} tasks={tripTasks} title="Trip tasks" />
+      </section>
+
+      {requestIds.length > 0 && (
+        <section>
+          <div className="mb-3">
+            <h2 className="text-lg font-semibold text-foreground">Booking-party tasks</h2>
+            <p className="text-sm text-muted-foreground">Items tied to an individual enquiry or booking party.</p>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
           {requestIds.map(requestId => {
             const booking = requestMap.get(requestId)
             if (!booking) return null
@@ -111,13 +129,8 @@ export default async function DepartureTasksPage({ params }: { params: Promise<{
               </section>
             )
           })}
-        </div>
-      )}
-
-      {bookingsWithoutRequest > 0 && (
-        <p className="rounded-lg bg-muted px-4 py-3 text-xs text-muted-foreground">
-          {bookingsWithoutRequest} booking{bookingsWithoutRequest === 1 ? '' : 's'} cannot show tasks here because no client request is linked.
-        </p>
+          </div>
+        </section>
       )}
     </div>
   )

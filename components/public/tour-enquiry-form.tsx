@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useId } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { pageContext, trackEvent } from '@/lib/analytics'
 
@@ -13,8 +13,6 @@ interface TourEnquiryFormProps {
   departureId?: string
 }
 
-const OLIVE = '#7A9A4A'
-const STONE = '#6E6A59'
 const SAND = '#EAE3D2'
 
 const HEARD_ABOUT_OPTIONS_EN = [
@@ -74,6 +72,7 @@ export default function TourEnquiryForm({
   const [isPending, startTransition] = useTransition()
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const submissionId = `tour-enquiry-${useId()}`
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -134,6 +133,9 @@ export default function TourEnquiryForm({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            submissionId,
+            channel: 'tour_enquiry',
+            language: isAr ? 'ar' : 'en',
             firstName: form.firstName,
             lastName: form.lastName,
             email: form.email,

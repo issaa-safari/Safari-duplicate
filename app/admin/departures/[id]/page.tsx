@@ -38,6 +38,7 @@ type OperationsTraveller = {
 type OperationsBooking = {
   id: string
   request_id: string | null
+  total_price_usd: number | null
   booking_travellers: OperationsTraveller[] | null
 }
 type OperationsTask = { id: string; is_done: boolean }
@@ -81,12 +82,14 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
   if (!departure) notFound()
 
   const [{ data: tourDays }, { data: bookingLinks }, { data: bookings }, { data: vouchers }] = await Promise.all([
-    admin.from('tour_days').select('*').eq('tour_id', departure.tour_id).order('day_number'),
+    departure.tour_id
+      ? admin.from('tour_days').select('*').eq('tour_id', departure.tour_id).order('day_number')
+      : Promise.resolve({ data: [] }),
     admin.from('booking_links').select('*').eq('departure_id', id).order('created_at', { ascending: false }),
     admin
       .from('bookings')
       .select(`
-        id, request_id,
+        id, request_id, total_price_usd,
         booking_travellers (
           id, is_rider, motorbike_id, passport_number,
           booking_traveller_flights ( direction, scheduled_at ),
@@ -98,17 +101,20 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
     admin.from('hotel_vouchers').select('id, status').eq('departure_id', id),
   ])
   const parties = (bookings ?? []) as unknown as OperationsBooking[]
+  const bookingsMissingValue = parties.filter(booking => Number(booking.total_price_usd ?? 0) <= 0)
   const travellers = parties.flatMap(booking => booking.booking_travellers ?? [])
   const requestIds = [...new Set(parties.map(booking => booking.request_id).filter(Boolean))] as string[]
 
-  let tasks: OperationsTask[] = []
-  if (requestIds.length > 0) {
-    const { data } = await admin
-      .from('tasks')
-      .select('id, is_done')
-      .in('request_id', requestIds)
-    tasks = (data ?? []) as OperationsTask[]
-  }
+  const [{ data: tripTaskRows }, legacyTaskResult] = await Promise.all([
+    admin.from('tasks').select('id, is_done').eq('departure_id', id),
+    requestIds.length > 0
+      ? admin.from('tasks').select('id, is_done').in('request_id', requestIds)
+      : Promise.resolve({ data: [] }),
+  ])
+  const tasks = [...new Map(
+    [...(tripTaskRows ?? []), ...(legacyTaskResult.data ?? [])]
+      .map(task => [task.id, task as OperationsTask]),
+  ).values()]
 
   const riders = travellers.filter(traveller => traveller.is_rider !== false)
   const arrivals = travellers.filter(traveller =>
@@ -134,7 +140,7 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
 
   const tour = Array.isArray(departure.tours) ? departure.tours[0] : departure.tours
   const baseUrl = await requestBaseUrl()
-  const tourTitle = tour?.title_en ?? 'Safari departure'
+  const tourTitle = tour?.title_en ?? departure.operation_title ?? 'Private safari'
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
@@ -146,6 +152,9 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold text-foreground">{tourTitle}</h1>
+              {departure.kind === 'private_custom' && (
+                <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-800">Private custom</span>
+              )}
               <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                 travellers.length === 0
                   ? 'bg-muted text-muted-foreground'
@@ -165,16 +174,31 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
               {new Date(departure.end_date).toLocaleDateString('en-GB')} · {departure.booked_seats}/{departure.max_seats} seats booked
             </p>
           </div>
-          <Link
+          {departure.kind !== 'private_custom' && <Link
             href={`/admin/bookings/new?departure=${id}`}
             className="inline-flex items-center rounded-lg bg-primary-strong px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-strong-hover"
           >
             + Add booking
-          </Link>
+          </Link>}
         </div>
       </div>
 
       <DepartureOperationsNav departureId={id} />
+
+      {departure.kind === 'private_custom' && bookingsMissingValue.length > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <p className="font-semibold">Commercial details need review</p>
+          <p className="mt-1">
+            This legacy accepted proposal has no confirmed booking value. Correct the total and payment schedule before sending finance documents.
+          </p>
+          <Link
+            href={`/admin/bookings/${bookingsMissingValue[0].id}`}
+            className="mt-3 inline-flex font-medium text-amber-900 underline underline-offset-2"
+          >
+            Open booking and correct pricing
+          </Link>
+        </div>
+      )}
 
       <section aria-labelledby="readiness-heading">
         <div className="mb-3">
@@ -202,7 +226,7 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
             href={`/admin/departures/${id}/tasks`}
             label="Tasks"
             value={`${openTasks} open`}
-            detail={`${tasks.length} total across linked requests`}
+            detail={`${tasks.length} total across trip and bookings`}
             icon={ClipboardCheck}
             attention={openTasks > 0}
           />
@@ -250,12 +274,12 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
             </div>
           </div>
 
-          <BookingLinkPanel
+          {departure.kind !== 'private_custom' && <BookingLinkPanel
             departureId={id}
             links={(bookingLinks as BookingLink[]) ?? []}
             baseUrl={baseUrl}
             tourTitle={tourTitle}
-          />
+          />}
         </div>
       </div>
     </div>

@@ -19,7 +19,7 @@ export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled'
 
 export type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'cancelled'
 
-// Atomic write results (migrations/group_95_transactional_booking_quote_acceptance.sql)
+// Atomic write results (migrations/group_95... and group_96...)
 export interface DepartureBookingTransactionResult {
   bookingId: string
   clientId: string
@@ -34,8 +34,11 @@ export interface QuoteAcceptanceTransactionResult {
   acceptanceId: string
   bookingId: string
   clientId: string
+  departureId: string
+  createdOperationalTrip: boolean
   groupSize: number
   totalPriceUsd: number
+  depositDueUsd: number
 }
 
 export interface ManualBookingTransactionResult {
@@ -67,10 +70,33 @@ export interface SearchRequest {
   stage: RequestStage | string
   client_name: string | null
 }
+export interface SearchBooking {
+  id: string
+  status: string
+  client_name: string | null
+  start_date: string | null
+  end_date: string | null
+}
+export interface SearchDeparture {
+  id: string
+  title: string
+  start_date: string
+  kind: string
+}
+export interface SearchEntity {
+  id: string
+  name: string
+  detail?: string | null
+}
 export interface SearchResults {
   quotes: SearchQuote[]
   clients: SearchClient[]
   requests: SearchRequest[]
+  bookings: SearchBooking[]
+  departures: SearchDeparture[]
+  tours: SearchEntity[]
+  suppliers: SearchEntity[]
+  accommodations: SearchEntity[]
 }
 
 // --- Content library lookup row (destinations / accommodations / activities) ---

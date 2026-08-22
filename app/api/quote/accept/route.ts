@@ -55,7 +55,11 @@ export async function POST(req: NextRequest) {
       ),
     )
 
-    return NextResponse.json({ ok: true, bookingId: accepted.bookingId })
+    return NextResponse.json({
+      ok: true,
+      bookingId: accepted.bookingId,
+      tripId: accepted.departureId,
+    })
   } catch (error) {
     console.error('[quote/accept]', error)
     const mapped = mapQuoteAcceptanceError(error)
