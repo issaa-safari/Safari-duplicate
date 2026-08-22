@@ -392,6 +392,12 @@ declare
   v_day_count int;
   v_meals text[];
   v_td record;
+  v_quote_day_id uuid;
+  v_dest_snapshot jsonb;
+  v_acc record;
+  v_act jsonb;
+  v_act_row record;
+  v_sort int;
 begin
   if p_mode not in ('custom', 'fixed_departure') then
     raise exception 'Invalid quote mode.';
@@ -527,16 +533,63 @@ begin
         case when v_td.meal_lunch then 'L' end,
         case when v_td.meal_dinner then 'D' end
       ], null);
+
+      v_dest_snapshot := '{}'::jsonb;
+      if v_td.destination_id is not null then
+        select jsonb_build_object('id', id, 'name', name) into v_dest_snapshot
+        from destinations where id = v_td.destination_id;
+        v_dest_snapshot := coalesce(v_dest_snapshot, '{}'::jsonb);
+      end if;
+
       insert into quote_days (
-        quote_version_id, day_number,
+        quote_version_id, day_number, day_number_end,
         day_date, title, title_ar, description_en, description_ar,
-        destination_id, meals, activities, sort_order
+        destination_id, destination_snapshot, meals, activities, photos, sort_order
       ) values (
-        v_version_id, v_td.day_number,
+        v_version_id, v_td.day_number, v_td.day_number_end,
         case when v_start_date is not null then v_start_date + (v_td.day_number - 1) else null end,
         v_td.title_en, v_td.title_ar, v_td.description_en, v_td.description_ar,
-        v_td.destination_id, v_meals, coalesce(v_td.activities, '[]'::jsonb), v_td.day_number
-      );
+        v_td.destination_id, v_dest_snapshot, v_meals, coalesce(v_td.activities, '[]'::jsonb),
+        case when v_td.image_url is not null then array[v_td.image_url] else '{}'::text[] end,
+        v_td.day_number
+      ) returning id into v_quote_day_id;
+
+      v_sort := 0;
+
+      if v_td.accommodation_id is not null then
+        select id, name, destination_id, description_en into v_acc
+        from accommodations where id = v_td.accommodation_id;
+        if v_acc.id is not null then
+          insert into quote_day_items (
+            quote_day_id, item_type, accommodation_id, title_snapshot, content_snapshot, sort_order
+          ) values (
+            v_quote_day_id, 'accommodation', v_acc.id, v_acc.name,
+            jsonb_build_object('destination_id', v_acc.destination_id, 'description_en', v_acc.description_en),
+            v_sort
+          );
+          v_sort := v_sort + 1;
+        end if;
+      end if;
+
+      for v_act in select value from jsonb_array_elements(coalesce(v_td.activities, '[]'::jsonb)) loop
+        if nullif(v_act->>'activity_id', '') is not null then
+          select id, name into v_act_row from activities where id = (v_act->>'activity_id')::uuid;
+          if v_act_row.id is not null then
+            insert into quote_day_items (
+              quote_day_id, item_type, activity_id, title_snapshot, content_snapshot, sort_order
+            ) values (
+              v_quote_day_id, 'activity', v_act_row.id, v_act_row.name,
+              jsonb_build_object(
+                'moment', nullif(v_act->>'moment', ''),
+                'optional', coalesce((v_act->>'optional')::boolean, false),
+                'day_offset', coalesce((v_act->>'day_offset')::int, 0)
+              ),
+              v_sort
+            );
+            v_sort := v_sort + 1;
+          end if;
+        end if;
+      end loop;
     end loop;
   elsif v_request_nights is not null and v_request_nights > 0 then
     -- No tour linked — generate blank day rows from the request's trip length.
