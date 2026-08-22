@@ -61,6 +61,7 @@ export default async function HomePage({
     .from('tours')
     .select('id, type, hero_image_url, gallery_urls')
     .eq('status', 'active')
+    .eq('show_on_website', true)
     .in('type', ['bike', 'private'])
     .limit(10)
 

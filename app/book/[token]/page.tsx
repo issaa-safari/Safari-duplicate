@@ -1,9 +1,14 @@
+import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { getServerLocale } from '@/lib/i18n'
 import BookingLinkForm from './booking-link-form'
 
 export const dynamic = 'force-dynamic'
+
+// Token-scoped client document — robots.ts disallows crawling it, and this is
+// the fallback in case a link is ever shared/indexed anyway.
+export const metadata: Metadata = { robots: { index: false, follow: false } }
 
 function fmtDate(d: string | null, ar: boolean) {
   if (!d) return '—'

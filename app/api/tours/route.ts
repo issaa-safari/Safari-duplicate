@@ -8,6 +8,7 @@ export async function GET() {
     .from('tours')
     .select('id, title_en, title_ar, type, duration_days')
     .eq('status', 'active')
+    .eq('show_on_website', true)
     .order('title_en')
 
   if (error) return NextResponse.json({ tours: [] }, { status: 200 })

@@ -1,8 +1,13 @@
+import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import PrintToolbar from './print-toolbar'
 import ItineraryMap, { type MapStop } from '@/components/quote/itinerary-map'
 import { googleMapsLinkFor, haversineKm, type LatLng } from '@/lib/geo'
+
+// Token-scoped client document — robots.ts disallows crawling it, and this is
+// the fallback in case a link is ever shared/indexed anyway.
+export const metadata: Metadata = { robots: { index: false, follow: false } }
 
 const MEAL_LABELS: Record<string, string> = { B: 'Breakfast', L: 'Lunch', D: 'Dinner' }
 const MEAL_LABELS_AR: Record<string, string> = { B: 'إفطار', L: 'غداء', D: 'عشاء' }

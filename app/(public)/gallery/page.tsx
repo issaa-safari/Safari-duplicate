@@ -45,6 +45,7 @@ export default async function GalleryPage({
     .from('tours')
     .select('id, title_en, title_ar, hero_image_url, gallery_urls')
     .eq('status', 'active')
+    .eq('show_on_website', true)
 
   // Collect every real image (hero + gallery) across active tours.
   type Shot = { src: string; caption: string }
