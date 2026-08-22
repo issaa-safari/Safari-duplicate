@@ -23,6 +23,13 @@ function FooterInner() {
   const t = isAr ? {
     tagline: 'اختبر البرية. رحلات سفاري بقيادة خبراء عبر أكثر وجهات شرق أفريقيا شهرة.',
     explore: 'استكشف',
+    kenyaSafaris: 'سفاري كينيا',
+    maasaiMara: 'سفاري ماساي مارا',
+    amboseli: 'سفاري أمبوسيلي',
+    familySafaris: 'سفاري للعوائل',
+    luxurySafaris: 'السفاري الفاخر',
+    motorcycle: 'مغامرات الدراجات',
+    kenyaTanzania: 'كينيا وتنزانيا',
     browseTours: 'تصفح الجولات',
     gallery: 'معرض الصور',
     getQuote: 'احصل على عرض سعر',
@@ -39,6 +46,13 @@ function FooterInner() {
   } : {
     tagline: "Experience the wild. Expert-led safaris across East Africa's most iconic destinations.",
     explore: 'Explore',
+    kenyaSafaris: 'Kenya Safaris',
+    maasaiMara: 'Maasai Mara Safari',
+    amboseli: 'Amboseli Safari',
+    familySafaris: 'Family Safaris',
+    luxurySafaris: 'Luxury Safaris',
+    motorcycle: 'Motorcycle Adventures',
+    kenyaTanzania: 'Kenya + Tanzania',
     browseTours: 'Browse Tours',
     gallery: 'Gallery',
     getQuote: 'Get a Quote',
@@ -54,11 +68,20 @@ function FooterInner() {
     rights: 'All rights reserved.',
   }
 
+  const safariLinks = [
+    { href: '/kenya-safari', label: t.kenyaSafaris },
+    { href: '/maasai-mara-safari', label: t.maasaiMara },
+    { href: '/amboseli-safari', label: t.amboseli },
+    { href: '/family-safari-kenya', label: t.familySafaris },
+    { href: '/luxury-kenya-safari', label: t.luxurySafaris },
+    { href: '/kenya-motorcycle-safari', label: t.motorcycle },
+    { href: '/kenya-tanzania-safari', label: t.kenyaTanzania },
+  ]
+
   return (
     <footer className="bg-bush text-sand/80 mt-20" dir={isAr ? 'rtl' : 'ltr'}>
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          {/* Brand */}
           <div>
             <div className="flex items-center gap-2.5 mb-3">
               <Image
@@ -72,28 +95,30 @@ function FooterInner() {
             <p className="text-sm text-sand/60">{t.tagline}</p>
           </div>
 
-          {/* Quick Links */}
           <div>
             <h3 className="font-semibold text-white mb-4">{t.explore}</h3>
+            <ul className="space-y-2 text-sm">
+              {safariLinks.map((item) => (
+                <li key={item.href}>
+                  <Link href={withLang(item.href)} className="hover:text-white transition">{item.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-white mb-4">{t.company}</h3>
             <ul className="space-y-2 text-sm">
               <li><Link href={withLang('/tours')} className="hover:text-white transition">{t.browseTours}</Link></li>
               <li><Link href={withLang('/gallery')} className="hover:text-white transition">{t.gallery}</Link></li>
               <li><Link href={withLang('/quote-request')} className="hover:text-white transition">{t.getQuote}</Link></li>
               <li><Link href={withLang('/about')} className="hover:text-white transition">{t.ourStory}</Link></li>
-            </ul>
-          </div>
-
-          {/* Company */}
-          <div>
-            <h3 className="font-semibold text-white mb-4">{t.company}</h3>
-            <ul className="space-y-2 text-sm">
               <li><Link href={withLang('/contact')} className="hover:text-white transition">{t.contactUs}</Link></li>
               <li><Link href={withLang('/privacy')} className="hover:text-white transition">{t.privacy}</Link></li>
               <li><Link href={withLang('/terms')} className="hover:text-white transition">{t.terms}</Link></li>
             </ul>
           </div>
 
-          {/* Contact */}
           <div>
             <h3 className="font-semibold text-white mb-4">{t.getInTouch}</h3>
             <div className="space-y-2 text-sm">
