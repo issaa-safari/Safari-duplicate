@@ -8,7 +8,6 @@ import { createClient } from '@/lib/supabase/client'
 import { whatsappLink } from '@/lib/site'
 import { LOCALE_COOKIE, localePath, splitLocalePath } from '@/lib/locale'
 
-// A year, matching the cookie proxy.ts writes when it detects a language.
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
 function LangToggle({
@@ -22,19 +21,10 @@ function LangToggle({
   return (
     <div className={`flex items-center rounded-full bg-white/10 p-0.5 ${full ? 'w-full' : ''}`}>
       {(['en', 'ar'] as const).map((l) => (
-        // A plain anchor, deliberately, where every other link is a <Link>.
-        // /ar/tours is *rewritten* onto /tours, so both languages share one
-        // router cache key: a client-side hop from the Arabic page to the
-        // English one changed the address bar and re-served the cached Arabic
-        // payload, under an <html> still marked lang="ar" dir="rtl". Language
-        // is a property of the document, so switching it reloads the document.
         <a
           key={l}
           href={hrefFor(l)}
           onClick={() => {
-            // Record the choice so the language detection in proxy.ts stops
-            // guessing — without this, an Arabic-preferring browser would be
-            // bounced back to /ar on the next navigation.
             document.cookie = `${LOCALE_COOKIE}=${l};path=/;max-age=${LOCALE_COOKIE_MAX_AGE};samesite=lax`
             onSelect()
           }}
@@ -54,17 +44,12 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
   const [scrolled, setScrolled] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  // The URL carries the language, so it is known on the server pass and on the
-  // first client render alike — no state, no post-hydration flip. initialLang
-  // stays in the signature as a fallback for the brief render before the
-  // pathname is available.
   const { locale: pathLocale, path: basePath } = splitLocalePath(pathname ?? '/')
   const locale: 'en' | 'ar' = pathLocale === 'ar' || initialLang === 'ar' ? 'ar' : 'en'
   const currentLang = locale
   const [signedIn, setSignedIn] = useState(false)
   const ar = currentLang === 'ar'
 
-  // Track auth state so the header shows Dashboard + Sign Out when logged in.
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => setSignedIn(!!data.user))
@@ -74,7 +59,6 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
     return () => sub.subscription.unsubscribe()
   }, [])
 
-  // Subtle elevation once the page scrolls under the bar.
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
     onScroll()
@@ -82,7 +66,6 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Lock body scroll + close on Escape while the mobile sheet is open.
   useEffect(() => {
     if (!mobileMenuOpen) return
     const prev = document.body.style.overflow
@@ -104,16 +87,12 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
     router.refresh()
   }
 
-  // Same page, other language — the switcher swaps the prefix, it does not
-  // append a parameter.
   const getLangUrl = (lang: 'en' | 'ar') => localePath(basePath, lang)
-
   const getNavLink = (href: string) => localePath(href, locale)
-
-  // Compare against the locale-stripped path so /ar/tours highlights Tours.
   const isActive = (href: string) => basePath === href || basePath.startsWith(href + '/')
 
   const nav = [
+    { href: '/kenya-safari', label: ar ? 'سفاري كينيا' : 'Safaris' },
     { href: '/tours', label: ar ? 'الجولات' : 'Tours' },
     { href: '/departures', label: ar ? 'الرحلات' : 'Departures' },
     { href: '/gallery', label: ar ? 'المعرض' : 'Gallery' },
@@ -133,15 +112,8 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
         scrolled ? 'shadow-[0_8px_30px_rgba(0,0,0,0.35)]' : ''
       }`}
     >
-      {/* subtle top hairline in brand olive for a finished edge */}
       <div aria-hidden className="h-0.5 w-full bg-gradient-to-r from-olive via-gold to-murram opacity-80" />
-
-      {/* dir="ltr" on the bar only, in both languages: the brand mark belongs on
-          the left and the menu on the right whichever way the page reads. The
-          labels inside are still laid out by the bidi algorithm, so Arabic text
-          renders right-to-left within each item. */}
       <div dir="ltr" className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
-        {/* Logo */}
         <Link
           href={localePath('/', locale)}
           className="flex min-w-0 items-center gap-2.5"
@@ -153,7 +125,6 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
           </span>
         </Link>
 
-        {/* Desktop nav */}
         <nav className="hidden items-center gap-1 lg:flex">
           {nav.map((item) => (
             <Link
@@ -171,7 +142,6 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
           ))}
         </nav>
 
-        {/* Desktop actions */}
         <div className="hidden items-center gap-3 lg:flex">
           <LangToggle currentLang={currentLang} hrefFor={getLangUrl} onSelect={() => setMobileMenuOpen(false)} />
           {signedIn ? (
@@ -207,7 +177,6 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
           </Link>
         </div>
 
-        {/* Mobile trigger */}
         <button
           className="flex h-10 w-10 items-center justify-center rounded-lg text-white transition-colors hover:bg-white/10 lg:hidden"
           onClick={() => setMobileMenuOpen(true)}
@@ -221,16 +190,12 @@ export default function PublicHeader({ initialLang }: { initialLang?: string }) 
       </div>
     </header>
 
-      {/* Mobile full-screen sheet — sibling of <header> so its stacking context
-          isn't trapped under the sticky bar; z-[70] clears the floating
-          WhatsApp button (z-50). */}
       <div
         className={`fixed inset-0 z-[70] bg-bush transition-opacity duration-300 ease-out motion-reduce:transition-none lg:hidden ${
           mobileMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
         }`}
         dir={ar ? 'rtl' : 'ltr'}
       >
-        {/* Same rule for the open menu's own bar: brand left, close right. */}
         <div dir="ltr" className="flex h-16 items-center justify-between px-4 sm:px-6">
           <span className="text-base font-bold text-white" style={display}>Safari Adventure Riders</span>
           <button
