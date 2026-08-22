@@ -505,8 +505,8 @@ export default async function QuotePortalPage({
       travellerGroups={travellerGroups}
       grandTotalLabel={`$${fmt(grandTotal)} USD`}
       aboutText={isArabic
-        ? `${companyName} مشغّل رحلات متخصص في تنظيم رحلات السفاري ومغامرات الدراجات النارية المصممة خصيصاً عبر كينيا وشرق أفريقيا.`
-        : `${companyName} is a tour operator specializing in tailor-made safaris and motorbike adventures across Kenya and East Africa.`}
+        ? `${companyName}، واسمنا العائلي ${site.arabicTradeName}، مشغّل رحلات متخصص في تنظيم رحلات السفاري ومغامرات الدراجات النارية المصممة خصيصاً عبر كينيا وشرق أفريقيا.`
+        : `${companyName}, proudly carrying our Arabic family name ${site.arabicTradeName}, is a tour operator specializing in tailor-made safaris and motorbike adventures across Kenya and East Africa.`}
       status={{
         accepted: isAccepted,
         acceptedBy: acceptance?.client_name ?? null,

@@ -74,6 +74,7 @@ export function travelAgencyJsonLd(sameAs: string[] = []): Record<string, unknow
     '@type': 'TravelAgency',
     '@id': `${site.url}/#organization`,
     name: site.name,
+    alternateName: site.arabicTradeName,
     url: site.url,
     email: site.email,
     telephone: site.phoneE164,

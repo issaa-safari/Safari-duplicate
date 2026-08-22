@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import Link from 'next/link'
 import SafariImage from '@/components/public/safari-image'
 import { localePath, type Locale } from '@/lib/locale'
+import { site } from '@/lib/site'
 
 const BUSH = '#20271A'
 const EASE = [0.22, 1, 0.36, 1] as const
@@ -73,6 +74,26 @@ export default function HomeHero({ heroImageUrl, heroTourId, isAr, locale }: Hom
         width: '100%',
         padding: '0 24px 80px',
       }}>
+        <motion.p
+          initial={reduced ? false : { opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: EASE }}
+          lang="ar"
+          dir="rtl"
+          style={{
+            color: '#E7C66D',
+            fontFamily: 'var(--font-arabic, "Cairo", sans-serif)',
+            fontSize: 'clamp(1.05rem, 2.4vw, 1.4rem)',
+            fontWeight: 800,
+            lineHeight: 1.4,
+            margin: '0 0 12px',
+            width: 'fit-content',
+            textShadow: '0 2px 18px rgba(0,0,0,0.45)',
+          }}
+        >
+          {site.arabicTradeName}
+        </motion.p>
+
         <motion.h1
           initial={reduced ? false : { opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}

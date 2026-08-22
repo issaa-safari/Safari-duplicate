@@ -4,6 +4,7 @@ import { type ActivityGroup } from './activity-tabs'
 import ItineraryMap, { type MapStop } from './itinerary-map'
 import ProposalDisclosure from './proposal-disclosure'
 import ProposalActions, { ProposalShare } from './proposal-actions'
+import { site } from '@/lib/site'
 
 // Client-facing tour proposal, styled to match the operator's PDF proposal.
 // Presentational only — all data arrives as props so it can be rendered with
@@ -349,6 +350,7 @@ export default function ProposalView(p: ProposalViewProps) {
                   <div className="text-sm">
                     {p.agentName && <p className="font-semibold text-white">{p.agentName}</p>}
                     <p className={p.agentName ? 'text-white/60' : 'font-semibold text-white'}>{p.company.name}</p>
+                    <p lang="ar" dir="rtl" className="font-bold text-[#E7C66D]">{site.arabicTradeName}</p>
                   </div>
                 </div>
                 <div className="text-xs text-white/70">
@@ -366,6 +368,7 @@ export default function ProposalView(p: ProposalViewProps) {
           <div className="flex items-center justify-between bg-white px-6 py-3 sm:px-9">
             <div className="text-xs">
               <p className="font-semibold" style={{ color: INK }}>{p.company.name}</p>
+              <p lang="ar" dir="rtl" className="font-bold" style={{ color: OLIVE }}>{site.arabicTradeName}</p>
               {p.company.website && <p className="text-gray-500">{p.company.website}</p>}
             </div>
             {p.company.logoUrl && <Photo src={p.company.logoUrl} alt="" className="h-7 w-7 rounded-full" />}
@@ -761,6 +764,7 @@ export default function ProposalView(p: ProposalViewProps) {
           <section className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">
             <Pill>{T(ar, 'About Us', 'من نحن')}</Pill>
             <h2 className="mt-5 text-2xl font-bold" style={{ color: INK, ...display }}>{p.company.name}</h2>
+            <p lang="ar" dir="rtl" className="mt-1 text-lg font-extrabold" style={{ color: OLIVE }}>{site.arabicTradeName}</p>
             <p className="mt-3 text-sm leading-relaxed text-gray-600" style={{ textWrap: 'pretty' } as React.CSSProperties}>{p.aboutText}</p>
           </section>
         )}
