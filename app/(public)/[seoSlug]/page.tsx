@@ -24,5 +24,5 @@ export default async function SeoLandingRoute({ params, searchParams }: { params
   const landing = seoLandings[seoSlug]
   if (!landing) notFound()
   const locale = await getServerLocale(await searchParams)
-  return <SeoLandingPage locale={locale} copy={landing.copy[locale]} />
+  return <SeoLandingPage locale={locale} copy={landing.copy[locale]} currentPath={`/${seoSlug}`} />
 }
