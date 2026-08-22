@@ -3,7 +3,8 @@ import PublicFooter from '@/components/public/footer'
 import PublicHeader from '@/components/public/header'
 import WhatsAppButton from '@/components/public/whatsapp-button'
 import StructuredData from '@/components/public/structured-data'
-import { faqPageJsonLd } from '@/lib/seo'
+import Breadcrumbs from '@/components/public/breadcrumbs'
+import { breadcrumbJsonLd, faqPageJsonLd } from '@/lib/seo'
 import { localePath } from '@/lib/locale'
 
 export type LandingCopy = {
@@ -15,15 +16,33 @@ export type LandingCopy = {
   related?: { href: string; label: string }[]
 }
 
-export default function SeoLandingPage({ locale, copy }: { locale: 'en' | 'ar'; copy: LandingCopy }) {
+export default function SeoLandingPage({
+  locale,
+  copy,
+  currentPath,
+}: {
+  locale: 'en' | 'ar'
+  copy: LandingCopy
+  currentPath: string
+}) {
   const isAr = locale === 'ar'
+  const breadcrumbItems = [
+    { label: isAr ? 'الرئيسية' : 'Home', href: '/' },
+    { label: isAr ? 'سفاري كينيا' : 'Kenya Safaris', href: '/kenya-safari' },
+    { label: copy.title, href: currentPath },
+  ]
+
   return (
     <div dir={isAr ? 'rtl' : 'ltr'}>
       {copy.faqs.length > 0 && <StructuredData data={faqPageJsonLd(copy.faqs)} />}
+      <StructuredData data={breadcrumbJsonLd(breadcrumbItems, locale)} />
       <PublicHeader initialLang={locale} />
       <main>
-        <section style={{ background: '#20271A', color: '#fff', padding: '96px 24px 80px' }}>
+        <section style={{ background: '#20271A', color: '#fff', padding: '28px 24px 80px' }}>
           <div style={{ maxWidth: 920, margin: '0 auto' }}>
+            <div style={{ marginBottom: 42 }}>
+              <Breadcrumbs items={breadcrumbItems} locale={locale} dark />
+            </div>
             <p style={{ color: '#C9A24B', fontWeight: 700 }}>{copy.eyebrow}</p>
             <h1 style={{ fontSize: 'clamp(2.2rem,6vw,4rem)', lineHeight: 1.08, margin: '12px 0 24px', fontFamily: 'var(--font-display,sans-serif)' }}>{copy.title}</h1>
             <p style={{ maxWidth: 780, fontSize: '1.15rem', lineHeight: 1.8, color: '#EAE3D2' }}>{copy.intro}</p>
