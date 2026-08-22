@@ -58,7 +58,7 @@ export default async function NewRequestPage({
   })
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
       <div className="flex items-center gap-4 mb-6">
         <Link href="/admin/sales" className="text-sm text-muted-foreground hover:text-foreground">
           Back to Sales Desk

@@ -9,7 +9,7 @@ import TripBuilderForm, { type LookupOption, type AccommodationOption } from '..
 import DeliveryPanel from './delivery-panel'
 import type { TripBuilderState } from '../../trip-builder/types'
 
-type Step = 'itinerary' | 'pricing' | 'preview' | 'send'
+type Step = 'itinerary' | 'pricing' | 'review'
 
 interface VersionRow {
   id: string
@@ -19,6 +19,7 @@ interface VersionRow {
   travel_start_date: string | null
   travel_end_date: string | null
   valid_until: string | null
+  total_selling_usd?: number | null
   language?: string | null
 }
 
@@ -30,10 +31,9 @@ interface ItineraryData {
 }
 
 const STEPS: { key: Step; label: string }[] = [
-  { key: 'itinerary', label: 'Itinerary & details' },
-  { key: 'pricing', label: 'Pricing' },
-  { key: 'preview', label: 'Preview' },
-  { key: 'send', label: 'Send' },
+  { key: 'itinerary', label: 'Build itinerary' },
+  { key: 'pricing', label: 'Price proposal' },
+  { key: 'review', label: 'Review & send' },
 ]
 
 export default function QuoteWorkspace({
@@ -123,6 +123,13 @@ export default function QuoteWorkspace({
   // (latest, all tracked versions, and/or an explicitly requested older one).
   const versionsWithItinerary = effectiveVersions.filter(v => itineraryByVersion[v.id])
   const showVersionPills = versionsWithItinerary.length > 1
+  const activeVersion = effectiveVersions.find(version => version.id === activeVersionId) ?? effectiveVersions[0] ?? null
+  const activeDayCount = activeVersion ? (dayCountByVersion[activeVersion.id] ?? 0) : 0
+  const completedSteps: Record<Step, boolean> = {
+    itinerary: Boolean(activeVersion?.travel_start_date && activeVersion?.travel_end_date && activeDayCount > 0),
+    pricing: Number(activeVersion?.total_selling_usd ?? 0) > 0 && activeVersion?.status !== 'draft',
+    review: Boolean(activeVersion && deliveries.some(delivery => delivery.quote_version_id === activeVersion.id)),
+  }
 
   // Dirty flags — one per mounted itinerary builder (keyed by version id) plus pricing.
   const [itineraryDirty, setItineraryDirty] = useState<Record<string, boolean>>({})
@@ -158,7 +165,7 @@ export default function QuoteWorkspace({
                     : 'border border-border bg-surface text-muted-foreground hover:bg-surface-alt hover:text-foreground')}>
                 <span className={'grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold ' +
                   (active ? 'bg-white/25 text-white' : 'bg-muted text-muted-foreground group-hover:bg-accent group-hover:text-brand-ink')}>
-                  {i + 1}
+                  {completedSteps[s.key] ? '✓' : i + 1}
                 </span>
                 {s.label}
               </button>
@@ -255,17 +262,17 @@ export default function QuoteWorkspace({
           onDirtyChange={setPricingDirty}
           onSaved={() => {
             // The save action moves draft → ready server-side; mirror that
-            // locally, jump to Preview, and refresh the route data.
+            // locally, jump to Review & send, and refresh the route data.
             if (tripBuilderInitialVersionId) {
               setReadyVersionIds(prev => new Set(prev).add(tripBuilderInitialVersionId))
             }
-            setStep('preview')
+            setStep('review')
             router.refresh()
           }}
         />
       </div>
 
-      <div className={step === 'preview' || step === 'send' ? '' : 'hidden'}>
+      <div className={step === 'review' ? '' : 'hidden'}>
         <DeliveryPanel
           quoteId={quoteId}
           versions={effectiveVersions.map(v => ({ id: v.id, version_number: v.version_number, status: v.status }))}

@@ -116,7 +116,7 @@ export default async function QuoteDetailPage({
   ])
 
   // Day counts for every version (not just the ones with full itinerary data
-  // loaded) — the Preview & Send panel warns when a version about to be shared
+  // loaded) — the Review & send panel warns when a version about to be shared
   // has no Day-by-Day itinerary, since the proposal would render without the
   // summary, map, and day pages.
   const { data: dayCountRows } = versions.length
@@ -162,9 +162,10 @@ export default async function QuoteDetailPage({
 
   const clientName = client ? `${client.first_name} ${client.last_name}`.trim() : 'Quote'
 
-  const VALID_STEPS = ['itinerary', 'pricing', 'preview', 'send']
-  const initialStep = (VALID_STEPS.includes(stepParam ?? '') ? stepParam : 'itinerary') as
-    'itinerary' | 'pricing' | 'preview' | 'send'
+  const normalizedStep = stepParam === 'preview' || stepParam === 'send' ? 'review' : stepParam
+  const VALID_STEPS = ['itinerary', 'pricing', 'review']
+  const initialStep = (VALID_STEPS.includes(normalizedStep ?? '') ? normalizedStep : 'itinerary') as
+    'itinerary' | 'pricing' | 'review'
   const initialVersionId =
     (versionParam && versions.some((v: any) => v.id === versionParam) ? versionParam : latestVersion?.id) ?? ''
 
