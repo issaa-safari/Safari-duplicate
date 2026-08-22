@@ -952,6 +952,7 @@ begin
         staff_id,
         title_snapshot,
         content_snapshot,
+        additional_price_usd,
         sort_order
       ) values (
         v_day_id,
@@ -962,6 +963,7 @@ begin
         case when v_item->>'itemType' = 'staff' then nullif(v_item->>'entityId', '')::uuid end,
         coalesce(nullif(trim(v_item->>'titleSnapshot'), ''), 'Untitled item'),
         coalesce(v_item->'contentSnapshot', '{}'::jsonb),
+        case when v_item->>'itemType' = 'accommodation' then nullif(v_item->>'additionalPriceUsd', '')::numeric(14,2) end,
         v_item_index
       );
       v_item_index := v_item_index + 1;
@@ -2216,8 +2218,10 @@ CREATE TABLE public.quote_day_items (
     room_id uuid,
     is_alternative boolean DEFAULT false NOT NULL,
     nights integer DEFAULT 1,
+    additional_price_usd numeric(14,2),
     CONSTRAINT quote_day_items_item_type_check CHECK ((item_type = ANY (ARRAY['accommodation'::text, 'activity'::text, 'vehicle'::text, 'staff'::text, 'meal'::text, 'flight'::text, 'transfer'::text, 'note'::text, 'other'::text]))),
-    CONSTRAINT quote_day_items_nights_check CHECK (((nights IS NULL) OR (nights > 0)))
+    CONSTRAINT quote_day_items_nights_check CHECK (((nights IS NULL) OR (nights > 0))),
+    CONSTRAINT quote_day_items_additional_price_usd_check CHECK (((additional_price_usd IS NULL) OR (additional_price_usd >= (0)::numeric)))
 );
 
 

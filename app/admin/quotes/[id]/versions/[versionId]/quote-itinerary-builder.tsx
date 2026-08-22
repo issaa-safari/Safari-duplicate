@@ -18,6 +18,9 @@ type DayItem = {
   entityId: string | null
   titleSnapshot: string
   contentSnapshot: Record<string, unknown>
+  // Manual upgrade price; only meaningful for an accommodation item with
+  // contentSnapshot.alternative === true.
+  additionalPriceUsd?: number | null
 }
 
 type Day = {
@@ -136,6 +139,7 @@ function fromTourDays(
       _key: uid(), id: null, itemType: 'accommodation', entityId: acc.id,
       titleSnapshot: acc.name,
       contentSnapshot: { destination_id: acc.destination_id, description_en: acc.description_en ?? null },
+      additionalPriceUsd: null,
     })
 
     for (const actId of (td.activity_ids ?? [])) {
@@ -144,6 +148,7 @@ function fromTourDays(
         _key: uid(), id: null, itemType: 'activity', entityId: act.id,
         titleSnapshot: act.name,
         contentSnapshot: { destination_id: act.destination_id, description_en: act.description_en ?? null },
+        additionalPriceUsd: null,
       })
     }
 
@@ -188,6 +193,7 @@ function loadInitialDays(
         entityId: i.accommodation_id ?? i.activity_id ?? i.vehicle_id ?? i.staff_id ?? null,
         titleSnapshot: i.title_snapshot,
         contentSnapshot: i.content_snapshot ?? {},
+        additionalPriceUsd: i.additional_price_usd != null ? Number(i.additional_price_usd) : null,
       }))
     return {
       _key: uid(),
@@ -354,8 +360,28 @@ export default function QuoteItineraryBuilder({
         _key: uid(), id: null, itemType: 'accommodation', entityId: accomId,
         titleSnapshot: (acc?.name as string) ?? 'Accommodation',
         contentSnapshot: { destination_id: acc?.destination_id ?? null, description_en: acc?.description_en ?? null, alternative: alt },
+        additionalPriceUsd: null,
       }
       return { ...d, items: [...others, item] }
+    }))
+    setSaved(false)
+  }
+  function altItemFor(day: Day): DayItem | undefined {
+    return day.items.find(it => it.itemType === 'accommodation' && it.contentSnapshot?.alternative === true)
+  }
+  function setAltPrice(i: number, value: string) {
+    if (isLocked) return
+    const price = value.trim() === '' ? null : Number(value)
+    setDays(prev => prev.map((d, idx) => {
+      if (idx !== i) return d
+      return {
+        ...d,
+        items: d.items.map(it =>
+          it.itemType === 'accommodation' && it.contentSnapshot?.alternative === true
+            ? { ...it, additionalPriceUsd: Number.isFinite(price as number) ? price : null }
+            : it
+        ),
+      }
     }))
     setSaved(false)
   }
@@ -822,6 +848,15 @@ export default function QuoteItineraryBuilder({
                     {accommodations.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                     <option value="__add__">+ Add new accommodation…</option>
                   </select>
+                  {accomIdFor(day, true) && (
+                    <input type="number" min={0} step="any"
+                      value={altItemFor(day)?.additionalPriceUsd ?? ''}
+                      onChange={e => setAltPrice(i, e.target.value)}
+                      placeholder="+ price (USD)"
+                      title="Additional price shown to the client for choosing this alternative accommodation."
+                      aria-label={`Additional price for the alternative accommodation on day ${day.dayNumber}`}
+                      className={smallSelectCls + ' mt-1'} disabled={isLocked} />
+                  )}
                 </div>
               </div>
 

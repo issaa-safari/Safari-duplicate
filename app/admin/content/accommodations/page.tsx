@@ -4,16 +4,7 @@ import { redirect } from 'next/navigation'
 import { ButtonLink } from '@/components/ui/button'
 import ContentShell from '../content-shell'
 import ContentDirectory, { type DirectoryItem } from '@/components/admin/content-directory'
-
-const TIER_STYLES: Record<string, string> = {
-  budget: 'bg-muted text-muted-foreground',
-  midrange: 'bg-blue-100 text-blue-700',
-  luxury: 'bg-amber-100 text-warning-foreground',
-  ultra: 'bg-purple-100 text-purple-700',
-}
-const TIER_LABELS: Record<string, string> = {
-  budget: 'Budget', midrange: 'Mid-Range', luxury: 'Luxury', ultra: 'Ultra-Luxury',
-}
+import { ACCOMMODATION_TIER_BADGE_CLASSES as TIER_STYLES, ACCOMMODATION_TIER_LABELS_EN as TIER_LABELS } from '@/lib/accommodation-tiers'
 
 export default async function AccommodationsPage() {
   const supabase = await createClient()
@@ -32,9 +23,10 @@ export default async function AccommodationsPage() {
     const badges = []
     if (a.type) badges.push({ label: String(a.type).replace(/_/g, ' '), className: 'bg-accent text-accent-foreground' })
     if (a.budget_tier) {
+      const tier = a.budget_tier as keyof typeof TIER_LABELS
       badges.push({
-        label: TIER_LABELS[a.budget_tier] ?? a.budget_tier,
-        className: TIER_STYLES[a.budget_tier] ?? 'bg-muted text-muted-foreground',
+        label: TIER_LABELS[tier] ?? a.budget_tier,
+        className: TIER_STYLES[tier] ?? 'bg-muted text-muted-foreground',
       })
     }
     return {
