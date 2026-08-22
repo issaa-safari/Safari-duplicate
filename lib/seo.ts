@@ -150,3 +150,25 @@ export function faqPageJsonLd(
     })),
   }
 }
+
+/**
+ * Breadcrumb structured data generated from the same visible hierarchy used by
+ * the shared Breadcrumbs component. Paths are localised before becoming
+ * absolute URLs so English and Arabic pages describe their own navigation
+ * trail rather than pointing across locales.
+ */
+export function breadcrumbJsonLd(
+  items: { label: string; href: string }[],
+  locale: Locale,
+): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.label,
+      item: `${site.url}${localePath(item.href, locale)}`,
+    })),
+  }
+}
