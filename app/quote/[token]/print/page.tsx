@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import PrintToolbar from './print-toolbar'
 import ItineraryMap, { type MapStop } from '@/components/quote/itinerary-map'
 import { googleMapsLinkFor, haversineKm, type LatLng } from '@/lib/geo'
+import { site } from '@/lib/site'
 
 // Token-scoped client document — robots.ts disallows crawling it, and this is
 // the fallback in case a link is ever shared/indexed anyway.
@@ -443,7 +444,7 @@ export default async function QuotePrintPage({
     regards: 'مع خالص التحيات',
     inclText: 'جميع الأنشطة (ما لم تُشَر إلى أنها اختيارية)، الوجبات، رسوم الحدائق، جميع مرافق الإقامة، المرشد المتخصص، جميع وسائل النقل.',
     exclText: 'المواد الشخصية، تأمين السفر، رسوم التأشيرة، الزيادات الضريبية الحكومية، الإكراميات ($10 للشخص/يوم)، الرحلات الجوية الدولية.',
-    aboutDesc: `${companyName} هي شركة رائدة في السياحة، متخصصة في رحلات السفاري والتجارب الثقافية في شرق أفريقيا.`,
+    aboutDesc: `${companyName}، واسمنا العائلي ${site.arabicTradeName}، شركة سياحة متخصصة في رحلات السفاري والتجارب الثقافية في شرق أفريقيا.`,
     address: 'العنوان', email: 'البريد', phone: 'الهاتف',
     noAccom: 'بدون إقامة', confirmBooking: 'تأكيد الحجز',
     accomPackages: 'باقات الإقامة', accomPackagesNote: 'يمكن إضافتها بسعر إضافي',
@@ -477,7 +478,7 @@ export default async function QuotePrintPage({
     regards: 'Best regards',
     inclText: 'All activities (unless indicated as optional), Meals (as specified in the itinerary), Park fees, All accommodations, Professional guide, All transportation (Unless labeled as optional).',
     exclText: 'Personal items (Souvenirs, travel insurance, visa fees, tips and gratuities, internet, unusual beverages), each fees. Additional accommodation before and at the end of the tour. Tips (Tipping guideline $50.00 pp per day), International flights.',
-    aboutDesc: `${companyName} is a leading tour operator specializing in wildlife safaris and cultural experiences in East Africa.`,
+    aboutDesc: `${companyName}, proudly carrying our Arabic family name ${site.arabicTradeName}, is a tour operator specializing in wildlife safaris and cultural experiences in East Africa.`,
     address: 'Address', email: 'Email', phone: 'Phone',
     noAccom: 'No accommodation', confirmBooking: 'Confirm Booking',
     accomPackages: 'Accommodation Packages', accomPackagesNote: `For more details see from page ${3 + days.length}`,
@@ -592,6 +593,7 @@ export default async function QuotePrintPage({
               )}
               <div>
                 <div style={{ fontWeight: 700, fontSize: 14, color: '#fff' }}>{companyName}</div>
+                <div dir="rtl" lang="ar" style={{ fontWeight: 700, fontSize: 12, color: '#d8bd72', marginTop: 2 }}>{site.arabicTradeName}</div>
                 <div style={{ fontSize: 11, color: '#bbb', marginTop: 4 }}>
                   {settings?.phone && <span>Phone&nbsp;{settings.phone}</span>}
                   {settings?.phone && settings?.email && <span> &middot; </span>}
@@ -1174,6 +1176,7 @@ export default async function QuotePrintPage({
           </div>
 
           <h2 style={{ marginBottom: 6 }}>{companyName}</h2>
+          <div dir="rtl" lang="ar" style={{ color: G, fontWeight: 800, fontSize: 16, marginBottom: 8, width: 'fit-content' }}>{site.arabicTradeName}</div>
           <p style={{ fontSize: 13, color: '#555', marginBottom: 28, lineHeight: 1.65 }}>{T.aboutDesc}</p>
 
           <div className="contact-box">

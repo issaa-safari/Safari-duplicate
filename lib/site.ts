@@ -4,6 +4,9 @@
 
 export const site = {
   name: 'Safari Adventure Riders',
+  // Arabic family/trade name used as a supporting credibility mark. Keep the
+  // English public brand as the primary name and show this alongside it.
+  arabicTradeName: 'شركة العمودي للسياحة',
   domain: 'safariadventureriders.com',
   // The apex 308-redirects to www, so www is the canonical host. Everything
   // derived from this (sitemap entries, canonical tags, OG urls, emailed

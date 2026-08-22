@@ -110,6 +110,9 @@ function ContactInner() {
               {/* Contact Info */}
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-8">{t.contactInfo}</h2>
+                <p lang="ar" dir="rtl" className="text-xl font-extrabold mb-8" style={{ color: G }}>
+                  {site.arabicTradeName}
+                </p>
                 <div className="space-y-8">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.email}</h3>

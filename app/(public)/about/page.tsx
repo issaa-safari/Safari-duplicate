@@ -8,6 +8,7 @@ import { STOCK_HERO_IMAGE } from '@/lib/stock-images'
 import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/seo'
 import { localePath } from '@/lib/locale'
+import { site } from '@/lib/site'
 
 const G = '#7A9A4A'
 
@@ -40,6 +41,7 @@ export default async function AboutPage({
   const t = isAr ? {
     title: 'عن سفاري أدفنتشر رايدرز',
     subtitle: 'اكتشف قصتنا ورسالتنا في صنع تجارب أفريقية لا تُنسى.',
+    familyName: 'اسمنا العائلي يعكس هويتنا والتزامنا المباشر تجاه كل ضيف يختار السفر معنا.',
     ourStory: 'قصتنا',
     story1: 'تأسست سفاري أدفنتشر رايدرز من شغف بالحياة البرية والمناظر الطبيعية المذهلة في أفريقيا. ما بدأ كعملية صغيرة مع حفنة من خبراء الطبيعة نما ليصبح أحد أكثر منظمي رحلات السفاري الموثوقين في شرق أفريقيا.',
     story2: 'حظينا بشرف مشاركة البرية الأفريقية مع مسافرين من جميع أنحاء العالم. كل رحلة سفاري هي أكثر من مجرد عطلة — إنها تجربة تحويلية تربطك بالطبيعة والثقافات بطرق لن تنساها أبداً.',
@@ -62,6 +64,7 @@ export default async function AboutPage({
   } : {
     title: 'About Safari Adventure Riders',
     subtitle: 'Discover our story and mission to create unforgettable African experiences.',
+    familyName: 'Our Arabic family name reflects our identity and our direct accountability to every guest who travels with us.',
     ourStory: 'Our Story',
     story1: "Safari Adventure Riders was born from a passion for Africa's incredible wildlife and landscapes. What started as a small operation with just a handful of expert naturalists has grown into one of East Africa's most trusted safari operators.",
     story2: "We've had the privilege of sharing the African bush with travelers from around the world. Each safari is more than just a vacation—it's a transformative experience that connects you with nature and cultures in ways you'll never forget.",
@@ -96,6 +99,9 @@ export default async function AboutPage({
         >
           <div className="max-w-4xl mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">{t.title}</h1>
+            <p lang="ar" dir="rtl" className="text-xl md:text-2xl font-extrabold text-[#E7C66D] mb-3">
+              {site.arabicTradeName}
+            </p>
             <p className="text-lg text-gray-300">{t.subtitle}</p>
           </div>
         </section>
@@ -106,6 +112,10 @@ export default async function AboutPage({
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">{t.ourStory}</h2>
+                <p className="font-semibold text-gray-800 mb-4 leading-relaxed">
+                  <span lang="ar" dir="rtl" className="font-extrabold">{site.arabicTradeName}</span>
+                  {' — '}{t.familyName}
+                </p>
                 <p className="text-gray-600 mb-4 leading-relaxed">{t.story1}</p>
                 <p className="text-gray-600 mb-4 leading-relaxed">{t.story2}</p>
                 <p className="text-gray-600 leading-relaxed">{t.story3}</p>

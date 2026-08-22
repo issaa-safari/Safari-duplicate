@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { breadcrumbJsonLd, hasArabicContent, languageAlternates, noindexIfUntranslated } from './seo'
+import { breadcrumbJsonLd, hasArabicContent, languageAlternates, noindexIfUntranslated, travelAgencyJsonLd } from './seo'
+import { site } from './site'
 
 describe('hasArabicContent', () => {
   it('requires both title and overview', () => {
@@ -69,5 +70,13 @@ describe('breadcrumbJsonLd', () => {
     const data = breadcrumbJsonLd(items, 'ar') as { itemListElement: { item: string }[] }
     expect(data.itemListElement[1].item).toContain('/ar/kenya-safari')
     expect(data.itemListElement[2].item).toContain('/ar/maasai-mara-safari')
+  })
+})
+
+describe('travelAgencyJsonLd', () => {
+  it('publishes the Arabic family name as an alternate organization name', () => {
+    const data = travelAgencyJsonLd()
+    expect(data.name).toBe(site.name)
+    expect(data.alternateName).toBe('شركة العمودي للسياحة')
   })
 })

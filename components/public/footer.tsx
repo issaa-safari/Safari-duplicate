@@ -105,7 +105,10 @@ function FooterInner() {
           <div>
             <div className="flex items-center gap-2.5 mb-3">
               <Image src="/logo-safari-riders.png" alt="Safari Adventure Riders logo" width={28} height={40} />
-              <span className="font-bold text-white">Safari Adventure Riders</span>
+              <div>
+                <span className="block font-bold text-white">Safari Adventure Riders</span>
+                <span lang="ar" dir="rtl" className="block text-sm font-bold text-[#E7C66D]">{site.arabicTradeName}</span>
+              </div>
             </div>
             <p className="text-sm text-sand/60">{t.tagline}</p>
           </div>
