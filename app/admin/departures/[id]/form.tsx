@@ -7,7 +7,7 @@ import { updateDeparture, toggleDeparturePublished } from './actions'
 import { Button, ButtonLink } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 
-interface Departure {
+export interface Departure {
   id: string
   tour_id: string
   start_date: string
@@ -30,7 +30,14 @@ interface Departure {
   } | null
 }
 
-export default function DepartureEditForm({ departure, departureId, tourDays }: { departure: Departure; departureId: string; tourDays: any[] }) {
+export interface TourDay {
+  id: string
+  day_number: number
+  title_en: string | null
+  description_en: string | null
+}
+
+export default function DepartureEditForm({ departure, departureId, tourDays }: { departure: Departure; departureId: string; tourDays: TourDay[] }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [isActive, setIsActive] = useState(departure.is_active)
@@ -43,8 +50,8 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
     const formData = new FormData(e.currentTarget)
     try {
       await updateDeparture(departure.id, formData)
-    } catch (err: any) {
-      setError(err.message ?? 'Something went wrong.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.')
       setLoading(false)
     }
   }
@@ -52,26 +59,10 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
   const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/admin/departures" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Back to Departures
-        </Link>
-        <h1 className="text-xl font-semibold text-foreground">Edit Departure</h1>
-        <div className="ml-auto flex items-center gap-2">
-          <Link
-            href={`/admin/bookings/new?departure=${departureId}`}
-            className="inline-flex items-center rounded-lg bg-primary-strong px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-primary-strong-hover"
-          >
-            + Add Booking
-          </Link>
-          <Link
-            href={`/admin/departures/${departureId}/manifest`}
-            className="inline-flex items-center rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-brand-text shadow-sm hover:bg-surface-alt"
-          >
-            Group Manifest →
-          </Link>
-        </div>
+    <section aria-labelledby="departure-settings-heading" className="min-w-0">
+      <div className="mb-4">
+        <h2 id="departure-settings-heading" className="text-lg font-semibold text-foreground">Departure settings</h2>
+        <p className="text-sm text-muted-foreground">Dates, pricing, capacity and website visibility.</p>
       </div>
 
       {departure.tours && (
@@ -217,7 +208,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
                 This departure includes <strong>{tourDays.length} day{tourDays.length !== 1 ? 's' : ''}</strong>:
               </p>
               <div className="space-y-1">
-                {tourDays.map((day: any) => (
+                {tourDays.map(day => (
                   <div key={day.id} className="flex items-start gap-2 text-sm">
                     <span className="text-green-600">✓</span>
                     <span className="text-foreground">
@@ -260,8 +251,8 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
               try {
                 await toggleDeparturePublished(departureId)
                 setIsActive(!isActive)
-              } catch (err: any) {
-                setError(err.message ?? 'Failed to toggle published status')
+              } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : 'Failed to toggle published status')
               }
             })}
             className={`rounded-md px-6 py-2.5 text-sm font-medium disabled:opacity-60 ${
@@ -273,6 +264,6 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
           </button>
         </div>
       </form>
-    </div>
+    </section>
   )
 }

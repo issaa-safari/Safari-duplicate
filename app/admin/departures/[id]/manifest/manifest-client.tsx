@@ -191,6 +191,19 @@ export default function ManifestClient({
         </div>
       )}
 
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-muted/30 p-3 text-xs">
+        <span className="mr-1 font-medium text-muted-foreground">Jump to</span>
+        <a href="#logistics" className="rounded-full border border-border bg-surface px-3 py-1.5 font-medium text-brand-text hover:bg-accent">
+          Transfers
+        </a>
+        <a href="#rooming" className="rounded-full border border-border bg-surface px-3 py-1.5 font-medium text-brand-text hover:bg-accent">
+          Rooming
+        </a>
+        <a href="#manifest" className="rounded-full border border-border bg-surface px-3 py-1.5 font-medium text-brand-text hover:bg-accent">
+          Traveller manifest
+        </a>
+      </div>
+
       {/* Readiness */}
       <div>
         <div className="mb-2 flex items-center justify-between">
@@ -215,7 +228,7 @@ export default function ManifestClient({
       </div>
 
       {/* Transfer runs */}
-      <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+      <div id="logistics" className="scroll-mt-28 rounded-xl border border-border bg-surface shadow-sm p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-foreground">Airport transfer runs</h2>
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -263,7 +276,7 @@ export default function ManifestClient({
       </div>
 
       {/* Rooming list */}
-      <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+      <div id="rooming" className="scroll-mt-28 rounded-xl border border-border bg-surface shadow-sm p-4">
         <h2 className="mb-3 text-sm font-semibold text-foreground">Rooming list</h2>
         {rooming.rooms.length === 0 ? (
           <p className="text-xs text-muted-foreground">
@@ -293,7 +306,7 @@ export default function ManifestClient({
       </div>
 
       {/* Roster */}
-      <div className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden">
+      <div id="manifest" className="scroll-mt-28 rounded-xl border border-border bg-surface shadow-sm overflow-hidden">
         <table className="stack-table w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-muted-foreground">

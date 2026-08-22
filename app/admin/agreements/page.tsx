@@ -27,10 +27,10 @@ export default async function AgreementsPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-foreground">Traveller Agreement</h1>
+        <h1 className="text-xl font-semibold text-foreground">Agreement Template</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          The policy &amp; waiver document travellers sign. Issue and track signatures from each
-          departure&rsquo;s Group Manifest.
+          Configure the policy and waiver once. Issue and track each traveller&rsquo;s signature from
+          that departure&rsquo;s Manifest &amp; Logistics workspace.
         </p>
         <p className="text-xs text-muted-foreground mt-2">
           {signed ?? 0} signed · {pending ?? 0} awaiting signature
