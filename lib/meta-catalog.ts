@@ -39,7 +39,11 @@ const PRIMARY_HEADERS = [
   'custom_label_2',
 ] as const
 
-const ARABIC_HEADERS = ['id', 'title', 'description'] as const
+const ARABIC_HEADERS = ['id', 'override', 'title', 'description'] as const
+
+// Meta language feeds require an ISO 639-1 language override followed by
+// `_XX`, which applies the translation in every supported country.
+const ARABIC_LANGUAGE_OVERRIDE = 'ar_XX'
 
 function csvCell(value: unknown): string {
   const text = String(value ?? '').replace(/\r\n?/g, '\n')
@@ -132,6 +136,7 @@ export function buildMetaArabicLanguageFeed(tours: MetaCatalogTour[], departures
     if (!firstImage(tour) || (departurePrices.get(tour.id) ?? positivePrice(tour.base_price_usd)) === null) return []
     return [[
       tour.id,
+      ARABIC_LANGUAGE_OVERRIDE,
       tour.title_ar || tour.title_en,
       compactDescription(tour, 'ar'),
     ]]

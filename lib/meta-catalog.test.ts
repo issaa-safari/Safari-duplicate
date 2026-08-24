@@ -41,6 +41,7 @@ describe('Meta catalog feeds', () => {
 
   it('exports matching Arabic localization IDs and Arabic copy', () => {
     const csv = buildMetaArabicLanguageFeed([tour], [])
-    expect(csv).toContain('"tour-1","سفاري كينيا 8 أيام","حياة برية وبحيرات وغابات."')
+    expect(csv).toContain('"id","override","title","description"')
+    expect(csv).toContain('"tour-1","ar_XX","سفاري كينيا 8 أيام","حياة برية وبحيرات وغابات."')
   })
 })
