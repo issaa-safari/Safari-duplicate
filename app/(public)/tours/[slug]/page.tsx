@@ -301,7 +301,8 @@ export default async function TourDetailPage({
   // own destinations rather than a quote's destination snapshots.
   const { mapStops, distanceByDayId, totalDistanceKm } = buildTourMap(
     (rawDays ?? []).map(d => ({
-      id: d.id, day_number: d.day_number, destination_id: d.destination_id,
+      id: d.id, day_number: d.day_number, day_number_end: d.day_number_end,
+      destination_id: d.destination_id,
       distance_km: d.distance_km, road_distance_km: d.road_distance_km,
     })),
     destCoordMap,

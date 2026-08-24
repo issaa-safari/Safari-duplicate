@@ -136,7 +136,7 @@ export default async function DeparturesPage({
               <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="px-4 py-3 font-medium">Trip</th>
                 <th className="px-4 py-3 font-medium">Dates</th>
-                <th className="px-4 py-3 font-medium">Seats</th>
+                <th className="px-4 py-3 font-medium">Available seats</th>
                 <th className="px-4 py-3 font-medium">Readiness</th>
                 <th className="px-4 py-3 font-medium hidden md:table-cell">Price</th>
                 <th className="px-4 py-3 font-medium">Status</th>
@@ -174,10 +174,10 @@ export default async function DeparturesPage({
                     </td>
                     <td data-label="Dates" className="px-4 py-3 text-muted-foreground">
                       {new Date(dep.start_date).toLocaleDateString('en-GB')}
-                      {' → '}
+                      {' â†’ '}
                       {new Date(dep.end_date).toLocaleDateString('en-GB')}
                     </td>
-                    <td data-label="Seats" className="px-4 py-3">
+                    <td data-label="Available seats" className="px-4 py-3">
                       <span className={available <= 0 ? 'text-destructive font-medium' : 'text-foreground'}>
                         {available} / {dep.max_seats}
                       </span>
@@ -199,7 +199,7 @@ export default async function DeparturesPage({
                         ? `$${Number(dep.price_usd).toLocaleString()}`
                         : dep.price_single_usd != null
                           ? `$${Number(dep.price_single_usd).toLocaleString()} (single only)`
-                          : '—'}
+                          : 'â€”'}
                     </td>
                     <td data-label="Status" className="px-4 py-3">
                       <StatusBadge status={dep.status} />
@@ -215,8 +215,8 @@ export default async function DeparturesPage({
                           <div>
                             <button type="submit"
                               className={`text-xs px-2.5 py-1 rounded-full font-medium ${publishingReady ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-amber-100 text-amber-800 hover:bg-amber-200'}`}
-                              title="Live on website — click to unpublish">
-                              ● {publishingReady ? 'Published' : 'Published · fix'}
+                              title="Live on website â€” click to unpublish">
+                              â— {publishingReady ? 'Published' : 'Published Â· fix'}
                             </button>
                             {!publishingReady && <p className="mt-1 max-w-44 text-[10px] leading-tight text-amber-800">{publishingBlockers[0]}</p>}
                           </div>
@@ -224,8 +224,8 @@ export default async function DeparturesPage({
                           <div>
                             <button type="submit" disabled={!publishingReady}
                               className="text-xs px-2.5 py-1 rounded-full font-medium bg-muted text-muted-foreground hover:bg-green-100 hover:text-green-700 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-muted disabled:hover:text-muted-foreground"
-                              title={publishingReady ? 'Hidden from website — click to publish' : publishingBlockers.join('; ')}>
-                              ○ {publishingReady ? 'Publish' : 'Not ready'}
+                              title={publishingReady ? 'Hidden from website â€” click to publish' : publishingBlockers.join('; ')}>
+                              â—‹ {publishingReady ? 'Publish' : 'Not ready'}
                             </button>
                             {!publishingReady && <p className="mt-1 max-w-44 text-[10px] leading-tight text-muted-foreground">{publishingBlockers[0]}</p>}
                           </div>
@@ -249,3 +249,4 @@ export default async function DeparturesPage({
     </div>
   )
 }
+

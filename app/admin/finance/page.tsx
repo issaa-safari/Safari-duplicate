@@ -58,11 +58,11 @@ export default async function FinanceOverviewPage() {
           <p className="mt-1 text-2xl font-semibold text-green-700">${money(receivedThisMonth)}</p>
         </div>
         <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
-          <p className="text-xs text-muted-foreground">Outstanding</p>
+          <p className="text-xs text-muted-foreground">Issued invoice balance</p>
           <p className={`mt-1 text-2xl font-semibold ${outstanding > 0 ? 'text-warning-foreground' : 'text-muted-foreground'}`}>
             ${money(outstanding)}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">{live.length} live invoice{live.length !== 1 ? 's' : ''}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{live.length} issued invoice{live.length !== 1 ? 's' : ''} Â· all trip balances are under Receipts</p>
         </div>
         <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
           <p className="text-xs text-muted-foreground">Overdue</p>
@@ -76,7 +76,7 @@ export default async function FinanceOverviewPage() {
         <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
           <p className="text-xs text-muted-foreground">Deposits held</p>
           <p className="mt-1 text-2xl font-semibold text-foreground">${money(depositsHeld)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Refundable — not revenue</p>
+          <p className="mt-1 text-xs text-muted-foreground">Refundable â€” not revenue</p>
         </div>
       </div>
 
@@ -87,7 +87,7 @@ export default async function FinanceOverviewPage() {
         >
           <h2 className="text-sm font-semibold text-foreground">Invoices</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            The documents raised — what each trip or freehand charge was billed.
+            The documents raised â€” what each trip or freehand charge was billed.
           </p>
         </Link>
         <Link
@@ -96,10 +96,11 @@ export default async function FinanceOverviewPage() {
         >
           <h2 className="text-sm font-semibold text-foreground">Receipts</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            The money-in ledger — what has actually arrived, trip by trip.
+            The money-in ledger â€” what has actually arrived, trip by trip.
           </p>
         </Link>
       </div>
     </div>
   )
 }
+

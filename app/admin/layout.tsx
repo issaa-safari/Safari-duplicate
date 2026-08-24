@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminProfile } from '@/lib/auth/admin-access'
 import AdminSidebar from './sidebar'
+import AdminNavigationFeedback from './admin-navigation-feedback'
 
 // Route-level access is enforced by proxy.ts (see updateSession in
 // lib/supabase/middleware.ts), which redirects unauthenticated/non-admin
@@ -21,14 +22,16 @@ export default async function AdminLayout({
   if (!adminProfile) return <>{children}</>
 
   return (
-    <div className="admin-theme min-h-screen bg-background">
-      <AdminSidebar
-        fullName={adminProfile?.full_name ?? user.email ?? 'Admin'}
-        role={adminProfile?.role ?? 'admin'}
-      />
-      <main className="min-h-[calc(100vh-108px)] pb-[calc(env(safe-area-inset-bottom)+4.5rem)] lg:pb-0">
-        {children}
-      </main>
-    </div>
+    <AdminNavigationFeedback>
+      <div className="admin-theme min-h-screen bg-background">
+        <AdminSidebar
+          fullName={adminProfile?.full_name ?? user.email ?? 'Admin'}
+          role={adminProfile?.role ?? 'admin'}
+        />
+        <main className="min-h-[calc(100vh-108px)] pb-[calc(env(safe-area-inset-bottom)+4.5rem)] lg:pb-0">
+          {children}
+        </main>
+      </div>
+    </AdminNavigationFeedback>
   )
 }

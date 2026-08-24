@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { BedDouble, ClipboardCheck, FileSignature, LayoutDashboard, PlaneLanding, Users } from 'lucide-react'
+import { BedDouble, ClipboardCheck, FileSignature, LayoutDashboard, PackageCheck, PlaneLanding, Users } from 'lucide-react'
 
 const items = [
   { key: 'overview', label: 'Overview', suffix: '', icon: LayoutDashboard },
@@ -11,6 +11,7 @@ const items = [
   { key: 'tasks', label: 'Tasks', suffix: '/tasks', icon: ClipboardCheck },
   { key: 'agreements', label: 'Agreements', suffix: '/manifest?view=agreements', icon: FileSignature },
   { key: 'vouchers', label: 'Vouchers', suffix: '/vouchers', icon: BedDouble },
+  { key: 'trip-pack', label: 'Trip Pack', suffix: '/trip-pack', icon: PackageCheck },
 ]
 
 export default function DepartureOperationsNav({
@@ -18,7 +19,7 @@ export default function DepartureOperationsNav({
   activeOverride,
 }: {
   departureId: string
-  activeOverride?: 'vouchers'
+  activeOverride?: 'vouchers' | 'trip-pack'
 }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -34,8 +35,10 @@ export default function DepartureOperationsNav({
             : `${root}${suffix}`
           let active = false
           if (activeOverride === 'vouchers') active = key === 'vouchers'
+          else if (activeOverride === 'trip-pack') active = key === 'trip-pack'
           else if (key === 'overview') active = pathname === root
           else if (key === 'tasks') active = pathname.startsWith(`${root}/tasks`)
+          else if (key === 'trip-pack') active = pathname.startsWith(`${root}/trip-pack`)
           else if (key === 'travellers' || key === 'logistics' || key === 'agreements') {
             active = pathname.startsWith(`${root}/manifest`) && manifestView === key
           }

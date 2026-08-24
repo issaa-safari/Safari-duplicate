@@ -40,6 +40,12 @@ function DayLabel(day: ItineraryDay, isAr: boolean) {
   return `${base} ${day.dayNumber}`
 }
 
+function DayNumberLabel(day: ItineraryDay) {
+  return day.dayNumberEnd && day.dayNumberEnd !== day.dayNumber
+    ? `${day.dayNumber}–${day.dayNumberEnd}`
+    : String(day.dayNumber)
+}
+
 function MealsLine({ day, isAr }: { day: ItineraryDay; isAr: boolean }) {
   const parts: string[] = []
   if (isAr) {
@@ -138,12 +144,12 @@ function DayCard({
           background: isOpen ? 'rgba(255,255,255,0.2)' : accentColor,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontFamily: 'var(--font-display, sans-serif)',
-          fontWeight: 700, fontSize: 16,
+          fontWeight: 700, fontSize: day.dayNumberEnd ? 12 : 16,
           color: '#fff',
           border: `2px solid ${isOpen ? 'rgba(255,255,255,0.4)' : 'transparent'}`,
           boxShadow: isOpen ? 'none' : `0 3px 10px ${accentColor}55`,
         }}>
-          {day.dayNumber}
+          {DayNumberLabel(day)}
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>

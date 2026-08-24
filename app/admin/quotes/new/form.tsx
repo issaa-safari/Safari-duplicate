@@ -9,7 +9,8 @@ import { createQuote } from './actions'
 interface Client { id: string; first_name: string; last_name: string; email: string }
 interface Request { id: string; reference: string; client_id: string }
 interface Tour { id: string; title_en: string; type: string }
-interface Departure { id: string; start_date: string; end_date: string; tours: { title_en: string }[] | null }
+interface Departure { id: string; start_date: string; end_date: string; tours: { title_en: string } | { title_en: string }[] | null }
+interface ProposalTemplate { id: string; label: string; totalSellingUsd: number | null }
 
 const inputCls = 'w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50'
 const labelCls = 'block text-sm font-medium text-foreground mb-1'
@@ -19,6 +20,7 @@ export default function NewQuoteForm({
   requests,
   tours,
   departures,
+  templates,
   defaultClientId = '',
   defaultRequestId = '',
 }: {
@@ -26,12 +28,13 @@ export default function NewQuoteForm({
   requests: Request[]
   tours: Tour[]
   departures: Departure[]
+  templates: ProposalTemplate[]
   defaultClientId?: string
   defaultRequestId?: string
 }) {
   const router = useRouter()
-  const [mode, setMode] = useState<'custom' | 'fixed_departure' | ''>(
-    defaultRequestId ? 'custom' : ''
+  const [mode, setMode] = useState<'template' | 'custom' | 'fixed_departure' | ''>(
+    defaultRequestId ? (templates.length > 0 ? 'template' : 'custom') : ''
   )
   // Held in state so a client added inline shows up (and is selected) at once.
   const [clients, setClients] = useState<Client[]>(clientsProp)
@@ -80,7 +83,18 @@ export default function NewQuoteForm({
         <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-3">
           <h2 className="text-sm font-semibold text-foreground">Proposal Type</h2>
           <input type="hidden" name="mode" value={mode} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => setMode('template')}
+              disabled={templates.length === 0}
+              className={'rounded-lg border-2 p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ' +
+                (mode === 'template'
+                  ? 'border-primary-strong bg-accent/50'
+                  : 'border-border hover:border-border')}>
+              <p className="font-medium text-foreground text-sm">Use Template</p>
+              <p className="text-xs text-muted-foreground mt-1">Fastest: copy itinerary and pricing, then adjust</p>
+            </button>
             <button
               type="button"
               onClick={() => setMode('custom')}
@@ -102,6 +116,15 @@ export default function NewQuoteForm({
               <p className="text-xs text-muted-foreground mt-1">Price a client into a scheduled group departure</p>
             </button>
           </div>
+          {templates.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No reusable templates yet.{' '}
+              <Link href="/admin/tour-templates" className="font-medium text-brand-text underline underline-offset-2">
+                Create a proposal template
+              </Link>
+              {' '}or start with a custom proposal.
+            </p>
+          ) : null}
         </div>
 
         {/* Step 2 — Client & context (shown once mode chosen) */}
@@ -164,6 +187,26 @@ export default function NewQuoteForm({
           </div>
         )}
 
+        {mode === 'template' && (
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Proposal Template</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Creates an independent copy. Changes here never alter the reusable template.</p>
+            </div>
+            <div>
+              <label htmlFor="templateId" className={labelCls}>Template <span className="text-destructive">*</span></label>
+              <select id="templateId" name="templateId" required defaultValue="" className={inputCls}>
+                <option value="" disabled>Select a template…</option>
+                {templates.map(template => (
+                  <option key={template.id} value={template.id}>
+                    {template.label}{template.totalSellingUsd != null ? ` — $${Number(template.totalSellingUsd).toLocaleString('en-US')}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
         {/* Fixed departure — pick departure */}
         {mode === 'fixed_departure' && (
           <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-4">
@@ -174,7 +217,7 @@ export default function NewQuoteForm({
                 <option value="" disabled>Select a departure…</option>
                 {departures.map((d) => (
                   <option key={d.id} value={d.id}>
-                    {(Array.isArray(d.tours) ? (d.tours as any)[0]?.title_en : (d.tours as any)?.title_en) ?? 'Unknown tour'} —{' '}
+                    {(Array.isArray(d.tours) ? d.tours[0]?.title_en : d.tours?.title_en) ?? 'Unknown tour'} —{' '}
                     {new Date(d.start_date).toLocaleDateString('en-GB')} →{' '}
                     {new Date(d.end_date).toLocaleDateString('en-GB')}
                   </option>

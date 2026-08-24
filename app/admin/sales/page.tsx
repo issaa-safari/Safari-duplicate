@@ -7,6 +7,7 @@ import { PageHeader, PageShell } from '@/components/admin/ui/page'
 import { Card, CardBody, CardHeader, StatCard } from '@/components/admin/ui/card'
 import { ButtonLink } from '@/components/ui/button'
 import StatusBadge from '@/components/admin/status-badge'
+import FailedIntakeList, { type FailedIntakeRow } from './failed-intake-list'
 
 type ClientRelation = {
   first_name: string | null
@@ -51,14 +52,6 @@ type QuoteRow = {
 type TeamRelation = {
   full_name: string | null
   email: string
-}
-
-type FailedIntake = {
-  id: string
-  channel: string
-  error_message: string | null
-  attempts: number
-  received_at: string
 }
 
 function one<T>(relation: T | T[] | null): T | null {
@@ -128,7 +121,7 @@ export default async function SalesDeskPage() {
   const drafts = quotes.filter(quote => ['draft', 'ready'].includes(quote.status))
   const followUps = quotes.filter(quote => ['sent', 'viewed'].includes(quote.status))
   const accepted = quotes.filter(quote => quote.status === 'accepted')
-  const failedIntakes = (failedIntakeRows ?? []) as FailedIntake[]
+  const failedIntakes = (failedIntakeRows ?? []) as FailedIntakeRow[]
 
   return (
     <PageShell>
@@ -159,16 +152,7 @@ export default async function SalesDeskPage() {
             <div className="min-w-0 flex-1">
               <p className="font-semibold">{failedIntakes.length} enquiry intake event{failedIntakes.length === 1 ? '' : 's'} need attention</p>
               <p className="mt-1 text-xs text-red-800">No partial request or proposal was created. The source event is retained safely for diagnosis and retry.</p>
-              <ul className="mt-3 space-y-1 text-xs">
-                {failedIntakes.slice(0, 3).map(event => (
-                  <li key={event.id} className="flex flex-wrap gap-x-2">
-                    <span className="font-medium">{event.channel.replaceAll('_', ' ')}</span>
-                    <span>{new Date(event.received_at).toLocaleString('en-GB')}</span>
-                    <span>attempt {event.attempts}</span>
-                    {event.error_message && <span className="truncate text-red-700">{event.error_message}</span>}
-                  </li>
-                ))}
-              </ul>
+              <FailedIntakeList events={failedIntakes} />
             </div>
           </div>
         </div>

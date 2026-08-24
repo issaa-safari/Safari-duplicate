@@ -30,6 +30,50 @@ const STONE = '#6E6A59'
 const SAND = '#EAE3D2'
 const OLIVE = '#7A9A4A'
 
+type MetadataTour = {
+  title_en: string | null
+  title_ar: string | null
+  overview_ar: string | null
+  hero_image_url: string | null
+}
+
+type DepartureTour = MetadataTour & {
+  id: string
+  slug: string | null
+  subtitle_en: string | null
+  subtitle_ar: string | null
+  overview_en: string | null
+  type: string | null
+  countries_visited: string[] | null
+  start_destination: string | null
+  end_destination: string | null
+  gallery_urls: string[] | null
+  route_map_url: string | null
+  highlights_en: string[] | null
+  highlights_ar: string[] | null
+  included_en: string[] | null
+  included_ar: string[] | null
+  excluded_en: string[] | null
+  excluded_ar: string[] | null
+  terrain: string | null
+  vehicle: string | null
+  accommodation_level: string | null
+  total_distance_km: number | null
+  difficulty_rating: number | null
+  max_group_size: number | null
+  faqs: unknown
+}
+
+type DayActivity = {
+  activity_id?: string
+  moment?: string | null
+  optional?: boolean
+}
+
+function one<T>(value: T | T[] | null): T | null {
+  return Array.isArray(value) ? (value[0] ?? null) : value
+}
+
 function accentFor(tripType: string | null): string {
   return tripType === 'bike' ? '#B0492B' : '#C9A24B'
 }
@@ -67,38 +111,6 @@ function getDaysCount(start: string, end: string) {
   return Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
 }
 
-function mealsLabel(day: { meal_breakfast?: boolean; meal_lunch?: boolean; meal_dinner?: boolean }, locale: string) {
-  const parts: string[] = []
-  if (locale === 'ar') {
-    if (day.meal_breakfast) parts.push('فطور')
-    if (day.meal_lunch) parts.push('غداء')
-    if (day.meal_dinner) parts.push('عشاء')
-    return parts.length ? parts.join('، ') : 'لا توجد وجبات مدرجة'
-  }
-  if (day.meal_breakfast) parts.push('Breakfast')
-  if (day.meal_lunch) parts.push('Lunch')
-  if (day.meal_dinner) parts.push('Dinner')
-  return parts.length ? parts.join(', ') : 'No meals included'
-}
-
-function dayLabel(day: { day_number: number; day_number_end?: number | null }, locale: string) {
-  const base = locale === 'ar' ? 'اليوم' : 'Day'
-  if (day.day_number_end && day.day_number_end !== day.day_number) {
-    return `${base} ${day.day_number}–${day.day_number_end}`
-  }
-  return `${base} ${day.day_number}`
-}
-
-const momentLabel = (m: string, isAr: boolean) => {
-  const map: Record<string, [string, string]> = {
-    morning: ['Morning', 'صباحاً'],
-    afternoon: ['Afternoon', 'بعد الظهر'],
-    evening: ['Evening', 'مساءً'],
-    night: ['Night', 'ليلاً'],
-  }
-  return map[m] ? (isAr ? map[m][1] : map[m][0]) : ''
-}
-
 export async function generateMetadata({
   params,
   searchParams,
@@ -120,7 +132,7 @@ export async function generateMetadata({
     .eq('tours.show_on_website', true)
     .maybeSingle()
   if (!dep) return {}
-  const tour = dep.tours as any
+  const tour = one(dep.tours as unknown as MetadataTour | MetadataTour[])
   const title = locale === 'ar' ? (tour?.title_ar || tour?.title_en) : tour?.title_en
   if (!title) return { alternates: { canonical: localePath(`/departures/${id}`, locale) } }
   // A departure is a date on a tour, so it is only as translated as its tour.
@@ -190,7 +202,7 @@ export default async function DepartureDetailPage({
 
   if (!departure) notFound()
 
-  const tour = departure.tours as any
+  const tour = one(departure.tours as unknown as DepartureTour | DepartureTour[])
   // Link back to the tour by its slug; falls back to the id for a tour whose
   // title has no latin characters to slugify.
   const tourSlug: string | null = tour?.slug ?? null
@@ -243,8 +255,9 @@ export default async function DepartureDetailPage({
   // proposal's tour map (app/quote/[token]/page.tsx).
   const { mapStops, distanceByDayId, totalDistanceKm } = buildTourMap(
     tourDays.map(d => ({
-      id: d.id, day_number: d.day_number, destination_id: d.destination_id,
-      distance_km: d.distance_km, road_distance_km: (d as any).road_distance_km ?? null,
+      id: d.id, day_number: d.day_number, day_number_end: d.day_number_end,
+      destination_id: d.destination_id,
+      distance_km: d.distance_km, road_distance_km: d.road_distance_km ?? null,
     })),
     destCoordMap,
     destNameMap,
@@ -268,7 +281,7 @@ export default async function DepartureDetailPage({
 
   // Resolve activity names
   const actIds = [...new Set(
-    tourDays.flatMap(d => (Array.isArray(d.activities) ? d.activities : []).map((a: any) => a.activity_id))
+    tourDays.flatMap(d => (Array.isArray(d.activities) ? d.activities as DayActivity[] : []).map(a => a.activity_id))
   ).values()].filter(Boolean) as string[]
   const activityMap: Record<string, { name: string; en: string | null; ar: string | null }> = {}
   if (actIds.length > 0) {
@@ -285,21 +298,24 @@ export default async function DepartureDetailPage({
       dayNumberEnd: d.day_number_end ?? null,
       title: isAr ? (d.title_ar || d.title_en || '') : (d.title_en ?? ''),
       description: dd ? (isAr ? (dd.ar || dd.en) : dd.en) ?? null : null,
-      imageUrl: (d as any).image_url ?? null,
+      imageUrl: d.image_url ?? null,
       mealBreakfast: d.meal_breakfast ?? false,
       mealLunch: d.meal_lunch ?? false,
       mealDinner: d.meal_dinner ?? false,
       distanceKm: distanceByDayId[d.id] ?? null,
       accommodation: d.accommodation_id ? accomMap[d.accommodation_id] ?? null : null,
       accommodationMapsUrl: d.accommodation_id ? accomMapsUrlMap[d.accommodation_id] ?? null : null,
-      activities: (Array.isArray(d.activities) ? d.activities : []).map((a: any) => ({
-        name: activityMap[a.activity_id]?.name ?? '',
-        description: isAr
-          ? (activityMap[a.activity_id]?.ar || activityMap[a.activity_id]?.en || null)
-          : (activityMap[a.activity_id]?.en ?? null),
-        moment: a.moment ?? null,
-        optional: a.optional ?? false,
-      })),
+      activities: (Array.isArray(d.activities) ? d.activities as DayActivity[] : []).map(a => {
+        const activity = a.activity_id ? activityMap[a.activity_id] : undefined
+        return {
+          name: activity?.name ?? '',
+          description: isAr
+            ? (activity?.ar || activity?.en || null)
+            : (activity?.en ?? null),
+          moment: a.moment ?? null,
+          optional: a.optional ?? false,
+        }
+      }),
     }
   })
 
@@ -339,7 +355,8 @@ export default async function DepartureDetailPage({
     accommodationLevel: 'مستوى الإقامة',
     totalDistance: 'إجمالي المسافة',
     difficulty: 'الصعوبة',
-    groupSize: 'حجم المجموعة',
+    departureCapacity: 'سعة هذا الموعد',
+    travellers: 'مسافرين',
     overview: 'نظرة عامة',
     routeMap: 'خريطة المسار',
     highlights: 'أبرز ما في الرحلة',
@@ -376,7 +393,8 @@ export default async function DepartureDetailPage({
     accommodationLevel: 'Accommodation',
     totalDistance: 'Total Distance',
     difficulty: 'Difficulty',
-    groupSize: 'Group Size',
+    departureCapacity: 'Departure Capacity',
+    travellers: 'travellers',
     overview: 'Tour Overview',
     routeMap: 'Route Map',
     highlights: 'Tour Highlights',
@@ -492,7 +510,7 @@ export default async function DepartureDetailPage({
                   ...(displayTotalDistanceKm ? [{ label: t.totalDistance, value: `${displayTotalDistanceKm.toLocaleString()} km` }] : []),
                   ...(tour?.terrain ? [{ label: t.terrain, value: tour.terrain as string }] : []),
                   ...(tour?.difficulty_rating ? [{ label: t.difficulty, value: `${tour.difficulty_rating}/10` }] : []),
-                  ...(tour?.max_group_size ? [{ label: t.groupSize, value: `Max ${tour.max_group_size}` }] : []),
+                  { label: t.departureCapacity, value: `${isAr ? 'الحد الأقصى' : 'Max'} ${departure.max_seats} ${t.travellers}` },
                 ] as { label: string; value: string; color?: string }[]).map((fact, i) => (
                   <div key={i} style={{ padding: '16px 20px', minWidth: 130, flex: '1 1 130px' }}>
                     <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: STONE, fontFamily: 'var(--font-body, sans-serif)', marginBottom: 4 }}>

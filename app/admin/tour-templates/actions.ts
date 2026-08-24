@@ -43,7 +43,7 @@ export async function startFromTemplate(formData: FormData) {
     .from('requests').select('id, client_id').eq('id', requestId).single()
   if (!request?.client_id) throw new Error('This request has no linked client to copy the quote onto.')
 
-  const { data: newQuoteId, error } = await admin.rpc('copy_quote_as_new', {
+  const { data: newQuoteId, error } = await admin.rpc('copy_proposal_template_atomic', {
     p_source_quote_id: templateId,
     p_request_id: requestId,
     p_client_id: request.client_id,
@@ -54,7 +54,7 @@ export async function startFromTemplate(formData: FormData) {
 }
 
 /**
- * Copy a template's latest version into a new quote for a client directly —
+ * Copy a template's latest version into a new quote for a client directly â€”
  * no request required. Returns the new quote's URL so the caller can navigate
  * there to adjust pricing for the client's request. The client must already
  * exist (created inline via /api/admin/create-client when new).
@@ -75,7 +75,7 @@ export const createQuoteForClient = safeAction(async (formData: FormData) => {
     .from('clients').select('id').eq('id', clientId).maybeSingle()
   if (!client) throw new Error('That client no longer exists.')
 
-  const { data: newQuoteId, error } = await admin.rpc('copy_quote_for_client', {
+  const { data: newQuoteId, error } = await admin.rpc('copy_proposal_template_atomic', {
     p_source_quote_id: templateId,
     p_client_id: clientId,
   })
@@ -83,3 +83,4 @@ export const createQuoteForClient = safeAction(async (formData: FormData) => {
 
   return { error: null as null, redirectTo: `/admin/quotes/${newQuoteId}` }
 })
+
