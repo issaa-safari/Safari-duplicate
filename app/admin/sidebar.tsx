@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useTransition, useRef } from 'react'
 import {
   Search, MoreHorizontal, LayoutDashboard, Inbox, FileText, CalendarCheck,
-  Users, Wallet, Package, Boxes, MapPin, Truck, BarChart3, Settings, LogOut, X,
+  Users, Wallet, Package, Boxes, MapPin, Truck, Settings, LogOut, X,
   Copy, ArrowLeft, BedDouble, BriefcaseBusiness,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -50,7 +50,6 @@ const NAV_GROUPS: NavGroup[] = [
   ] },
   { label: 'Business', items: [
     { label: 'Finance',  href: '/admin/finance',  icon: Wallet },
-    { label: 'Insights', href: '/admin/insights', icon: BarChart3 },
   ] },
 ]
 
@@ -64,7 +63,6 @@ const PRIMARY_NAV: NavItem[] = [
   byHref('/admin/sales'),
   byHref('/admin/departures'),
   byHref('/admin/finance'),
-  byHref('/admin/insights'),
 ]
 
 // The four destinations promoted to the mobile bottom tab bar; every other

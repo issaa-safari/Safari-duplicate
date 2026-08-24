@@ -9,7 +9,7 @@ import { VARIANT_CLASSES, VARIANT_DOT, STAGE_LABELS } from '@/lib/status-colors'
 import { countByGroup, REQUEST_GROUPS, resolveStatusFilter } from '@/lib/status-groups'
 
 // Four buckets rather than one tab per stage. The exact stage still shows as
-// the badge on every card, and a link naming one (the dashboard and insights
+// the badge on every card, and a link naming one (the dashboard
 // screens do) still narrows to it — see lib/status-groups.ts.
 const GROUP_VARIANT: Record<string, string> = {
   all: 'neutral', active: 'info', booked: 'success', closed: 'muted',
@@ -108,7 +108,7 @@ export default async function RequestsPage({
             + New
           </ButtonLink>
         </div>
-        {/* Arrived from a dashboard or insights link naming one stage: say so,
+        {/* Arrived from a dashboard link naming one stage: say so,
             and offer the way back out to the whole bucket. */}
         {filter.exactStatus && (
           <p className="mb-4 text-sm text-muted-foreground">

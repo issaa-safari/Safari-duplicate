@@ -127,7 +127,7 @@ export default async function SalesDeskPage() {
     <PageShell>
       <PageHeader
         title="Sales Desk"
-        subtitle="Create requests and proposals quickly, then work the next commercial action from one place."
+        subtitle="Create requests and proposals quickly from one place."
         actions={(
           <>
             <ButtonLink href="/admin/quotes/new" size="sm">Proposal only</ButtonLink>
