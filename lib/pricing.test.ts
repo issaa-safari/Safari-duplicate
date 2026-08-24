@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calculateLineTotals } from './pricing'
+import { calculateLineTotals, proposalPricingErrorMessage, reconcileSellingTotal } from './pricing'
 
 describe('calculateLineTotals', () => {
   it('computes cost as quantity times unit cost', () => {
@@ -33,5 +33,27 @@ describe('calculateLineTotals', () => {
     const { totalCostUsd, totalSellingUsd } = calculateLineTotals(12, 150.5, 35)
     expect(totalCostUsd).toBeCloseTo(1806, 10)
     expect(totalSellingUsd).toBeCloseTo(2438.1, 10)
+  })
+})
+
+describe('reconcileSellingTotal', () => {
+  it('preserves a package sale when all priced costs are zero', () => {
+    const fallback = { totalCostUsd: 0, totalSellingUsd: 0, description: 'Package selling price' }
+    const result = reconcileSellingTotal([], 2400, fallback)
+    expect(result).toEqual([{ ...fallback, totalSellingUsd: 2400 }])
+  })
+
+  it('absorbs rounding differences into the final line', () => {
+    const result = reconcileSellingTotal([
+      { totalCostUsd: 10, totalSellingUsd: 33.33 },
+      { totalCostUsd: 20, totalSellingUsd: 66.66 },
+    ], 100, { totalCostUsd: 0, totalSellingUsd: 0 })
+    expect(result.reduce((sum, line) => sum + line.totalSellingUsd, 0)).toBe(100)
+  })
+})
+
+describe('proposalPricingErrorMessage', () => {
+  it('turns database validation codes into actionable copy', () => {
+    expect(proposalPricingErrorMessage('PRICING_POSITIVE_SALE_REQUIRED')).toContain('greater than $0')
   })
 })

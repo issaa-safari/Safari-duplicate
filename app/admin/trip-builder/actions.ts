@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { findOrCreateClientByEmail } from '@/lib/server/clients'
-import { calculateLineTotals } from '@/lib/pricing'
+import { calculateLineTotals, proposalPricingErrorMessage, reconcileSellingTotal } from '@/lib/pricing'
 import { aiConfigured, aiJson } from '@/lib/ai'
 import { loadBuilderLookups } from './load-lookups'
 import { hotelRowsFromItinerary } from './load-initial-state'
@@ -955,13 +955,33 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
     const hasSale = Number.isFinite(sale) && sale > 0
     if (!hasSale) throw new Error('Set a positive selling price before saving the proposal.')
     const markupPct = hasSale && cost > 0 ? (sale / cost - 1) * 100 : 0
-    const priceLines = lines.map(l => {
+    const calculatedPriceLines = lines.map(l => {
       const { totalCostUsd, totalSellingUsd } = calculateLineTotals(l.quantity, l.unitCostUsd, markupPct)
       return {
         ...l,
         totalCostUsd: round2(totalCostUsd),
         totalSellingUsd: round2(totalSellingUsd),
       }
+    })
+    const priceLines = reconcileSellingTotal(calculatedPriceLines, sale, {
+      dayNumber: null,
+      costCategory: 'other',
+      description: 'Package selling price',
+      rateCardId: null,
+      supplierRateId: null,
+      pricingUnit: 'trip',
+      travellerCategory: null,
+      roomCategory: null,
+      quantity: 1,
+      sourceCurrency: 'USD',
+      sourceUnitCost: 0,
+      exchangeRateToUsd: 1,
+      unitCostUsd: 0,
+      originalUnitCostUsd: null,
+      isManualOverride: false,
+      sortOrder: lines.length,
+      totalCostUsd: 0,
+      totalSellingUsd: sale,
     })
     const trackPayload = {
       versionId,
@@ -999,7 +1019,7 @@ export async function saveTrip(input: SaveTripInput): Promise<SaveTripResult> {
       p_inclusions: state.inclusions ?? [],
       p_exclusions: state.exclusions ?? [],
     })
-    if (rpcError) throw new Error(rpcError.message)
+    if (rpcError) throw new Error(proposalPricingErrorMessage(rpcError.message))
     const saved = result as { quoteId: string; versionId: string } | null
     if (!saved?.quoteId) throw new Error('Save failed — no quote returned.')
 
