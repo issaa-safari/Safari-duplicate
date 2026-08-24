@@ -4,6 +4,7 @@ import { syncQuoteStatus } from '@/lib/server/quote-status'
 import { sendEmail } from '@/lib/email'
 import { buildAgreementEmail } from '@/lib/agreement-email'
 import { site } from '@/lib/site'
+import { ensureProposalFollowUpTask } from '@/lib/server/proposal-follow-up'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -33,7 +34,14 @@ export async function GET(req: NextRequest) {
   if (!settings) return NextResponse.json({ error: 'No company settings' }, { status: 500 })
   const s = settings as AutomationSettings
 
-  const result = { completed: 0, expired: 0, archived: 0, deleted: 0, agreementReminders: 0 }
+  const result = {
+    completed: 0,
+    expired: 0,
+    proposalFollowUps: 0,
+    archived: 0,
+    deleted: 0,
+    agreementReminders: 0,
+  }
 
   async function logSystem(requestId: string, summary: string) {
     try {
@@ -95,7 +103,31 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 3) Auto-archive stale requests in the configured stages.
+  // 3) Ensure every sent/viewed proposal has one visible request follow-up.
+  // This also backfills proposals sent before this automation was introduced.
+  {
+    const { data: proposals } = await admin
+      .from('quotes')
+      .select('request_id, quote_number, status')
+      .not('request_id', 'is', null)
+      .in('status', ['sent', 'viewed'])
+
+    for (const proposal of proposals ?? []) {
+      try {
+        const created = await ensureProposalFollowUpTask(admin, {
+          requestId: proposal.request_id,
+          quoteNumber: proposal.quote_number,
+          status: proposal.status,
+          referenceDate: now,
+        })
+        if (created) result.proposalFollowUps++
+      } catch (error) {
+        console.error('[cron] proposal follow-up task failed', error)
+      }
+    }
+  }
+
+  // 4) Auto-archive stale requests in the configured stages.
   if (s.auto_archive_enabled) {
     const { data: candidates } = await admin
       .from('requests')
@@ -111,7 +143,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 4) Hard-delete requests archived past the delete threshold.
+  // 5) Hard-delete requests archived past the delete threshold.
   if (s.auto_delete_enabled) {
     const { data: archived } = await admin
       .from('requests')
@@ -127,7 +159,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 5) Chase unsigned traveller agreements for upcoming departures.
+  // 6) Chase unsigned traveller agreements for upcoming departures.
   // Re-send the signing link if it hasn't been emailed in the last 3 days,
   // up to 3 reminders per agreement. Best-effort — never fails the cron.
   {

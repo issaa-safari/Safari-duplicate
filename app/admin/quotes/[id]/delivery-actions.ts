@@ -13,6 +13,7 @@ import { safeAction } from '@/lib/server/action-result'
 import {
   getActiveProposalTemplate, pickLocalised, applyProposalPlaceholders,
 } from '@/lib/proposal-template'
+import { ensureProposalFollowUpTask } from '@/lib/server/proposal-follow-up'
 
 // Same-origin base URL derived server-side from the request headers, so the
 // customer-facing link can never be pointed at an attacker host via a forged
@@ -64,6 +65,23 @@ export const createShareLink = safeAction(async (formData: FormData) => {
     await syncQuoteStatus(admin, quoteId)
   }
 
+  const { data: quote } = await admin
+    .from('quotes')
+    .select('request_id, quote_number')
+    .eq('id', quoteId)
+    .single()
+  if (quote) {
+    try {
+      await ensureProposalFollowUpTask(admin, {
+        requestId: quote.request_id,
+        quoteNumber: quote.quote_number,
+        status: 'sent',
+      })
+    } catch (error) {
+      console.error('[proposal] failed to create sent follow-up task', error)
+    }
+  }
+
   await logActivity(admin, {
     entityType: 'quote',
     entityId: quoteId,
@@ -98,7 +116,7 @@ export const emailQuote = safeAction(async (formData: FormData) => {
 
   const { data: quote } = await admin
     .from('quotes')
-    .select('quote_number, client_id')
+    .select('quote_number, client_id, request_id')
     .eq('id', quoteId)
     .single()
 
@@ -166,6 +184,18 @@ export const emailQuote = safeAction(async (formData: FormData) => {
   if (version.status === 'ready') {
     await admin.from('quote_versions').update({ status: 'sent' }).eq('id', versionId)
     await syncQuoteStatus(admin, quoteId)
+  }
+
+  if (quote) {
+    try {
+      await ensureProposalFollowUpTask(admin, {
+        requestId: quote.request_id,
+        quoteNumber: quote.quote_number,
+        status: 'sent',
+      })
+    } catch (error) {
+      console.error('[proposal] failed to create sent follow-up task', error)
+    }
   }
 
   await logActivity(admin, {

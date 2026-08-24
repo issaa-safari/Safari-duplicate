@@ -11,10 +11,12 @@ export async function GET() {
     .from('departures')
     .select(`
       id, start_date, end_date, max_seats, booked_seats, price_usd, price_single_usd, status,
-      tours ( title_en, title_ar, type, hero_image_url, gallery_urls )
+      tours!inner ( title_en, title_ar, type, hero_image_url, gallery_urls )
     `)
     .eq('is_active', true)
     .eq('is_public', true)
+    .eq('tours.status', 'active')
+    .eq('tours.show_on_website', true)
     .gte('end_date', today)
     .order('start_date', { ascending: true })
     .limit(6)
@@ -23,5 +25,8 @@ export async function GET() {
     return NextResponse.json({ departures: [] }, { status: 200 })
   }
 
-  return NextResponse.json({ departures: data ?? [] })
+  return NextResponse.json(
+    { departures: data ?? [] },
+    { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
+  )
 }

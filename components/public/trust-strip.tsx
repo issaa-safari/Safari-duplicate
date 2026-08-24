@@ -13,24 +13,35 @@ interface TrustStripProps {
   staff: StaffMember[]
   isAr: boolean
   accentColor: string
+  maxGroupSize?: number | null
 }
 
-const OLIVE = '#7A9A4A'
 const STONE = '#6E6A59'
-const SAND = '#EAE3D2'
 const BUSH = '#20271A'
 
-const TRUST_POINTS_EN = [
+const TRUST_POINTS_EN = (maxGroupSize?: number | null) => [
   { icon: '🛡️', title: 'Safety First', body: 'All vehicles fully serviced, first-aid trained guides on every trip.' },
   { icon: '🗺️', title: '15+ Years Local Knowledge', body: 'Routes and camps chosen from years of experience, not guide books.' },
-  { icon: '🌍', title: 'Small Groups', body: 'Max 10 riders / guests — personal attention, not a coach tour.' },
+  {
+    icon: '🌍',
+    title: 'Small Groups',
+    body: maxGroupSize
+      ? `Maximum ${maxGroupSize} guests on this itinerary — personal attention, not a coach tour.`
+      : 'Small, carefully managed groups — personal attention, not a coach tour.',
+  },
   { icon: '🤝', title: 'Fully Supported', body: 'Dedicated support vehicle, mechanical backup, 24/7 contact throughout.' },
 ]
 
-const TRUST_POINTS_AR = [
+const TRUST_POINTS_AR = (maxGroupSize?: number | null) => [
   { icon: '🛡️', title: 'السلامة أولاً', body: 'جميع المركبات مُصانة بالكامل، ومرشدون مدربون على الإسعافات الأولية في كل رحلة.' },
   { icon: '🗺️', title: 'أكثر من 15 عاماً من المعرفة المحلية', body: 'مسارات ومخيمات تم اختيارها من سنوات الخبرة، وليس من دليل السياحة.' },
-  { icon: '🌍', title: 'مجموعات صغيرة', body: 'حد أقصى 10 ركاب — اهتمام شخصي، لا جولات جماعية.' },
+  {
+    icon: '🌍',
+    title: 'مجموعات صغيرة',
+    body: maxGroupSize
+      ? `حد أقصى ${maxGroupSize} ضيفاً في هذا البرنامج — اهتمام شخصي وتجربة أكثر خصوصية.`
+      : 'مجموعات صغيرة ومدارة بعناية — اهتمام شخصي وتجربة أكثر خصوصية.',
+  },
   { icon: '🤝', title: 'دعم كامل', body: 'سيارة دعم مخصصة، احتياط ميكانيكي، وتواصل على مدار الساعة.' },
 ]
 
@@ -44,10 +55,10 @@ function roleLabel(role: string, isAr: boolean): string {
   return map[role] ? (isAr ? map[role][1] : map[role][0]) : role
 }
 
-export default function TrustStrip({ staff, isAr, accentColor }: TrustStripProps) {
+export default function TrustStrip({ staff, isAr, accentColor, maxGroupSize }: TrustStripProps) {
   const reduced = useReducedMotion()
   const dir = isAr ? 'rtl' : 'ltr'
-  const points = isAr ? TRUST_POINTS_AR : TRUST_POINTS_EN
+  const points = isAr ? TRUST_POINTS_AR(maxGroupSize) : TRUST_POINTS_EN(maxGroupSize)
 
   return (
     <div dir={dir}>

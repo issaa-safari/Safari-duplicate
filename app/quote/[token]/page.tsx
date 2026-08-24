@@ -9,6 +9,7 @@ import { googleMapsLinkFor, haversineKm, type LatLng } from '@/lib/geo'
 import { site } from '@/lib/site'
 import { getActiveProposalTemplate, pickLocalised, applyProposalPlaceholders } from '@/lib/proposal-template'
 import { accommodationTierLabel } from '@/lib/accommodation-tiers'
+import { ensureProposalFollowUpTask } from '@/lib/server/proposal-follow-up'
 
 import {
   INCLUDED_DEFAULT_EN, INCLUDED_DEFAULT_AR,
@@ -68,7 +69,7 @@ export default async function QuotePortalPage({
       .eq('id', delivery.quote_version_id)
       .single(),
     admin.from('quotes')
-      .select('id, quote_number, mode, client_id, tour_id')
+      .select('id, quote_number, mode, client_id, tour_id, request_id')
       .eq('id', delivery.quote_id)
       .single(),
     admin.from('quote_days')
@@ -96,6 +97,21 @@ export default async function QuotePortalPage({
   if (version.status === 'sent') {
     await admin.from('quote_versions').update({ status: 'viewed' }).eq('id', version.id)
     await syncQuoteStatus(admin, delivery.quote_id)
+  }
+
+  if (version.status === 'sent' || version.status === 'viewed') {
+    try {
+      await ensureProposalFollowUpTask(admin, {
+        requestId: quote.request_id,
+        quoteNumber: quote.quote_number,
+        status: 'viewed',
+        referenceDate: delivery.first_viewed_at ?? now,
+      })
+    } catch (error) {
+      // The proposal itself must stay available even if task creation has a
+      // temporary problem; the daily automation route will retry it.
+      console.error('[proposal] failed to create follow-up task', error)
+    }
   }
 
   const [

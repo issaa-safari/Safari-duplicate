@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 function LoginForm() {
@@ -53,10 +54,10 @@ function LoginForm() {
         <div className="absolute inset-0 bg-black/20" />
         <div className="relative z-10 text-white">
           <p className="text-sm uppercase tracking-widest text-white/70 mb-3">
-            Safari Adventure Tour
+            Safari Adventure Riders
           </p>
           <h2 className="text-3xl font-semibold leading-tight max-w-md">
-            Kenya&rsquo;s Premier Adventure Tours
+            Commercial and trip operations workspace
           </h2>
         </div>
       </div>
@@ -67,7 +68,7 @@ function LoginForm() {
             <div className="h-10 w-10 rounded-lg mb-6 bg-olive hover:bg-olive-dk" />
             <h1 className="text-2xl font-semibold text-foreground">Admin Login</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Sign in to manage Safari Adventure Tour
+              Sign in to manage Safari Adventure Riders
             </p>
           </div>
 
@@ -81,7 +82,7 @@ function LoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-primary-strong"
-                placeholder="you@safariadventuretour.com"
+                placeholder="you@safariadventureriders.com"
               />
             </div>
 
@@ -93,7 +94,8 @@ function LoginForm() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-primary-strong"                placeholder="••••••••"
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-primary-strong focus:outline-none focus:ring-2 focus:ring-ring/50"
+                placeholder="••••••••"
               />
             </div>
 
@@ -107,9 +109,9 @@ className="w-full rounded-md border border-border px-3 py-2 text-sm text-foregro
                 />
                 Remember me
               </label>
-              <a href="/auth/forgot-password?next=%2Fadmin%2Fdashboard" className="text-sm text-muted-foreground hover:text-foreground">
+              <Link href="/auth/forgot-password?next=%2Fadmin%2Fdashboard" className="text-sm text-muted-foreground hover:text-foreground">
                 Forgot password?
-              </a>
+              </Link>
             </div>
 
             {justReset && !error && (
@@ -122,7 +124,7 @@ className="w-full rounded-md border border-border px-3 py-2 text-sm text-foregro
             <button
               type="submit"
               disabled={loading}
-className="w-full rounded-md border border-border px-3 py-2 text-sm text-foreground bg-surface focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-primary-strong bg-olive hover:bg-olive-dk"
+              className="w-full rounded-md bg-olive px-3 py-2 text-sm font-medium text-white hover:bg-olive-dk focus:outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-60"
             >
               {loading ? 'Signing in…' : 'Sign In'}
             </button>

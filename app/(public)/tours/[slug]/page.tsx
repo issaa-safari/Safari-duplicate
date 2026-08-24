@@ -683,7 +683,12 @@ export default async function TourDetailPage({
           <SectionReveal>
             <SectionHeading accent={accent}>{t.trust}</SectionHeading>
           </SectionReveal>
-          <TrustStrip staff={staff} isAr={isAr} accentColor={accent} />
+          <TrustStrip
+            staff={staff}
+            isAr={isAr}
+            accentColor={accent}
+            maxGroupSize={tour.max_group_size}
+          />
         </div>
       </section>
 

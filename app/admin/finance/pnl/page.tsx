@@ -288,7 +288,7 @@ export default async function PnlPage({
           </p>
         </div>
         {acceptedRows.length === 0 ? (
-          <p className="p-10 text-center text-sm text-muted-foreground">No quotes accepted in this range.</p>
+          <p className="p-10 text-center text-sm text-muted-foreground">No proposals accepted in this range.</p>
         ) : (
           <table className="stack-table w-full text-sm">
             <thead>

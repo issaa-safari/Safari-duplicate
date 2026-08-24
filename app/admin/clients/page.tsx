@@ -162,7 +162,7 @@ export default async function ClientsPage({
                         <span className="whitespace-nowrap">
                           {r > 0 && <span title="Requests">{r}R</span>}
                           {r > 0 && (q > 0 || b > 0) ? ' · ' : ''}
-                          {q > 0 && <span title="Quotes">{q}Q</span>}
+                          {q > 0 && <span title="Proposals">{q}P</span>}
                           {q > 0 && b > 0 ? ' · ' : ''}
                           {b > 0 && <span title="Bookings">{b}B</span>}
                         </span>

@@ -69,16 +69,16 @@ export default function NewQuoteForm({
     <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
       <div className="flex items-center gap-4 mb-6">
         <Link href="/admin/quotes" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Back to Quotes
+          ← Back to Proposals
         </Link>
-        <h1 className="text-xl font-semibold text-foreground">New Quote</h1>
+        <h1 className="text-xl font-semibold text-foreground">New Proposal</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
         {/* Step 1 — Mode */}
         <div className="rounded-xl border border-border bg-surface shadow-sm p-6 space-y-3">
-          <h2 className="text-sm font-semibold text-foreground">Quote Type</h2>
+          <h2 className="text-sm font-semibold text-foreground">Proposal Type</h2>
           <input type="hidden" name="mode" value={mode} />
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -153,7 +153,7 @@ export default function NewQuoteForm({
             </div>
 
             <div>
-              <label htmlFor="title" className={labelCls}>Quote Title <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <label htmlFor="title" className={labelCls}>Proposal Title <span className="text-muted-foreground font-normal">(optional)</span></label>
               <input id="title"
                 type="text"
                 name="title"
@@ -213,7 +213,7 @@ export default function NewQuoteForm({
               type="submit"
               disabled={loading}
               className="rounded-md px-6 py-2.5 text-sm font-medium text-white disabled:opacity-60 bg-olive hover:bg-olive-dk">
-              {loading ? 'Creating…' : 'Create Quote'}
+              {loading ? 'Creating…' : 'Create Proposal'}
             </button>
             <Link
               href="/admin/quotes"

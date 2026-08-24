@@ -243,7 +243,7 @@ export default async function AdminDashboardPage() {
           href="/admin/quotes"
         />
         <StatCard
-          label="Active Quotes"
+          label="Active Proposals"
           value={String(activeQuoteCount ?? 0)}
           sub="sent or viewed"
           href="/admin/quotes"
@@ -401,7 +401,7 @@ export default async function AdminDashboardPage() {
                 compact
                 icon={Inbox}
                 title="Nothing needs attention"
-                body="Quotes about to expire and other time-critical items surface here."
+                body="Proposals about to expire and other time-critical items surface here."
               />
             )}
           </CardBody>

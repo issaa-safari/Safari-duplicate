@@ -312,7 +312,7 @@ export default async function ClientDetailPage({
 
           <div id="quotes" className="scroll-mt-24 rounded-xl border border-border bg-surface shadow-sm p-4">
             <h2 className="text-sm font-semibold text-foreground mb-3">
-              Quotes
+              Proposals
               <span className="ml-2 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                 {quotes?.length ?? 0}
               </span>
@@ -338,7 +338,7 @@ export default async function ClientDetailPage({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">No quotes yet.</p>
+              <p className="text-sm text-muted-foreground text-center py-4">No proposals yet.</p>
             )}
           </div>
 

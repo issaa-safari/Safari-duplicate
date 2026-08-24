@@ -20,7 +20,7 @@ export default async function ToursPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Itinerary Library</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Reusable bilingual tours and day-by-day itineraries — the catalog you build departures and quotes from</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Reusable bilingual tours and day-by-day itineraries — the catalog you build departures and proposals from</p>
         </div>
         <ButtonLink href="/admin/tours/new" size="sm">New Itinerary</ButtonLink>
       </div>

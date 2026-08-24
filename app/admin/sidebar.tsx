@@ -7,7 +7,7 @@ import { useState, useEffect, useTransition, useRef } from 'react'
 import {
   Search, MoreHorizontal, LayoutDashboard, Inbox, FileText, CalendarCheck,
   Users, Wallet, Package, Boxes, MapPin, Truck, BarChart3, Settings, LogOut, X,
-  Copy, ArrowLeft, FileSignature, BedDouble, ClipboardCheck, BriefcaseBusiness,
+  Copy, ArrowLeft, BedDouble, BriefcaseBusiness,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type {
@@ -46,15 +46,11 @@ const NAV_GROUPS: NavGroup[] = [
   { label: 'Catalog', items: [
     { label: 'Content',           href: '/admin/content',        icon: Boxes },
     { label: 'Itinerary Library', href: '/admin/tours',          icon: Package },
-    { label: 'Quote Templates',   href: '/admin/tour-templates', icon: Copy },
+    { label: 'Proposal Templates', href: '/admin/tour-templates', icon: Copy },
   ] },
   { label: 'Business', items: [
     { label: 'Finance',  href: '/admin/finance',  icon: Wallet },
     { label: 'Insights', href: '/admin/insights', icon: BarChart3 },
-  ] },
-  { label: 'Configuration', items: [
-    { label: 'Agreement Template', href: '/admin/agreements', icon: FileSignature },
-    { label: 'Default Tasks', href: '/admin/settings/default-tasks', icon: ClipboardCheck },
   ] },
 ]
 
@@ -190,7 +186,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
           {(results?.quotes?.length ?? 0) > 0 && (
             <div>
               <p className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
-                style={{ backgroundColor: 'var(--admin-bg)' }}>Quotes</p>
+                style={{ backgroundColor: 'var(--admin-bg)' }}>Proposals</p>
               {results?.quotes.map((q: SearchQuote) => (
                 <button key={q.id} onClick={() => go(`/admin/quotes/${q.id}`)}
                   className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition"
@@ -199,7 +195,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
                   <div>
                     <span className="font-mono text-xs text-muted-foreground mr-2">{q.quote_number}</span>
-                    <span className="font-medium text-foreground">{q.client_name ?? q.title ?? 'Quote'}</span>
+                    <span className="font-medium text-foreground">{q.client_name ?? q.title ?? 'Proposal'}</span>
                   </div>
                   <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">{q.status}</span>
                 </button>
@@ -431,9 +427,9 @@ export default function AdminSidebar({
                 S
               </span>
               <span className="hidden leading-tight xl:block">
-                <span className="block text-sm font-semibold text-brand-ink">Safari Adventure Tours</span>
+                <span className="block text-sm font-semibold text-brand-ink">Safari Adventure Riders</span>
                 <span className="block text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                  Tour Operator Suite
+                  Commercial &amp; Operations
                 </span>
               </span>
             </Link>
