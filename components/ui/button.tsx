@@ -6,7 +6,7 @@ type Size = 'sm' | 'md' | 'icon'
 
 const BASE_CLS =
   'inline-flex items-center justify-center gap-1.5 rounded-lg font-medium ' +
-  'transition-[background-color,box-shadow,color] duration-150 disabled:cursor-not-allowed ' +
+  'transition-[background-color,box-shadow,color,transform] duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100 ' +
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
 
 const VARIANT_CLS: Record<Variant, string> = {
