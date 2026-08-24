@@ -20,6 +20,7 @@ export default async function NewQuotePage({
     { data: requests },
     { data: tours },
     { data: departures },
+    { data: templateRows },
     { data: linkedRequest },
   ] = await Promise.all([
     admin
@@ -43,6 +44,11 @@ export default async function NewQuotePage({
       .eq('status', 'available')
       .gte('start_date', new Date().toISOString().split('T')[0])
       .order('start_date', { ascending: true }),
+    admin
+      .from('quotes')
+      .select('id, quote_number, quote_versions!quote_versions_quote_id_fkey ( title, version_number, total_selling_usd )')
+      .eq('is_template', true)
+      .order('created_at', { ascending: false }),
     preselectedRequestId
       ? admin.from('requests').select('id, client_id').eq('id', preselectedRequestId).single()
       : Promise.resolve({ data: null }),
@@ -50,6 +56,16 @@ export default async function NewQuotePage({
 
   const defaultClientId = linkedRequest?.client_id ?? ''
   const defaultRequestId = preselectedRequestId ?? ''
+  const templates = (templateRows ?? []).map(row => {
+    const versions = [...(row.quote_versions ?? [])]
+      .sort((a, b) => b.version_number - a.version_number)
+    const latest = versions[0]
+    return {
+      id: row.id,
+      label: latest?.title || row.quote_number,
+      totalSellingUsd: latest?.total_selling_usd ?? null,
+    }
+  })
 
   return (
     <NewQuoteForm
@@ -57,6 +73,7 @@ export default async function NewQuotePage({
       requests={requests ?? []}
       tours={tours ?? []}
       departures={departures ?? []}
+      templates={templates}
       defaultClientId={defaultClientId}
       defaultRequestId={defaultRequestId}
     />

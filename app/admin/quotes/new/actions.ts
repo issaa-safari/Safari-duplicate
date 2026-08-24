@@ -20,12 +20,16 @@ export const createQuote = safeAction(async (formData: FormData) => {
   const requestId = (formData.get('requestId') as string) || null
   const tourId = (formData.get('tourId') as string) || null
   const departureId = (formData.get('departureId') as string) || null
+  const templateId = (formData.get('templateId') as string) || null
   const title = (formData.get('title') as string)?.trim() || null
 
-  if (!mode || !['custom', 'fixed_departure'].includes(mode)) {
+  if (!mode || !['template', 'custom', 'fixed_departure'].includes(mode)) {
     throw new Error('Please select a quote mode.')
   }
   if (!clientId) throw new Error('Please select a client.')
+  if (mode === 'template' && !templateId) {
+    throw new Error('Please select a proposal template.')
+  }
   if (mode === 'fixed_departure' && !departureId) {
     throw new Error('Please select a departure for fixed-departure quotes.')
   }
@@ -47,19 +51,32 @@ export const createQuote = safeAction(async (formData: FormData) => {
     .single()
   const clientLanguage = clientData?.language === 'ar' ? 'ar' : 'en'
 
-  const { data: newQuoteId, error } = await admin.rpc('create_quote_with_workflow_atomic', {
-    p_client_id: clientId,
-    p_request_id: requestId,
-    p_mode: mode,
-    p_tour_id: tourId,
-    p_departure_id: departureId,
-    p_title: title,
-    p_created_by: user.id,
-    p_owner_id: owner?.id ?? null,
-  })
+  const creation = mode === 'template'
+    ? await admin.rpc('copy_proposal_template_atomic', {
+        p_source_quote_id: templateId!,
+        p_client_id: clientId,
+        p_request_id: requestId,
+        p_created_by: user.id,
+        p_owner_id: owner?.id ?? null,
+      })
+    : await admin.rpc('create_quote_with_workflow_atomic', {
+        p_client_id: clientId,
+        p_request_id: requestId,
+        p_mode: mode,
+        p_tour_id: tourId,
+        p_departure_id: departureId,
+        p_title: title,
+        p_created_by: user.id,
+        p_owner_id: owner?.id ?? null,
+      })
+  const { data: newQuoteId, error } = creation
 
   if (error) throw new Error(error.message)
   if (!newQuoteId) throw new Error('Quote was not created.')
+
+  if (title) {
+    await admin.from('quote_versions').update({ title }).eq('quote_id', newQuoteId)
+  }
 
   // Auto-set quote version language from the client's profile
   if (clientLanguage !== 'en') {
@@ -80,7 +97,7 @@ export const createQuote = safeAction(async (formData: FormData) => {
 
   // Auto-populate travellers from the linked request's composition
   // (adults / older children / younger children) using the matching age bands.
-  if (requestId && firstVersion) {
+  if (mode !== 'template' && requestId && firstVersion) {
     const { data: requestData } = await admin
       .from('requests')
       .select('travelers_adults, travelers_children_older, travelers_children_younger')
@@ -143,7 +160,7 @@ export const createQuote = safeAction(async (formData: FormData) => {
   // on the unified quote workspace. Custom safaris open on the Itinerary tab.
   return {
     error: null,
-    redirectTo: mode === 'custom' && firstVersion
+    redirectTo: (mode === 'custom' || mode === 'template') && firstVersion
       ? `/admin/quotes/${newQuoteId}?step=itinerary&version=${firstVersion.id}`
       : `/admin/quotes/${newQuoteId}`,
   }

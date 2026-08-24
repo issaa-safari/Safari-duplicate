@@ -4489,6 +4489,16 @@ export type Database = {
         }
         Returns: string
       }
+      copy_proposal_template_atomic: {
+        Args: {
+          p_client_id: string
+          p_created_by?: string
+          p_owner_id?: string
+          p_request_id?: string
+          p_source_quote_id: string
+        }
+        Returns: string
+      }
       correct_legacy_trip_value_atomic: {
         Args: { p_booking_id: string; p_total_price_usd: number }
         Returns: Json

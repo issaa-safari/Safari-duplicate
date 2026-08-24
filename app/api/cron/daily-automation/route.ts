@@ -88,6 +88,7 @@ export async function GET(req: NextRequest) {
   }
 
   const result = {
+    intakeRetries: 0,
     completed: 0,
     expired: 0,
     proposalFollowUps: 0,
@@ -107,6 +108,32 @@ export async function GET(req: NextRequest) {
     try {
       await admin.from('communication_logs').insert({ request_id: requestId, type: 'note', summary })
     } catch { /* audit note is non-critical */ }
+  }
+
+  // Recover transient public-intake failures before the commercial workflow
+  // runs. The database function is idempotent by channel + external event id,
+  // so a successful event can never create a second request. Permanently
+  // invalid payloads stop after three attempts and remain visible in Sales.
+  {
+    const { data: failedEvents } = await admin
+      .from('intake_events')
+      .select('id, payload, attempts')
+      .eq('status', 'failed')
+      .lt('attempts', 3)
+      .order('received_at', { ascending: true })
+      .limit(25)
+
+    for (const event of failedEvents ?? []) {
+      const { data, error } = await admin.rpc('ingest_enquiry_atomic', {
+        p_payload: event.payload,
+      })
+      const recovered = !error
+        && !!data
+        && typeof data === 'object'
+        && !Array.isArray(data)
+        && (data as { status?: string }).status === 'processed'
+      if (recovered) result.intakeRetries++
+    }
   }
 
   // 1) Auto-complete booked trips whose end date has passed.

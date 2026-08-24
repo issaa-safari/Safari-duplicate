@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { COUNTRIES_SORTED, dialCodeFor } from '@/lib/countries'
+import { buildLeadOnlyTravellerRoster } from '@/lib/public-booking'
 
 const G = '#7A9A4A'
 
@@ -45,24 +46,20 @@ export default function DepartureBookingForm({
     : (pricePerPerson ?? singlePricePerPerson ?? 0)
   const [createAccount, setCreateAccount] = useState(false)
   const [accountNote, setAccountNote] = useState('')
-  const [travellers, setTravellers] = useState<Traveller[]>([emptyTraveller()])
+  const [leadTraveller, setLeadTraveller] = useState<Traveller>(emptyTraveller())
 
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
       const user = data.user
       if (!user) return
-      setTravellers(current => {
-        const next = [...current]
-        next[0] = {
-          ...next[0],
-          firstName: next[0].firstName || user.user_metadata?.first_name || '',
-          lastName: next[0].lastName || user.user_metadata?.last_name || '',
-          email: next[0].email || user.email || '',
-          phone: next[0].phone || user.user_metadata?.phone || '',
-        }
-        return next
-      })
+      setLeadTraveller(current => ({
+        ...current,
+        firstName: current.firstName || user.user_metadata?.first_name || '',
+        lastName: current.lastName || user.user_metadata?.last_name || '',
+        email: current.email || user.email || '',
+        phone: current.phone || user.user_metadata?.phone || '',
+      }))
     })
   }, [])
 
@@ -128,15 +125,8 @@ export default function DepartureBookingForm({
     seatsLeft: (n: number) => `${n} seat${n === 1 ? '' : 's'} left`,
   }
 
-  const handleGroupSizeChange = (size: number) => {
-    setGroupSize(size)
-    setTravellers(Array.from({ length: size }, (_, i) => travellers[i] || emptyTraveller()))
-  }
-
-  const handleTravellerChange = (index: number, field: keyof Traveller, value: string) => {
-    const next = [...travellers]
-    next[index] = { ...next[index], [field]: value }
-    setTravellers(next)
+  const handleTravellerChange = (field: keyof Traveller, value: string) => {
+    setLeadTraveller(current => ({ ...current, [field]: value }))
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -144,36 +134,41 @@ export default function DepartureBookingForm({
     setError('')
     startTransition(async () => {
       try {
-        // Combine each traveller's country-code selection with the digits they
-        // typed only at submit time, so the two stay independently editable
-        // right up until the request goes out.
-        const withDialCodes = travellers.map(t => {
-          const dial = dialCodeFor(t.phoneCountryCode)
-          const phone = t.phone.trim()
-          return { ...t, phone: phone && dial ? `+${dial}${phone}` : phone }
-        })
+        // Combine the lead traveller's country-code selection with the digits
+        // typed only at submit time, so both remain independently editable.
+        const dial = dialCodeFor(leadTraveller.phoneCountryCode)
+        const phone = leadTraveller.phone.trim()
+        const leadWithDialCode = {
+          ...leadTraveller,
+          phone: phone && dial ? `+${dial}${phone}` : phone,
+        }
+        // Seat allocation remains transactional and creates one operational
+        // roster row per place. Only the lead contact is collected publicly;
+        // the remaining rows are intentionally blank until the secure
+        // post-booking traveller workflow is completed.
+        const travellers = buildLeadOnlyTravellerRoster(leadWithDialCode, groupSize)
         const res = await fetch(submitUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ travellers: withDialCodes, roomType, currency: 'USD' }),
+          body: JSON.stringify({ travellers, roomType, currency: 'USD' }),
         })
         const data = await res.json().catch(() => ({}))
         if (!res.ok) throw new Error(data?.error || 'Failed to complete booking. Please try again.')
 
         // Optional: create a portal account for the lead traveller (best-effort).
-        if (createAccount && withDialCodes[0]?.email) {
+        if (createAccount && leadWithDialCode.email) {
           try {
             const supabase = createClient()
             const origin = typeof window !== 'undefined' ? window.location.origin : ''
             const { error: signUpError } = await supabase.auth.signUp({
-              email: withDialCodes[0].email,
+              email: leadWithDialCode.email,
               password: crypto.randomUUID(),
               options: {
                 emailRedirectTo: `${origin}/auth/callback`,
                 data: {
-                  first_name: withDialCodes[0].firstName,
-                  last_name: withDialCodes[0].lastName,
-                  phone: withDialCodes[0].phone,
+                  first_name: leadWithDialCode.firstName,
+                  last_name: leadWithDialCode.lastName,
+                  phone: leadWithDialCode.phone,
                 },
               },
             })
@@ -242,7 +237,7 @@ export default function DepartureBookingForm({
             <button
               key={size}
               type="button"
-              onClick={() => handleGroupSizeChange(size)}
+              onClick={() => setGroupSize(size)}
               className={`p-3 rounded-lg font-semibold transition ${
                 groupSize === size ? 'text-white' : 'bg-white border-2 border-gray-300 text-gray-900 hover:border-gray-400'
               }`}
@@ -260,44 +255,38 @@ export default function DepartureBookingForm({
           {t.detailsLater}
         </p>
         <div className="space-y-8">
-          {travellers.map((traveller, index) => (
-            <div key={index} className="pb-8 border-b border-gray-200 last:border-b-0">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4">
-                {index === 0 ? t.leadTraveller : `${t.traveller} ${index + 1}`}
-              </h4>
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <Field label={`${t.firstName} *`} value={traveller.firstName} onChange={v => handleTravellerChange(index, 'firstName', v)} required />
-                <Field label={`${t.lastName} *`} value={traveller.lastName} onChange={v => handleTravellerChange(index, 'lastName', v)} required />
-              </div>
-              {index === 0 && (
-                <div className="grid md:grid-cols-2 gap-4 mb-4">
-                  <Field type="email" label={`${t.email} *`} value={traveller.email} onChange={v => handleTravellerChange(index, 'email', v)} required />
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">{t.phone} *</label>
-                    <div className="flex gap-2">
-                      <select
-                        value={traveller.phoneCountryCode}
-                        onChange={e => handleTravellerChange(index, 'phoneCountryCode', e.target.value)}
-                        aria-label={t.phoneCode}
-                        className="w-24 shrink-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      >
-                        {COUNTRIES_SORTED.map((c) => (
-                          <option key={c.code} value={c.code}>+{c.dial}</option>
-                        ))}
-                      </select>
-                      <input
-                        type="tel"
-                        value={traveller.phone}
-                        onChange={e => handleTravellerChange(index, 'phone', e.target.value)}
-                        required
-                        className="flex-1 min-w-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
+          <div className="pb-2">
+            <h4 className="text-lg font-semibold text-gray-800 mb-4">{t.leadTraveller}</h4>
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <Field label={`${t.firstName} *`} value={leadTraveller.firstName} onChange={v => handleTravellerChange('firstName', v)} required />
+              <Field label={`${t.lastName} *`} value={leadTraveller.lastName} onChange={v => handleTravellerChange('lastName', v)} required />
             </div>
-          ))}
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <Field type="email" label={`${t.email} *`} value={leadTraveller.email} onChange={v => handleTravellerChange('email', v)} required />
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">{t.phone} *</label>
+                <div className="flex gap-2">
+                  <select
+                    value={leadTraveller.phoneCountryCode}
+                    onChange={e => handleTravellerChange('phoneCountryCode', e.target.value)}
+                    aria-label={t.phoneCode}
+                    className="w-24 shrink-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    {COUNTRIES_SORTED.map((c) => (
+                      <option key={c.code} value={c.code}>+{c.dial}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    value={leadTraveller.phone}
+                    onChange={e => handleTravellerChange('phone', e.target.value)}
+                    required
+                    className="flex-1 min-w-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

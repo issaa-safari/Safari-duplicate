@@ -9,10 +9,10 @@ import {
   unassignDepartureVehicle,
 } from './resource-actions'
 
-type StaffAssignment = { id: string; tour_staff: { id: string; name: string; role: string } | null }
-type VehicleAssignment = { id: string; seats_used: number | null; vehicles: { id: string; name: string; type: string; seats: number } | null }
-type StaffOption = { id: string; name: string; role: string }
-type VehicleOption = { id: string; name: string; type: string; seats: number }
+export type StaffAssignment = { id: string; tour_staff: { id: string; name: string; role: string } | null }
+export type VehicleAssignment = { id: string; seats_used: number | null; vehicles: { id: string; name: string; type: string; seats: number } | null }
+export type StaffOption = { id: string; name: string; role: string }
+export type VehicleOption = { id: string; name: string; type: string; seats: number }
 
 const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground'
 

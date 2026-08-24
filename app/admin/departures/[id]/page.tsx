@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   FileSignature,
   PlaneLanding,
+  PackageCheck,
   Users,
 } from 'lucide-react'
 import { requestBaseUrl } from '@/lib/server/base-url'
@@ -15,7 +16,13 @@ import DepartureEditForm, { type Departure, type TourDay } from './form'
 import BookingLinkPanel from './booking-link-panel'
 import DepartureOperationsNav from './operations-nav'
 import type { BookingLink } from '@/lib/types'
-import DepartureResourceManager from './resource-manager'
+import DepartureResourceManager, {
+  type StaffAssignment,
+  type StaffOption,
+  type VehicleAssignment,
+  type VehicleOption,
+} from './resource-manager'
+import { calculateTripReadiness } from '@/lib/trip-readiness'
 
 type WorkspaceCardProps = {
   href: string
@@ -40,6 +47,7 @@ type OperationsBooking = {
   id: string
   request_id: string | null
   total_price_usd: number | null
+  booking_payments: Array<{ amount_usd: number | null; status: string }> | null
   booking_travellers: OperationsTraveller[] | null
 }
 type OperationsTask = { id: string; is_done: boolean }
@@ -100,6 +108,7 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
       .from('bookings')
       .select(`
         id, request_id, total_price_usd,
+        booking_payments ( amount_usd, status ),
         booking_travellers (
           id, is_rider, motorbike_id, passport_number,
           booking_traveller_flights ( direction, scheduled_at ),
@@ -144,6 +153,24 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
   const openTasks = tasks.filter(task => !task.is_done).length
   const voucherList = (vouchers ?? []) as Array<{ id: string; status: string }>
   const confirmedVouchers = voucherList.filter(voucher => voucher.status === 'confirmed').length
+  const bookingValueUsd = parties.reduce((sum, booking) => sum + Number(booking.total_price_usd ?? 0), 0)
+  const paidUsd = parties.reduce((sum, booking) => sum + (booking.booking_payments ?? [])
+    .filter(payment => payment.status === 'paid')
+    .reduce((paymentSum, payment) => paymentSum + Number(payment.amount_usd ?? 0), 0), 0)
+  const readiness = calculateTripReadiness({
+    travellers: travellers.length,
+    passports,
+    arrivals,
+    riders: riders.length,
+    bikes,
+    agreements,
+    tasks: tasks.length,
+    openTasks,
+    vouchers: voucherList.length,
+    confirmedVouchers,
+    bookingValueUsd,
+    paidUsd,
+  })
   const actionCount =
     Math.max(0, travellers.length - arrivals) +
     Math.max(0, riders.length - bikes) +
@@ -215,9 +242,28 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
       )}
 
       <section aria-labelledby="readiness-heading">
-        <div className="mb-3">
-          <h2 id="readiness-heading" className="text-lg font-semibold text-foreground">Trip readiness</h2>
-          <p className="text-sm text-muted-foreground">Open the area that needs work; no hunting through separate modules.</p>
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 id="readiness-heading" className="text-lg font-semibold text-foreground">Trip readiness</h2>
+            <p className="text-sm text-muted-foreground">Open the area that needs work; no hunting through separate modules.</p>
+          </div>
+          <div className="min-w-48 rounded-xl border border-border bg-surface px-4 py-3 shadow-sm">
+            <div className="flex items-baseline justify-between gap-4">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Readiness score</span>
+              <span className={`text-2xl font-semibold ${readiness.score >= 85 ? 'text-green-700' : readiness.score >= 50 ? 'text-amber-700' : 'text-red-700'}`}>{readiness.score}%</span>
+            </div>
+            <div
+              role="progressbar"
+              aria-label="Trip readiness"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={readiness.score}
+              className="mt-2 h-2 overflow-hidden rounded-full bg-muted"
+            >
+              <div className={`h-full rounded-full ${readiness.score >= 85 ? 'bg-green-600' : readiness.score >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${readiness.score}%` }} />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{readiness.label}{readiness.blockers.length > 0 ? ` · ${readiness.blockers.length} blocker${readiness.blockers.length === 1 ? '' : 's'}` : ''}</p>
+          </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <WorkspaceCard
@@ -270,10 +316,10 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
         </div>
         <DepartureResourceManager
           departureId={id}
-          staffAssignments={(staffAssignments ?? []) as any}
-          vehicleAssignments={(vehicleAssignments ?? []) as any}
-          staffOptions={(staffOptions ?? []) as any}
-          vehicleOptions={(vehicleOptions ?? []) as any}
+          staffAssignments={(staffAssignments ?? []) as unknown as StaffAssignment[]}
+          vehicleAssignments={(vehicleAssignments ?? []) as unknown as VehicleAssignment[]}
+          staffOptions={(staffOptions ?? []) as unknown as StaffOption[]}
+          vehicleOptions={(vehicleOptions ?? []) as unknown as VehicleOption[]}
         />
       </section>
 
@@ -298,6 +344,9 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
               </Link>
               <Link href={`/admin/vouchers?departure=${id}`} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-muted">
                 <BedDouble size={16} className="text-brand-text" /> Prepare hotel vouchers
+              </Link>
+              <Link href={`/admin/departures/${id}/trip-pack`} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-muted">
+                <PackageCheck size={16} className="text-brand-text" /> Open printable trip pack
               </Link>
             </div>
           </div>

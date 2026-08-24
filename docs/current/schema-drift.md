@@ -1,15 +1,18 @@
 # Schema drift: migrations vs production
 
-**Current production checkpoint: 2026-08-24, through `group_104`.** Groups 103
-and 104 were written first, dry-run in rolled-back production transactions,
-then applied. The consolidated baseline contains both groups, live-generated TypeScript
-types were refreshed, and the live object fingerprint is: 79 tables
+**Current production checkpoint: 2026-08-24, through `group_105`.** Groups 103,
+104 and 105 were written first, dry-run in rolled-back production transactions,
+then applied. The consolidated baseline contains all three groups, live-generated TypeScript
+types were refreshed, and the last full live object fingerprint (after group 104) is: 79 tables
 (`ed46fef45d510b8c294580c462b531aa`), 992 columns
 (`38c203db9d4904067d5e748ec40a9d8e`), 259 indexes
 (`f4c8ae4a31bbb19042a16433243ca745`) and 23 policies
 (`9409f7fa28ba3a6654f8e8d873b0880d`). A clean baseline replay was not available
 in this workspace, so these production fingerprints must still be compared
-against a fresh replay before calling the latest checkpoint an exact match.
+against a fresh replay before calling the latest checkpoint an exact match. Group 105 adds
+only `copy_proposal_template_atomic`; its grants and security properties were checked live:
+`SECURITY DEFINER`, empty `search_path`, no execute access for `anon` or `authenticated`,
+and execute access for `service_role` only.
 
 **Earlier exact replay checkpoint: resolved 2026-08-08, through `group_77`.**
 At that point `migrations/baseline/` reconstructed the live Supabase project
