@@ -10,6 +10,7 @@ import type { MapStop } from '@/components/quote/itinerary-map'
 export interface TourMapDay {
   id: string
   day_number: number
+  day_number_end?: number | null
   destination_id: string | null
   distance_km: number | null
   road_distance_km: number | null
@@ -42,7 +43,10 @@ export function buildTourMap(
     const isNewStop = !!destId && destId !== prevDestId
 
     if (coord && isNewStop) {
-      mapStops.push({ ...coord, label: String(d.day_number), name: destId ? (destNameMap[destId] ?? '') : '' })
+      const dayLabel = d.day_number_end && d.day_number_end !== d.day_number
+        ? `${d.day_number}–${d.day_number_end}`
+        : String(d.day_number)
+      mapStops.push({ ...coord, label: dayLabel, name: destId ? (destNameMap[destId] ?? '') : '' })
     }
 
     const prevCoord = prevDestId ? destCoordMap[prevDestId] : undefined
