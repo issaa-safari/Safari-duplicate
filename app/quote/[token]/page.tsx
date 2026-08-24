@@ -103,6 +103,7 @@ export default async function QuotePortalPage({
     try {
       await ensureProposalFollowUpTask(admin, {
         requestId: quote.request_id,
+        quoteId: delivery.quote_id,
         quoteNumber: quote.quote_number,
         status: 'viewed',
         referenceDate: delivery.first_viewed_at ?? now,

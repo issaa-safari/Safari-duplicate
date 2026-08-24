@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
+import { assertRequestPlanningEditable } from '@/lib/server/request-planning'
 
 async function authGuard() {
   const supabase = await createClient()
@@ -16,6 +17,7 @@ async function authGuard() {
 }
 
 const TASK_TYPES = ['payment', 'accommodation', 'activity', 'other']
+const TASK_PRIORITIES = ['low', 'normal', 'high', 'urgent']
 
 type TaskContext = {
   requestId: string | null
@@ -44,6 +46,12 @@ function revalidateTaskContext(context: TaskContext) {
     revalidatePath(`/admin/departures/${context.departureId}/tasks`)
   }
   if (context.bookingId) revalidatePath(`/admin/bookings/${context.bookingId}`)
+}
+
+async function assertTaskContextEditable(admin: ReturnType<typeof createAdminClient>, context: TaskContext) {
+  if (context.requestId && !context.departureId && !context.bookingId) {
+    await assertRequestPlanningEditable(admin, context.requestId)
+  }
 }
 
 async function validateTaskContext(
@@ -83,12 +91,16 @@ export async function addTask(formData: FormData) {
   const title = (formData.get('title') as string)?.trim()
   const typeRaw = (formData.get('type') as string)?.trim()
   const type = TASK_TYPES.includes(typeRaw) ? typeRaw : 'other'
+  const priorityRaw = (formData.get('priority') as string)?.trim()
+  const priority = TASK_PRIORITIES.includes(priorityRaw) ? priorityRaw : 'normal'
+  const dueDate = (formData.get('dueDate') as string)?.trim() || null
 
   requireTaskContext(context)
   if (!title) throw new Error('Task title is required.')
   if (title.length > 500) throw new Error('Task title is too long.')
 
   await validateTaskContext(admin, context)
+  await assertTaskContextEditable(admin, context)
 
   const { data: inserted, error } = await admin
     .from('tasks')
@@ -98,9 +110,11 @@ export async function addTask(formData: FormData) {
       booking_id: context.bookingId,
       title,
       type,
+      priority,
+      due_date: dueDate,
       is_done: false,
     })
-    .select('id, request_id, departure_id, booking_id, title, is_done, created_at, type, auto_generated, sort_order')
+    .select('id, request_id, departure_id, booking_id, title, is_done, created_at, type, priority, due_date, auto_generated, sort_order')
     .single()
   if (error) throw new Error(error.message)
   revalidateTaskContext(context)
@@ -115,6 +129,7 @@ export async function toggleTask(formData: FormData) {
 
   if (!taskId) throw new Error('Task ID is required.')
   requireTaskContext(context)
+  await assertTaskContextEditable(admin, context)
 
   let query = admin.from('tasks').update({ is_done: isDone }).eq('id', taskId)
   if (context.requestId) query = query.eq('request_id', context.requestId)
@@ -132,6 +147,7 @@ export async function deleteTask(formData: FormData) {
 
   if (!taskId) throw new Error('Task ID is required.')
   requireTaskContext(context)
+  await assertTaskContextEditable(admin, context)
 
   let query = admin.from('tasks').delete().eq('id', taskId)
   if (context.requestId) query = query.eq('request_id', context.requestId)

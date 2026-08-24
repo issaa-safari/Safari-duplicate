@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useId } from 'react'
+import { useState, useId } from 'react'
 import { saveSettings } from './actions'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
@@ -35,6 +35,9 @@ interface Settings {
   logo_url: string | null
   auto_complete_on_end_date?: boolean
   auto_expire_quotes?: boolean
+  request_proposal_due_hours?: number
+  proposal_expiry_warning_days?: number
+  operations_readiness_window_days?: number
   auto_archive_enabled?: boolean
   auto_archive_days?: number
   auto_archive_stages?: string[]
@@ -67,13 +70,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function SettingsForm({ settings }: { settings: Settings }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  // Formatted client-side only (post-mount) — toLocaleString depends on the
-  // browser's timezone/locale, which differs from the server render and was
-  // causing a hydration mismatch.
-  const [lastSaved, setLastSaved] = useState('')
-  useEffect(() => {
-    if (settings.updated_at) setLastSaved(new Date(settings.updated_at).toLocaleString('en-GB'))
-  }, [settings.updated_at])
+  const lastSaved = settings.updated_at
+    ? new Date(settings.updated_at).toLocaleString('en-GB')
+    : ''
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -153,6 +152,12 @@ export default function SettingsForm({ settings }: { settings: Settings }) {
           <span><span className="font-medium text-foreground">Auto-complete finished trips</span><br />
             <span className="text-muted-foreground text-xs">Move a Booked request to Completed once its travel end date has passed.</span></span>
         </label>
+        <div className="grid grid-cols-1 gap-4 rounded-lg border border-border/70 bg-muted/30 p-4 md:grid-cols-3">
+          <Field label="Proposal due after (hours)" name="requestProposalDueHours" value={settings.request_proposal_due_hours ?? 24} type="number" min={1} max={720} step={1} />
+          <Field label="Expiry warning (days)" name="proposalExpiryWarningDays" value={settings.proposal_expiry_warning_days ?? 3} type="number" min={1} max={30} step={1} />
+          <Field label="Trip readiness window (days)" name="operationsReadinessWindowDays" value={settings.operations_readiness_window_days ?? 30} type="number" min={1} max={180} step={1} />
+        </div>
+        <p className="text-xs text-muted-foreground">These timings create owned tasks for unquoted requests, expiring proposals, incomplete travellers, agreements, balances and vouchers.</p>
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" name="autoExpireQuotes" defaultChecked={settings.auto_expire_quotes ?? true} className="mt-0.5" />
           <span><span className="font-medium text-foreground">Expire quotes past their date</span><br />
@@ -192,7 +197,11 @@ export default function SettingsForm({ settings }: { settings: Settings }) {
       {error && <Alert variant="error">{error}</Alert>}
       <div className="flex items-center justify-between">
         <Button type="submit" loading={loading} loadingText="Saving…">Save Settings</Button>
-        {lastSaved && <p className="text-xs text-muted-foreground">Last saved {lastSaved}</p>}
+        {lastSaved && (
+          <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+            Last saved {lastSaved}
+          </p>
+        )}
       </div>
     </form>
   )

@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { loadDeparturePublishingReadiness } from '@/lib/departure-publishing'
 
 export async function updateDeparture(id: string, formData: FormData) {
   const supabase = await createClient()
@@ -81,6 +82,13 @@ export async function toggleDeparturePublished(id: string) {
   if (!departure) throw new Error('Departure not found.')
   if (departure.kind === 'private_custom') throw new Error('Private custom trips cannot be published.')
 
+  if (!departure.is_public) {
+    const { blockers } = await loadDeparturePublishingReadiness(admin, id)
+    if (blockers.length > 0) {
+      throw new Error(`Cannot publish: ${blockers.join('; ')}.`)
+    }
+  }
+
   const { error } = await admin
     .from('departures')
     .update({ is_public: !departure.is_public })
@@ -89,4 +97,7 @@ export async function toggleDeparturePublished(id: string) {
   if (error) throw new Error(error.message)
 
   revalidatePath('/admin/departures')
+  revalidatePath(`/admin/departures/${id}`)
+  revalidatePath('/departures')
+  revalidatePath('/')
 }

@@ -12,6 +12,8 @@ interface Task {
   type?: string
   auto_generated?: boolean
   sort_order?: number
+  priority?: string
+  due_date?: string | null
 }
 
 type TaskManagerProps = {
@@ -20,6 +22,7 @@ type TaskManagerProps = {
   bookingId?: string
   tasks: Task[]
   title?: string
+  readOnly?: boolean
 }
 
 const TYPE_CHIP: Record<string, string> = {
@@ -35,17 +38,35 @@ function orderTasks(list: Task[]) {
     a.created_at.localeCompare(b.created_at))
 }
 
+function TypeChip({ type }: { type?: string }) {
+  if (!type || type === 'other') return null
+  return <span className={`text-[10px] px-1.5 py-0.5 rounded-full capitalize ${TYPE_CHIP[type] ?? TYPE_CHIP.other}`}>{type}</span>
+}
+
+function TaskMeta({ task }: { task: Task }) {
+  const overdue = Boolean(task.due_date) && !task.is_done && task.due_date! < new Date().toISOString().slice(0, 10)
+  return (
+    <span className="flex items-center gap-1.5 text-[10px]">
+      {task.priority && task.priority !== 'normal' ? <span className={`rounded-full px-1.5 py-0.5 font-semibold uppercase ${task.priority === 'urgent' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>{task.priority}</span> : null}
+      {task.due_date ? <span className={overdue ? 'font-semibold text-red-700' : 'text-muted-foreground'}>Due {new Date(`${task.due_date}T00:00:00`).toLocaleDateString('en-GB')}</span> : null}
+    </span>
+  )
+}
+
 export default function TaskManager({
   requestId,
   departureId,
   bookingId,
   tasks: initial,
   title: heading = 'Tasks',
+  readOnly = false,
 }: TaskManagerProps) {
   const [tasks, setTasks] = useState(initial)
   const [showAdd, setShowAdd] = useState(false)
   const [title, setTitle] = useState('')
   const [type, setType] = useState('other')
+  const [priority, setPriority] = useState('normal')
+  const [dueDate, setDueDate] = useState('')
   const [error, setError] = useState('')
   const { pending, run } = useAction()
 
@@ -63,22 +84,21 @@ export default function TaskManager({
     appendContext(fd)
     fd.set('title', title)
     fd.set('type', type)
+    fd.set('priority', priority)
+    if (dueDate) fd.set('dueDate', dueDate)
     run(async () => {
       try {
         const created = await addTask(fd)
         if (created) setTasks(ts => [...ts, created as Task])
         setTitle('')
         setType('other')
+        setPriority('normal')
+        setDueDate('')
         setShowAdd(false)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to add task.')
       }
     })
-  }
-
-  function TypeChip({ t }: { t?: string }) {
-    if (!t || t === 'other') return null
-    return <span className={`text-[10px] px-1.5 py-0.5 rounded-full capitalize ${TYPE_CHIP[t] ?? TYPE_CHIP.other}`}>{t}</span>
   }
 
   function handleToggle(task: Task) {
@@ -116,7 +136,7 @@ export default function TaskManager({
             </span>
           )}
         </h2>
-        {!showAdd && (
+        {!readOnly && !showAdd && (
           <button
             onClick={() => { setShowAdd(true); setError('') }}
             className="text-xs text-brand-text hover:text-brand-ink font-medium"
@@ -145,6 +165,15 @@ export default function TaskManager({
             <option value="accommodation">Accommodation</option>
             <option value="activity">Activity</option>
           </select>
+          <div className="grid grid-cols-2 gap-2">
+            <select value={priority} onChange={e => setPriority(e.target.value)} className="w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-foreground">
+              <option value="normal">Normal priority</option>
+              <option value="high">High priority</option>
+              <option value="urgent">Urgent</option>
+              <option value="low">Low priority</option>
+            </select>
+            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="w-full rounded-md border border-border px-3 py-1.5 text-sm text-foreground" aria-label="Due date" />
+          </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
           <div className="flex gap-2">
             <button
@@ -175,17 +204,16 @@ export default function TaskManager({
             <li key={task.id} className="flex items-start gap-2 group">
               <button
                 type="button"
-                onClick={() => handleToggle(task)}
-                disabled={pending}
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-border hover:border-primary-strong transition"
-                aria-label="Mark done"
+                onClick={readOnly ? undefined : () => handleToggle(task)}
+                disabled={pending || readOnly}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-border hover:border-primary-strong transition disabled:cursor-default"
+                aria-label={readOnly ? 'Open task' : 'Mark done'}
               />
-              <span className="flex-1 text-sm text-foreground flex items-center gap-1.5 flex-wrap">
-                {task.title}
-                <TypeChip t={task.type} />
-                {task.auto_generated && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-warning-foreground border border-amber-200">auto</span>}
+              <span className="flex-1 text-sm text-foreground">
+                <span className="flex items-center gap-1.5 flex-wrap">{task.title}<TypeChip type={task.type} />{task.auto_generated ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-warning-foreground border border-amber-200">auto</span> : null}</span>
+                <TaskMeta task={task} />
               </span>
-              <button
+              {!readOnly && <button
                 type="button"
                 onClick={() => handleDelete(task.id)}
                 disabled={pending}
@@ -193,7 +221,7 @@ export default function TaskManager({
                 aria-label="Delete task"
               >
                 ✕
-              </button>
+              </button>}
             </li>
           ))}
         </ul>
@@ -205,15 +233,15 @@ export default function TaskManager({
             <li key={task.id} className="flex items-start gap-2 group">
               <button
                 type="button"
-                onClick={() => handleToggle(task)}
-                disabled={pending}
+                onClick={readOnly ? undefined : () => handleToggle(task)}
+                disabled={pending || readOnly}
                 className="mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-primary-strong bg-[var(--olive)] flex items-center justify-center transition"
                 aria-label="Mark undone"
               >
                 <span className="text-white text-[9px] leading-none">✓</span>
               </button>
-              <span className="flex-1 text-sm text-muted-foreground line-through">{task.title}</span>
-              <button
+              <span className="flex-1 text-sm text-muted-foreground line-through">{task.title}<TaskMeta task={task} /></span>
+              {!readOnly && <button
                 type="button"
                 onClick={() => handleDelete(task.id)}
                 disabled={pending}
@@ -221,7 +249,7 @@ export default function TaskManager({
                 aria-label="Delete task"
               >
                 ✕
-              </button>
+              </button>}
             </li>
           ))}
         </ul>

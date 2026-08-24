@@ -9,6 +9,7 @@ import TaskManager from './task-manager'
 import StartFromTemplate from './start-from-template'
 import FlightsManager from './flights-manager'
 import AssignmentManager from './assignment-manager'
+import CommercialWorkflowPanel from '@/components/admin/commercial-workflow-panel'
 
 const STAGES = [
   { key: 'new', label: 'New' },
@@ -51,6 +52,7 @@ export default async function RequestDetailPage({
     { data: vehicleAssignData },
     { data: staffOptions },
     { data: vehicleOptions },
+    { data: teamData },
   ] = await Promise.all([
     supabase.from('requests')
       .select('*, clients (*), tours (id, title_en, type)')
@@ -61,7 +63,7 @@ export default async function RequestDetailPage({
       .select('*').eq('request_id', id).order('created_at', { ascending: false }),
     admin.from('quotes')
       .select(`
-        id, quote_number, status, mode, created_at,
+        id, quote_number, status, mode, created_at, departure_id,
         tours (title_en),
         quote_versions!quote_versions_quote_id_fkey (id, version_number, status, title, travel_start_date, travel_end_date)
       `)
@@ -79,6 +81,7 @@ export default async function RequestDetailPage({
       .select('id, seats_used, notes, vehicles (id, name, type, seats)').eq('request_id', id),
     admin.from('tour_staff').select('id, name, role').eq('is_active', true).order('name'),
     admin.from('vehicles').select('id, name, type, seats').eq('is_active', true).order('name'),
+    admin.from('admin_users').select('id, full_name, email').eq('is_active', true).order('full_name'),
   ])
 
   const templateOptions = (templateData ?? []).map((t: any) => {
@@ -98,6 +101,7 @@ export default async function RequestDetailPage({
   const commLogs = (logs ?? []).filter((l: any) => l.type !== 'note')
   const openTasks = (tasks ?? []).filter((t: any) => !t.is_done)
   const quotes = quotesData ?? []
+  const acceptedTrip = quotes.find((quote: any) => quote.status === 'accepted' && quote.departure_id)?.departure_id ?? null
 
   // Flatten all quote versions for grouping
   const allVersions: { quote: any; version: any }[] = []
@@ -126,7 +130,8 @@ export default async function RequestDetailPage({
     { key: 'notes',     label: 'Notes',               count: notes.length },
   ]
 
-  const handledBy = user.email?.split('@')[0] ?? 'Admin'
+  const owner = (teamData ?? []).find(member => member.id === request.handled_by)
+  const handledBy = owner?.full_name || owner?.email || 'Unassigned'
 
   return (
     <div className="min-h-screen bg-surface-alt">
@@ -173,6 +178,18 @@ export default async function RequestDetailPage({
           </div>
 
           <StageSelector requestId={id} currentStage={request.stage} stages={STAGES} />
+
+          {acceptedTrip && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-950">
+              <div>
+                <p className="font-semibold">Accepted and handed to Trip Operations</p>
+                <p className="mt-0.5 text-xs text-green-800">Planning here is now a read-only sales snapshot. Continue all traveller, logistics and task updates in the trip workspace.</p>
+              </div>
+              <Link href={`/admin/departures/${acceptedTrip}`} className="rounded-lg bg-green-800 px-3 py-2 text-xs font-medium text-white hover:bg-green-900">
+                Open trip operations →
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
@@ -212,6 +229,20 @@ export default async function RequestDetailPage({
         {activeTab === 'info' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="space-y-4">
+              <CommercialWorkflowPanel
+                entityType="request"
+                entityId={id}
+                value={{
+                  ownerId: request.handled_by,
+                  priority: request.priority,
+                  nextAction: request.next_action,
+                  nextActionDueAt: request.next_action_due_at,
+                  lastContactAt: request.last_contact_at,
+                  followUpOutcome: request.follow_up_outcome,
+                }}
+                team={teamData ?? []}
+                compact
+              />
               <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold text-foreground">Client</h2>
@@ -447,7 +478,7 @@ export default async function RequestDetailPage({
         {activeTab === 'logistics' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
-              <FlightsManager requestId={id} flights={flights as any} />
+              <FlightsManager requestId={id} flights={flights as any} readOnly={!!acceptedTrip} />
             </div>
             <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
               <h2 className="text-sm font-semibold text-foreground mb-4">Staff &amp; Vehicles</h2>
@@ -457,6 +488,7 @@ export default async function RequestDetailPage({
                 vehicleAssignments={vehicleAssignments as any}
                 staffOptions={(staffOptions ?? []) as any}
                 vehicleOptions={(vehicleOptions ?? []) as any}
+                readOnly={!!acceptedTrip}
               />
             </div>
           </div>
@@ -466,7 +498,7 @@ export default async function RequestDetailPage({
         {activeTab === 'tasks' && (
           <div className="max-w-lg">
             <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
-              <TaskManager requestId={id} tasks={tasks ?? []} />
+              <TaskManager requestId={id} tasks={tasks ?? []} readOnly={!!acceptedTrip} />
             </div>
           </div>
         )}

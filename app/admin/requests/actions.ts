@@ -17,7 +17,13 @@ async function authGuard() {
   // Service-role client — all DB work goes through this. No cookies, bypasses RLS.
   const admin = createAdminClient()
   await assertAdminAccess(admin, user.email)
-  return { admin, userId: user.id }
+  const { data: adminUser } = await admin
+    .from('admin_users')
+    .select('id')
+    .eq('email', user.email ?? '')
+    .eq('is_active', true)
+    .single()
+  return { admin, userId: user.id, ownerId: adminUser?.id ?? null }
 }
 
 // The form submits either an existing client (clientId) or the new-client
@@ -79,20 +85,20 @@ function requestFieldsFromForm(formData: FormData) {
     trip_length_nights: tripLengthNightsRaw ? parseInt(tripLengthNightsRaw) || null : null,
     preferred_room_type: (formData.get('preferredRoomType') as string) || null,
     client_question: (formData.get('clientQuestion') as string) || null,
-    priority: formData.get('priority') === 'true',
+    priority: formData.get('priority') === 'true' ? 'high' : null,
   }
 }
 
 export const createRequest = safeAction(async (formData: FormData) => {
   const guard = await authGuard()
   if (!guard) return { error: null, redirectTo: '/admin/login' }
-  const { admin, userId } = guard
+  const { admin, userId, ownerId } = guard
 
   const existingClientId = ((formData.get('clientId') as string | null) ?? '').trim() || null
   const createQuote = formData.get('createQuote') === 'true'
   const quoteMode = ((formData.get('quoteMode') as string | null) ?? '').trim() || 'custom'
   const requestFields = requestFieldsFromForm(formData)
-  const { data, error } = await admin.rpc('create_sales_request_atomic', {
+  const { data, error } = await admin.rpc('create_sales_request_with_workflow_atomic', {
     p_existing_client_id: existingClientId,
     p_email: ((formData.get('email') as string | null) ?? '').trim() || null,
     p_first_name: ((formData.get('firstName') as string | null) ?? '').trim() || null,
@@ -109,13 +115,14 @@ export const createRequest = safeAction(async (formData: FormData) => {
     p_adults: requestFields.travelers_adults,
     p_children_older: requestFields.travelers_children_older,
     p_children_younger: requestFields.travelers_children_younger,
-    p_priority: requestFields.priority,
+    p_priority: requestFields.priority === 'high',
     p_create_quote: createQuote,
     p_quote_mode: quoteMode,
     p_tour_id: ((formData.get('tourId') as string | null) ?? '').trim() || null,
     p_departure_id: ((formData.get('departureId') as string | null) ?? '').trim() || null,
     p_quote_title: ((formData.get('quoteTitle') as string | null) ?? '').trim() || null,
     p_created_by: userId,
+    p_owner_id: ownerId,
   })
 
   if (error) {
@@ -128,6 +135,7 @@ export const createRequest = safeAction(async (formData: FormData) => {
       SALES_CLIENT_NAME_REQUIRED: 'Enter the client’s first and last name.',
       SALES_INVALID_QUOTE_MODE: 'Choose custom safari or fixed departure.',
       SALES_DEPARTURE_UNAVAILABLE: 'The selected departure is no longer available.',
+      SALES_INVALID_OWNER: 'Your admin profile is inactive or unavailable.',
     }
     throw new Error(messages[error.message] ?? error.message)
   }

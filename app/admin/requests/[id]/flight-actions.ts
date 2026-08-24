@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
+import { assertRequestPlanningEditable } from '@/lib/server/request-planning'
 
 async function authGuard() {
   const supabase = await createClient()
@@ -24,8 +25,7 @@ export async function addFlight(formData: FormData) {
 
   if (!requestId) throw new Error('Request ID is required.')
 
-  const { data: request } = await admin.from('requests').select('id').eq('id', requestId).single()
-  if (!request) throw new Error('Request not found.')
+  await assertRequestPlanningEditable(admin, requestId)
 
   const { error } = await admin.from('request_flights').insert({
     request_id: requestId,
@@ -46,7 +46,8 @@ export async function deleteFlight(formData: FormData) {
   const id = (formData.get('id') as string)?.trim()
   const requestId = (formData.get('requestId') as string)?.trim()
   if (!id || !requestId) throw new Error('Missing id.')
-  const { error } = await admin.from('request_flights').delete().eq('id', id)
+  await assertRequestPlanningEditable(admin, requestId)
+  const { error } = await admin.from('request_flights').delete().eq('id', id).eq('request_id', requestId)
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/requests/${requestId}`)
 }

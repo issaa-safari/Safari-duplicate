@@ -35,7 +35,7 @@ export async function createDeparture(formData: FormData) {
 
   const admin = createAdminClient()
   await assertAdminAccess(admin, user.email)
-  const { data: newDep, error } = await admin
+  const { error } = await admin
     .from('departures')
     .insert({
       tour_id: tourId,
@@ -49,9 +49,8 @@ export async function createDeparture(formData: FormData) {
       status,
       internal_notes: internalNotes || null,
       is_active: true,
+      is_public: false,
     })
-    .select('id')
-    .single()
 
   if (error) throw new Error(error.message)
 

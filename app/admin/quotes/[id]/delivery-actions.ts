@@ -74,6 +74,7 @@ export const createShareLink = safeAction(async (formData: FormData) => {
     try {
       await ensureProposalFollowUpTask(admin, {
         requestId: quote.request_id,
+        quoteId,
         quoteNumber: quote.quote_number,
         status: 'sent',
       })
@@ -190,6 +191,7 @@ export const emailQuote = safeAction(async (formData: FormData) => {
     try {
       await ensureProposalFollowUpTask(admin, {
         requestId: quote.request_id,
+        quoteId,
         quoteNumber: quote.quote_number,
         status: 'sent',
       })

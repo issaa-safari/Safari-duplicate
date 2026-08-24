@@ -15,6 +15,7 @@ import DepartureEditForm, { type Departure, type TourDay } from './form'
 import BookingLinkPanel from './booking-link-panel'
 import DepartureOperationsNav from './operations-nav'
 import type { BookingLink } from '@/lib/types'
+import DepartureResourceManager from './resource-manager'
 
 type WorkspaceCardProps = {
   href: string
@@ -75,13 +76,22 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
     .from('departures')
     .select(`
       *,
-      tours ( id, title_en, title_ar, subtitle_en, overview_en, type )
+      tours ( id, title_en, title_ar, subtitle_en, overview_en, type, slug, status, is_active, show_on_website, hero_image_url )
     `)
     .eq('id', id)
     .single()
   if (!departure) notFound()
 
-  const [{ data: tourDays }, { data: bookingLinks }, { data: bookings }, { data: vouchers }] = await Promise.all([
+  const [
+    { data: tourDays },
+    { data: bookingLinks },
+    { data: bookings },
+    { data: vouchers },
+    { data: staffAssignments },
+    { data: vehicleAssignments },
+    { data: staffOptions },
+    { data: vehicleOptions },
+  ] = await Promise.all([
     departure.tour_id
       ? admin.from('tour_days').select('*').eq('tour_id', departure.tour_id).order('day_number')
       : Promise.resolve({ data: [] }),
@@ -99,6 +109,10 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
       .eq('departure_id', id)
       .neq('status', 'cancelled'),
     admin.from('hotel_vouchers').select('id, status').eq('departure_id', id),
+    admin.from('departure_staff_assignments').select('id, tour_staff ( id, name, role )').eq('departure_id', id).order('created_at'),
+    admin.from('departure_vehicle_assignments').select('id, seats_used, vehicles ( id, name, type, seats )').eq('departure_id', id).order('created_at'),
+    admin.from('tour_staff').select('id, name, role').eq('is_active', true).order('name'),
+    admin.from('vehicles').select('id, name, type, seats').eq('is_active', true).order('name'),
   ])
   const parties = (bookings ?? []) as unknown as OperationsBooking[]
   const bookingsMissingValue = parties.filter(booking => Number(booking.total_price_usd ?? 0) <= 0)
@@ -247,6 +261,20 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
             attention={confirmedVouchers < voucherList.length}
           />
         </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-surface p-5 shadow-sm" aria-labelledby="trip-resources-heading">
+        <div className="mb-4 border-b border-border pb-3">
+          <h2 id="trip-resources-heading" className="text-lg font-semibold text-foreground">Trip team &amp; vehicles</h2>
+          <p className="text-sm text-muted-foreground">Accepted request planning is copied here automatically; this is the editable operational source of truth.</p>
+        </div>
+        <DepartureResourceManager
+          departureId={id}
+          staffAssignments={(staffAssignments ?? []) as any}
+          vehicleAssignments={(vehicleAssignments ?? []) as any}
+          staffOptions={(staffOptions ?? []) as any}
+          vehicleOptions={(vehicleOptions ?? []) as any}
+        />
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">

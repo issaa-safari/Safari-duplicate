@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ButtonLink } from '@/components/ui/button'
 import { toggleDeparturePublished } from './[id]/actions'
 import StatusBadge from '@/components/admin/status-badge'
+import { departurePublishingBlockers } from '@/lib/departure-publishing'
 
 type ReadinessTraveller = {
   is_rider: boolean | null
@@ -27,7 +28,27 @@ type OperationsDeparture = {
   price_single_usd: number | null
   status: string
   is_active: boolean
-  tours: { title_en: string | null; type: string | null } | Array<{ title_en: string | null; type: string | null }> | null
+  tours: {
+    title_en: string | null
+    type: string | null
+    slug: string | null
+    status: string
+    is_active: boolean
+    show_on_website: boolean
+    hero_image_url: string | null
+    overview_en: string | null
+    tour_days: Array<{ id: string }> | null
+  } | Array<{
+    title_en: string | null
+    type: string | null
+    slug: string | null
+    status: string
+    is_active: boolean
+    show_on_website: boolean
+    hero_image_url: string | null
+    overview_en: string | null
+    tour_days: Array<{ id: string }> | null
+  }> | null
   bookings: Array<{ status: string; booking_travellers: ReadinessTraveller[] | null }> | null
 }
 
@@ -48,7 +69,10 @@ export default async function DeparturesPage({
     .from('departures')
     .select(`
       *,
-      tours (title_en, type),
+      tours (
+        title_en, type, slug, status, is_active, show_on_website, hero_image_url, overview_en,
+        tour_days ( id )
+      ),
       bookings (
         id, status,
         booking_travellers (
@@ -138,6 +162,8 @@ export default async function DeparturesPage({
                   !(traveller.traveller_agreements ?? []).some(agreement => agreement.status === 'signed'),
                 ).length
                 const readinessIssues = missingArrivals + missingBikes + missingPassports + unsigned
+                const publishingBlockers = departurePublishingBlockers(dep)
+                const publishingReady = publishingBlockers.length === 0
                 return (
                   <tr key={dep.id} className="border-b border-border/70 hover:bg-muted">
                     <td data-label="Trip" className="px-4 py-3">
@@ -186,17 +212,23 @@ export default async function DeparturesPage({
                       ) : (
                         <form action={async () => { 'use server'; await toggleDeparturePublished(dep.id) }}>
                         {dep.is_public ? (
-                          <button type="submit"
-                            className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-100 text-green-700 hover:bg-green-200"
-                            title="Live on website — click to unpublish">
-                            ● Published
-                          </button>
+                          <div>
+                            <button type="submit"
+                              className={`text-xs px-2.5 py-1 rounded-full font-medium ${publishingReady ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-amber-100 text-amber-800 hover:bg-amber-200'}`}
+                              title="Live on website — click to unpublish">
+                              ● {publishingReady ? 'Published' : 'Published · fix'}
+                            </button>
+                            {!publishingReady && <p className="mt-1 max-w-44 text-[10px] leading-tight text-amber-800">{publishingBlockers[0]}</p>}
+                          </div>
                         ) : (
-                          <button type="submit"
-                            className="text-xs px-2.5 py-1 rounded-full font-medium bg-muted text-muted-foreground hover:bg-green-100 hover:text-green-700"
-                            title="Hidden from website — click to publish">
-                            ○ Publish
-                          </button>
+                          <div>
+                            <button type="submit" disabled={!publishingReady}
+                              className="text-xs px-2.5 py-1 rounded-full font-medium bg-muted text-muted-foreground hover:bg-green-100 hover:text-green-700 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-muted disabled:hover:text-muted-foreground"
+                              title={publishingReady ? 'Hidden from website — click to publish' : publishingBlockers.join('; ')}>
+                              ○ {publishingReady ? 'Publish' : 'Not ready'}
+                            </button>
+                            {!publishingReady && <p className="mt-1 max-w-44 text-[10px] leading-tight text-muted-foreground">{publishingBlockers[0]}</p>}
+                          </div>
                         )}
                         </form>
                       )}

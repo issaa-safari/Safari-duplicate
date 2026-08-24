@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { updateDeparture, toggleDeparturePublished } from './actions'
 import { Button, ButtonLink } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
+import { departurePublishingBlockers } from '@/lib/departure-publishing'
 
 export interface Departure {
   id: string
@@ -30,6 +31,11 @@ export interface Departure {
     subtitle_en: string | null
     overview_en: string | null
     type: string | null
+    slug: string | null
+    status: string
+    is_active: boolean
+    show_on_website: boolean
+    hero_image_url: string | null
   } | null
 }
 
@@ -45,6 +51,10 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
   const [loading, setLoading] = useState(false)
   const [isPublic, setIsPublic] = useState(departure.is_public)
   const { pending: publishLoading, run: runPublish } = useAction()
+  const publishingBlockers = departurePublishingBlockers({
+    ...departure,
+    tours: departure.tours ? { ...departure.tours, tour_days: tourDays.map(day => ({ id: day.id })) } : null,
+  })
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -78,12 +88,18 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
             {departure.tours.title_en}
             {departure.tours.type ? ` · ${departure.tours.type}` : ''}
           </p>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
-            <p className="font-medium text-blue-900 mb-2">Frontend Preview</p>
-            <p className="text-blue-800 text-xs mb-3">{departure.tours.overview_en || departure.tours.subtitle_en}</p>
-            <p className="text-xs text-blue-700">
-              ✓ When published, clients will see the full itinerary with {tourDays.length} day{tourDays.length !== 1 ? 's' : ''}
+          <div className={`rounded-lg border p-4 text-sm ${publishingBlockers.length === 0 ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}>
+            <p className={`font-medium mb-2 ${publishingBlockers.length === 0 ? 'text-green-900' : 'text-amber-950'}`}>
+              Public preview · {publishingBlockers.length === 0 ? 'Ready' : `${publishingBlockers.length} item${publishingBlockers.length === 1 ? '' : 's'} to fix`}
             </p>
+            <p className="text-blue-800 text-xs mb-3">{departure.tours.overview_en || departure.tours.subtitle_en}</p>
+            {publishingBlockers.length === 0 ? (
+              <p className="text-xs text-green-800">✓ Clients can open the itinerary and all {tourDays.length} day{tourDays.length !== 1 ? 's' : ''}.</p>
+            ) : (
+              <ul className="space-y-1 text-xs text-amber-900">
+                {publishingBlockers.map(blocker => <li key={blocker}>• {blocker}</li>)}
+              </ul>
+            )}
           </div>
         </div>
       )}
@@ -259,7 +275,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
           <div className="flex-1" />
           {departure.kind !== 'private_custom' && <button
             type="button"
-            disabled={publishLoading}
+            disabled={publishLoading || (!isPublic && publishingBlockers.length > 0)}
             onClick={() => runPublish(async () => {
               try {
                 await toggleDeparturePublished(departureId)
@@ -273,7 +289,7 @@ export default function DepartureEditForm({ departure, departureId, tourDays }: 
                 ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
                 : 'bg-green-100 text-green-700 hover:bg-green-200'
             }`}>
-            {publishLoading ? 'Updating…' : isPublic ? 'Unpublish' : 'Publish'}
+            {publishLoading ? 'Updating…' : isPublic ? 'Unpublish' : publishingBlockers.length > 0 ? 'Fix before publishing' : 'Publish'}
           </button>}
         </div>
       </form>

@@ -17,7 +17,7 @@ interface Flight {
 
 const inputCls = 'w-full rounded-md border border-border px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50'
 
-export default function FlightsManager({ requestId, flights: initial }: { requestId: string; flights: Flight[] }) {
+export default function FlightsManager({ requestId, flights: initial, readOnly = false }: { requestId: string; flights: Flight[]; readOnly?: boolean }) {
   const [flights, setFlights] = useState(initial)
   const [showAdd, setShowAdd] = useState(false)
   const [error, setError] = useState('')
@@ -63,7 +63,7 @@ export default function FlightsManager({ requestId, flights: initial }: { reques
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-foreground">Flights</h2>
-        {!showAdd && (
+        {!readOnly && !showAdd && (
           <button onClick={() => { setShowAdd(true); setError('') }}
             className="text-xs text-brand-text hover:text-brand-ink font-medium">
             + Add Flight
@@ -93,13 +93,14 @@ export default function FlightsManager({ requestId, flights: initial }: { reques
               </p>
               {f.notes && <p className="text-xs text-muted-foreground mt-0.5">{f.notes}</p>}
             </div>
-            <button onClick={() => handleDelete(f.id)} disabled={pending}
+            {!readOnly && <button onClick={() => handleDelete(f.id)} disabled={pending}
               className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-xs shrink-0" aria-label="Delete">✕</button>
+            }
           </li>
         ))}
       </ul>
 
-      {showAdd && (
+      {!readOnly && showAdd && (
         <form onSubmit={handleAdd} className="space-y-2 border-t border-border/70 pt-3">
           <div className="grid grid-cols-2 gap-2">
             <select name="direction" className={inputCls} defaultValue="arrival">

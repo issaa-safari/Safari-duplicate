@@ -1,9 +1,20 @@
 # Schema drift: migrations vs production
 
-**Status: resolved 2026-08-08, through `group_77`.** `migrations/baseline/` now
-reconstructs the live Supabase project (`oejlkzcoynijqtokbizz`) exactly — same
-counts *and* same md5 on tables, columns, indexes and policies: 69 tables, 840
-columns, 210 indexes, 17 policies.
+**Current production checkpoint: 2026-08-24, through `group_104`.** Groups 103
+and 104 were written first, dry-run in rolled-back production transactions,
+then applied. The consolidated baseline contains both groups, live-generated TypeScript
+types were refreshed, and the live object fingerprint is: 79 tables
+(`ed46fef45d510b8c294580c462b531aa`), 992 columns
+(`38c203db9d4904067d5e748ec40a9d8e`), 259 indexes
+(`f4c8ae4a31bbb19042a16433243ca745`) and 23 policies
+(`9409f7fa28ba3a6654f8e8d873b0880d`). A clean baseline replay was not available
+in this workspace, so these production fingerprints must still be compared
+against a fresh replay before calling the latest checkpoint an exact match.
+
+**Earlier exact replay checkpoint: resolved 2026-08-08, through `group_77`.**
+At that point `migrations/baseline/` reconstructed the live Supabase project
+exactly — same counts *and* same md5 on tables, columns, indexes and policies:
+69 tables, 840 columns, 210 indexes, 17 policies.
 
 It was previously marked resolved on 2026-08-06, and that was wrong. That check
 compared a replay of the group files on tables, columns, indexes, constraints,

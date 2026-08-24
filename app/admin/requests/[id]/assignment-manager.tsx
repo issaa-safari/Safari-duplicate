@@ -13,12 +13,14 @@ const inputCls = 'rounded-md border border-border px-3 py-1.5 text-sm text-foreg
 
 export default function AssignmentManager({
   requestId, staffAssignments, vehicleAssignments, staffOptions, vehicleOptions,
+  readOnly = false,
 }: {
   requestId: string
   staffAssignments: StaffAssignment[]
   vehicleAssignments: VehicleAssignment[]
   staffOptions: StaffOption[]
   vehicleOptions: VehicleOption[]
+  readOnly?: boolean
 }) {
   const [staff, setStaff] = useState(staffAssignments)
   const [vehicles, setVehicles] = useState(vehicleAssignments)
@@ -79,12 +81,13 @@ export default function AssignmentManager({
                 {a.tour_staff?.name ?? 'Unknown'}
                 {a.tour_staff?.role && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">{a.tour_staff.role}</span>}
               </span>
-              <button onClick={() => removeStaff(a.id)} disabled={pending}
+              {!readOnly && <button onClick={() => removeStaff(a.id)} disabled={pending}
                 className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-xs" aria-label="Remove">✕</button>
+              }
             </li>
           ))}
         </ul>
-        {availableStaff.length > 0 && (
+        {!readOnly && availableStaff.length > 0 && (
           <div className="flex gap-2">
             <select value={staffId} onChange={e => setStaffId(e.target.value)} className={`${inputCls} flex-1`}>
               <option value="">Assign staff…</option>
@@ -107,12 +110,13 @@ export default function AssignmentManager({
                 {a.vehicles?.type && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">{a.vehicles.type}</span>}
                 {a.vehicles?.seats != null && <span className="ml-1 text-xs text-muted-foreground">{a.vehicles.seats} seats</span>}
               </span>
-              <button onClick={() => removeVehicle(a.id)} disabled={pending}
+              {!readOnly && <button onClick={() => removeVehicle(a.id)} disabled={pending}
                 className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-xs" aria-label="Remove">✕</button>
+              }
             </li>
           ))}
         </ul>
-        {availableVehicles.length > 0 && (
+        {!readOnly && availableVehicles.length > 0 && (
           <div className="flex gap-2">
             <select value={vehicleId} onChange={e => setVehicleId(e.target.value)} className={`${inputCls} flex-1`}>
               <option value="">Assign vehicle…</option>

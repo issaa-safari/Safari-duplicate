@@ -138,7 +138,7 @@ export default function NewDepartureForm({ tours }: { tours: any[] }) {
         {error && <Alert variant="error">{error}</Alert>}
 
         <div className="flex gap-3">
-          <Button type="submit" loading={loading} loadingText="Creating…">Create Departure</Button>
+          <Button type="submit" loading={loading} loadingText="Creating…">Create Hidden Departure</Button>
           <ButtonLink href="/admin/departures">Cancel</ButtonLink>
         </div>
       </form>

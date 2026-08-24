@@ -298,6 +298,27 @@ export type Database = {
         }
         Relationships: []
       }
+      api_rate_limits: {
+        Row: {
+          bucket_key: string
+          request_count: number
+          reset_at: string
+          updated_at: string
+        }
+        Insert: {
+          bucket_key: string
+          request_count: number
+          reset_at: string
+          updated_at?: string
+        }
+        Update: {
+          bucket_key?: string
+          request_count?: number
+          reset_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       blog_posts: {
         Row: {
           created_at: string
@@ -751,9 +772,12 @@ export type Database = {
           id: string
           invoice_prefix: string | null
           logo_url: string | null
+          operations_readiness_window_days: number
           phone: string | null
           prebooked_enabled: boolean
+          proposal_expiry_warning_days: number
           quote_prefix: string | null
+          request_proposal_due_hours: number
           updated_at: string
           usd_to_kes_rate: number
           website: string | null
@@ -790,9 +814,12 @@ export type Database = {
           id?: string
           invoice_prefix?: string | null
           logo_url?: string | null
+          operations_readiness_window_days?: number
           phone?: string | null
           prebooked_enabled?: boolean
+          proposal_expiry_warning_days?: number
           quote_prefix?: string | null
+          request_proposal_due_hours?: number
           updated_at?: string
           usd_to_kes_rate?: number
           website?: string | null
@@ -829,9 +856,12 @@ export type Database = {
           id?: string
           invoice_prefix?: string | null
           logo_url?: string | null
+          operations_readiness_window_days?: number
           phone?: string | null
           prebooked_enabled?: boolean
+          proposal_expiry_warning_days?: number
           quote_prefix?: string | null
+          request_proposal_due_hours?: number
           updated_at?: string
           usd_to_kes_rate?: number
           website?: string | null
@@ -916,6 +946,96 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      departure_staff_assignments: {
+        Row: {
+          created_at: string
+          departure_id: string
+          id: string
+          notes: string | null
+          role: string | null
+          staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          departure_id: string
+          id?: string
+          notes?: string | null
+          role?: string | null
+          staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          departure_id?: string
+          id?: string
+          notes?: string | null
+          role?: string | null
+          staff_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departure_staff_assignments_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "departures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departure_staff_assignments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "tour_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departure_vehicle_assignments: {
+        Row: {
+          created_at: string
+          departure_id: string
+          id: string
+          notes: string | null
+          seats_used: number | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          departure_id: string
+          id?: string
+          notes?: string | null
+          seats_used?: number | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          departure_id?: string
+          id?: string
+          notes?: string | null
+          seats_used?: number | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departure_vehicle_assignments_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "departures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departure_vehicle_assignments_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       departures: {
         Row: {
@@ -2470,9 +2590,14 @@ export type Database = {
           created_at: string
           created_by: string | null
           departure_id: string | null
+          follow_up_outcome: string | null
           id: string
           is_template: boolean
+          last_contact_at: string | null
           mode: string
+          next_action: string | null
+          next_action_due_at: string | null
+          owner_id: string | null
           provisional_booking_id: string | null
           quote_number: string
           request_id: string | null
@@ -2486,9 +2611,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           departure_id?: string | null
+          follow_up_outcome?: string | null
           id?: string
           is_template?: boolean
+          last_contact_at?: string | null
           mode?: string
+          next_action?: string | null
+          next_action_due_at?: string | null
+          owner_id?: string | null
           provisional_booking_id?: string | null
           quote_number?: string
           request_id?: string | null
@@ -2502,9 +2632,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           departure_id?: string | null
+          follow_up_outcome?: string | null
           id?: string
           is_template?: boolean
+          last_contact_at?: string | null
           mode?: string
+          next_action?: string | null
+          next_action_due_at?: string | null
+          owner_id?: string | null
           provisional_booking_id?: string | null
           quote_number?: string
           request_id?: string | null
@@ -2532,6 +2667,13 @@ export type Database = {
             columns: ["departure_id"]
             isOneToOne: false
             referencedRelation: "departures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
             referencedColumns: ["id"]
           },
           {
@@ -2715,10 +2857,14 @@ export type Database = {
           client_question: string | null
           created_at: string
           date_received: string
+          follow_up_outcome: string | null
           group_size: number | null
           handled_by: string | null
           heard_about_us: string | null
           id: string
+          last_contact_at: string | null
+          next_action: string | null
+          next_action_due_at: string | null
           preferred_room_type: string | null
           preferred_start_date: string | null
           priority: string | null
@@ -2743,10 +2889,14 @@ export type Database = {
           client_question?: string | null
           created_at?: string
           date_received?: string
+          follow_up_outcome?: string | null
           group_size?: number | null
           handled_by?: string | null
           heard_about_us?: string | null
           id?: string
+          last_contact_at?: string | null
+          next_action?: string | null
+          next_action_due_at?: string | null
           preferred_room_type?: string | null
           preferred_start_date?: string | null
           priority?: string | null
@@ -2771,10 +2921,14 @@ export type Database = {
           client_question?: string | null
           created_at?: string
           date_received?: string
+          follow_up_outcome?: string | null
           group_size?: number | null
           handled_by?: string | null
           heard_about_us?: string | null
           id?: string
+          last_contact_at?: string | null
+          next_action?: string | null
+          next_action_due_at?: string | null
           preferred_room_type?: string | null
           preferred_start_date?: string | null
           priority?: string | null
@@ -3340,12 +3494,16 @@ export type Database = {
       tasks: {
         Row: {
           auto_generated: boolean
+          automation_key: string | null
           booking_id: string | null
           created_at: string
           departure_id: string | null
           due_date: string | null
           id: string
           is_done: boolean
+          owner_id: string | null
+          priority: string
+          quote_id: string | null
           request_id: string | null
           sort_order: number
           status: string
@@ -3354,12 +3512,16 @@ export type Database = {
         }
         Insert: {
           auto_generated?: boolean
+          automation_key?: string | null
           booking_id?: string | null
           created_at?: string
           departure_id?: string | null
           due_date?: string | null
           id?: string
           is_done?: boolean
+          owner_id?: string | null
+          priority?: string
+          quote_id?: string | null
           request_id?: string | null
           sort_order?: number
           status?: string
@@ -3368,12 +3530,16 @@ export type Database = {
         }
         Update: {
           auto_generated?: boolean
+          automation_key?: string | null
           booking_id?: string | null
           created_at?: string
           departure_id?: string | null
           due_date?: string | null
           id?: string
           is_done?: boolean
+          owner_id?: string | null
+          priority?: string
+          quote_id?: string | null
           request_id?: string | null
           sort_order?: number
           status?: string
@@ -3393,6 +3559,20 @@ export type Database = {
             columns: ["departure_id"]
             isOneToOne: false
             referencedRelation: "departures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
           {
@@ -3930,11 +4110,13 @@ export type Database = {
           booking_traveller_id: string
           created_at: string
           departure_id: string | null
+          expires_at: string
           id: string
           ip_address: string | null
           language_snapshot: string | null
           last_emailed_at: string | null
           reminder_count: number
+          revoked_at: string | null
           signed_at: string | null
           signed_name: string | null
           status: string
@@ -3950,11 +4132,13 @@ export type Database = {
           booking_traveller_id: string
           created_at?: string
           departure_id?: string | null
+          expires_at?: string
           id?: string
           ip_address?: string | null
           language_snapshot?: string | null
           last_emailed_at?: string | null
           reminder_count?: number
+          revoked_at?: string | null
           signed_at?: string | null
           signed_name?: string | null
           status?: string
@@ -3970,11 +4154,13 @@ export type Database = {
           booking_traveller_id?: string
           created_at?: string
           departure_id?: string | null
+          expires_at?: string
           id?: string
           ip_address?: string | null
           language_snapshot?: string | null
           last_emailed_at?: string | null
           reminder_count?: number
+          revoked_at?: string | null
           signed_at?: string | null
           signed_name?: string | null
           status?: string
@@ -4279,6 +4465,14 @@ export type Database = {
         Args: { p_version_id: string }
         Returns: undefined
       }
+      consume_api_rate_limit: {
+        Args: {
+          p_bucket_key: string
+          p_limit: number
+          p_window_seconds: number
+        }
+        Returns: boolean
+      }
       copy_quote_as_new: {
         Args: {
           p_client_id: string
@@ -4340,6 +4534,19 @@ export type Database = {
         }
         Returns: string
       }
+      create_quote_with_workflow_atomic: {
+        Args: {
+          p_client_id: string
+          p_created_by: string
+          p_departure_id: string
+          p_mode: string
+          p_owner_id?: string
+          p_request_id: string
+          p_title: string
+          p_tour_id: string
+        }
+        Returns: string
+      }
       create_sales_request_atomic: {
         Args: {
           p_adults?: number
@@ -4365,6 +4572,43 @@ export type Database = {
           p_tour_id?: string
           p_trip_length_nights?: number
           p_whatsapp?: string
+        }
+        Returns: Json
+      }
+      create_sales_request_with_workflow_atomic: {
+        Args: {
+          p_adults?: number
+          p_children_older?: number
+          p_children_younger?: number
+          p_client_question?: string
+          p_country?: string
+          p_create_quote?: boolean
+          p_created_by?: string
+          p_departure_id?: string
+          p_email?: string
+          p_existing_client_id?: string
+          p_first_name?: string
+          p_language?: string
+          p_last_name?: string
+          p_owner_id?: string
+          p_phone?: string
+          p_preferred_room_type?: string
+          p_preferred_start_date?: string
+          p_priority?: boolean
+          p_quote_mode?: string
+          p_quote_title?: string
+          p_source?: string
+          p_tour_id?: string
+          p_trip_length_nights?: number
+          p_whatsapp?: string
+        }
+        Returns: Json
+      }
+      decline_quote_atomic: {
+        Args: {
+          p_delivery_id: string
+          p_quote_id: string
+          p_version_id: string
         }
         Returns: Json
       }
