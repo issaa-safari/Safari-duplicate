@@ -127,7 +127,7 @@ export const createQuote = safeAction(async (formData: FormData) => {
     }
   }
 
-  // Funnel: request → quote → itinerary → pricing → preview → send, all steps
+  // Funnel: request → quote → itinerary → pricing → review → send, all steps
   // on the unified quote workspace. Custom safaris open on the Itinerary tab.
   return {
     error: null,

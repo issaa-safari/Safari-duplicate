@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
   if (s.auto_complete_on_end_date) {
     const { data: booked } = await admin
       .from('quotes')
-      .select('request_id, quote_versions!inner(travel_end_date, status)')
+      .select('request_id, quote_versions!quote_versions_quote_id_fkey!inner(travel_end_date, status)')
       .not('request_id', 'is', null)
       .in('status', ['accepted'])
     const seen = new Set<string>()

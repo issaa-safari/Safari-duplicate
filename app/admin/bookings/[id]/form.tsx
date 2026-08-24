@@ -36,6 +36,9 @@ export default function BookingDetailForm({
 }: BookingDetailFormProps) {
   const departure = booking.departures as any
   const tour = departure?.tours as any
+  const tripTitle = tour?.title_en
+    ?? departure?.operation_title
+    ?? (departure ? 'Private trip' : 'Private trip — no departure')
   const client = booking.clients as any
   const request = booking.requests as any
   const travellers = (booking.booking_travellers as any[]) ?? []
@@ -77,7 +80,7 @@ export default function BookingDetailForm({
               {/* A booking without a departure has no tour to name itself after
                   (group_78), so it says what it is rather than rendering blank. */}
               <h2 className="text-xl font-bold text-foreground">
-                {tour?.title_en ?? 'Private trip — no departure'}
+                {tripTitle}
               </h2>
               <p className="text-sm text-muted-foreground mt-1">Booking ID: {bookingId}</p>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
@@ -89,6 +92,11 @@ export default function BookingDetailForm({
                 {request && (
                   <Link href={`/admin/requests/${request.id}`} className="text-brand-text hover:underline">
                     {request.reference}
+                  </Link>
+                )}
+                {departure && (
+                  <Link href={`/admin/departures/${departure.id}`} className="text-brand-text hover:underline">
+                    Open trip operations →
                   </Link>
                 )}
                 {!client && !request && !departure && (
@@ -132,6 +140,7 @@ export default function BookingDetailForm({
             numberOfTravellers={Number(booking.number_of_travellers)}
             totalPriceUsd={Number(booking.total_price_usd)}
             hasDeparture={!!departure}
+            needsCommercialCorrection={departure?.kind === 'private_custom' && Number(booking.total_price_usd) <= 0}
             hasPayments={payments.length > 0}
             heldDepositsUsd={deposits.filter((d) => !d.returned_at).reduce((sum, d) => sum + Number(d.amount_usd), 0)}
           />
@@ -171,7 +180,7 @@ export default function BookingDetailForm({
                       <PaymentActions
                         payment={p}
                         bookingId={bookingId}
-                        label={tour?.title_en ?? 'This booking'}
+                        label={tripTitle}
                         totalSelling={totalPrice}
                         alreadyReceived={paidAmount}
                       />
@@ -193,7 +202,7 @@ export default function BookingDetailForm({
               <div className="max-w-md">
                 <PaymentForm
                   bookingId={bookingId}
-                  label={tour?.title_en ?? 'This booking'}
+                  label={tripTitle}
                   totalSelling={totalPrice}
                   alreadyReceived={paidAmount}
                   onDone={() => { setPaying(false); window.location.reload() }}

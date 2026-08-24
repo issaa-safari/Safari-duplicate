@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { updateBooking, cancelBooking } from './actions'
+import { updateBooking, cancelBooking, correctLegacyTripValue } from './actions'
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
@@ -21,6 +21,7 @@ export default function BookingEditPanel({
   numberOfTravellers,
   totalPriceUsd,
   hasDeparture,
+  needsCommercialCorrection,
   hasPayments,
   heldDepositsUsd,
 }: {
@@ -29,6 +30,7 @@ export default function BookingEditPanel({
   numberOfTravellers: number
   totalPriceUsd: number
   hasDeparture: boolean
+  needsCommercialCorrection: boolean
   /** Whether cancelling should warn about money already on the ledger. */
   hasPayments: boolean
   /** Security deposits still held (not yet returned) — warned about the same way. */
@@ -38,6 +40,7 @@ export default function BookingEditPanel({
   const [confirmingCancel, setConfirmingCancel] = useState(false)
   const [updateState, updateAction, updatePending] = useActionState(updateBooking, null)
   const [cancelState, cancelAction, cancelPending] = useActionState(cancelBooking, null)
+  const [correctionState, correctionAction, correctionPending] = useActionState(correctLegacyTripValue, null)
 
   if (status === 'cancelled') {
     return (
@@ -64,6 +67,38 @@ export default function BookingEditPanel({
 
   return (
     <div className="mt-4 pt-4 border-t border-border/60">
+      {needsCommercialCorrection && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950">
+          <p className="text-sm font-semibold">Complete commercial handover</p>
+          <p className="mt-1 text-xs text-amber-900">
+            This legacy accepted safari has no commercial value. Saving here updates the accepted proposal,
+            booking, private operation, deposit schedule, Finance, and the urgent task together.
+          </p>
+          <form action={correctionAction} className="mt-3 flex flex-wrap items-end gap-3">
+            <input type="hidden" name="id" value={bookingId} />
+            <div>
+              <label className="mb-1 block text-xs font-medium">Confirmed trip value (USD)</label>
+              <input
+                type="number"
+                name="totalPriceUsd"
+                min="0.01"
+                step="0.01"
+                required
+                className="w-48 rounded-md border border-amber-300 bg-white px-3 py-2 text-sm text-foreground"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={correctionPending}
+              className="rounded-md bg-amber-800 px-4 py-2 text-sm font-medium text-white hover:bg-amber-900 disabled:opacity-50"
+            >
+              {correctionPending ? 'Synchronizing…' : 'Confirm value & synchronize'}
+            </button>
+          </form>
+          {correctionState?.error && <p className="mt-2 text-xs text-destructive">{correctionState.error}</p>}
+        </div>
+      )}
+
       {editing ? (
         <form action={updateAction} className="space-y-3">
           <input type="hidden" name="id" value={bookingId} />
@@ -80,11 +115,21 @@ export default function BookingEditPanel({
               <input type="number" name="numberOfTravellers" min={1} defaultValue={numberOfTravellers}
                 className="w-full rounded border border-border px-2 py-1.5 text-sm" />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Total price (USD)</label>
-              <input type="number" name="totalPriceUsd" min={0} step="0.01" defaultValue={totalPriceUsd}
-                className="w-full rounded border border-border px-2 py-1.5 text-sm" />
-            </div>
+            {needsCommercialCorrection ? (
+              <div>
+                <input type="hidden" name="totalPriceUsd" value={totalPriceUsd} />
+                <p className="block text-xs font-medium text-muted-foreground mb-1">Total price (USD)</p>
+                <p className="rounded border border-border bg-muted px-2 py-1.5 text-sm text-muted-foreground">
+                  Use commercial handover above
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Total price (USD)</label>
+                <input type="number" name="totalPriceUsd" min={0} step="0.01" defaultValue={totalPriceUsd}
+                  className="w-full rounded border border-border px-2 py-1.5 text-sm" />
+              </div>
+            )}
           </div>
           {hasDeparture && (
             <p className="text-xs text-muted-foreground">

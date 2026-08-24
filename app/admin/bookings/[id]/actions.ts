@@ -165,6 +165,70 @@ export async function updateBooking(_prev: ActionResult | null, formData: FormDa
   return updateBookingImpl(formData)
 }
 
+const LEGACY_VALUE_ERRORS: Record<string, string> = {
+  TRIP_VALUE_POSITIVE_REQUIRED: 'Enter a trip value greater than zero.',
+  TRIP_VALUE_BOOKING_NOT_FOUND: 'Booking not found.',
+  TRIP_VALUE_LEGACY_CUSTOM_REQUIRED: 'This correction is only available for a legacy accepted custom safari.',
+  TRIP_VALUE_ACCEPTED_QUOTE_REQUIRED: 'The booking is not linked to an accepted proposal.',
+  TRIP_VALUE_VERSION_NOT_FOUND: 'The accepted proposal version could not be found.',
+  TRIP_VALUE_BOOKING_CHANGED: 'The booking changed while it was being corrected. Refresh and try again.',
+  TRIP_VALUE_CORRECTION_NOT_REQUIRED: 'This trip already has a confirmed commercial value.',
+}
+
+const correctLegacyTripValueImpl = safeAction(async (formData: FormData) => {
+  const { user, admin } = await authGuard()
+  const bookingId = String(formData.get('id') ?? '')
+  const totalPriceUsd = Number(formData.get('totalPriceUsd'))
+
+  if (!bookingId) throw new Error('Missing booking.')
+  if (!Number.isFinite(totalPriceUsd) || totalPriceUsd <= 0) {
+    throw new Error('Enter a trip value greater than zero.')
+  }
+
+  const { data, error } = await admin.rpc('correct_legacy_trip_value_atomic', {
+    p_booking_id: bookingId,
+    p_total_price_usd: totalPriceUsd,
+  })
+  if (error) {
+    const code = Object.keys(LEGACY_VALUE_ERRORS).find(key => error.message.includes(key))
+    throw new Error(code ? LEGACY_VALUE_ERRORS[code] : error.message)
+  }
+
+  const result = data as {
+    quoteId?: string
+    departureId?: string
+    totalPriceUsd?: number
+    securityDepositDueUsd?: number
+  } | null
+
+  await logActivity(admin, {
+    entityType: 'booking',
+    entityId: bookingId,
+    action: 'legacy_trip_value_corrected',
+    summary: `Corrected legacy accepted-trip value to $${totalPriceUsd.toFixed(2)}`,
+    actorId: user.id,
+    actorEmail: user.email ?? null,
+    metadata: { totalPriceUsd, quoteId: result?.quoteId, departureId: result?.departureId },
+  })
+
+  revalidateBooking(bookingId)
+  revalidatePath('/admin/quotes')
+  revalidatePath('/admin/finance')
+  revalidatePath('/admin/finance/receipts')
+  if (result?.quoteId) revalidatePath(`/admin/quotes/${result.quoteId}`)
+  if (result?.departureId) {
+    revalidatePath(`/admin/departures/${result.departureId}`)
+    revalidatePath(`/admin/departures/${result.departureId}/tasks`)
+  }
+})
+
+export async function correctLegacyTripValue(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return correctLegacyTripValueImpl(formData)
+}
+
 /**
  * Cancel a booking and release its seats. The one and only place a booking
  * moves into `cancelled` — see the note on updateBooking above.

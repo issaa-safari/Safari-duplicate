@@ -4,9 +4,10 @@ import { useMemo, useState } from 'react'
 import { useAction } from '@/lib/hooks/use-action'
 import { Button } from '@/components/ui/button'
 import type { Motorbike } from '@/lib/types'
+import AgreementsPanel from './agreements-panel'
 import {
   addTravellerFlight, deleteTravellerFlight, assignMotorbike,
-  updateTravellerExtras, generateAgreement, generateAllAgreements, sendAgreementLink,
+  updateTravellerExtras, generateAllAgreements,
 } from './actions'
 
 export interface RosterFlight {
@@ -71,8 +72,9 @@ function ReadinessBar({ label, done, total }: { label: string; done: number; tot
 }
 
 export default function ManifestClient({
-  departureId, departureLabel, roster, motorbikes, hasTemplate, agreementBaseUrl,
+  view, departureId, departureLabel, roster, motorbikes, hasTemplate, agreementBaseUrl,
 }: {
+  view: 'travellers' | 'logistics' | 'agreements'
   departureId: string
   departureLabel: string
   roster: RosterTraveller[]
@@ -86,13 +88,13 @@ export default function ManifestClient({
   const [error, setError] = useState('')
   const { pending, run } = useAction()
 
-  const riders = roster.filter(t => t.isRider)
   const readiness = useMemo(() => ({
     flights: roster.filter(t => t.flights.some(f => f.direction === 'arrival')).length,
-    bikes: riders.filter(t => t.motorbikeId).length,
+    bikes: roster.filter(t => t.isRider && t.motorbikeId).length,
+    riders: roster.filter(t => t.isRider).length,
     agreements: roster.filter(t => t.agreement?.status === 'signed').length,
     passports: roster.filter(t => t.passportNumber).length,
-  }), [roster, riders])
+  }), [roster])
 
   // Bikes already taken by someone else (across this departure) — greyed in selects.
   const takenBikeIds = useMemo(() => {
@@ -191,25 +193,12 @@ export default function ManifestClient({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-muted/30 p-3 text-xs">
-        <span className="mr-1 font-medium text-muted-foreground">Jump to</span>
-        <a href="#logistics" className="rounded-full border border-border bg-surface px-3 py-1.5 font-medium text-brand-text hover:bg-accent">
-          Transfers
-        </a>
-        <a href="#rooming" className="rounded-full border border-border bg-surface px-3 py-1.5 font-medium text-brand-text hover:bg-accent">
-          Rooming
-        </a>
-        <a href="#manifest" className="rounded-full border border-border bg-surface px-3 py-1.5 font-medium text-brand-text hover:bg-accent">
-          Traveller manifest
-        </a>
-      </div>
-
       {/* Readiness */}
       <div>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground">Readiness · {roster.length} traveller{roster.length !== 1 ? 's' : ''}</h2>
           <div className="flex gap-2">
-            {hasTemplate && (
+            {view === 'agreements' && hasTemplate && (
               <Button size="sm" variant="secondary" loading={pending} loadingText="Issuing…"
                 onClick={() => { setError(''); const fd = new FormData(); fd.set('departureId', departureId); run(async () => { try { await generateAllAgreements(fd) } catch (e) { setError(e instanceof Error ? e.message : 'Failed.') } }) }}>
                 Issue all agreements
@@ -221,151 +210,150 @@ export default function ManifestClient({
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <ReadinessBar label="Arrival flights" done={readiness.flights} total={roster.length} />
-          <ReadinessBar label="Bikes assigned" done={readiness.bikes} total={riders.length} />
+          <ReadinessBar label="Bikes assigned" done={readiness.bikes} total={readiness.riders} />
           <ReadinessBar label="Agreements signed" done={readiness.agreements} total={roster.length} />
           <ReadinessBar label="Passports on file" done={readiness.passports} total={roster.length} />
         </div>
       </div>
 
-      {/* Transfer runs */}
-      <div id="logistics" className="scroll-mt-28 rounded-xl border border-border bg-surface shadow-sm p-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-foreground">Airport transfer runs</h2>
-          <label className="flex items-center gap-2 text-xs text-muted-foreground">
-            Group arrivals within
-            <select value={windowMin} onChange={e => setWindowMin(Number(e.target.value))}
-              className="rounded-md border border-border bg-surface px-2 py-1 text-xs">
-              <option value={30}>30 min</option>
-              <option value={60}>60 min</option>
-              <option value={90}>90 min</option>
-              <option value={120}>2 hours</option>
-              <option value={180}>3 hours</option>
-            </select>
-          </label>
-        </div>
-        {transferRuns.runs.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No arrival times recorded yet — add arrival flights below.</p>
-        ) : (
-          <div className="space-y-3">
-            {transferRuns.runs.map((run, i) => (
-              <div key={i} className="rounded-lg border border-border/70 bg-muted/30 p-3">
-                <p className="text-xs font-semibold text-brand-text">
-                  Run {i + 1} · {fmtTime(run.start)}{run.end !== run.start ? ` – ${new Date(run.end).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : ''}
-                  <span className="ml-2 font-normal text-muted-foreground">{run.travellers.length} pax</span>
-                </p>
-                <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground">
-                  {run.travellers.map(t => {
-                    const a = firstArrival(t)
-                    return (
-                      <li key={t.id}>
-                        {fullName(t)}
-                        <span className="text-muted-foreground"> · {[a?.airline, a?.flightNumber].filter(Boolean).join(' ') || 'flight'}{a?.airport ? ` → ${a.airport}` : ''}</span>
-                      </li>
-                    )
-                  })}
-                </ul>
+      {view === 'logistics' && (
+        <>
+          {/* Transfer runs */}
+          <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-foreground">Airport transfer runs</h2>
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                Group arrivals within
+                <select value={windowMin} onChange={e => setWindowMin(Number(e.target.value))}
+                  className="rounded-md border border-border bg-surface px-2 py-1 text-xs">
+                  <option value={30}>30 min</option>
+                  <option value={60}>60 min</option>
+                  <option value={90}>90 min</option>
+                  <option value={120}>2 hours</option>
+                  <option value={180}>3 hours</option>
+                </select>
+              </label>
+            </div>
+            {transferRuns.runs.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No arrival times recorded yet — add arrival flights below.</p>
+            ) : (
+              <div className="space-y-3">
+                {transferRuns.runs.map((run, i) => (
+                  <div key={i} className="rounded-lg border border-border/70 bg-muted/30 p-3">
+                    <p className="text-xs font-semibold text-brand-text">
+                      Run {i + 1} · {fmtTime(run.start)}{run.end !== run.start ? ` – ${new Date(run.end).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                      <span className="ml-2 font-normal text-muted-foreground">{run.travellers.length} pax</span>
+                    </p>
+                    <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground">
+                      {run.travellers.map(t => {
+                        const arrival = firstArrival(t)
+                        return (
+                          <li key={t.id}>
+                            {fullName(t)}
+                            <span className="text-muted-foreground"> · {[arrival?.airline, arrival?.flightNumber].filter(Boolean).join(' ') || 'flight'}{arrival?.airport ? ` → ${arrival.airport}` : ''}</span>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                ))}
+                {transferRuns.noArrival.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No arrival time: {transferRuns.noArrival.map(fullName).join(', ')}
+                  </p>
+                )}
               </div>
-            ))}
-            {transferRuns.noArrival.length > 0 && (
+            )}
+          </div>
+
+          {/* Rooming list */}
+          <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+            <h2 className="mb-3 text-sm font-semibold text-foreground">Rooming list</h2>
+            {rooming.rooms.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                No arrival time: {transferRuns.noArrival.map(fullName).join(', ')}
+                No rooms assigned yet — set a room name in a traveller&rsquo;s details (travellers sharing a room name share a room).
+              </p>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {rooming.rooms.map(([label, room]) => (
+                  <div key={label} className="rounded-lg border border-border/70 bg-muted/30 p-3">
+                    <p className="text-xs font-semibold text-brand-text">
+                      {label}
+                      {room.type && <span className="ml-1 font-normal text-muted-foreground">· {room.type}</span>}
+                      <span className="ml-1 font-normal text-muted-foreground">({room.travellers.length})</span>
+                    </p>
+                    <ul className="mt-1 text-xs text-foreground">
+                      {room.travellers.map(t => <li key={t.id}>{fullName(t)}</li>)}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+            {rooming.unassigned.length > 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                No room: {rooming.unassigned.map(fullName).join(', ')}
               </p>
             )}
           </div>
-        )}
-      </div>
+        </>
+      )}
 
-      {/* Rooming list */}
-      <div id="rooming" className="scroll-mt-28 rounded-xl border border-border bg-surface shadow-sm p-4">
-        <h2 className="mb-3 text-sm font-semibold text-foreground">Rooming list</h2>
-        {rooming.rooms.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            No rooms assigned yet — set a room name in a traveller&rsquo;s details (travellers sharing a room name share a room).
-          </p>
-        ) : (
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {rooming.rooms.map(([label, room]) => (
-              <div key={label} className="rounded-lg border border-border/70 bg-muted/30 p-3">
-                <p className="text-xs font-semibold text-brand-text">
-                  {label}
-                  {room.type && <span className="ml-1 font-normal text-muted-foreground">· {room.type}</span>}
-                  <span className="ml-1 font-normal text-muted-foreground">({room.travellers.length})</span>
-                </p>
-                <ul className="mt-1 text-xs text-foreground">
-                  {room.travellers.map(t => <li key={t.id}>{fullName(t)}</li>)}
-                </ul>
-              </div>
-            ))}
+      {view === 'agreements' && (
+        <AgreementsPanel
+          departureId={departureId}
+          roster={roster}
+          hasTemplate={hasTemplate}
+          copied={copied}
+          onCopy={copyLink}
+          onError={setError}
+        />
+      )}
+
+      {view !== 'agreements' && (
+        <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+          <div className="border-b border-border px-4 py-3">
+            <h2 className="text-sm font-semibold text-foreground">
+              {view === 'logistics' ? 'Traveller logistics details' : 'Traveller roster'}
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Open a traveller to update flights, room allocation and trip requirements.
+            </p>
           </div>
-        )}
-        {rooming.unassigned.length > 0 && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            No room: {rooming.unassigned.map(fullName).join(', ')}
-          </p>
-        )}
-      </div>
-
-      {/* Roster */}
-      <div id="manifest" className="scroll-mt-28 rounded-xl border border-border bg-surface shadow-sm overflow-hidden">
-        <table className="stack-table w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-muted-foreground">
-              <th className="px-4 py-3 font-medium">Traveller</th>
-              <th className="px-4 py-3 font-medium">Arrival</th>
-              <th className="px-4 py-3 font-medium">Motorbike</th>
-              <th className="px-4 py-3 font-medium">Agreement</th>
-              <th className="px-4 py-3 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {roster.map(t => {
-              const arr = firstArrival(t)
-              const isOpen = expanded === t.id
-              return (
-                <RosterRow
-                  key={t.id}
-                  t={t} arr={arr} isOpen={isOpen}
-                  onToggle={() => setExpanded(isOpen ? null : t.id)}
-                  departureId={departureId}
-                  motorbikes={motorbikes}
-                  takenBikeIds={takenBikeIds}
-                  hasTemplate={hasTemplate}
-                  copied={copied}
-                  onCopy={copyLink}
-                  onError={setError}
-                />
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+          <table className="stack-table w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-muted-foreground">
+                <th className="px-4 py-3 font-medium">Traveller</th>
+                <th className="px-4 py-3 font-medium">Arrival</th>
+                <th className="px-4 py-3 font-medium">Motorbike</th>
+                <th className="px-4 py-3 font-medium"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {roster.map(t => {
+                const arr = firstArrival(t)
+                const isOpen = expanded === t.id
+                return (
+                  <RosterRow
+                    key={t.id}
+                    t={t} arr={arr} isOpen={isOpen}
+                    onToggle={() => setExpanded(isOpen ? null : t.id)}
+                    departureId={departureId}
+                    motorbikes={motorbikes}
+                    takenBikeIds={takenBikeIds}
+                    onError={setError}
+                  />
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
 
-function AgreementCell({ t, copied, onCopy }: { t: RosterTraveller; copied: string | null; onCopy: (token: string) => void }) {
-  if (!t.agreement) return <span className="text-xs text-muted-foreground">Not issued</span>
-  if (t.agreement.status === 'signed') {
-    return (
-      <span className="text-xs font-medium text-green-600">
-        ✓ Signed{t.agreement.signedAt ? ` · ${new Date(t.agreement.signedAt).toLocaleDateString('en-GB')}` : ''}
-      </span>
-    )
-  }
-  return (
-    <span className="flex items-center gap-2">
-      <span className="text-xs font-medium text-amber-600">Pending</span>
-      {t.agreement.token && (
-        <button onClick={() => onCopy(t.agreement!.token!)} className="text-xs text-brand-text hover:underline">
-          {copied === t.agreement.token ? 'Copied!' : 'Copy link'}
-        </button>
-      )}
-    </span>
-  )
-}
-
 function RosterRow({
-  t, arr, isOpen, onToggle, departureId, motorbikes, takenBikeIds, hasTemplate, copied, onCopy, onError,
+  t, arr, isOpen, onToggle, departureId, motorbikes, takenBikeIds, onError,
 }: {
   t: RosterTraveller
   arr: RosterFlight | null
@@ -374,9 +362,6 @@ function RosterRow({
   departureId: string
   motorbikes: Motorbike[]
   takenBikeIds: Record<string, string>
-  hasTemplate: boolean
-  copied: string | null
-  onCopy: (token: string) => void
   onError: (msg: string) => void
 }) {
   const { pending, run } = useAction()
@@ -439,33 +424,6 @@ function RosterRow({
             </select>
           ) : <span className="text-xs text-muted-foreground">Passenger</span>}
         </td>
-        <td data-label="Agreement" className="px-4 py-3">
-          <AgreementCell t={t} copied={copied} onCopy={onCopy} />
-          {hasTemplate && t.agreement?.status !== 'signed' && (
-            <div className="mt-0.5 flex flex-wrap gap-2">
-              <button
-                onClick={() => { const fd = new FormData(); fd.set('departureId', departureId); fd.set('travellerId', t.id); act(() => generateAgreement(fd)) }}
-                disabled={pending}
-                className="text-xs text-brand-text hover:underline">
-                {t.agreement ? 'Re-issue' : 'Generate'}
-              </button>
-              {t.agreement && t.email && (
-                <button
-                  onClick={() => { const fd = new FormData(); fd.set('departureId', departureId); fd.set('travellerId', t.id); act(() => sendAgreementLink(fd)) }}
-                  disabled={pending}
-                  className="text-xs text-brand-text hover:underline">
-                  Email link
-                </button>
-              )}
-            </div>
-          )}
-          {t.agreement?.status === 'signed' && t.agreement.token && (
-            <a href={`/agreement/${t.agreement.token}/print`} target="_blank" rel="noopener noreferrer"
-              className="block text-xs text-brand-text hover:underline mt-0.5">
-              PDF
-            </a>
-          )}
-        </td>
         <td className="px-4 py-3 text-right">
           <button onClick={onToggle} className="text-xs text-brand-text hover:underline">{isOpen ? 'Close' : 'Details'}</button>
         </td>
@@ -473,7 +431,7 @@ function RosterRow({
 
       {isOpen && (
         <tr className="border-b border-border/70 bg-muted/20">
-          <td colSpan={5} className="px-4 py-4">
+          <td colSpan={4} className="px-4 py-4">
             <div className="grid gap-5 lg:grid-cols-2">
               {/* Flights */}
               <div>

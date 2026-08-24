@@ -82,7 +82,7 @@ export default async function SalesDeskPage() {
       .limit(100),
     admin
       .from('quotes')
-      .select('id, quote_number, status, updated_at, clients ( first_name, last_name, email ), quote_versions ( id, version_number, title, total_selling_usd, valid_until )')
+      .select('id, quote_number, status, updated_at, clients ( first_name, last_name, email ), quote_versions!quote_versions_quote_id_fkey ( id, version_number, title, total_selling_usd, valid_until )')
       .or('is_template.is.null,is_template.eq.false')
       .order('updated_at', { ascending: false })
       .limit(100),
@@ -206,7 +206,7 @@ export default async function SalesDeskPage() {
             {followUps.length === 0 ? <Empty>No proposals need follow-up.</Empty> : followUps.slice(0, 7).map(quote => {
               const version = latestVersion(quote)
               return (
-                <Link key={quote.id} href={`/admin/quotes/${quote.id}?step=send`} className="flex items-center gap-3 py-3 hover:bg-muted/40">
+                <Link key={quote.id} href={`/admin/quotes/${quote.id}?step=review`} className="flex items-center gap-3 py-3 hover:bg-muted/40">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-foreground">{clientName(quote.clients)}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">

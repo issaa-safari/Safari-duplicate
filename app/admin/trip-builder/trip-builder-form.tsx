@@ -143,7 +143,7 @@ export default function TripBuilderForm({
   tripEndDate?: string | null
   /** Reports unsaved-changes state to an embedding parent (e.g. for a navigation guard). */
   onDirtyChange?: (dirty: boolean) => void
-  /** Called after a successful save (e.g. to advance an embedding workspace to Preview). */
+  /** Called after a successful save (e.g. to advance an embedding workspace to review). */
   onSaved?: () => void
 }) {
   const [guest, setGuest] = useState<GuestDetails>(

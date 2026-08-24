@@ -63,12 +63,12 @@ export default async function RequestDetailPage({
       .select(`
         id, quote_number, status, mode, created_at,
         tours (title_en),
-        quote_versions (id, version_number, status, title, travel_start_date, travel_end_date)
+        quote_versions!quote_versions_quote_id_fkey (id, version_number, status, title, travel_start_date, travel_end_date)
       `)
       .eq('request_id', id)
       .order('created_at', { ascending: true }),
     admin.from('quotes')
-      .select('id, quote_number, quote_versions (title, version_number)')
+      .select('id, quote_number, quote_versions!quote_versions_quote_id_fkey (title, version_number)')
       .eq('is_template', true)
       .order('created_at', { ascending: false }),
     admin.from('request_flights')

@@ -1,15 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { BedDouble, ClipboardCheck, FileSignature, LayoutDashboard, Users } from 'lucide-react'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { BedDouble, ClipboardCheck, FileSignature, LayoutDashboard, PlaneLanding, Users } from 'lucide-react'
 
 const items = [
-  { label: 'Overview', suffix: '', icon: LayoutDashboard },
-  { label: 'Manifest & logistics', suffix: '/manifest', icon: Users },
-  { label: 'Tasks', suffix: '/tasks', icon: ClipboardCheck },
-  { label: 'Vouchers', suffix: '/vouchers', icon: BedDouble },
-  { label: 'Agreement setup', suffix: '/agreement', icon: FileSignature },
+  { key: 'overview', label: 'Overview', suffix: '', icon: LayoutDashboard },
+  { key: 'travellers', label: 'Travellers', suffix: '/manifest?view=travellers', icon: Users },
+  { key: 'logistics', label: 'Logistics', suffix: '/manifest?view=logistics', icon: PlaneLanding },
+  { key: 'tasks', label: 'Tasks', suffix: '/tasks', icon: ClipboardCheck },
+  { key: 'agreements', label: 'Agreements', suffix: '/manifest?view=agreements', icon: FileSignature },
+  { key: 'vouchers', label: 'Vouchers', suffix: '/vouchers', icon: BedDouble },
 ]
 
 export default function DepartureOperationsNav({
@@ -20,30 +21,28 @@ export default function DepartureOperationsNav({
   activeOverride?: 'vouchers'
 }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const root = `/admin/departures/${departureId}`
+  const manifestView = searchParams.get('view') ?? 'travellers'
 
   return (
     <nav aria-label="Departure workspace" className="overflow-x-auto border-b border-border">
       <div className="flex min-w-max gap-1">
-        {items.map(({ label, suffix, icon: Icon }) => {
-          const href = suffix === '/vouchers'
+        {items.map(({ key, label, suffix, icon: Icon }) => {
+          const href = key === 'vouchers'
             ? `/admin/vouchers?departure=${departureId}`
-            : suffix === '/agreement'
-              ? '/admin/agreements'
-              : `${root}${suffix}`
-          const active = activeOverride === 'vouchers'
-            ? suffix === '/vouchers'
-            : suffix === ''
-            ? pathname === root
-            : suffix === '/manifest'
-              ? pathname.startsWith(`${root}/manifest`)
-              : suffix === '/tasks'
-                ? pathname.startsWith(`${root}/tasks`)
-                : false
+            : `${root}${suffix}`
+          let active = false
+          if (activeOverride === 'vouchers') active = key === 'vouchers'
+          else if (key === 'overview') active = pathname === root
+          else if (key === 'tasks') active = pathname.startsWith(`${root}/tasks`)
+          else if (key === 'travellers' || key === 'logistics' || key === 'agreements') {
+            active = pathname.startsWith(`${root}/manifest`) && manifestView === key
+          }
 
           return (
             <Link
-              key={label}
+              key={key}
               href={href}
               aria-current={active ? 'page' : undefined}
               className={`relative flex items-center gap-2 whitespace-nowrap px-3 py-3 text-sm font-medium transition-colors ${

@@ -8,6 +8,15 @@ import { PageShell, PageHeader } from '@/components/admin/ui/page'
 import { EmptyState } from '@/components/admin/ui/empty-state'
 import QuotesListClient, { type QuoteRow } from './quotes-list-client'
 import { countByGroup, QUOTE_GROUPS, resolveStatusFilter } from '@/lib/status-groups'
+import type { Database } from '@/lib/database.types'
+
+type Quote = Pick<Database['public']['Tables']['quotes']['Row'],
+  'id' | 'quote_number' | 'status' | 'mode' | 'created_at' | 'updated_at' | 'client_id' | 'departure_id'>
+type Client = Pick<Database['public']['Tables']['clients']['Row'],
+  'id' | 'first_name' | 'last_name' | 'email'>
+type QuoteVersion = Pick<Database['public']['Tables']['quote_versions']['Row'],
+  'id' | 'quote_id' | 'version_number' | 'status' | 'travel_start_date' | 'travel_end_date' |
+  'sharing_price_per_person_usd' | 'total_selling_usd'>
 
 export default async function QuotesPage({
   searchParams,
@@ -36,15 +45,16 @@ export default async function QuotesPage({
   // Separate queries to avoid PostgREST FK ambiguity and status-column collision
   const quotesQuery = admin
     .from('quotes')
-    .select('id, quote_number, status, mode, created_at, client_id')
+    .select('id, quote_number, status, mode, created_at, updated_at, client_id, departure_id')
     .order('created_at', { ascending: false })
 
   const { data: quotes } = await (filter.statuses
     ? quotesQuery.in('status', filter.statuses)
     : quotesQuery)
 
-  const quoteIds = (quotes ?? []).map((q: any) => q.id)
-  const clientIds = [...new Set((quotes ?? []).map((q: any) => q.client_id))]
+  const quoteRows = (quotes ?? []) as Quote[]
+  const quoteIds = quoteRows.map(q => q.id)
+  const clientIds = [...new Set(quoteRows.map(q => q.client_id))]
 
   const [{ data: clientsData }, { data: versionsData }] = await Promise.all([
     clientIds.length
@@ -58,9 +68,11 @@ export default async function QuotesPage({
       : Promise.resolve({ data: [] }),
   ])
 
-  const clientMap = Object.fromEntries((clientsData ?? []).map((c: any) => [c.id, c]))
-  const versionsByQuote: Record<string, any[]> = {}
-  for (const v of (versionsData ?? [])) {
+  const clientMap: Record<string, Client> = Object.fromEntries(
+    ((clientsData ?? []) as Client[]).map(c => [c.id, c]),
+  )
+  const versionsByQuote: Record<string, QuoteVersion[]> = {}
+  for (const v of (versionsData ?? []) as QuoteVersion[]) {
     if (!versionsByQuote[v.quote_id]) versionsByQuote[v.quote_id] = []
     versionsByQuote[v.quote_id].push(v)
   }
@@ -127,12 +139,12 @@ export default async function QuotesPage({
         </div>
       ) : (
         <QuotesListClient
-          quotes={quotes.map((q: any): QuoteRow => {
+          quotes={quoteRows.map((q): QuoteRow => {
             const client = clientMap[q.client_id] ?? null
             const clientName = client
               ? `${client.first_name} ${client.last_name}`.trim()
               : '—'
-            const versions: any[] = versionsByQuote[q.id] ?? []
+            const versions = versionsByQuote[q.id] ?? []
             const latest = versions[0] // already ordered desc by version_number
             return {
               id: q.id,
@@ -140,6 +152,7 @@ export default async function QuotesPage({
               status: q.status,
               mode: q.mode,
               createdAt: q.created_at,
+              updatedAt: q.updated_at,
               clientName,
               clientEmail: client?.email ?? null,
               versionCount: versions.length,
@@ -147,6 +160,8 @@ export default async function QuotesPage({
               travelStartDate: latest?.travel_start_date ?? null,
               travelEndDate: latest?.travel_end_date ?? null,
               sharingPricePerPerson: latest?.sharing_price_per_person_usd ?? null,
+              totalSelling: latest?.total_selling_usd ?? null,
+              departureId: q.departure_id ?? null,
             }
           })}
         />

@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
-import Link from 'next/link'
 import BookingDetailForm from './form'
 import { getTripBalance } from '@/lib/server/accounting'
 import { getTripInvoiceSummary } from '@/lib/server/invoices'
@@ -32,6 +31,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       created_at,
       departures (
         id,
+        kind,
+        operation_title,
         start_date,
         end_date,
         price_usd,
