@@ -12,13 +12,10 @@ interface Traveller {
   email: string
   phone: string
   phoneCountryCode: string
-  dateOfBirth: string
-  nationality: string
-  passportNumber: string
 }
 
 function emptyTraveller(): Traveller {
-  return { firstName: '', lastName: '', email: '', phone: '', phoneCountryCode: 'KE', dateOfBirth: '', nationality: '', passportNumber: '' }
+  return { firstName: '', lastName: '', email: '', phone: '', phoneCountryCode: 'KE' }
 }
 
 export default function DepartureBookingForm({
@@ -69,10 +66,9 @@ export default function DepartureBookingForm({
     })
   }, [])
 
-  const maxGroup = Math.min(8, Math.max(1, seatsLeft))
+  const maxGroup = Math.min(12, Math.max(1, seatsLeft))
   const totalPrice = effectivePricePerPerson * groupSize
   const totalDeposit = depositPerPerson * groupSize
-  const totalDue = totalPrice + totalDeposit
 
   const t = ar ? {
     roomType: 'نوع الغرفة',
@@ -81,21 +77,21 @@ export default function DepartureBookingForm({
     perPerson: 'للفرد',
     groupSize: 'عدد المسافرين',
     travellersInfo: 'معلومات المسافرين',
+    detailsLater: 'نحتاج الآن فقط بيانات التواصل للمسافر الرئيسي. سنجمع بيانات الجواز والطوارئ وبقية بيانات المسافرين بشكل آمن بعد تأكيد الحجز.',
+    leadTraveller: 'المسافر الرئيسي',
     traveller: 'المسافر',
     firstName: 'الاسم الأول',
     lastName: 'الاسم الأخير',
     email: 'البريد الإلكتروني',
     phone: 'رقم الهاتف',
     phoneCode: 'رمز الدولة',
-    dateOfBirth: 'تاريخ الميلاد',
-    nationality: 'الجنسية',
-    passportNumber: 'رقم جواز السفر',
     pricePerPerson: 'السعر للفرد',
     totalPrice: 'السعر الإجمالي',
-    securityDeposit: 'تأمين قابل للاسترداد',
+    securityDeposit: 'تأمين إضافي قابل للاسترداد',
     depositNote: 'يُدفع قبل بدء الرحلة ويُعاد كاملاً في حال عدم وجود أضرار بالدراجة.',
-    totalDue: 'الإجمالي المطلوب',
-    confirmBooking: 'تأكيد الحجز',
+    bookingTotal: 'إجمالي الحجز',
+    noPayment: 'لن يتم خصم أي مبلغ في هذه الصفحة. سنحجز مكانك ويرسل فريقنا تعليمات الدفع.',
+    confirmBooking: 'احجز مكاني',
     processing: 'جاري المعالجة...',
     bookingConfirmed: 'تم تأكيد الحجز!',
     confirmationMessage: 'شكراً لحجزك! سيتواصل معك فريقنا قريباً لتفاصيل الدفع والتحضير.',
@@ -109,21 +105,21 @@ export default function DepartureBookingForm({
     perPerson: 'per person',
     groupSize: 'Number of Travellers',
     travellersInfo: 'Traveller Information',
+    detailsLater: 'We only need the lead traveller\'s contact details now. Passport, emergency and remaining traveller information will be collected securely after confirmation.',
+    leadTraveller: 'Lead traveller',
     traveller: 'Traveller',
     firstName: 'First Name',
     lastName: 'Last Name',
     email: 'Email',
     phone: 'Phone',
     phoneCode: 'Country code',
-    dateOfBirth: 'Date of Birth',
-    nationality: 'Nationality',
-    passportNumber: 'Passport Number',
     pricePerPerson: 'Price per Person',
     totalPrice: 'Total Price',
-    securityDeposit: 'Refundable security deposit',
+    securityDeposit: 'Additional refundable security deposit',
     depositNote: 'Paid before the trip starts, returned in full if the bike is undamaged.',
-    totalDue: 'Total due',
-    confirmBooking: 'Confirm Booking',
+    bookingTotal: 'Booking total',
+    noPayment: 'No payment is taken on this page. Your place is reserved and our team will send payment instructions.',
+    confirmBooking: 'Reserve my place',
     processing: 'Processing...',
     bookingConfirmed: 'Booking Confirmed!',
     confirmationMessage: 'Thank you for your booking! Our team will contact you soon with payment and preparation details.',
@@ -153,7 +149,8 @@ export default function DepartureBookingForm({
         // right up until the request goes out.
         const withDialCodes = travellers.map(t => {
           const dial = dialCodeFor(t.phoneCountryCode)
-          return { ...t, phone: dial ? `+${dial}${t.phone.trim()}` : t.phone.trim() }
+          const phone = t.phone.trim()
+          return { ...t, phone: phone && dial ? `+${dial}${phone}` : phone }
         })
         const res = await fetch(submitUrl, {
           method: 'POST',
@@ -259,44 +256,46 @@ export default function DepartureBookingForm({
 
       <div className="mb-8">
         <h3 className="text-xl font-bold text-gray-900 mb-6">{t.travellersInfo}</h3>
+        <p className="mb-6 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm leading-6 text-blue-900">
+          {t.detailsLater}
+        </p>
         <div className="space-y-8">
           {travellers.map((traveller, index) => (
             <div key={index} className="pb-8 border-b border-gray-200 last:border-b-0">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4">{t.traveller} {index + 1}</h4>
+              <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                {index === 0 ? t.leadTraveller : `${t.traveller} ${index + 1}`}
+              </h4>
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <Field label={`${t.firstName} *`} value={traveller.firstName} onChange={v => handleTravellerChange(index, 'firstName', v)} required />
                 <Field label={`${t.lastName} *`} value={traveller.lastName} onChange={v => handleTravellerChange(index, 'lastName', v)} required />
               </div>
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <Field type="email" label={`${t.email} *`} value={traveller.email} onChange={v => handleTravellerChange(index, 'email', v)} required />
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">{t.phone} *</label>
-                  <div className="flex gap-2">
-                    <select
-                      value={traveller.phoneCountryCode}
-                      onChange={e => handleTravellerChange(index, 'phoneCountryCode', e.target.value)}
-                      aria-label={t.phoneCode}
-                      className="w-24 shrink-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    >
-                      {COUNTRIES_SORTED.map((c) => (
-                        <option key={c.code} value={c.code}>+{c.dial}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="tel"
-                      value={traveller.phone}
-                      onChange={e => handleTravellerChange(index, 'phone', e.target.value)}
-                      required
-                      className="flex-1 min-w-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
+              {index === 0 && (
+                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                  <Field type="email" label={`${t.email} *`} value={traveller.email} onChange={v => handleTravellerChange(index, 'email', v)} required />
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">{t.phone} *</label>
+                    <div className="flex gap-2">
+                      <select
+                        value={traveller.phoneCountryCode}
+                        onChange={e => handleTravellerChange(index, 'phoneCountryCode', e.target.value)}
+                        aria-label={t.phoneCode}
+                        className="w-24 shrink-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      >
+                        {COUNTRIES_SORTED.map((c) => (
+                          <option key={c.code} value={c.code}>+{c.dial}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="tel"
+                        value={traveller.phone}
+                        onChange={e => handleTravellerChange(index, 'phone', e.target.value)}
+                        required
+                        className="flex-1 min-w-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <Field type="date" label={t.dateOfBirth} value={traveller.dateOfBirth} onChange={v => handleTravellerChange(index, 'dateOfBirth', v)} />
-                <Field label={t.nationality} value={traveller.nationality} onChange={v => handleTravellerChange(index, 'nationality', v)} />
-              </div>
-              <Field label={t.passportNumber} value={traveller.passportNumber} onChange={v => handleTravellerChange(index, 'passportNumber', v)} />
+              )}
             </div>
           ))}
         </div>
@@ -321,10 +320,14 @@ export default function DepartureBookingForm({
           </>
         )}
         <div className="border-t border-gray-300 mt-4 pt-4 flex justify-between items-center">
-          <span className="text-lg font-bold text-gray-900">{t.totalDue}:</span>
-          <span className="text-3xl font-bold" style={{ color: G }}>${totalDue.toLocaleString()}</span>
+          <span className="text-lg font-bold text-gray-900">{t.bookingTotal}:</span>
+          <span className="text-3xl font-bold" style={{ color: G }}>${totalPrice.toLocaleString()}</span>
         </div>
       </div>
+
+      <p className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm leading-6 text-green-900">
+        {t.noPayment}
+      </p>
 
       <label className="mb-6 flex items-start gap-3 text-sm text-gray-700 cursor-pointer">
         <input type="checkbox" checked={createAccount} onChange={e => setCreateAccount(e.target.checked)} className="mt-0.5 h-4 w-4" />

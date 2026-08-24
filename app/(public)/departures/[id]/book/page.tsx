@@ -27,12 +27,14 @@ export default async function DepartureBookingPage({ params }: { params: Promise
     .select(`
       id, start_date, end_date, price_usd, price_single_usd,
       security_deposit_usd, max_seats, booked_seats, status,
-      tours ( title_en, title_ar )
+      tours!inner ( title_en, title_ar )
     `)
     .eq('id', id)
     .eq('kind', 'scheduled_group')
     .eq('is_active', true)
     .eq('is_public', true)
+    .eq('tours.status', 'active')
+    .eq('tours.show_on_website', true)
     .maybeSingle()
 
   if (!departure) notFound()

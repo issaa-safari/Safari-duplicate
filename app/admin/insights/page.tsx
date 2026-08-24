@@ -174,7 +174,7 @@ export default async function AnalyticsPage() {
 
       {/* Top KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Total Quotes" value={fmt(totalQuotes ?? 0)} sub={`${fmt(totalVersions)} versions`} />
+        <KpiCard label="Total Proposals" value={fmt(totalQuotes ?? 0)} sub={`${fmt(totalVersions)} versions`} />
         <KpiCard
           label="Conversion Rate"
           value={conversionRate !== null ? `${Math.round(conversionRate * 100)}%` : '—'}
@@ -230,7 +230,7 @@ export default async function AnalyticsPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground py-10 text-center">No quotes yet in this period.</p>
+            <p className="text-sm text-muted-foreground py-10 text-center">No proposals yet in this period.</p>
           )}
           <div className="flex gap-4 mt-3">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -248,7 +248,7 @@ export default async function AnalyticsPage() {
         <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
           <h2 className="text-sm font-semibold text-foreground mb-4">Quote Status Breakdown</h2>
           {totalVersions === 0 ? (
-            <p className="text-sm text-muted-foreground py-10 text-center">No quotes yet.</p>
+            <p className="text-sm text-muted-foreground py-10 text-center">No proposals yet.</p>
           ) : (
             <div className="space-y-2">
               {STATUS_ORDER.filter(s => (statusCounts[s] ?? 0) > 0).map(status => {
@@ -279,7 +279,7 @@ export default async function AnalyticsPage() {
 
         {/* Gross P&L */}
         <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-foreground mb-4">Gross P&amp;L — Accepted Quotes</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-4">Gross P&amp;L — Accepted Proposals</h2>
           {acceptedCount === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No accepted quotes yet.</p>
           ) : (

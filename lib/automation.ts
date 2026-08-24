@@ -86,3 +86,21 @@ export function shouldExpireQuote(
   const nowDay = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
   return untilDay < nowDay
 }
+
+/**
+ * A viewed proposal deserves a next-day follow-up; a sent-but-unviewed one
+ * gets two days. Returned as a date-only value because tasks.due_date is a
+ * PostgreSQL date rather than a timestamp.
+ */
+export function proposalFollowUpDueDate(
+  status: string,
+  referenceDate: Date | string,
+): string | null {
+  const days = status === 'viewed' ? 1 : status === 'sent' ? 2 : null
+  if (days === null) return null
+
+  const reference = new Date(referenceDate)
+  if (Number.isNaN(reference.getTime())) return null
+  reference.setUTCDate(reference.getUTCDate() + days)
+  return reference.toISOString().slice(0, 10)
+}

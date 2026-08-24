@@ -181,7 +181,7 @@ export default async function QuoteDetailPage({
         <div>
           <div className="flex items-center gap-3 mb-1">
             <Link href="/admin/quotes" className="text-sm text-muted-foreground hover:text-foreground">
-              ← Quotes
+              ← Proposals
             </Link>
             <span className="text-gray-300">/</span>
             <span className="text-sm font-mono text-muted-foreground">{quote.quote_number}</span>

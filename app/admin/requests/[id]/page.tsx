@@ -119,7 +119,7 @@ export default async function RequestDetailPage({
 
   const TABS = [
     { key: 'info',      label: 'Request Information', count: null },
-    { key: 'quotes',    label: 'Quotes',               count: allVersions.length },
+    { key: 'quotes',    label: 'Proposals',            count: allVersions.length },
     { key: 'tour',      label: 'Tour Information',     count: null },
     { key: 'logistics', label: 'Logistics',            count: logisticsCount },
     { key: 'tasks',     label: 'Tasks',                count: openTasks.length },
@@ -167,7 +167,7 @@ export default async function RequestDetailPage({
               <Link
                 href={`/admin/quotes/new?request=${id}`}
                 className="rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
-                + Create Quote
+                + Create Proposal
               </Link>
             </div>
           </div>
@@ -305,12 +305,12 @@ export default async function RequestDetailPage({
           <div className="space-y-6">
             {allVersions.length === 0 ? (
               <div className="rounded-xl border border-border bg-surface shadow-sm p-10 text-center">
-                <p className="text-sm text-muted-foreground mb-4">No quotes yet for this request.</p>
+                <p className="text-sm text-muted-foreground mb-4">No proposals yet for this request.</p>
                 <div className="flex items-center justify-center gap-2 flex-wrap">
                   <Link
                     href={`/admin/quotes/new?request=${id}`}
                     className="inline-block rounded-md px-4 py-2 text-sm font-medium text-white bg-olive hover:bg-olive-dk">
-                    Create First Quote
+                    Create First Proposal
                   </Link>
                   <StartFromTemplate requestId={id} templates={templateOptions} />
                 </div>
@@ -320,7 +320,7 @@ export default async function RequestDetailPage({
                 {STATUS_ORDER.filter(s => byStatus[s]?.length).map(statusKey => (
                   <div key={statusKey}>
                     <h3 className="text-sm font-semibold text-foreground mb-3">
-                      Quotes in {statusKey.charAt(0).toUpperCase() + statusKey.slice(1)}
+                      Proposals in {statusKey.charAt(0).toUpperCase() + statusKey.slice(1)}
                     </h3>
                     <div className="space-y-3">
                       {byStatus[statusKey].map(({ quote, version }) => (

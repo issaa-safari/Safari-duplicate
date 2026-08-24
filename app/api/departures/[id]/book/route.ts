@@ -21,6 +21,28 @@ export async function POST(
 
     const admin = createAdminClient()
 
+    // Do not let a guessed URL book a departure whose tour is hidden or no
+    // longer on sale. Public list, detail, booking page and POST now use the
+    // same eligibility rules.
+    const { data: eligibleDeparture, error: eligibilityError } = await admin
+      .from('departures')
+      .select('id, tours!inner(id)')
+      .eq('id', id)
+      .eq('kind', 'scheduled_group')
+      .eq('is_active', true)
+      .eq('is_public', true)
+      .eq('tours.status', 'active')
+      .eq('tours.show_on_website', true)
+      .maybeSingle()
+
+    if (eligibilityError) {
+      console.error('[book] departure eligibility check failed', eligibilityError)
+      return NextResponse.json({ error: 'Unable to verify departure availability' }, { status: 500 })
+    }
+    if (!eligibleDeparture) {
+      return NextResponse.json({ error: 'Departure not found or unavailable' }, { status: 404 })
+    }
+
     // Link the booking to the signed-in portal user, if any.
     let userId: string | null = null
     try {

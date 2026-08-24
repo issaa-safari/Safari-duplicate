@@ -5,6 +5,7 @@ import {
   shouldArchive,
   shouldDelete,
   shouldExpireQuote,
+  proposalFollowUpDueDate,
   type AutomationSettings,
 } from './automation'
 
@@ -113,5 +114,20 @@ describe('shouldExpireQuote', () => {
 
   it('respects the disabled toggle', () => {
     expect(shouldExpireQuote('sent', '2020-01-01', { auto_expire_quotes: false }, now)).toBe(false)
+  })
+})
+
+describe('proposalFollowUpDueDate', () => {
+  it('schedules a viewed proposal for the next day', () => {
+    expect(proposalFollowUpDueDate('viewed', '2026-08-24T18:30:00Z')).toBe('2026-08-25')
+  })
+
+  it('gives a sent proposal two days before follow-up', () => {
+    expect(proposalFollowUpDueDate('sent', '2026-08-24T18:30:00Z')).toBe('2026-08-26')
+  })
+
+  it('does not schedule decided or invalid proposals', () => {
+    expect(proposalFollowUpDueDate('accepted', '2026-08-24T18:30:00Z')).toBeNull()
+    expect(proposalFollowUpDueDate('viewed', 'not-a-date')).toBeNull()
   })
 })

@@ -26,7 +26,7 @@ const TRANSITIONS: Record<string, string[]> = {
 
 export const bulkDeleteQuotes = safeAction(async (ids: string[]) => {
   const { admin, user } = await authGuard()
-  if (!ids.length) throw new Error('No quotes selected.')
+  if (!ids.length) throw new Error('No proposals selected.')
 
   // quote_acceptances.quote_version_id is ON DELETE RESTRICT (an accepted
   // version can't silently vanish); clear those rows first so the cascade
@@ -51,7 +51,7 @@ export const bulkDeleteQuotes = safeAction(async (ids: string[]) => {
 
 export const bulkSetQuoteStatus = safeAction(async (ids: string[], newStatus: string) => {
   const { admin, user } = await authGuard()
-  if (!ids.length) throw new Error('No quotes selected.')
+  if (!ids.length) throw new Error('No proposals selected.')
   if (!ALLOWED_STATUSES.includes(newStatus)) throw new Error('Invalid status.')
 
   const { data: versions } = await admin

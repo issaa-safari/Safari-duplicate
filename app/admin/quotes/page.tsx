@@ -80,17 +80,17 @@ export default async function QuotesPage({
   return (
     <PageShell>
       <PageHeader
-        title="Quotes"
+        title="Proposals"
         subtitle="Build and send pricing proposals to clients"
         actions={
           <ButtonLink href="/admin/quotes/new" variant="primary" size="sm">
-            + New Quote
+            + New Proposal
           </ButtonLink>
         }
       />
 
       {/* Status tabs */}
-      <nav aria-label="Quote statuses" className="mb-6 flex gap-1 overflow-x-auto border-b border-border">
+      <nav aria-label="Proposal statuses" className="mb-6 flex gap-1 overflow-x-auto border-b border-border">
         {QUOTE_GROUPS.map((group) => (
           <Link
             key={group.key}
@@ -124,14 +124,14 @@ export default async function QuotesPage({
           <EmptyState
             icon={FileText}
             title={filter.exactStatus
-              ? `No ${filter.exactStatus} quotes`
-              : activeGroup.key === 'all' ? 'No quotes yet' : `Nothing in ${activeGroup.label.toLowerCase()}`}
+              ? `No ${filter.exactStatus} proposals`
+              : activeGroup.key === 'all' ? 'No proposals yet' : `Nothing in ${activeGroup.label.toLowerCase()}`}
             body={activeGroup.blurb
-              ?? 'Quotes start as drafts while you build the itinerary and pricing, then go out to the client and come back accepted.'}
+              ?? 'Proposals start as drafts while you build the itinerary and pricing, then go out to the client and come back accepted.'}
             action={
               (activeGroup.key === 'all' || activeGroup.key === 'draft') && (
                 <ButtonLink href="/admin/quotes/new" variant="primary" size="sm">
-                  Create your first quote
+                  Create your first proposal
                 </ButtonLink>
               )
             }
