@@ -11,6 +11,7 @@ export interface QuoteRow {
   status: string
   mode: string
   createdAt: string
+  updatedAt: string
   clientName: string
   clientEmail: string | null
   versionCount: number
@@ -18,6 +19,8 @@ export interface QuoteRow {
   travelStartDate: string | null
   travelEndDate: string | null
   sharingPricePerPerson: number | null
+  totalSelling: number | null
+  departureId: string | null
 }
 
 // Same statuses the single-quote version status control allows moving to.
@@ -38,9 +41,24 @@ export default function QuotesListClient({ quotes }: { quotes: QuoteRow[] }) {
       deleteConfirm={count =>
         `Delete ${count} quote${count === 1 ? '' : 's'}? This permanently removes the itinerary, pricing, and delivery history. This cannot be undone.`
       }
-      renderItem={q => (
+      renderItem={q => {
+        const priced = Number(q.totalSelling ?? 0) > 0
+        const nextAction = ['draft', 'ready'].includes(q.status)
+          ? priced ? 'Review proposal' : 'Complete pricing'
+          : ['sent', 'viewed'].includes(q.status)
+            ? 'Follow up with client'
+            : q.status === 'accepted'
+              ? 'Open trip operations'
+              : 'Review proposal'
+        const href = q.status === 'accepted' && q.departureId
+          ? `/admin/departures/${q.departureId}`
+          : ['draft', 'ready'].includes(q.status)
+            ? `/admin/quotes/${q.id}?step=${priced ? 'review' : 'pricing'}`
+            : `/admin/quotes/${q.id}?step=review`
+
+        return (
         <Link
-          href={`/admin/quotes/${q.id}`}
+          href={href}
           className="block rounded-xl border border-border bg-surface p-4 shadow-sm transition-all duration-150 hover:border-ring/50 hover:shadow"
         >
           <div className="flex items-start justify-between gap-4">
@@ -69,17 +87,24 @@ export default function QuotesListClient({ quotes }: { quotes: QuoteRow[] }) {
               )}
             </div>
             <div className="text-right text-xs text-muted-foreground shrink-0">
-              {q.sharingPricePerPerson ? (
+              {priced ? (
                 <p className="text-base font-semibold text-foreground">
-                  ${Number(q.sharingPricePerPerson).toLocaleString()}
-                  <span className="text-xs font-normal text-muted-foreground"> /pp</span>
+                  ${Number(q.totalSelling).toLocaleString()}
+                  <span className="block text-[10px] font-normal uppercase tracking-wide text-muted-foreground">Group total</span>
                 </p>
+              ) : (
+                <p className="font-medium text-amber-700">Pricing required</p>
+              )}
+              {q.sharingPricePerPerson ? (
+                <p className="mt-1">${Number(q.sharingPricePerPerson).toLocaleString()} / person</p>
               ) : null}
-              <p className="mt-1">{new Date(q.createdAt).toLocaleDateString('en-GB')}</p>
+              <p className="mt-2 font-medium text-brand-text">{nextAction} →</p>
+              <p className="mt-1">Updated {new Date(q.updatedAt).toLocaleDateString('en-GB')}</p>
             </div>
           </div>
         </Link>
-      )}
+        )
+      }}
     />
   )
 }

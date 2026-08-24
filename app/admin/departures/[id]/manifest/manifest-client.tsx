@@ -7,7 +7,7 @@ import type { Motorbike } from '@/lib/types'
 import AgreementsPanel from './agreements-panel'
 import {
   addTravellerFlight, deleteTravellerFlight, assignMotorbike,
-  updateTravellerExtras, generateAgreement, generateAllAgreements, sendAgreementLink,
+  updateTravellerExtras, generateAllAgreements,
 } from './actions'
 
 export interface RosterFlight {
@@ -325,7 +325,6 @@ export default function ManifestClient({
                 <th className="px-4 py-3 font-medium">Traveller</th>
                 <th className="px-4 py-3 font-medium">Arrival</th>
                 <th className="px-4 py-3 font-medium">Motorbike</th>
-                <th className="px-4 py-3 font-medium">Agreement</th>
                 <th className="px-4 py-3 font-medium"></th>
               </tr>
             </thead>
@@ -341,9 +340,6 @@ export default function ManifestClient({
                     departureId={departureId}
                     motorbikes={motorbikes}
                     takenBikeIds={takenBikeIds}
-                    hasTemplate={hasTemplate}
-                    copied={copied}
-                    onCopy={copyLink}
                     onError={setError}
                   />
                 )
@@ -356,29 +352,8 @@ export default function ManifestClient({
   )
 }
 
-function AgreementCell({ t, copied, onCopy }: { t: RosterTraveller; copied: string | null; onCopy: (token: string) => void }) {
-  if (!t.agreement) return <span className="text-xs text-muted-foreground">Not issued</span>
-  if (t.agreement.status === 'signed') {
-    return (
-      <span className="text-xs font-medium text-green-600">
-        ✓ Signed{t.agreement.signedAt ? ` · ${new Date(t.agreement.signedAt).toLocaleDateString('en-GB')}` : ''}
-      </span>
-    )
-  }
-  return (
-    <span className="flex items-center gap-2">
-      <span className="text-xs font-medium text-amber-600">Pending</span>
-      {t.agreement.token && (
-        <button onClick={() => onCopy(t.agreement!.token!)} className="text-xs text-brand-text hover:underline">
-          {copied === t.agreement.token ? 'Copied!' : 'Copy link'}
-        </button>
-      )}
-    </span>
-  )
-}
-
 function RosterRow({
-  t, arr, isOpen, onToggle, departureId, motorbikes, takenBikeIds, hasTemplate, copied, onCopy, onError,
+  t, arr, isOpen, onToggle, departureId, motorbikes, takenBikeIds, onError,
 }: {
   t: RosterTraveller
   arr: RosterFlight | null
@@ -387,9 +362,6 @@ function RosterRow({
   departureId: string
   motorbikes: Motorbike[]
   takenBikeIds: Record<string, string>
-  hasTemplate: boolean
-  copied: string | null
-  onCopy: (token: string) => void
   onError: (msg: string) => void
 }) {
   const { pending, run } = useAction()
@@ -452,33 +424,6 @@ function RosterRow({
             </select>
           ) : <span className="text-xs text-muted-foreground">Passenger</span>}
         </td>
-        <td data-label="Agreement" className="px-4 py-3">
-          <AgreementCell t={t} copied={copied} onCopy={onCopy} />
-          {hasTemplate && t.agreement?.status !== 'signed' && (
-            <div className="mt-0.5 flex flex-wrap gap-2">
-              <button
-                onClick={() => { const fd = new FormData(); fd.set('departureId', departureId); fd.set('travellerId', t.id); act(() => generateAgreement(fd)) }}
-                disabled={pending}
-                className="text-xs text-brand-text hover:underline">
-                {t.agreement ? 'Re-issue' : 'Generate'}
-              </button>
-              {t.agreement && t.email && (
-                <button
-                  onClick={() => { const fd = new FormData(); fd.set('departureId', departureId); fd.set('travellerId', t.id); act(() => sendAgreementLink(fd)) }}
-                  disabled={pending}
-                  className="text-xs text-brand-text hover:underline">
-                  Email link
-                </button>
-              )}
-            </div>
-          )}
-          {t.agreement?.status === 'signed' && t.agreement.token && (
-            <a href={`/agreement/${t.agreement.token}/print`} target="_blank" rel="noopener noreferrer"
-              className="block text-xs text-brand-text hover:underline mt-0.5">
-              PDF
-            </a>
-          )}
-        </td>
         <td className="px-4 py-3 text-right">
           <button onClick={onToggle} className="text-xs text-brand-text hover:underline">{isOpen ? 'Close' : 'Details'}</button>
         </td>
@@ -486,7 +431,7 @@ function RosterRow({
 
       {isOpen && (
         <tr className="border-b border-border/70 bg-muted/20">
-          <td colSpan={5} className="px-4 py-4">
+          <td colSpan={4} className="px-4 py-4">
             <div className="grid gap-5 lg:grid-cols-2">
               {/* Flights */}
               <div>

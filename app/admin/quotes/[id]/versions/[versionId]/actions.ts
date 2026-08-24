@@ -291,7 +291,7 @@ export const setVersionStatus = safeAction(async (formData: FormData) => {
     metadata: { versionId, from: version.status, to: newStatus },
   })
 
-  // Status drives which versions the Preview/Send panel can share, so this
+  // Status drives which versions the Review & Send panel can share, so this
   // one does refresh the page data.
   revalidatePath(`/admin/quotes/${quoteId}/versions/${versionId}`)
   revalidatePath(`/admin/quotes/${quoteId}`)

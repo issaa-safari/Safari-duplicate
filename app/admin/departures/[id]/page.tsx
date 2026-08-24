@@ -208,7 +208,7 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <WorkspaceCard
             href={`/admin/departures/${id}/manifest?view=travellers`}
-            label="Manifest"
+            label="Travellers"
             value={`${travellers.length}`}
             detail={`${passports}/${travellers.length} passports on file`}
             icon={Users}
@@ -263,7 +263,7 @@ export default async function DepartureOperationsPage({ params }: { params: Prom
                 <PlaneLanding size={16} className="text-brand-text" /> Plan transfers and rooms
               </Link>
               <Link href={`/admin/departures/${id}/manifest?view=travellers`} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-muted">
-                <Bike size={16} className="text-brand-text" /> Assign bikes and issue agreements
+                <Bike size={16} className="text-brand-text" /> Update traveller details and assign bikes
               </Link>
               <Link href={`/admin/departures/${id}/tasks`} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-muted">
                 <ClipboardCheck size={16} className="text-brand-text" /> Review group tasks

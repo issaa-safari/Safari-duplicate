@@ -4295,6 +4295,10 @@ export type Database = {
         }
         Returns: string
       }
+      correct_legacy_trip_value_atomic: {
+        Args: { p_booking_id: string; p_total_price_usd: number }
+        Returns: Json
+      }
       create_departure_booking_atomic: {
         Args: {
           p_booking_link_id?: string

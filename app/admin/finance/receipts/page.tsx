@@ -161,18 +161,18 @@ export default async function ReceiptsPage() {
   })
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
-  const totalInvoiced = rows.reduce((s, r) => s + r.totalSelling, 0)
+  const totalTripValue = rows.reduce((s, r) => s + r.totalSelling, 0)
     + directRows.reduce((s, r) => s + r.amountDue, 0)
   const totalReceived = rows.reduce((s, r) => s + r.totalReceived, 0)
     + directRows.reduce((s, r) => s + r.amountReceived, 0)
-  const totalOutstanding = Math.max(totalInvoiced - totalReceived, 0)
+  const totalOutstanding = Math.max(totalTripValue - totalReceived, 0)
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-foreground">Finance</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Customer receipts — invoiced vs received per accepted quote. Looking for the documents
+          Customer receipts — trip value, payments received, and balances due. Looking for the formal documents
           themselves? See{' '}
           <Link href="/admin/finance/invoices" className="text-brand-text hover:underline">Invoices</Link>.
         </p>
@@ -183,15 +183,15 @@ export default async function ReceiptsPage() {
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
-          <p className="text-xs text-muted-foreground">Invoiced</p>
-          <p className="text-2xl font-semibold text-foreground mt-1">${fmt(totalInvoiced)}</p>
+          <p className="text-xs text-muted-foreground">Trip value</p>
+          <p className="text-2xl font-semibold text-foreground mt-1">${fmt(totalTripValue)}</p>
           <p className="text-xs text-muted-foreground mt-1">{rows.length} accepted quote{rows.length !== 1 ? 's' : ''} + {directRows.length} direct booking{directRows.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
           <p className="text-xs text-muted-foreground">Received</p>
           <p className="text-2xl font-semibold text-green-700 mt-1">${fmt(totalReceived)}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            {totalInvoiced > 0 ? Math.round((totalReceived / totalInvoiced) * 100) : 0}% collected
+            {totalTripValue > 0 ? Math.round((totalReceived / totalTripValue) * 100) : 0}% collected
           </p>
         </div>
         <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
@@ -209,7 +209,7 @@ export default async function ReceiptsPage() {
       <div className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-border/70">
           <h2 className="text-sm font-semibold text-foreground">Accepted quotes</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">Click a row to see receipts or record a new one — received can never exceed invoiced</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Click a row to see receipts or record a new one — received can never exceed the trip value</p>
         </div>
         {rows.length === 0 ? (
           <div className="p-10 text-center text-sm text-muted-foreground">

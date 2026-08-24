@@ -206,8 +206,8 @@ export default function DeliveryPanel({
   return (
     <div id="delivery" className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden scroll-mt-6">
       <div className="px-5 py-4 border-b border-border/70">
-        <h2 className="text-sm font-semibold text-foreground">Preview &amp; Send</h2>
-        <p className="text-xs text-muted-foreground mt-0.5">Generate a link to preview exactly what the client will see, then send it for viewing and acceptance.</p>
+        <h2 className="text-sm font-semibold text-foreground">Review &amp; Send</h2>
+        <p className="text-xs text-muted-foreground mt-0.5">Review exactly what the client will see, then generate or send the link for acceptance.</p>
       </div>
 
       {shareableVersions.length > 0 && (

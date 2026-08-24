@@ -82,7 +82,7 @@ export default async function SalesDeskPage() {
       .limit(100),
     admin
       .from('quotes')
-      .select('id, quote_number, status, updated_at, clients ( first_name, last_name, email ), quote_versions ( id, version_number, title, total_selling_usd, valid_until )')
+      .select('id, quote_number, status, updated_at, clients ( first_name, last_name, email ), quote_versions!quote_versions_quote_id_fkey ( id, version_number, title, total_selling_usd, valid_until )')
       .or('is_template.is.null,is_template.eq.false')
       .order('updated_at', { ascending: false })
       .limit(100),
