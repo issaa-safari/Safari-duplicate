@@ -1,8 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { proposalFollowUpDueDate } from '@/lib/automation'
+import { ensureWorkflowTask } from '@/lib/server/workflow-task'
 
 interface ProposalFollowUpInput {
   requestId: string | null | undefined
+  quoteId: string
   quoteNumber: string
   status: string
   referenceDate?: Date | string
@@ -17,33 +19,29 @@ export async function ensureProposalFollowUpTask(
   admin: SupabaseClient,
   input: ProposalFollowUpInput,
 ): Promise<boolean> {
-  const { requestId, quoteNumber, status } = input
+  const { requestId, quoteId, quoteNumber, status } = input
   if (!requestId) return false
 
   const dueDate = proposalFollowUpDueDate(status, input.referenceDate ?? new Date())
   if (!dueDate) return false
 
-  const title = `Follow up proposal ${quoteNumber}`
-  const { data: existing, error: lookupError } = await admin
-    .from('tasks')
-    .select('id')
-    .eq('request_id', requestId)
-    .eq('title', title)
-    .limit(1)
-    .maybeSingle()
+  const { error: workflowError } = await admin
+    .from('quotes')
+    .update({
+      next_action: status === 'viewed' ? 'Follow up: client viewed proposal' : 'Follow up on sent proposal',
+      next_action_due_at: `${dueDate}T09:00:00.000Z`,
+    })
+    .eq('id', quoteId)
+  if (workflowError) throw workflowError
 
-  if (lookupError) throw lookupError
-  if (existing) return false
-
-  const { error: insertError } = await admin.from('tasks').insert({
-    request_id: requestId,
-    title,
+  return ensureWorkflowTask(admin, {
+    automationKey: `proposal_follow_up:${quoteId}`,
+    requestId,
+    quoteId,
+    title: `Follow up proposal ${quoteNumber}`,
     type: 'other',
-    status: 'pending',
-    auto_generated: true,
-    sort_order: 5,
-    due_date: dueDate,
+    priority: status === 'viewed' ? 'high' : 'normal',
+    sortOrder: 5,
+    dueDate,
   })
-  if (insertError) throw insertError
-  return true
 }

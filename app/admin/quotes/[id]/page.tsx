@@ -10,6 +10,7 @@ import AcceptOnBehalfButton from './accept-on-behalf-button'
 import QuoteWorkspace from './quote-workspace'
 import { loadBuilderLookups } from '../../trip-builder/load-lookups'
 import { loadTripBuilderInitialState } from '../../trip-builder/load-initial-state'
+import CommercialWorkflowPanel from '@/components/admin/commercial-workflow-panel'
 
 export default async function QuoteDetailPage({
   params,
@@ -30,7 +31,7 @@ export default async function QuoteDetailPage({
   // Separate queries to avoid PostgREST FK ambiguity
   const { data: quote } = await admin
     .from('quotes')
-    .select('id, quote_number, status, mode, created_at, client_id, request_id, tour_id, departure_id, is_template')
+    .select('id, quote_number, status, mode, created_at, client_id, request_id, tour_id, departure_id, is_template, owner_id, next_action, next_action_due_at, last_contact_at, follow_up_outcome')
     .eq('id', id)
     .single()
 
@@ -43,6 +44,7 @@ export default async function QuoteDetailPage({
     { data: departureRow },
     { data: versionRows },
     { data: deliveryRows },
+    { data: teamData },
   ] = await Promise.all([
     admin.from('clients').select('first_name, last_name, email, phone, country').eq('id', quote.client_id).single(),
     quote.request_id
@@ -62,6 +64,7 @@ export default async function QuoteDetailPage({
       .select('id, quote_version_id, channel, access_token, expires_at, sent_at, first_viewed_at, last_viewed_at, view_count, revoked_at, created_at')
       .eq('quote_id', id)
       .order('created_at', { ascending: false }),
+    admin.from('admin_users').select('id, full_name, email').eq('is_active', true).order('full_name'),
   ])
 
   const client = clientRow ?? null
@@ -221,6 +224,21 @@ export default async function QuoteDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left — client + context */}
         <div className="space-y-4">
+          {!quote.is_template && (
+            <CommercialWorkflowPanel
+              entityType="quote"
+              entityId={id}
+              value={{
+                ownerId: quote.owner_id,
+                nextAction: quote.next_action,
+                nextActionDueAt: quote.next_action_due_at,
+                lastContactAt: quote.last_contact_at,
+                followUpOutcome: quote.follow_up_outcome,
+              }}
+              team={teamData ?? []}
+              compact
+            />
+          )}
           <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Client</h2>
             {client ? (

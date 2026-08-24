@@ -4,6 +4,11 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
 import { safeAction } from '@/lib/server/action-result'
+import type { Tables, TablesInsert } from '@/lib/database.types'
+
+type AgeBand = Pick<Tables<'traveller_age_bands'>,
+  'id' | 'name' | 'code' | 'min_age' | 'max_age' | 'default_pricing_method' |
+  'default_percentage' | 'default_fixed_amount_usd'>
 
 export const createQuote = safeAction(async (formData: FormData) => {
   const supabase = await createClient()
@@ -27,6 +32,12 @@ export const createQuote = safeAction(async (formData: FormData) => {
 
   const admin = createAdminClient()
   await assertAdminAccess(admin, user.email)
+  const { data: owner } = await admin
+    .from('admin_users')
+    .select('id')
+    .eq('email', user.email ?? '')
+    .eq('is_active', true)
+    .single()
 
   // Read client's preferred language before creating the quote
   const { data: clientData } = await admin
@@ -36,7 +47,7 @@ export const createQuote = safeAction(async (formData: FormData) => {
     .single()
   const clientLanguage = clientData?.language === 'ar' ? 'ar' : 'en'
 
-  const { data: newQuoteId, error } = await admin.rpc('create_quote_with_version', {
+  const { data: newQuoteId, error } = await admin.rpc('create_quote_with_workflow_atomic', {
     p_client_id: clientId,
     p_request_id: requestId,
     p_mode: mode,
@@ -44,6 +55,7 @@ export const createQuote = safeAction(async (formData: FormData) => {
     p_departure_id: departureId,
     p_title: title,
     p_created_by: user.id,
+    p_owner_id: owner?.id ?? null,
   })
 
   if (error) throw new Error(error.message)
@@ -81,10 +93,10 @@ export const createQuote = safeAction(async (formData: FormData) => {
         .select('id, name, code, min_age, max_age, default_pricing_method, default_percentage, default_fixed_amount_usd')
         .in('code', ['adult', 'child', 'infant'])
 
-      const bandByCode: Record<string, any> = {}
-      for (const b of bands ?? []) bandByCode[b.code] = b
+      const bandByCode = new Map<string, AgeBand>()
+      for (const band of bands ?? []) bandByCode.set(band.code, band)
 
-      const snapshot = (b: any) => ({
+      const snapshot = (b: AgeBand) => ({
         id: b.id, name: b.name, code: b.code, min_age: b.min_age, max_age: b.max_age,
         default_pricing_method: b.default_pricing_method,
         default_percentage: b.default_pricing_method === 'percentage' ? b.default_percentage : null,
@@ -99,10 +111,10 @@ export const createQuote = safeAction(async (formData: FormData) => {
         { code: 'infant', count: requestData.travelers_children_younger ?? 0, label: 'Infant' },
       ]
 
-      const travellers: any[] = []
+      const travellers: TablesInsert<'quote_travellers'>[] = []
       let sort = 0
       for (const g of groups) {
-        const band = bandByCode[g.code]
+        const band = bandByCode.get(g.code)
         if (!band || g.count < 1) continue
         const isFree = band.default_pricing_method === 'free'
         for (let i = 0; i < g.count; i++) {

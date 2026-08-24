@@ -23,6 +23,8 @@ type GroupTask = {
   type?: string
   auto_generated?: boolean
   sort_order?: number
+  priority?: string
+  due_date?: string | null
 }
 
 export default async function DepartureTasksPage({ params }: { params: Promise<{ id: string }> }) {
@@ -57,13 +59,13 @@ export default async function DepartureTasksPage({ params }: { params: Promise<{
   const [{ data: tripTaskRows }, legacyTaskResult] = await Promise.all([
     admin
       .from('tasks')
-      .select('id, request_id, departure_id, booking_id, title, is_done, created_at, type, auto_generated, sort_order')
+      .select('id, request_id, departure_id, booking_id, title, is_done, created_at, type, priority, due_date, auto_generated, sort_order')
       .eq('departure_id', id)
       .order('sort_order', { ascending: true }),
     requestIds.length > 0
       ? admin
           .from('tasks')
-          .select('id, request_id, departure_id, booking_id, title, is_done, created_at, type, auto_generated, sort_order')
+          .select('id, request_id, departure_id, booking_id, title, is_done, created_at, type, priority, due_date, auto_generated, sort_order')
           .in('request_id', requestIds)
           .order('sort_order', { ascending: true })
       : Promise.resolve({ data: [] }),
@@ -125,7 +127,7 @@ export default async function DepartureTasksPage({ params }: { params: Promise<{
                     Open request →
                   </Link>
                 </div>
-                <TaskManager requestId={requestId} tasks={requestTasks} />
+                <TaskManager requestId={requestId} departureId={id} bookingId={booking.id} tasks={requestTasks} />
               </section>
             )
           })}

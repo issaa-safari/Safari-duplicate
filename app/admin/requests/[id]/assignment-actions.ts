@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { assertAdminAccess } from '@/lib/auth/admin-access'
+import { assertRequestPlanningEditable } from '@/lib/server/request-planning'
 
 async function authGuard() {
   const supabase = await createClient()
@@ -21,6 +22,7 @@ export async function assignStaff(formData: FormData) {
   const staffId = (formData.get('staffId') as string)?.trim()
   const role = (formData.get('role') as string)?.trim() || null
   if (!requestId || !staffId) throw new Error('Missing request or staff.')
+  await assertRequestPlanningEditable(admin, requestId)
   const { error } = await admin.from('request_staff_assignments')
     .insert({ request_id: requestId, staff_id: staffId, role })
   if (error) throw new Error(error.code === '23505' ? 'That staff member is already assigned.' : error.message)
@@ -32,7 +34,8 @@ export async function unassignStaff(formData: FormData) {
   const id = (formData.get('id') as string)?.trim()
   const requestId = (formData.get('requestId') as string)?.trim()
   if (!id || !requestId) throw new Error('Missing id.')
-  const { error } = await admin.from('request_staff_assignments').delete().eq('id', id)
+  await assertRequestPlanningEditable(admin, requestId)
+  const { error } = await admin.from('request_staff_assignments').delete().eq('id', id).eq('request_id', requestId)
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/requests/${requestId}`)
 }
@@ -44,6 +47,7 @@ export async function assignVehicle(formData: FormData) {
   const seatsRaw = Number(formData.get('seatsUsed'))
   const seatsUsed = Number.isInteger(seatsRaw) && seatsRaw > 0 ? seatsRaw : null
   if (!requestId || !vehicleId) throw new Error('Missing request or vehicle.')
+  await assertRequestPlanningEditable(admin, requestId)
   const { error } = await admin.from('request_vehicle_assignments')
     .insert({ request_id: requestId, vehicle_id: vehicleId, seats_used: seatsUsed })
   if (error) throw new Error(error.code === '23505' ? 'That vehicle is already assigned.' : error.message)
@@ -55,7 +59,8 @@ export async function unassignVehicle(formData: FormData) {
   const id = (formData.get('id') as string)?.trim()
   const requestId = (formData.get('requestId') as string)?.trim()
   if (!id || !requestId) throw new Error('Missing id.')
-  const { error } = await admin.from('request_vehicle_assignments').delete().eq('id', id)
+  await assertRequestPlanningEditable(admin, requestId)
+  const { error } = await admin.from('request_vehicle_assignments').delete().eq('id', id).eq('request_id', requestId)
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/requests/${requestId}`)
 }

@@ -38,6 +38,10 @@ export async function saveSettings(formData: FormData) {
     const n = Number(formData.get(name))
     return Number.isInteger(n) && n >= 0 ? n : fallback
   }
+  const intInRange = (name: string, fallback: number, min: number, max: number) => {
+    const n = Number(formData.get(name))
+    return Number.isInteger(n) && n >= min && n <= max ? n : fallback
+  }
   const archiveStages = formData.getAll('autoArchiveStages').map(String)
 
   const admin = createAdminClient()
@@ -47,6 +51,9 @@ export async function saveSettings(formData: FormData) {
     .update({
       auto_complete_on_end_date: bool('autoCompleteOnEndDate'),
       auto_expire_quotes: bool('autoExpireQuotes'),
+      request_proposal_due_hours: intInRange('requestProposalDueHours', 24, 1, 720),
+      proposal_expiry_warning_days: intInRange('proposalExpiryWarningDays', 3, 1, 30),
+      operations_readiness_window_days: intInRange('operationsReadinessWindowDays', 30, 1, 180),
       auto_archive_enabled: bool('autoArchiveEnabled'),
       auto_archive_days: intOrDefault('autoArchiveDays', 30),
       auto_archive_stages: archiveStages.length ? archiveStages : ['not_booked', 'completed'],
