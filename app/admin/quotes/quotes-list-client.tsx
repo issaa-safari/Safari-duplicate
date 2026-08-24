@@ -81,7 +81,7 @@ export default function QuotesListClient({ quotes }: { quotes: QuoteRow[] }) {
                 <p className="text-sm text-muted-foreground mt-1">
                   {new Date(q.travelStartDate).toLocaleDateString('en-GB')}
                   {q.travelEndDate && (
-                    <> → {new Date(q.travelEndDate).toLocaleDateString('en-GB')}</>
+                    <> â†’ {new Date(q.travelEndDate).toLocaleDateString('en-GB')}</>
                   )}
                 </p>
               )}
@@ -93,12 +93,14 @@ export default function QuotesListClient({ quotes }: { quotes: QuoteRow[] }) {
                   <span className="block text-[10px] font-normal uppercase tracking-wide text-muted-foreground">Group total</span>
                 </p>
               ) : (
-                <p className="font-medium text-amber-700">Pricing required</p>
+                <p className="font-medium text-amber-700">
+                  {['sent', 'viewed', 'accepted'].includes(q.status) ? 'Price not recorded' : 'Pricing required'}
+                </p>
               )}
               {q.sharingPricePerPerson ? (
                 <p className="mt-1">${Number(q.sharingPricePerPerson).toLocaleString()} / person</p>
               ) : null}
-              <p className="mt-2 font-medium text-brand-text">{nextAction} →</p>
+              <p className="mt-2 font-medium text-brand-text">{nextAction} â†’</p>
               <p className="mt-1">Updated {new Date(q.updatedAt).toLocaleDateString('en-GB')}</p>
             </div>
           </div>
@@ -108,3 +110,4 @@ export default function QuotesListClient({ quotes }: { quotes: QuoteRow[] }) {
     />
   )
 }
+

@@ -26,6 +26,7 @@ type Traveller = {
 }
 type Booking = {
   id: string
+  request_id: string | null
   clients: Array<{ first_name: string | null; last_name: string | null }> | { first_name: string | null; last_name: string | null } | null
   booking_travellers: Traveller[] | null
 }
@@ -39,10 +40,10 @@ function name(traveller: Traveller) {
 }
 
 function flightLabel(flight: Flight | undefined) {
-  if (!flight) return '—'
+  if (!flight) return 'â€”'
   const number = [flight.airline, flight.flight_number].filter(Boolean).join(' ') || 'Flight'
   const time = flight.scheduled_at ? new Date(flight.scheduled_at).toLocaleString('en-GB') : 'time pending'
-  return `${number} · ${time}${flight.airport ? ` · ${flight.airport}` : ''}`
+  return `${number} Â· ${time}${flight.airport ? ` Â· ${flight.airport}` : ''}`
 }
 
 export default async function DepartureTripPackPage({ params }: { params: Promise<{ id: string }> }) {
@@ -57,12 +58,11 @@ export default async function DepartureTripPackPage({ params }: { params: Promis
     { data: bookingRows },
     { data: staffRows },
     { data: vehicleRows },
-    { data: tasks },
     { data: vouchers },
   ] = await Promise.all([
     admin.from('departures').select('id, start_date, end_date, operation_title, kind, tours ( title_en )').eq('id', id).maybeSingle(),
     admin.from('bookings').select(`
-      id, status, clients ( first_name, last_name ),
+      id, request_id, status, clients ( first_name, last_name ),
       booking_travellers (
         id, first_name, last_name, phone, nationality, passport_number, is_rider,
         room_label, room_type, dietary_requirements, allergies, emergency_contact,
@@ -73,12 +73,23 @@ export default async function DepartureTripPackPage({ params }: { params: Promis
     `).eq('departure_id', id).neq('status', 'cancelled').order('created_at'),
     admin.from('departure_staff_assignments').select('tour_staff ( name, role )').eq('departure_id', id),
     admin.from('departure_vehicle_assignments').select('seats_used, vehicles ( name, type, seats )').eq('departure_id', id),
-    admin.from('tasks').select('title, type, due_date, priority, is_done').eq('departure_id', id).order('is_done').order('due_date'),
     admin.from('hotel_vouchers').select('voucher_number, hotel_name, check_in, check_out, status').eq('departure_id', id).order('check_in'),
   ])
   if (!departure) notFound()
 
   const bookings = (bookingRows ?? []) as unknown as Booking[]
+  const taskLinks = [`departure_id.eq.${id}`]
+  const bookingIds = bookings.map(booking => booking.id)
+  const requestIds = [...new Set(bookings.map(booking => booking.request_id).filter(Boolean))] as string[]
+  if (bookingIds.length > 0) taskLinks.push(`booking_id.in.(${bookingIds.join(',')})`)
+  if (requestIds.length > 0) taskLinks.push(`request_id.in.(${requestIds.join(',')})`)
+
+  const { data: tasks } = await admin
+    .from('tasks')
+    .select('id, title, type, due_date, priority, is_done')
+    .or(taskLinks.join(','))
+    .order('is_done')
+    .order('due_date')
   const roster = bookings.flatMap(booking => {
     const client = one(booking.clients)
     const party = `${client?.first_name ?? ''} ${client?.last_name ?? ''}`.trim() || 'Party'
@@ -90,7 +101,7 @@ export default async function DepartureTripPackPage({ params }: { params: Promis
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 text-foreground print:max-w-none print:px-0 print:py-0">
       <div className="print:hidden">
-        <Link href={`/admin/departures/${id}`} className="text-sm text-muted-foreground hover:text-foreground">← Back to Departure</Link>
+        <Link href={`/admin/departures/${id}`} className="text-sm text-muted-foreground hover:text-foreground">â† Back to Departure</Link>
         <div className="mt-4"><DepartureOperationsNav departureId={id} activeOverride="trip-pack" /></div>
       </div>
 
@@ -100,7 +111,7 @@ export default async function DepartureTripPackPage({ params }: { params: Promis
           <h1 className="mt-2 text-3xl font-semibold">Trip Operations Pack</h1>
           <p className="mt-1 text-lg font-medium">{title}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {new Date(departure.start_date).toLocaleDateString('en-GB')} → {new Date(departure.end_date).toLocaleDateString('en-GB')} · {roster.length} traveller{roster.length === 1 ? '' : 's'}
+            {new Date(departure.start_date).toLocaleDateString('en-GB')} â†’ {new Date(departure.end_date).toLocaleDateString('en-GB')} Â· {roster.length} traveller{roster.length === 1 ? '' : 's'}
           </p>
         </div>
         <PrintButton label="Print / Save PDF" />
@@ -120,9 +131,9 @@ export default async function DepartureTripPackPage({ params }: { params: Promis
                 <td className="border border-border px-2 py-2">{traveller.party}</td>
                 <td className="border border-border px-2 py-2">{traveller.is_rider === false ? 'Passenger' : 'Rider'}</td>
                 <td className="border border-border px-2 py-2">{traveller.passport_number || 'Missing'}</td>
-                <td className="border border-border px-2 py-2">{[traveller.room_label, traveller.room_type].filter(Boolean).join(' · ') || 'Unassigned'}</td>
+                <td className="border border-border px-2 py-2">{[traveller.room_label, traveller.room_type].filter(Boolean).join(' Â· ') || 'Unassigned'}</td>
                 <td className="border border-border px-2 py-2">{one(traveller.motorbikes)?.name || 'Unassigned'}</td>
-                <td className="border border-border px-2 py-2">{traveller.phone || '—'}</td>
+                <td className="border border-border px-2 py-2">{traveller.phone || 'â€”'}</td>
                 <td className="border border-border px-2 py-2 capitalize">{agreement?.status || 'not issued'}</td>
               </tr>
             })}</tbody>
@@ -149,7 +160,7 @@ export default async function DepartureTripPackPage({ params }: { params: Promis
           <ul className="mt-3 space-y-2 text-sm">
             {(staffRows ?? []).map((row, index) => {
               const staff = one(row.tour_staff)
-              return <li key={`${staff?.name ?? 'staff'}-${index}`}>{staff?.name ?? 'Unassigned'}{staff?.role ? ` · ${staff.role}` : ''}</li>
+              return <li key={`${staff?.name ?? 'staff'}-${index}`}>{staff?.name ?? 'Unassigned'}{staff?.role ? ` Â· ${staff.role}` : ''}</li>
             })}
             {(staffRows ?? []).length === 0 && <li className="text-muted-foreground">No staff assigned</li>}
           </ul>
@@ -159,7 +170,7 @@ export default async function DepartureTripPackPage({ params }: { params: Promis
           <ul className="mt-3 space-y-2 text-sm">
             {(vehicleRows ?? []).map((row, index) => {
               const vehicle = one(row.vehicles)
-              return <li key={`${vehicle?.name ?? 'vehicle'}-${index}`}>{vehicle?.name ?? 'Unassigned'}{vehicle?.type ? ` · ${vehicle.type}` : ''} · {row.seats_used} seats planned</li>
+              return <li key={`${vehicle?.name ?? 'vehicle'}-${index}`}>{vehicle?.name ?? 'Unassigned'}{vehicle?.type ? ` Â· ${vehicle.type}` : ''} Â· {row.seats_used} seats planned</li>
             })}
             {(vehicleRows ?? []).length === 0 && <li className="text-muted-foreground">No vehicles assigned</li>}
           </ul>
@@ -173,7 +184,7 @@ export default async function DepartureTripPackPage({ params }: { params: Promis
             {(tasks ?? []).filter(task => !task.is_done).map((task, index) => (
               <li key={`${task.title}-${index}`} className="rounded-lg border border-border p-3 break-inside-avoid">
                 <span className="font-medium">{task.title}</span>
-                <span className="ml-2 text-xs capitalize text-muted-foreground">{task.priority}{task.due_date ? ` · due ${new Date(task.due_date).toLocaleDateString('en-GB')}` : ''}</span>
+                <span className="ml-2 text-xs capitalize text-muted-foreground">{task.priority}{task.due_date ? ` Â· due ${new Date(task.due_date).toLocaleDateString('en-GB')}` : ''}</span>
               </li>
             ))}
             {(tasks ?? []).every(task => task.is_done) && <li className="text-muted-foreground">No open tasks</li>}
@@ -185,7 +196,7 @@ export default async function DepartureTripPackPage({ params }: { params: Promis
             {(vouchers ?? []).map(voucher => (
               <li key={voucher.voucher_number} className="rounded-lg border border-border p-3 break-inside-avoid">
                 <span className="font-medium">{voucher.hotel_name}</span>
-                <span className="ml-2 text-xs text-muted-foreground">{voucher.voucher_number} · {voucher.check_in} → {voucher.check_out} · {voucher.status}</span>
+                <span className="ml-2 text-xs text-muted-foreground">{voucher.voucher_number} Â· {voucher.check_in} â†’ {voucher.check_out} Â· {voucher.status}</span>
               </li>
             ))}
             {(vouchers ?? []).length === 0 && <li className="text-muted-foreground">No vouchers prepared</li>}
@@ -208,8 +219,9 @@ export default async function DepartureTripPackPage({ params }: { params: Promis
       </section>
 
       <p className="border-t border-border pt-4 text-[10px] text-muted-foreground">
-        Internal operations document · Generated {new Date().toLocaleString('en-GB')} · Contains confidential traveller information.
+        Internal operations document Â· Generated {new Date().toLocaleString('en-GB')} Â· Contains confidential traveller information.
       </p>
     </div>
   )
 }
+

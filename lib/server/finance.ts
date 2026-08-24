@@ -1,7 +1,7 @@
 // Shared finance aggregations (server-only, service-role client).
 //
-// Payables rule (spec §G1/G3): only ACCEPTED versions' price lines are
-// supplier liabilities — a superseded sibling track never becomes payable.
+// Payables rule (spec Â§G1/G3): only ACCEPTED versions' price lines are
+// supplier liabilities â€” a superseded sibling track never becomes payable.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { computeBalance } from '@/lib/balance'
@@ -51,21 +51,33 @@ const round2 = (n: number) => Math.round(n * 100) / 100
  * Everything owed to the business, across both kinds of trip.
  *
  * This used to count accepted quotes only, so revenue from bookings made
- * directly on the website — which have no quote behind them — was missing from
+ * directly on the website â€” which have no quote behind them â€” was missing from
  * the dashboard entirely. Adding them moves the figure up; that is the
  * correction, not a regression.
  */
 export async function getReceivablesSummary(admin: SupabaseClient): Promise<ReceivablesSummary> {
-  const [{ data: acceptedVersions }, { data: directBookings }, { data: payments }] = await Promise.all([
-    admin.from('quote_versions').select('total_selling_usd').eq('status', 'accepted'),
-    admin.from('bookings').select('total_price_usd').is('quote_id', null).eq('status', 'confirmed'),
-    admin.from('trip_payments').select('amount_usd, payment_type'),
+  const [{ data: acceptedVersions }, { data: directBookings }, { data: payments }, { data: invoices }, { data: services }] = await Promise.all([
+    admin.from('quote_versions').select('quote_id, total_selling_usd').eq('status', 'accepted'),
+    admin.from('bookings').select('id, total_price_usd').is('quote_id', null).eq('status', 'confirmed'),
+    admin.from('trip_payments').select('quote_id, booking_id, amount_usd, payment_type'),
+    admin.from('invoices').select('quote_id, booking_id, total_usd').eq('status', 'issued'),
+    admin.from('trip_services').select('quote_id, booking_id, total_usd'),
   ])
-  const invoiced =
-    (acceptedVersions ?? []).reduce(
-      (s: number, v: { total_selling_usd: number | null }) => s + Number(v.total_selling_usd ?? 0), 0) +
-    (directBookings ?? []).reduce(
-      (s: number, b: { total_price_usd: number | null }) => s + Number(b.total_price_usd ?? 0), 0)
+
+  type AnchorRow = { quote_id: string | null; booking_id: string | null; total_usd: number | null }
+  const totalFor = (kind: 'quote_id' | 'booking_id', id: string, base: number) => {
+    const issued = ((invoices ?? []) as AnchorRow[]).filter(row => row[kind] === id)
+    if (issued.length > 0) return issued.reduce((sum, row) => sum + Number(row.total_usd ?? 0), 0)
+    return base + ((services ?? []) as AnchorRow[])
+      .filter(row => row[kind] === id)
+      .reduce((sum, row) => sum + Number(row.total_usd ?? 0), 0)
+  }
+
+  const quoteTotals = (acceptedVersions ?? []).map((version: { quote_id: string; total_selling_usd: number | null }) =>
+    totalFor('quote_id', version.quote_id, Number(version.total_selling_usd ?? 0)))
+  const bookingTotals = (directBookings ?? []).map((booking: { id: string; total_price_usd: number | null }) =>
+    totalFor('booking_id', booking.id, Number(booking.total_price_usd ?? 0)))
+  const invoiced = [...quoteTotals, ...bookingTotals].reduce((sum, total) => sum + total, 0)
 
   const { receivedUsd, balanceUsd } = computeBalance({ invoicedUsd: invoiced, payments: payments ?? [] })
   return {
@@ -197,3 +209,4 @@ export async function getUsdToKesRate(admin: SupabaseClient): Promise<number> {
   const rate = Number((data as Record<string, unknown> | null)?.usd_to_kes_rate)
   return Number.isFinite(rate) && rate > 0 ? rate : DEFAULT_USD_TO_KES
 }
+

@@ -8,7 +8,7 @@ function fmt(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 function pct(a: number, b: number) {
-  if (b === 0) return '—'
+  if (b === 0) return 'â€”'
   return `${Math.round((a / b) * 100)}%`
 }
 
@@ -23,7 +23,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: 'Other',
 }
 
-const STATUS_ORDER = ['draft', 'ready', 'sent', 'viewed', 'accepted', 'declined', 'expired', 'cancelled']
+const STATUS_ORDER = ['draft', 'ready', 'sent', 'viewed', 'accepted', 'declined', 'expired', 'superseded', 'cancelled']
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-gray-300',
   ready: 'bg-blue-400',
@@ -32,6 +32,7 @@ const STATUS_COLORS: Record<string, string> = {
   accepted: 'bg-green-500',
   declined: 'bg-red-400',
   expired: 'bg-amber-400',
+  superseded: 'bg-slate-300',
   cancelled: 'bg-gray-200',
 }
 
@@ -154,7 +155,7 @@ export default async function AnalyticsPage() {
   }
   const totalRequests = (allRequests ?? []).length
 
-  // --- Average time from version created → accepted ---
+  // --- Average time from version created â†’ accepted ---
   const acceptedVersionMap = new Map((acceptedVersions ?? []).map(v => [v.id, v]))
   const allVersionMap = new Map((allVersions ?? []).map(v => [v.id, v]))
   const timesToAccept: number[] = []
@@ -177,18 +178,18 @@ export default async function AnalyticsPage() {
         <KpiCard label="Total Proposals" value={fmt(totalQuotes ?? 0)} sub={`${fmt(totalVersions)} versions`} />
         <KpiCard
           label="Conversion Rate"
-          value={conversionRate !== null ? `${Math.round(conversionRate * 100)}%` : '—'}
+          value={conversionRate !== null ? `${Math.round(conversionRate * 100)}%` : 'â€”'}
           sub={`${acceptedCount} accepted / ${decidedCount} decided`}
           highlight={conversionRate !== null && conversionRate >= 0.5}
         />
         <KpiCard
           label="Avg Quote Value"
-          value={avgQuoteValue > 0 ? `$${fmt(avgQuoteValue)}` : '—'}
+          value={avgQuoteValue > 0 ? `$${fmt(avgQuoteValue)}` : 'â€”'}
           sub="accepted quotes"
         />
         <KpiCard
           label="Avg Days to Accept"
-          value={avgDaysToAccept !== null ? `${avgDaysToAccept.toFixed(1)}` : '—'}
+          value={avgDaysToAccept !== null ? `${avgDaysToAccept.toFixed(1)}` : 'â€”'}
           sub="from quote created"
         />
       </div>
@@ -198,7 +199,7 @@ export default async function AnalyticsPage() {
 
         {/* Monthly volume chart */}
         <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-foreground mb-1">Quote Volume — Last 6 Months</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-1">Quote Volume â€” Last 6 Months</h2>
           <p className="text-xs text-muted-foreground mb-4">Versions created vs accepted</p>
           {months.some(m => m.created > 0) ? (
             <div className="flex items-end gap-2 h-36">
@@ -279,7 +280,7 @@ export default async function AnalyticsPage() {
 
         {/* Gross P&L */}
         <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-foreground mb-4">Gross P&amp;L — Accepted Proposals</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-4">Gross P&amp;L â€” Accepted Proposals</h2>
           {acceptedCount === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No accepted quotes yet.</p>
           ) : (
@@ -375,7 +376,7 @@ export default async function AnalyticsPage() {
 
         {/* Top performing tours */}
         <div className="rounded-xl border border-border bg-surface shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-foreground mb-4">Top Tours — by Booking Revenue</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-4">Top Tours â€” by Booking Revenue</h2>
           {topTours.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No bookings to rank yet.</p>
           ) : (
@@ -450,8 +451,9 @@ function PnlRow({ label, value, bold, negative, highlight }: {
     <div className={`flex justify-between text-sm ${bold ? 'font-semibold' : ''}`}>
       <span className="text-muted-foreground">{label}</span>
       <span className={highlight ? (value >= 0 ? 'text-green-700' : 'text-destructive') : 'text-foreground'}>
-        {negative ? '−' : ''} ${fmt(Math.abs(value))}
+        {negative ? 'âˆ’' : ''} ${fmt(Math.abs(value))}
       </span>
     </div>
   )
 }
+

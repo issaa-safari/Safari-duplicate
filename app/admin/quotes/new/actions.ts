@@ -97,7 +97,7 @@ export const createQuote = safeAction(async (formData: FormData) => {
 
   // Auto-populate travellers from the linked request's composition
   // (adults / older children / younger children) using the matching age bands.
-  if (mode !== 'template' && requestId && firstVersion) {
+  if (requestId && firstVersion) {
     const { data: requestData } = await admin
       .from('requests')
       .select('travelers_adults, travelers_children_older, travelers_children_younger')
@@ -121,7 +121,7 @@ export const createQuote = safeAction(async (formData: FormData) => {
       })
 
       // Map the request composition to age bands:
-      //   adults -> adult, older children -> child (4–12), younger children -> infant (0–3)
+      //   adults -> adult, older children -> child (4â€“12), younger children -> infant (0â€“3)
       const groups = [
         { code: 'adult',  count: requestData.travelers_adults ?? 0,           label: 'Adult' },
         { code: 'child',  count: requestData.travelers_children_older ?? 0,   label: 'Child' },
@@ -156,7 +156,7 @@ export const createQuote = safeAction(async (formData: FormData) => {
     }
   }
 
-  // Funnel: request → quote → itinerary → pricing → review → send, all steps
+  // Funnel: request â†’ quote â†’ itinerary â†’ pricing â†’ review â†’ send, all steps
   // on the unified quote workspace. Custom safaris open on the Itinerary tab.
   return {
     error: null,
@@ -165,3 +165,4 @@ export const createQuote = safeAction(async (formData: FormData) => {
       : `/admin/quotes/${newQuoteId}`,
   }
 })
+
