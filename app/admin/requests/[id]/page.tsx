@@ -9,7 +9,6 @@ import TaskManager from './task-manager'
 import StartFromTemplate from './start-from-template'
 import FlightsManager from './flights-manager'
 import AssignmentManager from './assignment-manager'
-import CommercialWorkflowPanel from '@/components/admin/commercial-workflow-panel'
 
 const STAGES = [
   { key: 'new', label: 'New' },
@@ -229,20 +228,6 @@ export default async function RequestDetailPage({
         {activeTab === 'info' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="space-y-4">
-              <CommercialWorkflowPanel
-                entityType="request"
-                entityId={id}
-                value={{
-                  ownerId: request.handled_by,
-                  priority: request.priority,
-                  nextAction: request.next_action,
-                  nextActionDueAt: request.next_action_due_at,
-                  lastContactAt: request.last_contact_at,
-                  followUpOutcome: request.follow_up_outcome,
-                }}
-                team={teamData ?? []}
-                compact
-              />
               <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold text-foreground">Client</h2>

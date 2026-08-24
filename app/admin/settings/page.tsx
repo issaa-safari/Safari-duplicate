@@ -47,10 +47,6 @@ export default async function SettingsPage() {
           className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-text hover:text-brand-ink">
           Proposal Template →
         </Link>
-        <Link href="/admin/settings/social-seo"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-text hover:text-brand-ink">
-          Social &amp; SEO →
-        </Link>
       </div>
       <SettingsForm settings={settings} />
     </div>
